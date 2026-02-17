@@ -16,10 +16,13 @@ import { EditDivisionPage } from './pages/EditDivisionPage'
 import { TeamsListPage } from './pages/TeamsListPage'
 import { CreateTeamPage } from './pages/CreateTeamPage'
 import { EditTeamPage } from './pages/EditTeamPage'
+import { BulkTeamImportPage } from './pages/BulkTeamImportPage'
 import { SeasonSetupPage } from './pages/SeasonSetupPage'
 import { FieldsListPage } from './pages/FieldsListPage'
 import { CreateFieldPage } from './pages/CreateFieldPage'
 import { EditFieldPage } from './pages/EditFieldPage'
+import { CompetitionRulesPage } from './pages/CompetitionRulesPage'
+import { MatchRulesPage } from './pages/MatchRulesPage'
 import { LoginPage } from './pages/LoginPage'
 
 export default function App() {
@@ -48,11 +51,14 @@ export default function App() {
           <Route path="leagues/:leagueId/divisions/:divisionId/edit" element={<EditDivisionPage />} />
           <Route path="leagues/:leagueId/teams" element={<TeamsListPage />} />
           <Route path="leagues/:leagueId/teams/new" element={<CreateTeamPage />} />
+          <Route path="leagues/:leagueId/teams/bulk" element={<BulkTeamImportPage />} />
           <Route path="leagues/:leagueId/teams/:teamId/edit" element={<EditTeamPage />} />
           <Route path="leagues/:leagueId/season-setup" element={<SeasonSetupPage />} />
           <Route path="leagues/:leagueId/fields" element={<FieldsListPage />} />
           <Route path="leagues/:leagueId/fields/new" element={<CreateFieldPage />} />
           <Route path="leagues/:leagueId/fields/:fieldId/edit" element={<EditFieldPage />} />
+          <Route path="leagues/:leagueId/competition-rules" element={<CompetitionRulesPage />} />
+          <Route path="leagues/:leagueId/match-rules" element={<MatchRulesPage />} />
           <Route element={<LeagueScopedRoute />}>
             <Route path="seasons" element={<SeasonsListPage />} />
             <Route path="seasons/new" element={<CreateSeasonPage />} />
@@ -62,11 +68,14 @@ export default function App() {
             <Route path="divisions/:divisionId/edit" element={<EditDivisionPage />} />
             <Route path="teams" element={<TeamsListPage />} />
             <Route path="teams/new" element={<CreateTeamPage />} />
+            <Route path="teams/bulk" element={<BulkTeamImportPage />} />
             <Route path="teams/:teamId/edit" element={<EditTeamPage />} />
             <Route path="season-setup" element={<SeasonSetupPage />} />
-            <Route path="fields" element={<FieldsListPage />} />
-            <Route path="fields/new" element={<CreateFieldPage />} />
-            <Route path="fields/:fieldId/edit" element={<EditFieldPage />} />
+          <Route path="fields" element={<FieldsListPage />} />
+          <Route path="fields/new" element={<CreateFieldPage />} />
+          <Route path="fields/:fieldId/edit" element={<EditFieldPage />} />
+          <Route path="competition-rules" element={<CompetitionRulesPage />} />
+          <Route path="match-rules" element={<MatchRulesPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -87,3 +87,69 @@ export interface TeamFormData {
 export interface ApiError {
   error: string
 }
+
+export interface CompetitionRule {
+  id: string
+  leagueId: string
+  seasonId: string | null
+  matchesPerWeek: number
+  isHomeAway: boolean
+  matchDays: number[]
+}
+
+export interface CompetitionRuleFormData {
+  seasonId?: string | null
+  matchesPerWeek: number
+  isHomeAway: boolean
+  matchDays: number[]
+}
+
+export interface MatchRule {
+  id: string
+  leagueId: string
+  seasonId: string | null
+  halfMinutes: number
+  breakMinutes: number
+  warmupBufferMinutes: number
+  slotGranularityMinutes: number
+  firstMatchToleranceMinutes: number
+}
+
+export interface MatchRuleFormData {
+  seasonId?: string | null
+  halfMinutes: number
+  breakMinutes: number
+  warmupBufferMinutes: number
+  slotGranularityMinutes: number
+  firstMatchToleranceMinutes: number
+}
+
+export interface FieldAvailabilityItem {
+  id: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  isActive: boolean
+}
+
+export interface FieldAvailabilitySlot {
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  isActive: boolean
+}
+
+export interface FieldBlackoutItem {
+  id: string
+  date: string
+  startTime: string
+  endTime: string
+  reason: string
+}
+
+export interface FieldBlackoutFormData {
+  date: string
+  startTime: string
+  endTime: string
+  reason: string
+}

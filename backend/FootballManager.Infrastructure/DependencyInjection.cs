@@ -21,6 +21,10 @@ namespace FootballManager.Infrastructure
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IDivisionRepository, DivisionRepository>();
             services.AddScoped<IFieldRepository, FieldRepository>();
+            services.AddScoped<ICompetitionRuleRepository, CompetitionRuleRepository>();
+            services.AddScoped<IMatchRuleRepository, MatchRuleRepository>();
+            services.AddScoped<IFieldAvailabilityRepository, FieldAvailabilityRepository>();
+            services.AddScoped<IFieldBlackoutRepository, FieldBlackoutRepository>();
             services.AddScoped<IDivisionSeasonRepository, DivisionSeasonRepository>();
             services.AddScoped<ITeamDivisionSeasonRepository, TeamDivisionSeasonRepository>();
 

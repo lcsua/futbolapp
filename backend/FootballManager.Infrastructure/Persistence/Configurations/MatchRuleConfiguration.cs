@@ -18,6 +18,7 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.Property(e => e.BreakMinutes).HasColumnName("break_minutes");
             builder.Property(e => e.WarmupBufferMinutes).HasDefaultValue(0).HasColumnName("warmup_buffer_minutes");
             builder.Property(e => e.SlotGranularityMinutes).HasDefaultValue(5).HasColumnName("slot_granularity_minutes");
+            builder.Property(e => e.FirstMatchToleranceMinutes).HasDefaultValue(0).HasColumnName("first_match_tolerance_minutes");
             builder.Property(e => e.CreatedAt).HasColumnName("created_at");
             builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             builder.Property(e => e.DeletedAt).HasColumnName("deleted_at");

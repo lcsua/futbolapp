@@ -13,12 +13,22 @@ using FootballManager.Application.UseCases.Leagues.GetLeagueDivisions;
 using FootballManager.Application.UseCases.Leagues.CreateDivision;
 using FootballManager.Application.UseCases.Leagues.UpdateDivision;
 using FootballManager.Application.UseCases.Leagues.CreateTeam;
+using FootballManager.Application.UseCases.Leagues.BulkCreateTeams;
 using FootballManager.Application.UseCases.Leagues.UpdateTeam;
 using FootballManager.Application.UseCases.Leagues.AssignDivisionToSeason;
 using FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeagueFields;
 using FootballManager.Application.UseCases.Leagues.CreateField;
 using FootballManager.Application.UseCases.Leagues.UpdateField;
+using FootballManager.Application.UseCases.Leagues.GetCompetitionRule;
+using FootballManager.Application.UseCases.Leagues.UpsertCompetitionRule;
+using FootballManager.Application.UseCases.Leagues.GetMatchRule;
+using FootballManager.Application.UseCases.Leagues.UpsertMatchRule;
+using FootballManager.Application.UseCases.Leagues.GetFieldAvailabilities;
+using FootballManager.Application.UseCases.Leagues.SaveFieldAvailabilities;
+using FootballManager.Application.UseCases.Leagues.GetFieldBlackouts;
+using FootballManager.Application.UseCases.Leagues.CreateFieldBlackout;
+using FootballManager.Application.UseCases.Leagues.DeleteFieldBlackout;
 using FootballManager.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -42,12 +52,22 @@ namespace FootballManager.Api.Controllers
         private readonly ICreateDivisionUseCase _createDivisionUseCase;
         private readonly IUpdateDivisionUseCase _updateDivisionUseCase;
         private readonly ICreateTeamUseCase _createTeamUseCase;
+        private readonly IBulkCreateTeamsUseCase _bulkCreateTeamsUseCase;
         private readonly IUpdateTeamUseCase _updateTeamUseCase;
         private readonly IAssignDivisionToSeasonUseCase _assignDivisionToSeasonUseCase;
         private readonly IAssignTeamToDivisionSeasonUseCase _assignTeamToDivisionSeasonUseCase;
         private readonly IGetLeagueFieldsUseCase _getLeagueFieldsUseCase;
         private readonly ICreateFieldUseCase _createFieldUseCase;
         private readonly IUpdateFieldUseCase _updateFieldUseCase;
+        private readonly IGetCompetitionRuleUseCase _getCompetitionRuleUseCase;
+        private readonly IUpsertCompetitionRuleUseCase _upsertCompetitionRuleUseCase;
+        private readonly IGetMatchRuleUseCase _getMatchRuleUseCase;
+        private readonly IUpsertMatchRuleUseCase _upsertMatchRuleUseCase;
+        private readonly IGetFieldAvailabilitiesUseCase _getFieldAvailabilitiesUseCase;
+        private readonly ISaveFieldAvailabilitiesUseCase _saveFieldAvailabilitiesUseCase;
+        private readonly IGetFieldBlackoutsUseCase _getFieldBlackoutsUseCase;
+        private readonly ICreateFieldBlackoutUseCase _createFieldBlackoutUseCase;
+        private readonly IDeleteFieldBlackoutUseCase _deleteFieldBlackoutUseCase;
 
         public LeaguesController(
             ICreateLeagueUseCase createLeagueUseCase,
@@ -62,12 +82,22 @@ namespace FootballManager.Api.Controllers
             ICreateDivisionUseCase createDivisionUseCase,
             IUpdateDivisionUseCase updateDivisionUseCase,
             ICreateTeamUseCase createTeamUseCase,
+            IBulkCreateTeamsUseCase bulkCreateTeamsUseCase,
             IUpdateTeamUseCase updateTeamUseCase,
             IAssignDivisionToSeasonUseCase assignDivisionToSeasonUseCase,
             IAssignTeamToDivisionSeasonUseCase assignTeamToDivisionSeasonUseCase,
             IGetLeagueFieldsUseCase getLeagueFieldsUseCase,
             ICreateFieldUseCase createFieldUseCase,
-            IUpdateFieldUseCase updateFieldUseCase)
+            IUpdateFieldUseCase updateFieldUseCase,
+            IGetCompetitionRuleUseCase getCompetitionRuleUseCase,
+            IUpsertCompetitionRuleUseCase upsertCompetitionRuleUseCase,
+            IGetMatchRuleUseCase getMatchRuleUseCase,
+            IUpsertMatchRuleUseCase upsertMatchRuleUseCase,
+            IGetFieldAvailabilitiesUseCase getFieldAvailabilitiesUseCase,
+            ISaveFieldAvailabilitiesUseCase saveFieldAvailabilitiesUseCase,
+            IGetFieldBlackoutsUseCase getFieldBlackoutsUseCase,
+            ICreateFieldBlackoutUseCase createFieldBlackoutUseCase,
+            IDeleteFieldBlackoutUseCase deleteFieldBlackoutUseCase)
         {
             _createLeagueUseCase = createLeagueUseCase ?? throw new ArgumentNullException(nameof(createLeagueUseCase));
             _createSeasonUseCase = createSeasonUseCase ?? throw new ArgumentNullException(nameof(createSeasonUseCase));
@@ -81,12 +111,22 @@ namespace FootballManager.Api.Controllers
             _createDivisionUseCase = createDivisionUseCase ?? throw new ArgumentNullException(nameof(createDivisionUseCase));
             _updateDivisionUseCase = updateDivisionUseCase ?? throw new ArgumentNullException(nameof(updateDivisionUseCase));
             _createTeamUseCase = createTeamUseCase ?? throw new ArgumentNullException(nameof(createTeamUseCase));
+            _bulkCreateTeamsUseCase = bulkCreateTeamsUseCase ?? throw new ArgumentNullException(nameof(bulkCreateTeamsUseCase));
             _updateTeamUseCase = updateTeamUseCase ?? throw new ArgumentNullException(nameof(updateTeamUseCase));
             _assignDivisionToSeasonUseCase = assignDivisionToSeasonUseCase ?? throw new ArgumentNullException(nameof(assignDivisionToSeasonUseCase));
             _assignTeamToDivisionSeasonUseCase = assignTeamToDivisionSeasonUseCase ?? throw new ArgumentNullException(nameof(assignTeamToDivisionSeasonUseCase));
             _getLeagueFieldsUseCase = getLeagueFieldsUseCase ?? throw new ArgumentNullException(nameof(getLeagueFieldsUseCase));
             _createFieldUseCase = createFieldUseCase ?? throw new ArgumentNullException(nameof(createFieldUseCase));
             _updateFieldUseCase = updateFieldUseCase ?? throw new ArgumentNullException(nameof(updateFieldUseCase));
+            _getCompetitionRuleUseCase = getCompetitionRuleUseCase ?? throw new ArgumentNullException(nameof(getCompetitionRuleUseCase));
+            _upsertCompetitionRuleUseCase = upsertCompetitionRuleUseCase ?? throw new ArgumentNullException(nameof(upsertCompetitionRuleUseCase));
+            _getMatchRuleUseCase = getMatchRuleUseCase ?? throw new ArgumentNullException(nameof(getMatchRuleUseCase));
+            _upsertMatchRuleUseCase = upsertMatchRuleUseCase ?? throw new ArgumentNullException(nameof(upsertMatchRuleUseCase));
+            _getFieldAvailabilitiesUseCase = getFieldAvailabilitiesUseCase ?? throw new ArgumentNullException(nameof(getFieldAvailabilitiesUseCase));
+            _saveFieldAvailabilitiesUseCase = saveFieldAvailabilitiesUseCase ?? throw new ArgumentNullException(nameof(saveFieldAvailabilitiesUseCase));
+            _getFieldBlackoutsUseCase = getFieldBlackoutsUseCase ?? throw new ArgumentNullException(nameof(getFieldBlackoutsUseCase));
+            _createFieldBlackoutUseCase = createFieldBlackoutUseCase ?? throw new ArgumentNullException(nameof(createFieldBlackoutUseCase));
+            _deleteFieldBlackoutUseCase = deleteFieldBlackoutUseCase ?? throw new ArgumentNullException(nameof(deleteFieldBlackoutUseCase));
         }
 
         [HttpPost]
@@ -235,6 +275,18 @@ namespace FootballManager.Api.Controllers
             return CreatedAtAction(nameof(GetTeams), new { leagueId }, response);
         }
 
+        [HttpPost("{leagueId}/teams/bulk")]
+        public async Task<IActionResult> BulkCreateTeams([FromRoute] Guid leagueId, [FromBody] BulkCreateTeamsRequest request, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            request.LeagueId = leagueId;
+            request.UserId = userId;
+            var response = await _bulkCreateTeamsUseCase.ExecuteAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetTeams), new { leagueId }, response);
+        }
+
         [HttpPut("{leagueId}/teams/{teamId}")]
         public async Task<IActionResult> UpdateTeam([FromRoute] Guid leagueId, [FromRoute] Guid teamId, [FromBody] UpdateTeamRequest request, CancellationToken cancellationToken)
         {
@@ -308,6 +360,113 @@ namespace FootballManager.Api.Controllers
             request.FieldId = fieldId;
             request.UserId = userId;
             await _updateFieldUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpGet("{leagueId}/competition-rules")]
+        public async Task<IActionResult> GetCompetitionRule([FromRoute] Guid leagueId, [FromQuery] Guid? seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetCompetitionRuleRequest(leagueId, userId, seasonId);
+            var response = await _getCompetitionRuleUseCase.ExecuteAsync(request, cancellationToken);
+            if (response == null) return NotFound();
+            return Ok(response);
+        }
+
+        [HttpPut("{leagueId}/competition-rules")]
+        public async Task<IActionResult> UpsertCompetitionRule([FromRoute] Guid leagueId, [FromBody] UpsertCompetitionRuleRequest request, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            request.LeagueId = leagueId;
+            request.UserId = userId;
+            await _upsertCompetitionRuleUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpGet("{leagueId}/match-rules")]
+        public async Task<IActionResult> GetMatchRule([FromRoute] Guid leagueId, [FromQuery] Guid? seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetMatchRuleRequest(leagueId, userId, seasonId);
+            var response = await _getMatchRuleUseCase.ExecuteAsync(request, cancellationToken);
+            if (response == null) return NotFound();
+            return Ok(response);
+        }
+
+        [HttpPut("{leagueId}/match-rules")]
+        public async Task<IActionResult> UpsertMatchRule([FromRoute] Guid leagueId, [FromBody] UpsertMatchRuleRequest request, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            request.LeagueId = leagueId;
+            request.UserId = userId;
+            await _upsertMatchRuleUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpGet("{leagueId}/fields/{fieldId}/availability")]
+        public async Task<IActionResult> GetFieldAvailability([FromRoute] Guid leagueId, [FromRoute] Guid fieldId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetFieldAvailabilitiesRequest(leagueId, fieldId, userId);
+            var response = await _getFieldAvailabilitiesUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response);
+        }
+
+        [HttpPut("{leagueId}/fields/{fieldId}/availability")]
+        public async Task<IActionResult> SaveFieldAvailability([FromRoute] Guid leagueId, [FromRoute] Guid fieldId, [FromBody] SaveFieldAvailabilitiesRequest request, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            request.LeagueId = leagueId;
+            request.FieldId = fieldId;
+            request.UserId = userId;
+            await _saveFieldAvailabilitiesUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpGet("{leagueId}/fields/{fieldId}/blackouts")]
+        public async Task<IActionResult> GetFieldBlackouts([FromRoute] Guid leagueId, [FromRoute] Guid fieldId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetFieldBlackoutsRequest(leagueId, fieldId, userId);
+            var response = await _getFieldBlackoutsUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response);
+        }
+
+        [HttpPost("{leagueId}/fields/{fieldId}/blackouts")]
+        public async Task<IActionResult> CreateFieldBlackout([FromRoute] Guid leagueId, [FromRoute] Guid fieldId, [FromBody] CreateFieldBlackoutRequest request, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            request.LeagueId = leagueId;
+            request.FieldId = fieldId;
+            request.UserId = userId;
+            var response = await _createFieldBlackoutUseCase.ExecuteAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetFieldBlackouts), new { leagueId, fieldId }, new { id = response.Id });
+        }
+
+        [HttpDelete("{leagueId}/fields/{fieldId}/blackouts/{blackoutId}")]
+        public async Task<IActionResult> DeleteFieldBlackout([FromRoute] Guid leagueId, [FromRoute] Guid fieldId, [FromRoute] Guid blackoutId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new DeleteFieldBlackoutRequest { LeagueId = leagueId, FieldId = fieldId, BlackoutId = blackoutId, UserId = userId };
+            await _deleteFieldBlackoutUseCase.ExecuteAsync(request, cancellationToken);
             return NoContent();
         }
 

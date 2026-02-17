@@ -15,10 +15,11 @@ namespace FootballManager.Domain.Entities
         public int BreakMinutes { get; private set; }
         public int WarmupBufferMinutes { get; private set; }
         public int SlotGranularityMinutes { get; private set; }
+        public int FirstMatchToleranceMinutes { get; private set; }
 
         protected MatchRule() { }
 
-        public MatchRule(League league, int halfMinutes, int breakMinutes, int warmupBufferMinutes = 0, int slotGranularityMinutes = 5, Season season = null)
+        public MatchRule(League league, int halfMinutes, int breakMinutes, int warmupBufferMinutes = 0, int slotGranularityMinutes = 5, int firstMatchToleranceMinutes = 0, Season season = null)
         {
             League = league ?? throw new ArgumentNullException(nameof(league));
             LeagueId = league.Id;
@@ -28,14 +29,16 @@ namespace FootballManager.Domain.Entities
             BreakMinutes = breakMinutes;
             WarmupBufferMinutes = warmupBufferMinutes;
             SlotGranularityMinutes = slotGranularityMinutes;
+            FirstMatchToleranceMinutes = firstMatchToleranceMinutes;
         }
 
-        public void UpdateDetails(int halfMinutes, int breakMinutes, int warmupBufferMinutes, int slotGranularityMinutes)
+        public void UpdateDetails(int halfMinutes, int breakMinutes, int warmupBufferMinutes, int slotGranularityMinutes, int firstMatchToleranceMinutes = 0)
         {
             HalfMinutes = halfMinutes;
             BreakMinutes = breakMinutes;
             WarmupBufferMinutes = warmupBufferMinutes;
             SlotGranularityMinutes = slotGranularityMinutes;
+            FirstMatchToleranceMinutes = firstMatchToleranceMinutes;
             UpdateTimestamp();
         }
     }

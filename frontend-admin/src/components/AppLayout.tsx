@@ -22,6 +22,9 @@ import ViewListIcon from '@mui/icons-material/ViewList'
 import GroupsIcon from '@mui/icons-material/Groups'
 import PlaceIcon from '@mui/icons-material/Place'
 import SettingsIcon from '@mui/icons-material/Settings'
+import RuleIcon from '@mui/icons-material/Rule'
+import ScheduleIcon from '@mui/icons-material/Schedule'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
 import { useAuth } from '../contexts/AuthContext'
 import { LeagueSelector } from './LeagueSelector'
 
@@ -34,7 +37,13 @@ const NAV_ITEMS = [
   { to: '/season-setup', label: 'Season setup', icon: <SettingsIcon /> },
   { to: '/divisions', label: 'Divisions', icon: <ViewListIcon /> },
   { to: '/teams', label: 'Teams', icon: <GroupsIcon /> },
+  { to: '/teams/bulk', label: 'Bulk Import', icon: <UploadFileIcon /> },
   { to: '/fields', label: 'Fields', icon: <PlaceIcon /> },
+]
+
+const COMPETITION_SETTINGS_ITEMS = [
+  { to: '/competition-rules', label: 'Competition rules', icon: <RuleIcon /> },
+  { to: '/match-rules', label: 'Match rules', icon: <ScheduleIcon /> },
 ]
 
 export function AppLayout() {
@@ -47,12 +56,37 @@ export function AppLayout() {
   const drawer = (
     <Box sx={{ pt: 2 }}>
       <List component="nav" sx={{ px: 1 }}>
-        {NAV_ITEMS.map(({ to, label, icon }) => (
+        {NAV_ITEMS.map(({ to, label, icon }) => {
+          const selected =
+            to === '/'
+              ? location.pathname === '/' || location.pathname.startsWith('/leagues')
+              : to === '/teams'
+                ? location.pathname === '/teams' || (location.pathname.startsWith('/teams/') && location.pathname !== '/teams/bulk')
+                : location.pathname === to || location.pathname.startsWith(to + '/')
+          return (
           <ListItemButton
             key={to}
             component={RouterLink}
             to={to}
-            selected={to === '/' ? (location.pathname === '/' || location.pathname.startsWith('/leagues')) : location.pathname.startsWith(to)}
+            selected={selected}
+            onClick={() => !isDesktop && setMobileOpen(false)}
+          >
+            <ListItemIcon>{icon}</ListItemIcon>
+            <ListItemText primary={label} />
+          </ListItemButton>
+          )
+        })}
+      </List>
+      <Typography variant="overline" color="text.secondary" sx={{ px: 2, pt: 2, pb: 0.5, display: 'block' }}>
+        Competition settings
+      </Typography>
+      <List component="nav" sx={{ px: 1 }}>
+        {COMPETITION_SETTINGS_ITEMS.map(({ to, label, icon }) => (
+          <ListItemButton
+            key={to}
+            component={RouterLink}
+            to={to}
+            selected={location.pathname === to || location.pathname.includes(to.slice(1))}
             onClick={() => !isDesktop && setMobileOpen(false)}
           >
             <ListItemIcon>{icon}</ListItemIcon>
