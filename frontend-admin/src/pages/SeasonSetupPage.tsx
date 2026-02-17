@@ -6,14 +6,15 @@ import {
   Button,
   FormControl,
   InputLabel,
+  ListItemText,
   MenuItem,
   Select,
   Typography,
   CircularProgress,
   Chip,
   OutlinedInput,
-  ListItemText,
 } from '@mui/material'
+import CheckIcon from '@mui/icons-material/Check'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -153,6 +154,9 @@ export function SeasonSetupPage() {
             ))}
           </Select>
         </FormControl>
+        <Typography variant="body2" sx={{ mb: 0.5 }}>
+          Selected {teamIds.length} teams
+        </Typography>
         <FormControl fullWidth disabled={teamsLoading || !seasonId || !divisionId}>
           <InputLabel id="teams-label">Teams</InputLabel>
           <Select
@@ -173,7 +177,10 @@ export function SeasonSetupPage() {
           >
             {teams.map((t) => (
               <MenuItem key={t.id} value={t.id}>
-                <ListItemText primary={t.name} secondary={t.shortName || undefined} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  <ListItemText primary={t.name} secondary={t.shortName || undefined} />
+                  {teamIds.includes(t.id) && <CheckIcon fontSize="small" color="primary" />}
+                </Box>
               </MenuItem>
             ))}
           </Select>
