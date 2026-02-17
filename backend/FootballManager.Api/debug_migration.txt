@@ -1,0 +1,3 @@
+Current Dir: C:\myApps\futbolAppNet\backend\FootballManager.Api
+BasePath: C:\myApps\futbolAppNet\backend\FootballManager.Api
+ConnectionString found: True
