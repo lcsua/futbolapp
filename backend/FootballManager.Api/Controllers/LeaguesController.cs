@@ -18,6 +18,9 @@ using FootballManager.Application.UseCases.Leagues.UpdateTeam;
 using FootballManager.Application.UseCases.Leagues.AssignDivisionToSeason;
 using FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeason;
 using FootballManager.Application.UseCases.Leagues.GetTeamIdsAssignedToSeason;
+using FootballManager.Application.UseCases.Leagues.GetSeasonSetup;
+using FootballManager.Application.UseCases.Leagues.SaveSeasonSetup;
+using FootballManager.Application.UseCases.Leagues.CopySeasonFrom;
 using FootballManager.Application.UseCases.Leagues.GetLeagueFields;
 using FootballManager.Application.UseCases.Leagues.CreateField;
 using FootballManager.Application.UseCases.Leagues.UpdateField;
@@ -58,6 +61,9 @@ namespace FootballManager.Api.Controllers
         private readonly IAssignDivisionToSeasonUseCase _assignDivisionToSeasonUseCase;
         private readonly IAssignTeamToDivisionSeasonUseCase _assignTeamToDivisionSeasonUseCase;
         private readonly IGetTeamIdsAssignedToSeasonUseCase _getTeamIdsAssignedToSeasonUseCase;
+        private readonly IGetSeasonSetupUseCase _getSeasonSetupUseCase;
+        private readonly ISaveSeasonSetupUseCase _saveSeasonSetupUseCase;
+        private readonly ICopySeasonFromUseCase _copySeasonFromUseCase;
         private readonly IGetLeagueFieldsUseCase _getLeagueFieldsUseCase;
         private readonly ICreateFieldUseCase _createFieldUseCase;
         private readonly IUpdateFieldUseCase _updateFieldUseCase;
@@ -89,6 +95,9 @@ namespace FootballManager.Api.Controllers
             IAssignDivisionToSeasonUseCase assignDivisionToSeasonUseCase,
             IAssignTeamToDivisionSeasonUseCase assignTeamToDivisionSeasonUseCase,
             IGetTeamIdsAssignedToSeasonUseCase getTeamIdsAssignedToSeasonUseCase,
+            IGetSeasonSetupUseCase getSeasonSetupUseCase,
+            ISaveSeasonSetupUseCase saveSeasonSetupUseCase,
+            ICopySeasonFromUseCase copySeasonFromUseCase,
             IGetLeagueFieldsUseCase getLeagueFieldsUseCase,
             ICreateFieldUseCase createFieldUseCase,
             IUpdateFieldUseCase updateFieldUseCase,
@@ -119,6 +128,9 @@ namespace FootballManager.Api.Controllers
             _assignDivisionToSeasonUseCase = assignDivisionToSeasonUseCase ?? throw new ArgumentNullException(nameof(assignDivisionToSeasonUseCase));
             _assignTeamToDivisionSeasonUseCase = assignTeamToDivisionSeasonUseCase ?? throw new ArgumentNullException(nameof(assignTeamToDivisionSeasonUseCase));
             _getTeamIdsAssignedToSeasonUseCase = getTeamIdsAssignedToSeasonUseCase ?? throw new ArgumentNullException(nameof(getTeamIdsAssignedToSeasonUseCase));
+            _getSeasonSetupUseCase = getSeasonSetupUseCase ?? throw new ArgumentNullException(nameof(getSeasonSetupUseCase));
+            _saveSeasonSetupUseCase = saveSeasonSetupUseCase ?? throw new ArgumentNullException(nameof(saveSeasonSetupUseCase));
+            _copySeasonFromUseCase = copySeasonFromUseCase ?? throw new ArgumentNullException(nameof(copySeasonFromUseCase));
             _getLeagueFieldsUseCase = getLeagueFieldsUseCase ?? throw new ArgumentNullException(nameof(getLeagueFieldsUseCase));
             _createFieldUseCase = createFieldUseCase ?? throw new ArgumentNullException(nameof(createFieldUseCase));
             _updateFieldUseCase = updateFieldUseCase ?? throw new ArgumentNullException(nameof(updateFieldUseCase));
@@ -340,6 +352,41 @@ namespace FootballManager.Api.Controllers
             request.UserId = userId;
             var response = await _assignTeamToDivisionSeasonUseCase.ExecuteAsync(request, cancellationToken);
             return Created(string.Empty, response);
+        }
+
+        [HttpGet("{leagueId}/seasons/{seasonId}/setup")]
+        public async Task<IActionResult> GetSeasonSetup([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetSeasonSetupRequest(leagueId, seasonId, userId);
+            var response = await _getSeasonSetupUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response);
+        }
+
+        [HttpPut("{leagueId}/seasons/{seasonId}/setup")]
+        public async Task<IActionResult> SaveSeasonSetup([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, [FromBody] SaveSeasonSetupRequest request, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            request.LeagueId = leagueId;
+            request.SeasonId = seasonId;
+            request.UserId = userId;
+            await _saveSeasonSetupUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPost("{leagueId}/seasons/{seasonId}/copy-from/{sourceSeasonId}")]
+        public async Task<IActionResult> CopySeasonFrom([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, [FromRoute] Guid sourceSeasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new CopySeasonFromRequest(leagueId, seasonId, sourceSeasonId, userId);
+            await _copySeasonFromUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
         }
 
         [HttpGet("{leagueId}/fields")]

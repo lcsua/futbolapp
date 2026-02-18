@@ -35,6 +35,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Leagues', icon: <EmojiEventsIcon /> },
   { to: '/seasons', label: 'Seasons', icon: <CalendarMonthIcon /> },
   { to: '/season-setup', label: 'Season setup', icon: <SettingsIcon /> },
+  { to: '/season-setup/advanced', label: 'Advanced season setup', icon: <SettingsIcon /> },
   { to: '/divisions', label: 'Divisions', icon: <ViewListIcon /> },
   { to: '/teams', label: 'Teams', icon: <GroupsIcon /> },
   { to: '/teams/bulk', label: 'Bulk Import', icon: <UploadFileIcon /> },

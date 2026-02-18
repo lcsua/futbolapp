@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Interfaces.Repositories;
@@ -29,6 +31,17 @@ namespace FootballManager.Infrastructure.Repositories
         {
             return await _context.DivisionSeasons
                 .SingleOrDefaultAsync(ds => ds.SeasonId == seasonId && ds.DivisionId == divisionId, cancellationToken);
+        }
+
+        public async Task<List<DivisionSeason>> GetBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default)
+        {
+            return await _context.DivisionSeasons
+                .Include(ds => ds.Division)
+                .Include(ds => ds.TeamAssignments)
+                .ThenInclude(ta => ta.Team)
+                .Where(ds => ds.SeasonId == seasonId)
+                .OrderBy(ds => ds.Division.Name)
+                .ToListAsync(cancellationToken);
         }
 
         public async Task AddAsync(DivisionSeason divisionSeason, CancellationToken cancellationToken = default)
