@@ -43,6 +43,7 @@ namespace FootballManager.Api.Middleware
             {
                 case ArgumentException _:
                 case LeagueAlreadyExistsException _:
+                case BusinessException _:
                     statusCode = HttpStatusCode.BadRequest;
                     break;
                 case ForbiddenAccessException _:

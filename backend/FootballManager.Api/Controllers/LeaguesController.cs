@@ -17,6 +17,7 @@ using FootballManager.Application.UseCases.Leagues.BulkCreateTeams;
 using FootballManager.Application.UseCases.Leagues.UpdateTeam;
 using FootballManager.Application.UseCases.Leagues.AssignDivisionToSeason;
 using FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeason;
+using FootballManager.Application.UseCases.Leagues.GetTeamIdsAssignedToSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeagueFields;
 using FootballManager.Application.UseCases.Leagues.CreateField;
 using FootballManager.Application.UseCases.Leagues.UpdateField;
@@ -56,6 +57,7 @@ namespace FootballManager.Api.Controllers
         private readonly IUpdateTeamUseCase _updateTeamUseCase;
         private readonly IAssignDivisionToSeasonUseCase _assignDivisionToSeasonUseCase;
         private readonly IAssignTeamToDivisionSeasonUseCase _assignTeamToDivisionSeasonUseCase;
+        private readonly IGetTeamIdsAssignedToSeasonUseCase _getTeamIdsAssignedToSeasonUseCase;
         private readonly IGetLeagueFieldsUseCase _getLeagueFieldsUseCase;
         private readonly ICreateFieldUseCase _createFieldUseCase;
         private readonly IUpdateFieldUseCase _updateFieldUseCase;
@@ -86,6 +88,7 @@ namespace FootballManager.Api.Controllers
             IUpdateTeamUseCase updateTeamUseCase,
             IAssignDivisionToSeasonUseCase assignDivisionToSeasonUseCase,
             IAssignTeamToDivisionSeasonUseCase assignTeamToDivisionSeasonUseCase,
+            IGetTeamIdsAssignedToSeasonUseCase getTeamIdsAssignedToSeasonUseCase,
             IGetLeagueFieldsUseCase getLeagueFieldsUseCase,
             ICreateFieldUseCase createFieldUseCase,
             IUpdateFieldUseCase updateFieldUseCase,
@@ -115,6 +118,7 @@ namespace FootballManager.Api.Controllers
             _updateTeamUseCase = updateTeamUseCase ?? throw new ArgumentNullException(nameof(updateTeamUseCase));
             _assignDivisionToSeasonUseCase = assignDivisionToSeasonUseCase ?? throw new ArgumentNullException(nameof(assignDivisionToSeasonUseCase));
             _assignTeamToDivisionSeasonUseCase = assignTeamToDivisionSeasonUseCase ?? throw new ArgumentNullException(nameof(assignTeamToDivisionSeasonUseCase));
+            _getTeamIdsAssignedToSeasonUseCase = getTeamIdsAssignedToSeasonUseCase ?? throw new ArgumentNullException(nameof(getTeamIdsAssignedToSeasonUseCase));
             _getLeagueFieldsUseCase = getLeagueFieldsUseCase ?? throw new ArgumentNullException(nameof(getLeagueFieldsUseCase));
             _createFieldUseCase = createFieldUseCase ?? throw new ArgumentNullException(nameof(createFieldUseCase));
             _updateFieldUseCase = updateFieldUseCase ?? throw new ArgumentNullException(nameof(updateFieldUseCase));
@@ -298,6 +302,17 @@ namespace FootballManager.Api.Controllers
             request.UserId = userId;
             await _updateTeamUseCase.ExecuteAsync(request, cancellationToken);
             return NoContent();
+        }
+
+        [HttpGet("{leagueId}/seasons/{seasonId}/assigned-team-ids")]
+        public async Task<IActionResult> GetTeamIdsAssignedToSeason([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetTeamIdsAssignedToSeasonRequest(leagueId, seasonId, userId);
+            var response = await _getTeamIdsAssignedToSeasonUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response);
         }
 
         [HttpPost("{leagueId}/seasons/{seasonId}/divisions")]

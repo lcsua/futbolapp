@@ -67,8 +67,9 @@ namespace FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeaso
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
 
-            if (await _teamDivisionSeasonRepository.ExistsAsync(request.TeamId, divisionSeason.Id, cancellationToken))
-                throw new InvalidOperationException("Team is already assigned to this division in this season.");
+            var teamIdsInSeason = await _teamDivisionSeasonRepository.GetTeamIdsAssignedToSeasonAsync(request.SeasonId, cancellationToken);
+            if (teamIdsInSeason.Contains(request.TeamId))
+                throw new BusinessException($"Team {team.Name} is already assigned to this season.");
 
             var assignment = new TeamDivisionSeason(team, divisionSeason);
             await _teamDivisionSeasonRepository.AddAsync(assignment, cancellationToken);

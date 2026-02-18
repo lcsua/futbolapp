@@ -47,6 +47,12 @@ export function SeasonSetupPage() {
     queryFn: ({ signal }) => teamsService.getByLeagueId(leagueId!, signal),
     enabled: !!leagueId,
   })
+  const { data: assignedData } = useQuery({
+    queryKey: ['leagues', leagueId, 'seasons', seasonId, 'assigned-team-ids'],
+    queryFn: ({ signal }) => seasonsService.getAssignedTeamIds(leagueId!, seasonId, signal),
+    enabled: !!leagueId && !!seasonId,
+  })
+  const assignedTeamIds = assignedData?.teamIds ?? []
 
   const assignMutation = useMutation({
     mutationFn: async () => {
@@ -71,6 +77,7 @@ export function SeasonSetupPage() {
       setAssignSuccess(`${count} team(s) assigned.`)
       setTeamIds([])
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons'] })
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'assigned-team-ids'] })
     },
     onError: (err) => {
       setAssignError(err instanceof Error ? err.message : 'Assignment failed')
@@ -81,7 +88,8 @@ export function SeasonSetupPage() {
   const handleDivisionChange = (e: SelectChangeEvent<string>) => setDivisionId(e.target.value)
   const handleTeamsChange = (e: SelectChangeEvent<string[]>) => {
     const value = e.target.value
-    setTeamIds(typeof value === 'string' ? value.split(',') : value)
+    const next = typeof value === 'string' ? value.split(',') : value
+    setTeamIds(next.filter((id) => !assignedTeamIds.includes(id)))
   }
 
   const canSave = !!leagueId && !!seasonId && !!divisionId && teamIds.length > 0 && !assignMutation.isPending
@@ -175,14 +183,21 @@ export function SeasonSetupPage() {
               </Box>
             )}
           >
-            {teams.map((t) => (
-              <MenuItem key={t.id} value={t.id}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                  <ListItemText primary={t.name} secondary={t.shortName || undefined} />
-                  {teamIds.includes(t.id) && <CheckIcon fontSize="small" color="primary" />}
-                </Box>
-              </MenuItem>
-            ))}
+            {teams.map((t) => {
+              const alreadyAssigned = assignedTeamIds.includes(t.id)
+              return (
+                <MenuItem key={t.id} value={t.id} disabled={alreadyAssigned}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <ListItemText
+                      primary={alreadyAssigned ? `${t.name} (Already assigned)` : t.name}
+                      secondary={alreadyAssigned ? undefined : t.shortName || undefined}
+                      primaryTypographyProps={alreadyAssigned ? { color: 'text.secondary' } : undefined}
+                    />
+                    {teamIds.includes(t.id) && <CheckIcon fontSize="small" color="primary" />}
+                  </Box>
+                </MenuItem>
+              )
+            })}
           </Select>
         </FormControl>
         <Button
