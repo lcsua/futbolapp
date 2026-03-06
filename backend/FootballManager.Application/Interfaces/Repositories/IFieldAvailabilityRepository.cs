@@ -9,6 +9,7 @@ namespace FootballManager.Application.Interfaces.Repositories
     public interface IFieldAvailabilityRepository
     {
         Task<List<FieldAvailability>> GetByFieldIdAsync(Guid fieldId, CancellationToken cancellationToken = default);
+        Task<List<FieldAvailability>> GetByFieldIdsAsync(IEnumerable<Guid> fieldIds, CancellationToken cancellationToken = default);
         Task AddAsync(FieldAvailability availability, CancellationToken cancellationToken = default);
         void Update(FieldAvailability availability);
         void Remove(FieldAvailability availability);

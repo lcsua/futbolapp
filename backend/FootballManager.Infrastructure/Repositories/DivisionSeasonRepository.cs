@@ -24,6 +24,8 @@ namespace FootballManager.Infrastructure.Repositories
             return await _context.DivisionSeasons
                 .Include(ds => ds.Season)
                 .Include(ds => ds.Division)
+                .Include(ds => ds.TeamAssignments)
+                .ThenInclude(ta => ta.Team)
                 .SingleOrDefaultAsync(ds => ds.Id == id, cancellationToken);
         }
 

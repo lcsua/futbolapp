@@ -28,6 +28,20 @@ namespace FootballManager.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<List<FieldAvailability>> GetByFieldIdsAsync(IEnumerable<Guid> fieldIds, CancellationToken cancellationToken = default)
+        {
+            var ids = fieldIds.ToList();
+            if (ids.Count == 0)
+                return new List<FieldAvailability>();
+
+            return await _context.FieldAvailabilities
+                .AsNoTracking()
+                .Where(a => ids.Contains(a.FieldId))
+                .OrderBy(a => a.FieldId)
+                .ThenBy(a => a.DayOfWeek)
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task AddAsync(FieldAvailability availability, CancellationToken cancellationToken = default)
         {
             await _context.FieldAvailabilities.AddAsync(availability, cancellationToken);

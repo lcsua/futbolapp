@@ -27,6 +27,7 @@ namespace FootballManager.Infrastructure
             services.AddScoped<IFieldBlackoutRepository, FieldBlackoutRepository>();
             services.AddScoped<IDivisionSeasonRepository, DivisionSeasonRepository>();
             services.AddScoped<ITeamDivisionSeasonRepository, TeamDivisionSeasonRepository>();
+            services.AddScoped<IFixtureRepository, FixtureRepository>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 

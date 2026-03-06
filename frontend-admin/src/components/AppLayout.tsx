@@ -24,6 +24,7 @@ import PlaceIcon from '@mui/icons-material/Place'
 import SettingsIcon from '@mui/icons-material/Settings'
 import RuleIcon from '@mui/icons-material/Rule'
 import ScheduleIcon from '@mui/icons-material/Schedule'
+import EventIcon from '@mui/icons-material/Event'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import { useAuth } from '../contexts/AuthContext'
 import { LeagueSelector } from './LeagueSelector'
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { to: '/teams', label: 'Teams', icon: <GroupsIcon /> },
   { to: '/teams/bulk', label: 'Bulk Import', icon: <UploadFileIcon /> },
   { to: '/fields', label: 'Fields', icon: <PlaceIcon /> },
+  { to: '/fixtures', label: 'Fixtures', icon: <EventIcon /> },
 ]
 
 const COMPETITION_SETTINGS_ITEMS = [
@@ -166,8 +168,8 @@ export function AppLayout() {
           minHeight: '100vh',
           mt: { xs: 7, sm: 8 },
           p: { xs: 2, sm: 3 },
-          mx: 'auto',
-          maxWidth: 1000,
+          mx: location.pathname.includes('season-setup/advanced') ? 0 : 'auto',
+          maxWidth: location.pathname.includes('season-setup/advanced') ? 'none' : 1000,
         }}
       >
         <Outlet />

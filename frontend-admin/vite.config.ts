@@ -12,5 +12,8 @@ export default defineConfig({
         secure: false,
       },
     },
+    allowedHosts: [
+      '3e29-181-177-24-84.ngrok-free.app'
+    ]
   },
 })

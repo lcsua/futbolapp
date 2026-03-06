@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import {
   Alert,
@@ -13,6 +13,7 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
+  Paper,
   Select,
   Typography,
   CircularProgress,
@@ -36,7 +37,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { seasonsService, type SeasonSetupResponse, type TeamInSetup } from '../api/seasons'
+import { seasonsService, type TeamInSetup } from '../api/seasons'
 import { useLeagueId } from '../contexts/LeagueContext'
 
 const UNASSIGNED_ID = 'unassigned'
@@ -72,7 +73,13 @@ function TeamCard({ team }: { team: TeamInSetup }) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      sx={{ mb: 1, cursor: 'grab', boxShadow: 1, ...style }}
+      elevation={1}
+      sx={{
+        mb: 1,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        flexShrink: 0,
+        ...style,
+      }}
       variant="outlined"
     >
       <TeamCardContent team={team} />
@@ -87,6 +94,7 @@ function DroppableColumn({
   teamIds,
   onRenderCard,
   colorHint = 'default',
+  isSticky = false,
 }: {
   id: string
   title: string
@@ -94,22 +102,29 @@ function DroppableColumn({
   teamIds: string[]
   onRenderCard: (team: TeamInSetup) => React.ReactNode
   colorHint?: 'default' | 'unassigned'
+  isSticky?: boolean
 }) {
   const { isOver, setNodeRef } = useDroppable({ id })
   return (
-    <Card
+    <Paper
       ref={setNodeRef}
+      elevation={2}
       sx={{
-        minWidth: 220,
-        maxWidth: 260,
+        minWidth: { xs: 260, sm: 280 },
         flexShrink: 0,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: 2,
         border: isOver ? 2 : 0,
         borderColor: 'primary.main',
         bgcolor: colorHint === 'unassigned' ? 'action.hover' : 'background.paper',
+        ...(isSticky && {
+          position: 'sticky',
+          left: 0,
+          zIndex: 2,
+          bgcolor: 'background.default',
+          boxShadow: '2px 0 8px rgba(0,0,0,0.08)',
+        }),
       }}
     >
       <CardContent sx={{ pb: 0, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -131,7 +146,7 @@ function DroppableColumn({
           )}
         </Box>
       </CardContent>
-    </Card>
+    </Paper>
   )
 }
 
@@ -290,6 +305,35 @@ export function AdvancedSeasonSetupPage() {
     [seasons, seasonId]
   )
 
+  const boardScrollRef = useRef<HTMLDivElement>(null)
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const [spacerWidth, setSpacerWidth] = useState(0)
+
+  const handleBoardScroll = () => {
+    if (topScrollRef.current && boardScrollRef.current) {
+      topScrollRef.current.scrollLeft = boardScrollRef.current.scrollLeft
+    }
+  }
+
+  const handleTopScroll = () => {
+    if (boardScrollRef.current && topScrollRef.current) {
+      boardScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft
+    }
+  }
+
+  useLayoutEffect(() => {
+    if (!boardScrollRef.current || !board) return
+    const updateWidth = () => {
+      if (boardScrollRef.current) {
+        setSpacerWidth(boardScrollRef.current.scrollWidth)
+      }
+    }
+    updateWidth()
+    const ro = new ResizeObserver(updateWidth)
+    ro.observe(boardScrollRef.current)
+    return () => ro.disconnect()
+  }, [board])
+
   if (!leagueId) {
     return (
       <Alert severity="error" action={<Button component={RouterLink} to="/">Go to Leagues</Button>}>
@@ -299,7 +343,7 @@ export function AdvancedSeasonSetupPage() {
   }
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', px: { xs: 0, sm: 1 } }}>
       <Button component={RouterLink} to="/season-setup" startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
         Back to season setup
       </Button>
@@ -398,39 +442,59 @@ export function AdvancedSeasonSetupPage() {
 
       {!setupLoading && seasonId && board && (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <Box
-            sx={{
-              display: 'flex',
-              gap: 2,
-              overflowX: 'auto',
-              pb: 2,
-              minHeight: 380,
-              alignItems: 'stretch',
-            }}
-          >
-            <DroppableColumn
-              id={UNASSIGNED_ID}
-              title="Unassigned Teams"
-              teams={board.unassignedTeams}
-              teamIds={board.unassignedTeams.map((t) => t.id)}
-              colorHint="unassigned"
-              onRenderCard={(team) => <TeamCard key={team.id} team={team} />}
-            />
-            {board.divisions.map((div) => (
+          <Box sx={{ width: '100%' }}>
+            <Box
+              ref={topScrollRef}
+              onScroll={handleTopScroll}
+              sx={{
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                pb: 1,
+                mb: 0,
+                '&::-webkit-scrollbar': { height: 8 },
+              }}
+            >
+              <Box sx={{ width: spacerWidth || '100%', minWidth: '100%', height: 1 }} />
+            </Box>
+            <Box
+              ref={boardScrollRef}
+              onScroll={handleBoardScroll}
+              sx={{
+                display: 'flex',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                gap: 3,
+                pb: 2,
+                minHeight: 380,
+                alignItems: 'stretch',
+                '&::-webkit-scrollbar': { height: 8 },
+              }}
+            >
               <DroppableColumn
-                key={div.divisionId}
-                id={div.divisionId}
-                title={div.divisionName}
-                teams={div.teams}
-                teamIds={div.teams.map((t) => t.id)}
+                id={UNASSIGNED_ID}
+                title="Unassigned Teams"
+                teams={board.unassignedTeams}
+                teamIds={board.unassignedTeams.map((t) => t.id)}
+                colorHint="unassigned"
+                isSticky
                 onRenderCard={(team) => <TeamCard key={team.id} team={team} />}
               />
-            ))}
+              {board.divisions.map((div) => (
+                <DroppableColumn
+                  key={div.divisionId}
+                  id={div.divisionId}
+                  title={div.divisionName}
+                  teams={div.teams}
+                  teamIds={div.teams.map((t) => t.id)}
+                  onRenderCard={(team) => <TeamCard key={team.id} team={team} />}
+                />
+              ))}
+            </Box>
           </Box>
 
           <DragOverlay>
             {activeTeam ? (
-              <Card sx={{ boxShadow: 3, cursor: 'grabbing' }} variant="outlined">
+              <Card elevation={1} sx={{ cursor: 'grabbing' }} variant="outlined">
                 <TeamCardContent team={activeTeam} />
               </Card>
             ) : null}

@@ -33,6 +33,9 @@ using FootballManager.Application.UseCases.Leagues.SaveFieldAvailabilities;
 using FootballManager.Application.UseCases.Leagues.GetFieldBlackouts;
 using FootballManager.Application.UseCases.Leagues.CreateFieldBlackout;
 using FootballManager.Application.UseCases.Leagues.DeleteFieldBlackout;
+using FootballManager.Application.UseCases.Leagues.GenerateSeasonFixtures;
+using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
+using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
 using FootballManager.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -76,6 +79,9 @@ namespace FootballManager.Api.Controllers
         private readonly IGetFieldBlackoutsUseCase _getFieldBlackoutsUseCase;
         private readonly ICreateFieldBlackoutUseCase _createFieldBlackoutUseCase;
         private readonly IDeleteFieldBlackoutUseCase _deleteFieldBlackoutUseCase;
+        private readonly IGenerateSeasonFixturesUseCase _generateSeasonFixturesUseCase;
+        private readonly ICommitSeasonFixturesUseCase _commitSeasonFixturesUseCase;
+        private readonly IGetSeasonFixturesUseCase _getSeasonFixturesUseCase;
 
         public LeaguesController(
             ICreateLeagueUseCase createLeagueUseCase,
@@ -109,7 +115,10 @@ namespace FootballManager.Api.Controllers
             ISaveFieldAvailabilitiesUseCase saveFieldAvailabilitiesUseCase,
             IGetFieldBlackoutsUseCase getFieldBlackoutsUseCase,
             ICreateFieldBlackoutUseCase createFieldBlackoutUseCase,
-            IDeleteFieldBlackoutUseCase deleteFieldBlackoutUseCase)
+            IDeleteFieldBlackoutUseCase deleteFieldBlackoutUseCase,
+            IGenerateSeasonFixturesUseCase generateSeasonFixturesUseCase,
+            ICommitSeasonFixturesUseCase commitSeasonFixturesUseCase,
+            IGetSeasonFixturesUseCase getSeasonFixturesUseCase)
         {
             _createLeagueUseCase = createLeagueUseCase ?? throw new ArgumentNullException(nameof(createLeagueUseCase));
             _createSeasonUseCase = createSeasonUseCase ?? throw new ArgumentNullException(nameof(createSeasonUseCase));
@@ -143,6 +152,9 @@ namespace FootballManager.Api.Controllers
             _getFieldBlackoutsUseCase = getFieldBlackoutsUseCase ?? throw new ArgumentNullException(nameof(getFieldBlackoutsUseCase));
             _createFieldBlackoutUseCase = createFieldBlackoutUseCase ?? throw new ArgumentNullException(nameof(createFieldBlackoutUseCase));
             _deleteFieldBlackoutUseCase = deleteFieldBlackoutUseCase ?? throw new ArgumentNullException(nameof(deleteFieldBlackoutUseCase));
+            _generateSeasonFixturesUseCase = generateSeasonFixturesUseCase ?? throw new ArgumentNullException(nameof(generateSeasonFixturesUseCase));
+            _commitSeasonFixturesUseCase = commitSeasonFixturesUseCase ?? throw new ArgumentNullException(nameof(commitSeasonFixturesUseCase));
+            _getSeasonFixturesUseCase = getSeasonFixturesUseCase ?? throw new ArgumentNullException(nameof(getSeasonFixturesUseCase));
         }
 
         [HttpPost]
@@ -529,6 +541,40 @@ namespace FootballManager.Api.Controllers
 
             var request = new DeleteFieldBlackoutRequest { LeagueId = leagueId, FieldId = fieldId, BlackoutId = blackoutId, UserId = userId };
             await _deleteFieldBlackoutUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpGet("{leagueId}/seasons/{seasonId}/fixtures")]
+        public async Task<IActionResult> GetSeasonFixtures([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetSeasonFixturesRequest { LeagueId = leagueId, SeasonId = seasonId, UserId = userId };
+            var response = await _getSeasonFixturesUseCase.ExecuteAsync(request, cancellationToken);
+            if (response == null) return NotFound(); // Season not found
+            return Ok(new { fixtures = response.Fixtures, isDraft = response.IsDraft });
+        }
+
+        [HttpPost("{leagueId}/seasons/{seasonId}/fixtures/generate")]
+        public async Task<IActionResult> GenerateSeasonFixtures([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GenerateSeasonFixturesRequest { LeagueId = leagueId, SeasonId = seasonId, UserId = userId };
+            var response = await _generateSeasonFixturesUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response.Draft);
+        }
+
+        [HttpPost("{leagueId}/seasons/{seasonId}/fixtures/commit")]
+        public async Task<IActionResult> CommitSeasonFixtures([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new CommitSeasonFixturesRequest { LeagueId = leagueId, SeasonId = seasonId, UserId = userId };
+            await _commitSeasonFixturesUseCase.ExecuteAsync(request, cancellationToken);
             return NoContent();
         }
 

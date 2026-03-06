@@ -31,6 +31,10 @@ using FootballManager.Application.UseCases.Leagues.SaveFieldAvailabilities;
 using FootballManager.Application.UseCases.Leagues.GetFieldBlackouts;
 using FootballManager.Application.UseCases.Leagues.CreateFieldBlackout;
 using FootballManager.Application.UseCases.Leagues.DeleteFieldBlackout;
+using FootballManager.Application.UseCases.Leagues.GenerateSeasonFixtures;
+using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
+using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
+using FootballManager.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FootballManager.Application
@@ -72,6 +76,11 @@ namespace FootballManager.Application
             services.AddScoped<IGetFieldBlackoutsUseCase, GetFieldBlackoutsUseCase>();
             services.AddScoped<ICreateFieldBlackoutUseCase, CreateFieldBlackoutUseCase>();
             services.AddScoped<IDeleteFieldBlackoutUseCase, DeleteFieldBlackoutUseCase>();
+            services.AddScoped<IGenerateSeasonFixturesUseCase, GenerateSeasonFixturesUseCase>();
+            services.AddScoped<ICommitSeasonFixturesUseCase, CommitSeasonFixturesUseCase>();
+            services.AddScoped<IGetSeasonFixturesUseCase, GetSeasonFixturesUseCase>();
+
+            services.AddSingleton<IFixtureDraftStore, FixtureDraftStore>();
 
             return services;
         }

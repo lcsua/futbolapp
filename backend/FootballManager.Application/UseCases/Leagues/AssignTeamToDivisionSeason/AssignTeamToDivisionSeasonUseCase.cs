@@ -15,6 +15,7 @@ namespace FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeaso
         private readonly ITeamRepository _teamRepository;
         private readonly ITeamDivisionSeasonRepository _teamDivisionSeasonRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
+        private readonly IFixtureRepository _fixtureRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public AssignTeamToDivisionSeasonUseCase(
@@ -24,6 +25,7 @@ namespace FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeaso
             ITeamRepository teamRepository,
             ITeamDivisionSeasonRepository teamDivisionSeasonRepository,
             IUserLeagueRepository userLeagueRepository,
+            IFixtureRepository fixtureRepository,
             IUnitOfWork unitOfWork)
         {
             _seasonRepository = seasonRepository ?? throw new ArgumentNullException(nameof(seasonRepository));
@@ -32,6 +34,7 @@ namespace FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeaso
             _teamRepository = teamRepository ?? throw new ArgumentNullException(nameof(teamRepository));
             _teamDivisionSeasonRepository = teamDivisionSeasonRepository ?? throw new ArgumentNullException(nameof(teamDivisionSeasonRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
+            _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
@@ -46,6 +49,10 @@ namespace FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeaso
                 throw new KeyNotFoundException($"Season {request.SeasonId} not found.");
             if (season.LeagueId != request.LeagueId)
                 throw new ForbiddenAccessException("Season does not belong to this league.");
+
+            var fixtureCount = await _fixtureRepository.CountBySeasonIdAsync(request.SeasonId, cancellationToken);
+            if (fixtureCount > 0)
+                throw new BusinessException("Cannot modify team assignment: fixtures have been committed. Season is locked.");
 
             var division = await _divisionRepository.GetByIdAsync(request.DivisionId, cancellationToken);
             if (division == null)

@@ -24,6 +24,7 @@ import { CreateFieldPage } from './pages/CreateFieldPage'
 import { EditFieldPage } from './pages/EditFieldPage'
 import { CompetitionRulesPage } from './pages/CompetitionRulesPage'
 import { MatchRulesPage } from './pages/MatchRulesPage'
+import { FixturesPage } from './pages/FixturesPage'
 import { LoginPage } from './pages/LoginPage'
 
 export default function App() {
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="leagues/:leagueId/fields/:fieldId/edit" element={<EditFieldPage />} />
           <Route path="leagues/:leagueId/competition-rules" element={<CompetitionRulesPage />} />
           <Route path="leagues/:leagueId/match-rules" element={<MatchRulesPage />} />
+          <Route path="leagues/:leagueId/fixtures" element={<FixturesPage />} />
           <Route element={<LeagueScopedRoute />}>
             <Route path="seasons" element={<SeasonsListPage />} />
             <Route path="seasons/new" element={<CreateSeasonPage />} />
@@ -79,6 +81,7 @@ export default function App() {
           <Route path="fields/:fieldId/edit" element={<EditFieldPage />} />
           <Route path="competition-rules" element={<CompetitionRulesPage />} />
           <Route path="match-rules" element={<MatchRulesPage />} />
+          <Route path="fixtures" element={<FixturesPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
