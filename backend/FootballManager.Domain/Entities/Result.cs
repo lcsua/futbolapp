@@ -12,7 +12,10 @@ namespace FootballManager.Domain.Entities
         public int AwayTeamGoals { get; private set; }
         public string Notes { get; private set; }
 
-        protected Result() { }
+        protected Result()
+        {
+            Notes = string.Empty;
+        }
 
         public Result(Fixture fixture, int homeGoals, int awayGoals)
         {
@@ -20,6 +23,7 @@ namespace FootballManager.Domain.Entities
             FixtureId = fixture.Id;
             HomeTeamGoals = homeGoals;
             AwayTeamGoals = awayGoals;
+            Notes = string.Empty;
         }
 
         public void UpdateScore(int homeGoals, int awayGoals)

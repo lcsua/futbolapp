@@ -34,6 +34,11 @@ using FootballManager.Application.UseCases.Leagues.DeleteFieldBlackout;
 using FootballManager.Application.UseCases.Leagues.GenerateSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
+using FootballManager.Application.UseCases.Matches.GetMatches;
+using FootballManager.Application.UseCases.Matches.GetMatchById;
+using FootballManager.Application.UseCases.Matches.UpdateMatchResult;
+using FootballManager.Application.UseCases.Matches.AddMatchIncident;
+using FootballManager.Application.UseCases.Matches.DeleteMatchIncident;
 using FootballManager.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -79,6 +84,11 @@ namespace FootballManager.Application
             services.AddScoped<IGenerateSeasonFixturesUseCase, GenerateSeasonFixturesUseCase>();
             services.AddScoped<ICommitSeasonFixturesUseCase, CommitSeasonFixturesUseCase>();
             services.AddScoped<IGetSeasonFixturesUseCase, GetSeasonFixturesUseCase>();
+            services.AddScoped<IGetMatchesUseCase, GetMatchesUseCase>();
+            services.AddScoped<IGetMatchByIdUseCase, GetMatchByIdUseCase>();
+            services.AddScoped<IUpdateMatchResultUseCase, UpdateMatchResultUseCase>();
+            services.AddScoped<IAddMatchIncidentUseCase, AddMatchIncidentUseCase>();
+            services.AddScoped<IDeleteMatchIncidentUseCase, DeleteMatchIncidentUseCase>();
 
             services.AddSingleton<IFixtureDraftStore, FixtureDraftStore>();
 

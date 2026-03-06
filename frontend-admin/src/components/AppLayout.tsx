@@ -42,6 +42,7 @@ const NAV_ITEMS = [
   { to: '/teams/bulk', label: 'Bulk Import', icon: <UploadFileIcon /> },
   { to: '/fields', label: 'Fields', icon: <PlaceIcon /> },
   { to: '/fixtures', label: 'Fixtures', icon: <EventIcon /> },
+  { to: '/matches', label: 'Matches', icon: <SportsSoccerIcon /> },
 ]
 
 const COMPETITION_SETTINGS_ITEMS = [

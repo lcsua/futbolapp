@@ -11,9 +11,11 @@ namespace FootballManager.Domain.Enums
     public enum MatchStatus
     {
         SCHEDULED,
-        PLAYED,
+        IN_PROGRESS,
+        COMPLETED,
+        CANCELLED,
         POSTPONED,
-        CANCELLED
+        PLAYED
     }
 
     public enum MatchEventType
@@ -23,6 +25,16 @@ namespace FootballManager.Domain.Enums
         RED_CARD,
         SUBSTITUTION,
         OWN_GOAL
+    }
+
+    public enum MatchIncidentType
+    {
+        Goal,
+        YellowCard,
+        RedCard,
+        Injury,
+        Substitution,
+        Other
     }
 
     public enum UserRole

@@ -8,6 +8,7 @@ using FootballManager.Application.Exceptions;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Application.Services;
 using FootballManager.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace FootballManager.Application.UseCases.Leagues.GenerateSeasonFixtures;
 
@@ -21,6 +22,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
     private readonly IFieldRepository _fieldRepository;
     private readonly IFieldAvailabilityRepository _fieldAvailabilityRepository;
     private readonly IFixtureDraftStore _draftStore;
+    private readonly ILogger<GenerateSeasonFixturesUseCase> _logger;
 
     public GenerateSeasonFixturesUseCase(
         IUserLeagueRepository userLeagueRepository,
@@ -30,7 +32,8 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         IMatchRuleRepository matchRuleRepository,
         IFieldRepository fieldRepository,
         IFieldAvailabilityRepository fieldAvailabilityRepository,
-        IFixtureDraftStore draftStore)
+        IFixtureDraftStore draftStore,
+        ILogger<GenerateSeasonFixturesUseCase> logger)
     {
         _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
         _seasonRepository = seasonRepository ?? throw new ArgumentNullException(nameof(seasonRepository));
@@ -40,6 +43,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         _fieldRepository = fieldRepository ?? throw new ArgumentNullException(nameof(fieldRepository));
         _fieldAvailabilityRepository = fieldAvailabilityRepository ?? throw new ArgumentNullException(nameof(fieldAvailabilityRepository));
         _draftStore = draftStore ?? throw new ArgumentNullException(nameof(draftStore));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<GenerateSeasonFixturesResponse> ExecuteAsync(GenerateSeasonFixturesRequest request, CancellationToken cancellationToken = default)
@@ -92,6 +96,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
 
         var divisionsOrdered = divisionSeasons.OrderBy(ds => ds.Division.Name).ToList();
         var allRounds = new List<FixtureDraftRoundDto>();
+        var teamFieldUsage = new TeamFieldUsage();
 
         var maxRounds = 0;
         var divisionRounds = new Dictionary<Guid, IReadOnlyList<IReadOnlyList<(int Home, int Away)>>>();
@@ -141,7 +146,10 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
                     $"Required: {matchesThisRound.Count} slots, available: {slots.Count}. " +
                     "Configure field availability for the match day or reduce the number of matches.");
 
-            var assignments = slotScheduler.AssignMatchesToSlots(matchesThisRound.Count, slots);
+            var matchTeamIds = matchesThisRound
+                .Select(m => (m.Home.Team.Id, m.Away.Team.Id))
+                .ToList();
+            var assignments = slotScheduler.AssignMatchesToSlotsWithFairness(matchTeamIds, slots, teamFieldUsage);
             if (assignments == null)
                 throw new BusinessException($"Not enough field availability for round {roundIndex + 1}.");
 
@@ -155,6 +163,13 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
                 var field = fieldById.GetValueOrDefault(assignFieldId);
                 if (field == null)
                     throw new BusinessException($"Field {assignFieldId} not found.");
+
+                _logger.LogInformation(
+                    "Fixture generated: teamA={TeamA} teamB={TeamB} fieldId={FieldId} round={Round}",
+                    home.Team.Name,
+                    away.Team.Name,
+                    assignFieldId,
+                    roundIndex + 1);
 
                 draftMatches.Add(new FixtureDraftMatchDto(
                     ds.Id,
@@ -172,6 +187,8 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
 
             allRounds.Add(new FixtureDraftRoundDto(roundIndex + 1, matchDate, draftMatches));
         }
+
+        LogFieldDistributionSummary(teamFieldUsage, availableFields);
 
         var draft = new FixtureDraftDto(allRounds);
         _draftStore.Set(request.SeasonId, draft);
@@ -198,5 +215,33 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         var targetDay = matchDays[dayIndex];
         var firstDate = GetFirstMatchDate(seasonStart, targetDay);
         return firstDate.AddDays(7 * weekIndex);
+    }
+
+    private void LogFieldDistributionSummary(TeamFieldUsage teamFieldUsage, List<Field> availableFields)
+    {
+        var snapshot = teamFieldUsage.Snapshot();
+        if (snapshot.Count == 0)
+            return;
+
+        var fieldNames = availableFields.ToDictionary(f => f.Id, f => f.Name);
+        var byTeam = new Dictionary<Guid, List<(Guid FieldId, int Count)>>();
+        foreach (var ((teamId, fieldId), count) in snapshot)
+        {
+            if (!byTeam.TryGetValue(teamId, out var list))
+            {
+                list = new List<(Guid, int)>();
+                byTeam[teamId] = list;
+            }
+            list.Add((fieldId, count));
+        }
+
+        _logger.LogInformation("Field distribution summary: {TeamCount} teams with assignments", byTeam.Count);
+        foreach (var (teamId, fieldCounts) in byTeam.OrderBy(x => x.Key))
+        {
+            var parts = fieldCounts
+                .OrderByDescending(x => x.Count)
+                .Select(x => $"{fieldNames.GetValueOrDefault(x.FieldId, x.FieldId.ToString())}={x.Count}");
+            _logger.LogInformation("  Team {TeamId}: {Distribution}", teamId, string.Join(", ", parts));
+        }
     }
 }

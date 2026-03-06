@@ -28,6 +28,8 @@ namespace FootballManager.Infrastructure
             services.AddScoped<IDivisionSeasonRepository, DivisionSeasonRepository>();
             services.AddScoped<ITeamDivisionSeasonRepository, TeamDivisionSeasonRepository>();
             services.AddScoped<IFixtureRepository, FixtureRepository>();
+            services.AddScoped<IResultRepository, ResultRepository>();
+            services.AddScoped<IMatchIncidentRepository, MatchIncidentRepository>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 

@@ -26,6 +26,7 @@ namespace FootballManager.Infrastructure.Persistence
         public DbSet<Fixture> Fixtures { get; set; }
         public DbSet<Result> Results { get; set; }
         public DbSet<MatchEvent> MatchEvents { get; set; }
+        public DbSet<MatchIncident> MatchIncidents { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<UserLeague> UserLeagues { get; set; }
         public DbSet<Role> Roles { get; set; }

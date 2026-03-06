@@ -37,6 +37,9 @@ namespace FootballManager.Domain.Entities
         private readonly List<MatchEvent> _events = new();
         public virtual IReadOnlyCollection<MatchEvent> Events => _events.AsReadOnly();
 
+        private readonly List<MatchIncident> _incidents = new();
+        public virtual IReadOnlyCollection<MatchIncident> Incidents => _incidents.AsReadOnly();
+
         protected Fixture() { }
 
         public Fixture(League league, Season season, DivisionSeason divisionSeason, TeamDivisionSeason homeTeamDivisionSeason, TeamDivisionSeason awayTeamDivisionSeason, int roundNumber, DateOnly matchDate, TimeOnly startTime, Field field)
