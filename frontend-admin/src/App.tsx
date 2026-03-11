@@ -27,6 +27,7 @@ import { MatchRulesPage } from './pages/MatchRulesPage'
 import { FixturesPage } from './pages/FixturesPage'
 import { MatchesPage } from './pages/MatchesPage'
 import { MatchDetailPage } from './pages/MatchDetailPage'
+import { StandingsPage } from './pages/StandingsPage'
 import { LoginPage } from './pages/LoginPage'
 
 export default function App() {
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="leagues/:leagueId/fixtures" element={<FixturesPage />} />
           <Route path="leagues/:leagueId/matches" element={<MatchesPage />} />
           <Route path="leagues/:leagueId/matches/:matchId" element={<MatchDetailPage />} />
+          <Route path="leagues/:leagueId/standings" element={<StandingsPage />} />
           <Route element={<LeagueScopedRoute />}>
             <Route path="seasons" element={<SeasonsListPage />} />
             <Route path="seasons/new" element={<CreateSeasonPage />} />
@@ -88,6 +90,7 @@ export default function App() {
             <Route path="fixtures" element={<FixturesPage />} />
             <Route path="matches" element={<MatchesPage />} />
             <Route path="matches/:matchId" element={<MatchDetailPage />} />
+            <Route path="standings" element={<StandingsPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

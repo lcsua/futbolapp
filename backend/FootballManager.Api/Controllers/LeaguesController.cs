@@ -37,6 +37,7 @@ using FootballManager.Application.UseCases.Leagues.GenerateSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.ImportFixtures;
+using FootballManager.Application.UseCases.Seasons.GetStandings;
 using FootballManager.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -85,6 +86,7 @@ namespace FootballManager.Api.Controllers
         private readonly IGetSeasonFixturesUseCase _getSeasonFixturesUseCase;
         private readonly IImportFixturesUseCase _importFixturesUseCase;
         private readonly IPreviewFixtureImportUseCase _previewFixtureImportUseCase;
+        private readonly IGetStandingsUseCase _getStandingsUseCase;
 
         public LeaguesController(
             ICreateLeagueUseCase createLeagueUseCase,
@@ -123,7 +125,8 @@ namespace FootballManager.Api.Controllers
             ICommitSeasonFixturesUseCase commitSeasonFixturesUseCase,
             IGetSeasonFixturesUseCase getSeasonFixturesUseCase,
             IImportFixturesUseCase importFixturesUseCase,
-            IPreviewFixtureImportUseCase previewFixtureImportUseCase)
+            IPreviewFixtureImportUseCase previewFixtureImportUseCase,
+            IGetStandingsUseCase getStandingsUseCase)
         {
             _createLeagueUseCase = createLeagueUseCase ?? throw new ArgumentNullException(nameof(createLeagueUseCase));
             _createSeasonUseCase = createSeasonUseCase ?? throw new ArgumentNullException(nameof(createSeasonUseCase));
@@ -162,6 +165,7 @@ namespace FootballManager.Api.Controllers
             _getSeasonFixturesUseCase = getSeasonFixturesUseCase ?? throw new ArgumentNullException(nameof(getSeasonFixturesUseCase));
             _importFixturesUseCase = importFixturesUseCase ?? throw new ArgumentNullException(nameof(importFixturesUseCase));
             _previewFixtureImportUseCase = previewFixtureImportUseCase ?? throw new ArgumentNullException(nameof(previewFixtureImportUseCase));
+            _getStandingsUseCase = getStandingsUseCase ?? throw new ArgumentNullException(nameof(getStandingsUseCase));
         }
 
         [HttpPost]
@@ -549,6 +553,17 @@ namespace FootballManager.Api.Controllers
             var request = new DeleteFieldBlackoutRequest { LeagueId = leagueId, FieldId = fieldId, BlackoutId = blackoutId, UserId = userId };
             await _deleteFieldBlackoutUseCase.ExecuteAsync(request, cancellationToken);
             return NoContent();
+        }
+
+        [HttpGet("{leagueId}/seasons/{seasonId}/standings")]
+        public async Task<IActionResult> GetStandings([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetStandingsRequest { LeagueId = leagueId, SeasonId = seasonId, UserId = userId };
+            var response = await _getStandingsUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response.Divisions);
         }
 
         [HttpGet("{leagueId}/seasons/{seasonId}/fixtures")]

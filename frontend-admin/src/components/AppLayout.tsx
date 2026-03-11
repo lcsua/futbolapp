@@ -17,6 +17,7 @@ import {
 import MenuIcon from '@mui/icons-material/Menu'
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer'
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
+import LeaderboardIcon from '@mui/icons-material/Leaderboard'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import ViewListIcon from '@mui/icons-material/ViewList'
 import GroupsIcon from '@mui/icons-material/Groups'
@@ -43,6 +44,7 @@ const NAV_ITEMS = [
   { to: '/fields', label: 'Fields', icon: <PlaceIcon /> },
   { to: '/fixtures', label: 'Fixtures', icon: <EventIcon /> },
   { to: '/matches', label: 'Matches', icon: <SportsSoccerIcon /> },
+  { to: '/standings', label: 'Standings', icon: <LeaderboardIcon /> },
 ]
 
 const COMPETITION_SETTINGS_ITEMS = [

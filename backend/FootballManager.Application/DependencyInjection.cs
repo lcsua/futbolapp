@@ -35,6 +35,7 @@ using FootballManager.Application.UseCases.Leagues.GenerateSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.ImportFixtures;
+using FootballManager.Application.UseCases.Seasons.GetStandings;
 using FootballManager.Application.UseCases.Matches.GetMatches;
 using FootballManager.Application.UseCases.Matches.GetMatchById;
 using FootballManager.Application.UseCases.Matches.UpdateMatchResult;
@@ -87,6 +88,7 @@ namespace FootballManager.Application
             services.AddScoped<IGetSeasonFixturesUseCase, GetSeasonFixturesUseCase>();
             services.AddScoped<IImportFixturesUseCase, ImportFixturesUseCase>();
             services.AddScoped<IPreviewFixtureImportUseCase, PreviewFixtureImportUseCase>();
+            services.AddScoped<IGetStandingsUseCase, GetStandingsUseCase>();
             services.AddScoped<IGetMatchesUseCase, GetMatchesUseCase>();
             services.AddScoped<IGetMatchByIdUseCase, GetMatchByIdUseCase>();
             services.AddScoped<IUpdateMatchResultUseCase, UpdateMatchResultUseCase>();
