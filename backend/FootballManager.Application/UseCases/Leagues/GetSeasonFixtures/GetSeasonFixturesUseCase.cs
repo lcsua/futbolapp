@@ -52,11 +52,11 @@ public sealed class GetSeasonFixturesUseCase : IGetSeasonFixturesUseCase
         var rounds = fixtures
             .GroupBy(f => new { f.RoundNumber, f.MatchDate })
             .OrderBy(g => g.Key.RoundNumber)
-            .ThenBy(g => g.Key.MatchDate)
+            .ThenBy(g => g.Key.MatchDate ?? DateOnly.MinValue)
             .Select(g => new FixtureDraftRoundDto(
                 g.Key.RoundNumber,
                 g.Key.MatchDate,
-                g.OrderBy(f => f.StartTime).ThenBy(f => f.Field.Name)
+                g.OrderBy(f => f.StartTime ?? TimeOnly.MaxValue).ThenBy(f => f.Field?.Name ?? "")
                     .Select(f => new FixtureDraftMatchDto(
                         f.DivisionSeasonId,
                         f.DivisionSeason.Division.Name,
@@ -65,7 +65,7 @@ public sealed class GetSeasonFixturesUseCase : IGetSeasonFixturesUseCase
                         f.AwayTeamDivisionSeasonId,
                         f.AwayTeamDivisionSeason.Team.Name,
                         f.FieldId,
-                        f.Field.Name,
+                        f.Field?.Name,
                         f.MatchDate,
                         f.StartTime
                     )).ToList()))

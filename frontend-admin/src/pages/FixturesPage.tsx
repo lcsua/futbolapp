@@ -23,12 +23,15 @@ import {
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import SaveIcon from '@mui/icons-material/Save'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { fixturesService } from '../api/fixtures'
 import { seasonsService } from '../api/seasons'
+import { divisionsService } from '../api/divisions'
 import { useLeagueId } from '../contexts/LeagueContext'
+import { ImportFixtureModal } from '../components/ImportFixtureModal'
 
 function formatTime(timeStr: string): string {
   try {
@@ -56,11 +59,19 @@ export function FixturesPage() {
   const leagueId = useLeagueId()
   const queryClient = useQueryClient()
   const [seasonId, setSeasonId] = useState<string>('')
+  const [divisionId, setDivisionId] = useState<string>('')
+  const [importModalOpen, setImportModalOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons'],
     queryFn: ({ signal }) => seasonsService.getByLeagueId(leagueId!, signal),
+    enabled: !!leagueId,
+  })
+
+  const { data: divisions = [] } = useQuery({
+    queryKey: ['leagues', leagueId, 'divisions'],
+    queryFn: ({ signal }) => divisionsService.getByLeagueId(leagueId!, signal),
     enabled: !!leagueId,
   })
 
@@ -93,7 +104,10 @@ export function FixturesPage() {
     },
   })
 
-  const handleSeasonChange = (e: SelectChangeEvent<string>) => setSeasonId(e.target.value)
+  const handleSeasonChange = (e: SelectChangeEvent<string>) => {
+    setSeasonId(e.target.value)
+    setDivisionId('')
+  }
 
   const handleGenerate = () => generateMutation.mutate()
   const handleRegenerate = () => generateMutation.mutate()
@@ -144,6 +158,24 @@ export function FixturesPage() {
         </FormControl>
         {!!seasonId && (
           <>
+            <FormControl size="small" sx={{ minWidth: 180 }} disabled={!seasonId}>
+              <InputLabel id="division-label">Division</InputLabel>
+              <Select
+                labelId="division-label"
+                label="Division"
+                value={divisionId}
+                onChange={(e) => setDivisionId(e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>Select division</em>
+                </MenuItem>
+                {divisions.map((d) => (
+                  <MenuItem key={d.id} value={d.id}>
+                    {d.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Button
               variant="outlined"
               startIcon={hasFixtures ? <RefreshIcon /> : <AutoFixHighIcon />}
@@ -151,6 +183,14 @@ export function FixturesPage() {
               disabled={generateMutation.isPending}
             >
               {hasFixtures ? 'Regenerate' : 'Generate'} Fixture
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              onClick={() => setImportModalOpen(true)}
+              disabled={!divisionId}
+            >
+              Import Fixture
             </Button>
             {hasFixtures && (
               <Button
@@ -197,6 +237,19 @@ export function FixturesPage() {
         <Typography color="text.secondary">
           Select a season and click Generate Fixture to create a draft.
         </Typography>
+      )}
+
+      {leagueId && seasonId && divisionId && (
+        <ImportFixtureModal
+          open={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          divisionId={divisionId}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
+          }}
+        />
       )}
 
       {!fixturesLoading && hasFixtures && (

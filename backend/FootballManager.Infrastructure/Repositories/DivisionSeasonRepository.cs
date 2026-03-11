@@ -35,6 +35,16 @@ namespace FootballManager.Infrastructure.Repositories
                 .SingleOrDefaultAsync(ds => ds.SeasonId == seasonId && ds.DivisionId == divisionId, cancellationToken);
         }
 
+        public async Task<DivisionSeason?> GetBySeasonAndDivisionWithTeamsAsync(Guid seasonId, Guid divisionId, CancellationToken cancellationToken = default)
+        {
+            return await _context.DivisionSeasons
+                .Include(ds => ds.TeamAssignments)
+                .ThenInclude(ta => ta.Team)
+                .Include(ds => ds.Division)
+                .Include(ds => ds.Season)
+                .SingleOrDefaultAsync(ds => ds.SeasonId == seasonId && ds.DivisionId == divisionId, cancellationToken);
+        }
+
         public async Task<List<DivisionSeason>> GetBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default)
         {
             return await _context.DivisionSeasons

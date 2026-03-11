@@ -23,9 +23,9 @@ namespace FootballManager.Domain.Entities
         public virtual TeamDivisionSeason AwayTeamDivisionSeason { get; private set; }
 
         public int RoundNumber { get; private set; }
-        public DateOnly MatchDate { get; private set; }
-        public TimeOnly StartTime { get; private set; }
-        public Guid FieldId { get; private set; }
+        public DateOnly? MatchDate { get; private set; }
+        public TimeOnly? StartTime { get; private set; }
+        public Guid? FieldId { get; private set; }
         public virtual Field Field { get; private set; }
         public MatchStatus Status { get; private set; }
 
@@ -67,12 +67,76 @@ namespace FootballManager.Domain.Entities
             RefereeName = string.Empty;
         }
 
+        /// <summary>
+        /// Creates a fixture without date, time or field (e.g. from simple CSV import).
+        /// Use Schedule() to assign them later.
+        /// </summary>
+        public Fixture(League league, Season season, DivisionSeason divisionSeason, TeamDivisionSeason homeTeamDivisionSeason, TeamDivisionSeason awayTeamDivisionSeason, int roundNumber)
+        {
+            League = league ?? throw new ArgumentNullException(nameof(league));
+            LeagueId = league.Id;
+            Season = season ?? throw new ArgumentNullException(nameof(season));
+            SeasonId = season.Id;
+            DivisionSeason = divisionSeason ?? throw new ArgumentNullException(nameof(divisionSeason));
+            DivisionSeasonId = divisionSeason.Id;
+            HomeTeamDivisionSeason = homeTeamDivisionSeason ?? throw new ArgumentNullException(nameof(homeTeamDivisionSeason));
+            HomeTeamDivisionSeasonId = homeTeamDivisionSeason.Id;
+            AwayTeamDivisionSeason = awayTeamDivisionSeason ?? throw new ArgumentNullException(nameof(awayTeamDivisionSeason));
+            AwayTeamDivisionSeasonId = awayTeamDivisionSeason.Id;
+
+            if (HomeTeamDivisionSeasonId == AwayTeamDivisionSeasonId)
+                throw new ArgumentException("Home and Away team assignments must be different.");
+
+            RoundNumber = roundNumber;
+            MatchDate = null;
+            StartTime = null;
+            FieldId = null;
+            Field = null;
+            Status = MatchStatus.SCHEDULED;
+            RefereeName = string.Empty;
+        }
+
+        /// <summary>
+        /// Creates a fixture with optional date/time/field (for import with date or full import).
+        /// </summary>
+        public Fixture(League league, Season season, DivisionSeason divisionSeason, TeamDivisionSeason homeTeamDivisionSeason, TeamDivisionSeason awayTeamDivisionSeason, int roundNumber, DateOnly? matchDate, TimeOnly? startTime, Field? field)
+        {
+            League = league ?? throw new ArgumentNullException(nameof(league));
+            LeagueId = league.Id;
+            Season = season ?? throw new ArgumentNullException(nameof(season));
+            SeasonId = season.Id;
+            DivisionSeason = divisionSeason ?? throw new ArgumentNullException(nameof(divisionSeason));
+            DivisionSeasonId = divisionSeason.Id;
+            HomeTeamDivisionSeason = homeTeamDivisionSeason ?? throw new ArgumentNullException(nameof(homeTeamDivisionSeason));
+            HomeTeamDivisionSeasonId = homeTeamDivisionSeason.Id;
+            AwayTeamDivisionSeason = awayTeamDivisionSeason ?? throw new ArgumentNullException(nameof(awayTeamDivisionSeason));
+            AwayTeamDivisionSeasonId = awayTeamDivisionSeason.Id;
+
+            if (HomeTeamDivisionSeasonId == AwayTeamDivisionSeasonId)
+                throw new ArgumentException("Home and Away team assignments must be different.");
+
+            RoundNumber = roundNumber;
+            MatchDate = matchDate;
+            StartTime = startTime;
+            Field = field;
+            FieldId = field?.Id;
+            Status = MatchStatus.SCHEDULED;
+            RefereeName = string.Empty;
+        }
+
         public void Schedule(DateOnly date, TimeOnly startTime, Field field)
         {
             MatchDate = date;
             StartTime = startTime;
             Field = field ?? throw new ArgumentNullException(nameof(field));
             FieldId = field.Id;
+            UpdateTimestamp();
+        }
+
+        public void SetDateAndTime(DateOnly? date, TimeOnly? startTime)
+        {
+            MatchDate = date;
+            StartTime = startTime;
             UpdateTimestamp();
         }
 

@@ -76,7 +76,9 @@ public sealed class CommitSeasonFixturesUseCase : ICommitSeasonFixturesUseCase
                 var awayTds = divisionSeason.TeamAssignments.FirstOrDefault(ta => ta.Id == m.AwayTeamDivisionSeasonId);
                 if (homeTds == null || awayTds == null) continue;
 
-                var field = await _fieldRepository.GetByIdAsync(m.FieldId, cancellationToken);
+                if (!m.FieldId.HasValue || !m.Date.HasValue || !m.KickoffTime.HasValue) continue;
+
+                var field = await _fieldRepository.GetByIdAsync(m.FieldId.Value, cancellationToken);
                 if (field == null) continue;
 
                 var fixture = new Fixture(
@@ -86,8 +88,8 @@ public sealed class CommitSeasonFixturesUseCase : ICommitSeasonFixturesUseCase
                     homeTds,
                     awayTds,
                     round.RoundNumber,
-                    m.Date,
-                    m.KickoffTime,
+                    m.Date.Value,
+                    m.KickoffTime.Value,
                     field);
 
                 await _fixtureRepository.AddAsync(fixture, cancellationToken);

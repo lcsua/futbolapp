@@ -58,6 +58,7 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.HasOne(e => e.Field)
                 .WithMany()
                 .HasForeignKey(e => e.FieldId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
             builder.HasOne(e => e.Result)
                 .WithOne(e => e.Fixture)

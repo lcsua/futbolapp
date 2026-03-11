@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import {
   Alert,
@@ -23,6 +23,9 @@ import { seasonsService } from '../api/seasons'
 import { divisionsService } from '../api/divisions'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { MatchResultModal } from '../components/MatchResultModal'
+import { ImportFixtureModal } from '../components/ImportFixtureModal'
+import { useQueryClient } from '@tanstack/react-query'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
 
 export function MatchesPage() {
   const leagueId = useLeagueId()
@@ -31,7 +34,10 @@ export function MatchesPage() {
   const [seasonId, setSeasonId] = useState('')
   const [divisionId, setDivisionId] = useState<string>('')
   const [round, setRound] = useState<string>('')
+  const [teamId, setTeamId] = useState<string>('')
   const [resultModalMatch, setResultModalMatch] = useState<MatchListItem | null>(null)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const queryClient = useQueryClient()
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons'],
@@ -64,12 +70,38 @@ export function MatchesPage() {
     setSeasonId(e.target.value)
     setDivisionId('')
     setRound('')
+    setTeamId('')
   }
-  const handleDivisionChange = (e: SelectChangeEvent<string>) => setDivisionId(e.target.value)
+  const handleDivisionChange = (e: SelectChangeEvent<string>) => {
+    setDivisionId(e.target.value)
+    setTeamId('')
+  }
   const handleRoundChange = (e: SelectChangeEvent<string>) => setRound(e.target.value)
+  const handleTeamChange = (e: SelectChangeEvent<string>) => setTeamId(e.target.value)
 
-  const rounds = matchesData?.rounds ?? []
-  const roundNumbers = [...new Set(rounds.flatMap((r) => r.matches.map((m) => m.roundNumber)))].sort((a, b) => a - b)
+  const allRounds = matchesData?.rounds ?? []
+  const roundNumbers = [...new Set(allRounds.flatMap((r) => r.matches.map((m) => m.roundNumber)))].sort((a, b) => a - b)
+
+  const teams = React.useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const group of allRounds) {
+      for (const m of group.matches) {
+        if (!seen.has(m.homeTeamId)) seen.set(m.homeTeamId, m.homeTeamName)
+        if (!seen.has(m.awayTeamId)) seen.set(m.awayTeamId, m.awayTeamName)
+      }
+    }
+    return Array.from(seen.entries()).sort((a, b) => a[1].localeCompare(b[1]))
+  }, [allRounds])
+
+  const rounds = React.useMemo(() => {
+    if (!teamId) return allRounds
+    return allRounds
+      .map((g) => ({
+        ...g,
+        matches: g.matches.filter((m) => m.homeTeamId === teamId || m.awayTeamId === teamId),
+      }))
+      .filter((g) => g.matches.length > 0)
+  }, [allRounds, teamId])
 
   if (!leagueId) {
     return (
@@ -143,6 +175,32 @@ export function MatchesPage() {
             ))}
           </Select>
         </FormControl>
+        <FormControl size="small" sx={{ minWidth: 200 }} disabled={!seasonId || allRounds.length === 0}>
+          <InputLabel id="team-label">Team</InputLabel>
+          <Select
+            labelId="team-label"
+            label="Team"
+            value={teamId}
+            onChange={handleTeamChange}
+          >
+            <MenuItem value="">
+              <em>All</em>
+            </MenuItem>
+            {teams.map(([id, name]) => (
+              <MenuItem key={id} value={id}>
+                {name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Button
+          variant="outlined"
+          startIcon={<UploadFileIcon />}
+          onClick={() => setImportModalOpen(true)}
+          disabled={!seasonId || !divisionId}
+        >
+          Import Fixture
+        </Button>
       </Box>
 
       {matchesLoading && seasonId && (
@@ -187,6 +245,18 @@ export function MatchesPage() {
           onSaved={() => {
             setResultModalMatch(null)
             void Promise.resolve()
+          }}
+        />
+      )}
+      {leagueId && seasonId && divisionId && (
+        <ImportFixtureModal
+          open={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          divisionId={divisionId}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
           }}
         />
       )}
@@ -253,7 +323,7 @@ function MatchCard({
           </Box>
         </Box>
         <Typography variant="caption" color="text.secondary" display="block">
-          {match.fieldName} · {match.kickoffTime}
+          {(match.fieldName || '—')} · {(match.kickoffTime || '—')}
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
           <Button size="small" startIcon={<EditIcon />} onClick={onEditResult}>

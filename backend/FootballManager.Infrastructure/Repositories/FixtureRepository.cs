@@ -46,8 +46,8 @@ namespace FootballManager.Infrastructure.Repositories
                 .Include(f => f.Field)
                 .Include(f => f.Result)
                 .Where(f => f.SeasonId == seasonId)
-                .OrderBy(f => f.MatchDate)
-                .ThenBy(f => f.StartTime)
+                .OrderBy(f => f.MatchDate ?? DateOnly.MaxValue)
+                .ThenBy(f => f.StartTime ?? TimeOnly.MaxValue)
                 .ThenBy(f => f.DivisionSeason.Division.Name)
                 .ToListAsync(cancellationToken);
         }
@@ -69,8 +69,8 @@ namespace FootballManager.Infrastructure.Repositories
 
             return await query
                 .OrderBy(f => f.RoundNumber)
-                .ThenBy(f => f.MatchDate)
-                .ThenBy(f => f.StartTime)
+                .ThenBy(f => f.MatchDate ?? DateOnly.MaxValue)
+                .ThenBy(f => f.StartTime ?? TimeOnly.MaxValue)
                 .ThenBy(f => f.DivisionSeason.Division.Name)
                 .ToListAsync(cancellationToken);
         }
@@ -79,6 +79,14 @@ namespace FootballManager.Infrastructure.Repositories
         {
             var toRemove = await _context.Fixtures
                 .Where(f => f.SeasonId == seasonId)
+                .ToListAsync(cancellationToken);
+            _context.Fixtures.RemoveRange(toRemove);
+        }
+
+        public async Task RemoveByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default)
+        {
+            var toRemove = await _context.Fixtures
+                .Where(f => f.DivisionSeasonId == divisionSeasonId)
                 .ToListAsync(cancellationToken);
             _context.Fixtures.RemoveRange(toRemove);
         }

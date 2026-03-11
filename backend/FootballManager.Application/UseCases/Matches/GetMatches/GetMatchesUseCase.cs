@@ -74,8 +74,8 @@ public sealed class GetMatchesUseCase : IGetMatchesUseCase
             homeScore,
             awayScore,
             f.Status.ToString(),
-            f.StartTime.ToString("HH:mm"),
-            f.MatchDate.ToString("yyyy-MM-dd"),
+            f.StartTime?.ToString("HH:mm") ?? "",
+            f.MatchDate?.ToString("yyyy-MM-dd") ?? "",
             f.Field?.Name ?? "",
             homeTeam?.LogoUrl,
             awayTeam?.LogoUrl);

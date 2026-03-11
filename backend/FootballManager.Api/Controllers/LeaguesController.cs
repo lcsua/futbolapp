@@ -36,6 +36,7 @@ using FootballManager.Application.UseCases.Leagues.DeleteFieldBlackout;
 using FootballManager.Application.UseCases.Leagues.GenerateSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
+using FootballManager.Application.UseCases.Leagues.ImportFixtures;
 using FootballManager.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -82,6 +83,8 @@ namespace FootballManager.Api.Controllers
         private readonly IGenerateSeasonFixturesUseCase _generateSeasonFixturesUseCase;
         private readonly ICommitSeasonFixturesUseCase _commitSeasonFixturesUseCase;
         private readonly IGetSeasonFixturesUseCase _getSeasonFixturesUseCase;
+        private readonly IImportFixturesUseCase _importFixturesUseCase;
+        private readonly IPreviewFixtureImportUseCase _previewFixtureImportUseCase;
 
         public LeaguesController(
             ICreateLeagueUseCase createLeagueUseCase,
@@ -118,7 +121,9 @@ namespace FootballManager.Api.Controllers
             IDeleteFieldBlackoutUseCase deleteFieldBlackoutUseCase,
             IGenerateSeasonFixturesUseCase generateSeasonFixturesUseCase,
             ICommitSeasonFixturesUseCase commitSeasonFixturesUseCase,
-            IGetSeasonFixturesUseCase getSeasonFixturesUseCase)
+            IGetSeasonFixturesUseCase getSeasonFixturesUseCase,
+            IImportFixturesUseCase importFixturesUseCase,
+            IPreviewFixtureImportUseCase previewFixtureImportUseCase)
         {
             _createLeagueUseCase = createLeagueUseCase ?? throw new ArgumentNullException(nameof(createLeagueUseCase));
             _createSeasonUseCase = createSeasonUseCase ?? throw new ArgumentNullException(nameof(createSeasonUseCase));
@@ -155,6 +160,8 @@ namespace FootballManager.Api.Controllers
             _generateSeasonFixturesUseCase = generateSeasonFixturesUseCase ?? throw new ArgumentNullException(nameof(generateSeasonFixturesUseCase));
             _commitSeasonFixturesUseCase = commitSeasonFixturesUseCase ?? throw new ArgumentNullException(nameof(commitSeasonFixturesUseCase));
             _getSeasonFixturesUseCase = getSeasonFixturesUseCase ?? throw new ArgumentNullException(nameof(getSeasonFixturesUseCase));
+            _importFixturesUseCase = importFixturesUseCase ?? throw new ArgumentNullException(nameof(importFixturesUseCase));
+            _previewFixtureImportUseCase = previewFixtureImportUseCase ?? throw new ArgumentNullException(nameof(previewFixtureImportUseCase));
         }
 
         [HttpPost]
@@ -578,6 +585,44 @@ namespace FootballManager.Api.Controllers
             return NoContent();
         }
 
+        [HttpPost("{leagueId}/fixtures/import/preview")]
+        public async Task<IActionResult> PreviewFixtureImport([FromRoute] Guid leagueId, [FromBody] PreviewFixtureImportBody body, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new PreviewFixtureImportRequest
+            {
+                LeagueId = leagueId,
+                SeasonId = body.SeasonId,
+                DivisionId = body.DivisionId,
+                CsvText = body.CsvText ?? "",
+                UserId = userId
+            };
+            var response = await _previewFixtureImportUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response);
+        }
+
+        [HttpPost("{leagueId}/fixtures/import")]
+        public async Task<IActionResult> ImportFixtures([FromRoute] Guid leagueId, [FromBody] ImportFixturesBody body, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new ImportFixturesRequest
+            {
+                LeagueId = leagueId,
+                SeasonId = body.SeasonId,
+                DivisionId = body.DivisionId,
+                CsvText = body.CsvText ?? "",
+                UserId = userId
+            };
+            var response = await _importFixturesUseCase.ExecuteAsync(request, cancellationToken);
+            if (response.Errors.Count > 0)
+                return BadRequest(response);
+            return Ok(response);
+        }
+
         private Guid GetUserId()
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -587,5 +632,19 @@ namespace FootballManager.Api.Controllers
             }
             return userId;
         }
+    }
+
+    public class ImportFixturesBody
+    {
+        public Guid SeasonId { get; set; }
+        public Guid DivisionId { get; set; }
+        public string? CsvText { get; set; }
+    }
+
+    public class PreviewFixtureImportBody
+    {
+        public Guid SeasonId { get; set; }
+        public Guid DivisionId { get; set; }
+        public string? CsvText { get; set; }
     }
 }
