@@ -47,3 +47,26 @@ public class MatchViewModel
     public string? MatchDay { get; set; }
 }
 
+public class SeasonViewModel
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public DateOnly? EndDate { get; set; }
+    public bool IsActive { get; set; }
+}
+
+public class DivisionGroupViewModel<T>
+{
+    public string DivisionName { get; set; } = string.Empty;
+    public string DivisionSlug { get; set; } = string.Empty;
+    public List<T> Data { get; set; } = new();
+}
+
+public class SeasonGroupedViewModel<T>
+{
+    public string SeasonName { get; set; } = string.Empty;
+    public string SeasonSlug { get; set; } = string.Empty;
+    public List<DivisionGroupViewModel<T>> Divisions { get; set; } = new();
+}
+

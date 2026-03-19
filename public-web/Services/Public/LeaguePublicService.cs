@@ -25,7 +25,7 @@ public class LeaguePublicService
         try
         {
             var client = _httpClientFactory.CreateClient("BackendApi");
-            model = await client.GetFromJsonAsync<LeagueViewModel>($"leagues/{slug}");
+            model = await client.GetFromJsonAsync<LeagueViewModel>($"liga/{slug}");
             if (model != null)
             {
                 _cache.Set(cacheKey, model, TimeSpan.FromMinutes(10));

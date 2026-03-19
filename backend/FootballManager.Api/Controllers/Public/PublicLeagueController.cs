@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using FootballManager.Api.Services.Public;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,43 +5,61 @@ using Microsoft.AspNetCore.Mvc;
 namespace FootballManager.Api.Controllers.Public;
 
 [ApiController]
-[Route("api/public/leagues")]
+[Route("api/public/liga/{leagueSlug}")]
 [AllowAnonymous]
 public class PublicLeagueController : ControllerBase
 {
-    private readonly PublicLeagueService _leagueService;
+    private readonly PublicStructuredService _service;
 
-    public PublicLeagueController(PublicLeagueService leagueService)
+    public PublicLeagueController(PublicStructuredService service)
     {
-        _leagueService = leagueService;
+        _service = service;
     }
 
-    [HttpGet("{slug}")]
-    public async Task<IActionResult> GetLeague(string slug)
+    [HttpGet]
+    public async Task<IActionResult> GetLeague(string leagueSlug)
     {
-        var model = await _leagueService.GetLeagueAsync(slug, HttpContext.RequestAborted);
-        if (model == null) return NotFound();
-        return Ok(model);
+        var result = await _service.GetLeagueSummaryAsync(leagueSlug);
+        if (result == null) return NotFound();
+        return Ok(result);
     }
 
-    [HttpGet("{slug}/standings")]
-    public async Task<IActionResult> GetStandings(string slug)
+    [HttpGet("torneo/{seasonSlug}/equipo/{teamSlug}")]
+    public async Task<IActionResult> GetTeamSummary(string leagueSlug, string seasonSlug, string teamSlug)
     {
-        var standings = await _leagueService.GetStandingsAsync(slug, HttpContext.RequestAborted);
-        return Ok(standings);
+        var result = await _service.GetTeamSummaryAsync(leagueSlug, seasonSlug, teamSlug);
+        if (result == null) return NotFound();
+        return Ok(result);
     }
 
-    [HttpGet("{slug}/results")]
-    public async Task<IActionResult> GetResults(string slug)
+    [HttpGet("meta")]
+    public async Task<IActionResult> GetLeagueMeta(string leagueSlug)
     {
-        var results = await _leagueService.GetResultsAsync(slug, HttpContext.RequestAborted);
-        return Ok(results);
+        var result = await _service.GetLeagueMetaAsync(leagueSlug);
+        return Ok(result);
     }
 
-    [HttpGet("{slug}/fixture")]
-    public async Task<IActionResult> GetFixture(string slug)
+    [HttpGet("tabla")]
+    public async Task<IActionResult> GetStandings(string leagueSlug, [FromQuery] string? season)
     {
-        var fixture = await _leagueService.GetFixtureAsync(slug, HttpContext.RequestAborted);
-        return Ok(fixture);
+        var result = await _service.GetLeagueStandingsAsync(leagueSlug, season);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpGet("resultados")]
+    public async Task<IActionResult> GetResults(string leagueSlug, [FromQuery] string? season)
+    {
+        var result = await _service.GetLeagueResultsAsync(leagueSlug, season);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpGet("partidos")]
+    public async Task<IActionResult> GetMatches(string leagueSlug, [FromQuery] string? season)
+    {
+        var result = await _service.GetLeagueMatchesAsync(leagueSlug, season);
+        if (result == null) return NotFound();
+        return Ok(result);
     }
 }

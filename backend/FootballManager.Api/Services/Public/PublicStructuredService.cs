@@ -1,217 +1,401 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using FootballManager.Api.Helpers;
 using FootballManager.Api.Models.Public;
-using FootballManager.Application.Interfaces.Repositories;
-using FootballManager.Application.UseCases.Matches.GetMatches;
+using FootballManager.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using FootballManager.Domain.Entities;
 using FootballManager.Application.UseCases.Seasons.GetStandings;
 
 namespace FootballManager.Api.Services.Public;
 
 public class PublicStructuredService
 {
-    private readonly ILeagueRepository _leagueRepository;
-    private readonly ISeasonRepository _seasonRepository;
-    private readonly ITeamRepository _teamRepository;
-    private readonly IDivisionRepository _divisionRepository;
+    private readonly FootballManagerDbContext _db;
     private readonly IGetStandingsUseCase _getStandingsUseCase;
-    private readonly IGetMatchesUseCase _getMatchesUseCase;
 
-    public PublicStructuredService(
-        ILeagueRepository leagueRepository,
-        ISeasonRepository seasonRepository,
-        ITeamRepository teamRepository,
-        IDivisionRepository divisionRepository,
-        IGetStandingsUseCase getStandingsUseCase,
-        IGetMatchesUseCase getMatchesUseCase)
+    public PublicStructuredService(FootballManagerDbContext db, IGetStandingsUseCase getStandingsUseCase)
     {
-        _leagueRepository = leagueRepository;
-        _seasonRepository = seasonRepository;
-        _teamRepository = teamRepository;
-        _divisionRepository = divisionRepository;
+        _db = db;
         _getStandingsUseCase = getStandingsUseCase;
-        _getMatchesUseCase = getMatchesUseCase;
     }
 
-    public async Task<TeamSummaryPublicDto?> GetTeamSummaryAsync(string leagueSlug, string season, string teamSlug, CancellationToken cancellationToken = default)
+    private async Task<League?> GetLeagueIfPublicAsync(string leagueSlug, CancellationToken cancellationToken)
     {
-        var league = await _leagueRepository.GetBySlugAsync(leagueSlug, cancellationToken);
-        if (league == null || !league.IsPublic) return null;
+        return await _db.Leagues
+            .FirstOrDefaultAsync(l => l.Slug == leagueSlug && l.IsPublic, cancellationToken);
+    }
 
-        var seasonEntity = await _seasonRepository.GetByLeagueIdAndNameAsync(league.Id, season, cancellationToken);
-        if (seasonEntity == null) return null;
+    private async Task<Season?> ResolveSeasonAsync(Guid leagueId, string seasonSlug, CancellationToken cancellationToken)
+    {
+        var seasons = await _db.Set<Season>()
+            .Where(s => s.LeagueId == leagueId)
+            .ToListAsync(cancellationToken);
 
-        var team = await _teamRepository.GetByLeagueIdAndSlugAsync(league.Id, teamSlug, cancellationToken);
+        var targetSlug = SlugHelper.NormalizeSlug(seasonSlug);
+        return seasons.FirstOrDefault(s => SlugHelper.NormalizeSlug(s.Name) == targetSlug);
+    }
+
+    private async Task<Division?> ResolveDivisionAsync(Guid leagueId, string divisionSlug, CancellationToken cancellationToken)
+    {
+        var divisions = await _db.Set<Division>()
+            .Where(d => d.LeagueId == leagueId)
+            .ToListAsync(cancellationToken);
+
+        var targetSlug = SlugHelper.NormalizeSlug(divisionSlug);
+        return divisions.FirstOrDefault(d => SlugHelper.NormalizeSlug(d.Name) == targetSlug);
+    }
+
+    private async Task<Team?> ResolveTeamAsync(Guid leagueId, string teamSlug, CancellationToken cancellationToken)
+    {
+        var teams = await _db.Teams
+            .Where(t => t.LeagueId == leagueId)
+            .ToListAsync(cancellationToken);
+
+        var targetSlug = SlugHelper.NormalizeSlug(teamSlug);
+        return teams.FirstOrDefault(t => SlugHelper.NormalizeSlug(t.Name) == targetSlug);
+    }
+
+    public async Task<LeaguePublicDto?> GetLeagueSummaryAsync(string leagueSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
+
+        return new LeaguePublicDto
+        {
+            Id = league.Id,
+            Name = league.Name,
+            Slug = league.Slug,
+            Country = league.Country ?? string.Empty,
+            Description = league.Description ?? string.Empty
+        };
+    }
+
+    public async Task<TeamSummaryPublicDto?> GetTeamSummaryAsync(string leagueSlug, string seasonSlug, string teamSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
+
+        var season = await ResolveSeasonAsync(league.Id, seasonSlug, cancellationToken);
+        if (season == null) return null;
+
+        var team = await ResolveTeamAsync(league.Id, teamSlug, cancellationToken);
         if (team == null) return null;
 
-        var allSeasons = await _seasonRepository.GetByLeagueIdAsync(league.Id, cancellationToken);
-        var activeSeasons = allSeasons
-            .Where(s => s.EndDate == null || s.EndDate >= DateOnly.FromDateTime(DateTime.UtcNow))
-            .OrderByDescending(s => s.StartDate)
-            .Select(s => new SeasonPublicDto { Id = s.Id, Name = s.Name })
-            .ToList();
+        var response = new TeamSummaryPublicDto
+        {
+            Team = new TeamPublicDto
+            {
+                Id = team.Id,
+                Name = team.Name,
+                Slug = teamSlug,
+                ShortName = team.Name.Substring(0, Math.Min(team.Name.Length, 3)).ToUpper(),
+                LogoUrl = team.LogoUrl
+            }
+        };
 
-        var standingsReq = new GetStandingsRequest { LeagueId = league.Id, SeasonId = seasonEntity.Id, IsPublic = true, UserId = Guid.Empty };
+        response.ActiveSeasons.Add(new SeasonPublicDto { Id = season.Id, Name = season.Name });
+
+        var fixtures = await _db.Set<Fixture>()
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.Result)
+            .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
+            .Where(f => f.DivisionSeason!.SeasonId == season.Id && 
+                       (f.HomeTeamDivisionSeason.TeamId == team.Id || f.AwayTeamDivisionSeason.TeamId == team.Id))
+            .OrderBy(f => f.MatchDate).ThenBy(f => f.StartTime)
+            .ToListAsync(cancellationToken);
+
+        var now = DateTime.UtcNow;
+        var upcoming = fixtures.Where(f => f.Status != Domain.Enums.MatchStatus.COMPLETED && (f.MatchDate == null || f.MatchDate >= DateOnly.FromDateTime(now))).Take(5).ToList();
+        var recent = fixtures.Where(f => f.Status == Domain.Enums.MatchStatus.COMPLETED).OrderByDescending(f => f.MatchDate).Take(5).ToList();
+
+        response.NextMatches = upcoming.Select(f => MapToMatchDto(f)).ToList();
+        response.LastResults = recent.Select(f => MapToMatchDto(f)).ToList();
+
+        return response;
+    }
+
+    public async Task<DivisionSummaryPublicDto?> GetDivisionSummaryAsync(string leagueSlug, string seasonSlug, string divisionSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
+
+        var season = await ResolveSeasonAsync(league.Id, seasonSlug, cancellationToken);
+        if (season == null) return null;
+
+        var division = await ResolveDivisionAsync(league.Id, divisionSlug, cancellationToken);
+        if (division == null) return null;
+
+        var summary = new DivisionSummaryPublicDto
+        {
+            Division = new DivisionPublicDto
+            {
+                Id = division.Id,
+                Name = division.Name,
+                Slug = divisionSlug
+            }
+        };
+
+        var standingsReq = new GetStandingsRequest { LeagueId = league.Id, SeasonId = season.Id, IsPublic = true };
+        var standingsRes = await _getStandingsUseCase.ExecuteAsync(standingsReq, cancellationToken);
+        
+        var divisionStandings = standingsRes.Divisions.FirstOrDefault(d => d.DivisionId == division.Id);
+        if (divisionStandings != null)
+        {
+            summary.Standings = divisionStandings.Standings.Select(r => new StandingsRowPublicDto
+            {
+                Position = r.Position,
+                Played = r.Played,
+                Won = r.Wins,
+                Drawn = r.Draws,
+                Lost = r.Losses,
+                GoalsFor = r.GoalsFor,
+                GoalsAgainst = r.GoalsAgainst,
+                Points = r.Points,
+                Team = new TeamPublicDto { Id = r.TeamId, Name = r.TeamName, Slug = SlugHelper.NormalizeSlug(r.TeamName) }
+            }).ToList();
+        }
+
+        return summary;
+    }
+
+    public async Task<List<MatchPublicDto>> GetDivisionResultsAsync(string leagueSlug, string seasonSlug, string divisionSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return new List<MatchPublicDto>();
+
+        var season = await ResolveSeasonAsync(league.Id, seasonSlug, cancellationToken);
+        if (season == null) return new List<MatchPublicDto>();
+
+        var division = await ResolveDivisionAsync(league.Id, divisionSlug, cancellationToken);
+        if (division == null) return new List<MatchPublicDto>();
+
+        var divSeason = await _db.Set<DivisionSeason>().FirstOrDefaultAsync(ds => ds.SeasonId == season.Id && ds.DivisionId == division.Id, cancellationToken);
+        if (divSeason == null) return new List<MatchPublicDto>();
+
+        var fixtures = await _db.Set<Fixture>()
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.Result)
+            .Where(f => f.DivisionSeasonId == divSeason.Id && f.Status == Domain.Enums.MatchStatus.COMPLETED)
+            .OrderByDescending(f => f.MatchDate).ThenByDescending(f => f.StartTime)
+            .Take(50)
+            .ToListAsync(cancellationToken);
+
+        return fixtures.Select(MapToMatchDto).ToList();
+    }
+
+    public async Task<List<MatchPublicDto>> GetDivisionMatchesAsync(string leagueSlug, string seasonSlug, string divisionSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return new List<MatchPublicDto>();
+
+        var season = await ResolveSeasonAsync(league.Id, seasonSlug, cancellationToken);
+        if (season == null) return new List<MatchPublicDto>();
+
+        var division = await ResolveDivisionAsync(league.Id, divisionSlug, cancellationToken);
+        if (division == null) return new List<MatchPublicDto>();
+
+        var divSeason = await _db.Set<DivisionSeason>().FirstOrDefaultAsync(ds => ds.SeasonId == season.Id && ds.DivisionId == division.Id, cancellationToken);
+        if (divSeason == null) return new List<MatchPublicDto>();
+
+        var fixtures = await _db.Set<Fixture>()
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Where(f => f.DivisionSeasonId == divSeason.Id && f.Status != Domain.Enums.MatchStatus.COMPLETED)
+            .OrderBy(f => f.MatchDate).ThenBy(f => f.StartTime)
+            .Take(50)
+            .ToListAsync(cancellationToken);
+
+        return fixtures.Select(MapToMatchDto).ToList();
+    }
+
+    private MatchPublicDto MapToMatchDto(Fixture match)
+    {
+        return new MatchPublicDto
+        {
+            Id = match.Id,
+            Status = match.Status.ToString(),
+            HomeScore = match.Result?.HomeTeamGoals,
+            AwayScore = match.Result?.AwayTeamGoals,
+            HomeTeam = new TeamPublicDto 
+            { 
+                Id = match.HomeTeamDivisionSeason?.TeamId ?? Guid.Empty, 
+                Name = match.HomeTeamDivisionSeason?.Team?.Name ?? "Local", 
+                Slug = SlugHelper.NormalizeSlug(match.HomeTeamDivisionSeason?.Team?.Name) 
+            },
+            AwayTeam = new TeamPublicDto 
+            { 
+                Id = match.AwayTeamDivisionSeason?.TeamId ?? Guid.Empty, 
+                Name = match.AwayTeamDivisionSeason?.Team?.Name ?? "Visitante", 
+                Slug = SlugHelper.NormalizeSlug(match.AwayTeamDivisionSeason?.Team?.Name) 
+            },
+            Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : DateTime.UtcNow
+        };
+    }
+
+    public async Task<List<SeasonPublicDto>> GetLeagueMetaAsync(string leagueSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return new();
+
+        var seasons = await _db.Set<Season>()
+            .Where(s => s.LeagueId == league.Id)
+            .OrderByDescending(s => s.IsActive)
+            .ThenByDescending(s => s.EndDate)
+            .ToListAsync(cancellationToken);
+
+        return seasons.Select(s => new SeasonPublicDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Slug = SlugHelper.NormalizeSlug(s.Name),
+            EndDate = s.EndDate,
+            IsActive = s.IsActive
+        }).ToList();
+    }
+
+    private async Task<Season?> GetTargetSeasonAsync(Guid leagueId, string? seasonSlug, CancellationToken cancellationToken)
+    {
+        var seasons = await _db.Set<Season>()
+            .Where(s => s.LeagueId == leagueId)
+            .ToListAsync(cancellationToken);
+
+        if (seasons.Count == 0) return null;
+
+        if (!string.IsNullOrWhiteSpace(seasonSlug))
+        {
+            var targetSlug = SlugHelper.NormalizeSlug(seasonSlug);
+            var season = seasons.FirstOrDefault(s => SlugHelper.NormalizeSlug(s.Name) == targetSlug);
+            if (season != null) return season;
+        }
+
+        return seasons.OrderByDescending(s => s.IsActive).ThenByDescending(s => s.EndDate).First();
+    }
+
+    public async Task<SeasonGroupedDto<StandingsRowPublicDto>?> GetLeagueStandingsAsync(string leagueSlug, string? seasonSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
+
+        var season = await GetTargetSeasonAsync(league.Id, seasonSlug, cancellationToken);
+        if (season == null) return null;
+
+        var result = new SeasonGroupedDto<StandingsRowPublicDto>
+        {
+            SeasonName = season.Name,
+            SeasonSlug = SlugHelper.NormalizeSlug(season.Name)
+        };
+
+        var divSeasons = await _db.Set<DivisionSeason>()
+            .Include(ds => ds.Division)
+            .Where(ds => ds.SeasonId == season.Id)
+            .ToListAsync(cancellationToken);
+
+        var standingsReq = new GetStandingsRequest { LeagueId = league.Id, SeasonId = season.Id, IsPublic = true };
         var standingsRes = await _getStandingsUseCase.ExecuteAsync(standingsReq, cancellationToken);
 
-        var matchesReq = new GetMatchesRequest { LeagueId = league.Id, SeasonId = seasonEntity.Id, IsPublic = true, UserId = Guid.Empty };
-        var matchesRes = await _getMatchesUseCase.ExecuteAsync(matchesReq, cancellationToken);
-
-        var allMatches = matchesRes.Rounds.SelectMany(r => r.Matches).ToList();
-        var results = allMatches
-            .Where(m => (m.Status == "COMPLETED" || m.Status == "Finished") && (m.HomeTeamId == team.Id || m.AwayTeamId == team.Id))
-            .OrderByDescending(m => m.MatchDate + " " + m.KickoffTime)
-            .Take(10)
-            .Select(m => new MatchPublicDto
-            {
-                Id = m.Id,
-                Status = m.Status,
-                HomeScore = m.HomeScore,
-                AwayScore = m.AwayScore,
-                HomeTeam = new TeamPublicDto { Id = m.HomeTeamId, Name = m.HomeTeamName ?? "", Slug = m.HomeTeamId.ToString() },
-                AwayTeam = new TeamPublicDto { Id = m.AwayTeamId, Name = m.AwayTeamName ?? "", Slug = m.AwayTeamId.ToString() },
-                Kickoff = DateTime.TryParse(m.MatchDate + " " + m.KickoffTime, out var dt) ? dt : DateTime.UtcNow
-            })
-            .ToList();
-
-        var nextMatches = allMatches
-            .Where(m => m.Status != "COMPLETED" && m.Status != "Finished" && (m.HomeTeamId == team.Id || m.AwayTeamId == team.Id))
-            .OrderBy(m => m.MatchDate + " " + m.KickoffTime)
-            .Take(5)
-            .Select(m => new MatchPublicDto
-            {
-                Id = m.Id,
-                Status = m.Status,
-                HomeTeam = new TeamPublicDto { Id = m.HomeTeamId, Name = m.HomeTeamName ?? "", Slug = m.HomeTeamId.ToString() },
-                AwayTeam = new TeamPublicDto { Id = m.AwayTeamId, Name = m.AwayTeamName ?? "", Slug = m.AwayTeamId.ToString() },
-                Kickoff = DateTime.TryParse(m.MatchDate + " " + m.KickoffTime, out var dt) ? dt : DateTime.UtcNow
-            })
-            .ToList();
-
-        var teamStanding = standingsRes.Divisions
-            .SelectMany(d => d.Standings.Where(s => s.TeamId == team.Id))
-            .FirstOrDefault();
-
-        return new TeamSummaryPublicDto
+        foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
         {
-            Team = new TeamPublicDto { Id = team.Id, Name = team.Name, Slug = team.Slug, ShortName = team.ShortName, LogoUrl = team.LogoUrl },
-            ActiveSeasons = activeSeasons,
-            NextMatches = nextMatches,
-            LastResults = results,
-            Standing = teamStanding != null ? new StandingSummaryDto
+            var group = new DivisionGroupDto<StandingsRowPublicDto>
             {
-                Position = teamStanding.Position,
-                Played = teamStanding.Played,
-                Points = teamStanding.Points,
-                Wins = teamStanding.Wins,
-                Draws = teamStanding.Draws,
-                Losses = teamStanding.Losses
-            } : null
-        };
-    }
+                DivisionName = ds.Division.Name,
+                DivisionSlug = SlugHelper.NormalizeSlug(ds.Division.Name)
+            };
 
-    public async Task<DivisionSummaryPublicDto?> GetDivisionSummaryAsync(string leagueSlug, string season, string divisionSlug, CancellationToken cancellationToken = default)
-    {
-        var league = await _leagueRepository.GetBySlugAsync(leagueSlug, cancellationToken);
-        if (league == null || !league.IsPublic) return null;
-
-        var seasonEntity = await _seasonRepository.GetByLeagueIdAndNameAsync(league.Id, season, cancellationToken);
-        if (seasonEntity == null) return null;
-
-        var division = await _divisionRepository.GetByLeagueIdAndSlugAsync(league.Id, divisionSlug, cancellationToken);
-        if (division == null) return null;
-
-        var req = new GetStandingsRequest { LeagueId = league.Id, SeasonId = seasonEntity.Id, IsPublic = true, UserId = Guid.Empty };
-        var res = await _getStandingsUseCase.ExecuteAsync(req, cancellationToken);
-
-        var divStandings = res.Divisions.FirstOrDefault(d => d.DivisionId == division.Id);
-        if (divStandings == null) return null;
-
-        var standings = divStandings.Standings.Select(s => new StandingsRowPublicDto
-        {
-            Position = s.Position,
-            Played = s.Played,
-            Won = s.Wins,
-            Drawn = s.Draws,
-            Lost = s.Losses,
-            GoalsFor = s.GoalsFor,
-            GoalsAgainst = s.GoalsAgainst,
-            Points = s.Points,
-            Team = new TeamPublicDto { Id = s.TeamId, Name = s.TeamName, Slug = s.TeamId.ToString() }
-        }).ToList();
-
-        return new DivisionSummaryPublicDto
-        {
-            Division = new DivisionPublicDto { Id = division.Id, Name = division.Name, Slug = division.Slug },
-            Standings = standings
-        };
-    }
-
-    public async Task<List<MatchPublicDto>?> GetDivisionResultsAsync(string leagueSlug, string season, string divisionSlug, CancellationToken cancellationToken = default)
-    {
-        var league = await _leagueRepository.GetBySlugAsync(leagueSlug, cancellationToken);
-        if (league == null || !league.IsPublic) return null;
-
-        var seasonEntity = await _seasonRepository.GetByLeagueIdAndNameAsync(league.Id, season, cancellationToken);
-        if (seasonEntity == null) return null;
-
-        var division = await _divisionRepository.GetByLeagueIdAndSlugAsync(league.Id, divisionSlug, cancellationToken);
-        if (division == null) return null;
-
-        var req = new GetMatchesRequest { LeagueId = league.Id, SeasonId = seasonEntity.Id, DivisionId = division.Id, IsPublic = true, UserId = Guid.Empty };
-        var res = await _getMatchesUseCase.ExecuteAsync(req, cancellationToken);
-
-        var results = new List<MatchPublicDto>();
-        foreach (var group in res.Rounds)
-        {
-            foreach (var match in group.Matches.Where(m => m.Status == "COMPLETED" || m.Status == "Finished"))
+            var divisionStandings = standingsRes.Divisions.FirstOrDefault(d => d.DivisionId == ds.DivisionId);
+            if (divisionStandings != null)
             {
-                results.Add(new MatchPublicDto
+                group.Data = divisionStandings.Standings.Select(r => new StandingsRowPublicDto
                 {
-                    Id = match.Id,
-                    Status = match.Status,
-                    HomeScore = match.HomeScore,
-                    AwayScore = match.AwayScore,
-                    HomeTeam = new TeamPublicDto { Id = match.HomeTeamId, Name = match.HomeTeamName ?? "", Slug = match.HomeTeamId.ToString() },
-                    AwayTeam = new TeamPublicDto { Id = match.AwayTeamId, Name = match.AwayTeamName ?? "", Slug = match.AwayTeamId.ToString() },
-                    Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : DateTime.UtcNow
+                    Position = r.Position,
+                    Played = r.Played,
+                    Won = r.Wins,
+                    Drawn = r.Draws,
+                    Lost = r.Losses,
+                    GoalsFor = r.GoalsFor,
+                    GoalsAgainst = r.GoalsAgainst,
+                    Points = r.Points,
+                    Team = new TeamPublicDto { Id = r.TeamId, Name = r.TeamName, Slug = SlugHelper.NormalizeSlug(r.TeamName) }
+                }).ToList();
+            }
+
+            result.Divisions.Add(group);
+        }
+
+        return result;
+    }
+
+    public async Task<SeasonGroupedDto<MatchPublicDto>?> GetLeagueResultsAsync(string leagueSlug, string? seasonSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
+
+        var season = await GetTargetSeasonAsync(league.Id, seasonSlug, cancellationToken);
+        if (season == null) return null;
+
+        var result = new SeasonGroupedDto<MatchPublicDto> { SeasonName = season.Name, SeasonSlug = SlugHelper.NormalizeSlug(season.Name) };
+
+        var divSeasons = await _db.Set<DivisionSeason>().Include(ds => ds.Division)
+            .Where(ds => ds.SeasonId == season.Id).ToListAsync(cancellationToken);
+
+        var allFixtures = await _db.Set<Fixture>()
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.Result)
+            .Where(f => f.SeasonId == season.Id && f.Status == Domain.Enums.MatchStatus.COMPLETED)
+            .OrderByDescending(f => f.MatchDate).ThenByDescending(f => f.StartTime)
+            .ToListAsync(cancellationToken);
+
+        foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
+        {
+            var matches = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(MapToMatchDto).ToList();
+            if (matches.Any())
+            {
+                result.Divisions.Add(new DivisionGroupDto<MatchPublicDto>
+                {
+                    DivisionName = ds.Division.Name,
+                    DivisionSlug = SlugHelper.NormalizeSlug(ds.Division.Name),
+                    Data = matches
                 });
             }
         }
-        return results.OrderByDescending(m => m.Kickoff).ToList();
+        return result;
     }
 
-    public async Task<List<MatchPublicDto>?> GetDivisionMatchesAsync(string leagueSlug, string season, string divisionSlug, CancellationToken cancellationToken = default)
+    public async Task<SeasonGroupedDto<MatchPublicDto>?> GetLeagueMatchesAsync(string leagueSlug, string? seasonSlug, CancellationToken cancellationToken = default)
     {
-        var league = await _leagueRepository.GetBySlugAsync(leagueSlug, cancellationToken);
-        if (league == null || !league.IsPublic) return null;
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
 
-        var seasonEntity = await _seasonRepository.GetByLeagueIdAndNameAsync(league.Id, season, cancellationToken);
-        if (seasonEntity == null) return null;
+        var season = await GetTargetSeasonAsync(league.Id, seasonSlug, cancellationToken);
+        if (season == null) return null;
 
-        var division = await _divisionRepository.GetByLeagueIdAndSlugAsync(league.Id, divisionSlug, cancellationToken);
-        if (division == null) return null;
+        var result = new SeasonGroupedDto<MatchPublicDto> { SeasonName = season.Name, SeasonSlug = SlugHelper.NormalizeSlug(season.Name) };
 
-        var req = new GetMatchesRequest { LeagueId = league.Id, SeasonId = seasonEntity.Id, DivisionId = division.Id, IsPublic = true, UserId = Guid.Empty };
-        var res = await _getMatchesUseCase.ExecuteAsync(req, cancellationToken);
+        var divSeasons = await _db.Set<DivisionSeason>().Include(ds => ds.Division)
+            .Where(ds => ds.SeasonId == season.Id).ToListAsync(cancellationToken);
 
-        var matches = new List<MatchPublicDto>();
-        foreach (var group in res.Rounds)
+        var allFixtures = await _db.Set<Fixture>()
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.Result)
+            .Where(f => f.SeasonId == season.Id && f.Status != Domain.Enums.MatchStatus.COMPLETED)
+            .OrderBy(f => f.MatchDate).ThenBy(f => f.StartTime)
+            .ToListAsync(cancellationToken);
+
+        foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
         {
-            foreach (var match in group.Matches.Where(m => m.Status != "COMPLETED" && m.Status != "Finished"))
+            var matches = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(MapToMatchDto).ToList();
+            if (matches.Any())
             {
-                matches.Add(new MatchPublicDto
+                result.Divisions.Add(new DivisionGroupDto<MatchPublicDto>
                 {
-                    Id = match.Id,
-                    Status = match.Status,
-                    HomeTeam = new TeamPublicDto { Id = match.HomeTeamId, Name = match.HomeTeamName ?? "", Slug = match.HomeTeamId.ToString() },
-                    AwayTeam = new TeamPublicDto { Id = match.AwayTeamId, Name = match.AwayTeamName ?? "", Slug = match.AwayTeamId.ToString() },
-                    Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : DateTime.UtcNow
+                    DivisionName = ds.Division.Name,
+                    DivisionSlug = SlugHelper.NormalizeSlug(ds.Division.Name),
+                    Data = matches
                 });
             }
         }
-        return matches.OrderBy(m => m.Kickoff).ToList();
+        return result;
     }
 }

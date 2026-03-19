@@ -49,6 +49,9 @@ public class SeasonPublicDto
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public DateOnly? EndDate { get; set; }
+    public bool IsActive { get; set; }
 }
 
 public class DivisionPublicDto
@@ -81,4 +84,18 @@ public class DivisionSummaryPublicDto
 {
     public DivisionPublicDto Division { get; set; } = new();
     public List<StandingsRowPublicDto> Standings { get; set; } = new();
+}
+
+public class DivisionGroupDto<T>
+{
+    public string DivisionName { get; set; } = string.Empty;
+    public string DivisionSlug { get; set; } = string.Empty;
+    public List<T> Data { get; set; } = new();
+}
+
+public class SeasonGroupedDto<T>
+{
+    public string SeasonName { get; set; } = string.Empty;
+    public string SeasonSlug { get; set; } = string.Empty;
+    public List<DivisionGroupDto<T>> Divisions { get; set; } = new();
 }
