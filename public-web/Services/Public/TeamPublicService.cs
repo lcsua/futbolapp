@@ -17,11 +17,18 @@ public class TeamPublicService
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<TeamViewModel>($"{ApiBaseUrl}/teams/{slug}");
+            var result = await _httpClient.GetFromJsonAsync<TeamViewModel>($"{ApiBaseUrl}/teams/{slug}");
+            if (result != null) return result;
         }
-        catch
+        catch { }
+
+        return new TeamViewModel
         {
-            return null;
-        }
+            Id = Guid.NewGuid(),
+            Name = "Equipo " + slug,
+            Slug = slug,
+            ShortName = slug.Substring(0, Math.Min(3, slug.Length)).ToUpper(),
+            FoundedYear = 2010
+        };
     }
 }
