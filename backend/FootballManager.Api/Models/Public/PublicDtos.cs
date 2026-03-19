@@ -44,3 +44,41 @@ public class MatchPublicDto
     public int? HomeScore { get; set; }
     public int? AwayScore { get; set; }
 }
+
+public class SeasonPublicDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+public class DivisionPublicDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+}
+
+public class StandingSummaryDto
+{
+    public int Position { get; set; }
+    public int Played { get; set; }
+    public int Points { get; set; }
+    public int Wins { get; set; }
+    public int Draws { get; set; }
+    public int Losses { get; set; }
+}
+
+public class TeamSummaryPublicDto
+{
+    public TeamPublicDto Team { get; set; } = new();
+    public List<SeasonPublicDto> ActiveSeasons { get; set; } = new();
+    public List<MatchPublicDto> NextMatches { get; set; } = new();
+    public List<MatchPublicDto> LastResults { get; set; } = new();
+    public StandingSummaryDto? Standing { get; set; }
+}
+
+public class DivisionSummaryPublicDto
+{
+    public DivisionPublicDto Division { get; set; } = new();
+    public List<StandingsRowPublicDto> Standings { get; set; } = new();
+}

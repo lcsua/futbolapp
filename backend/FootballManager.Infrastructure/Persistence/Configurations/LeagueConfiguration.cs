@@ -20,6 +20,17 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(e => e.Name).IsUnique();
 
+            builder.Property(e => e.Slug)
+                .IsRequired()
+                .HasMaxLength(150)
+                .HasColumnName("slug");
+
+            builder.HasIndex(e => e.Slug).IsUnique();
+
+            builder.Property(e => e.IsPublic)
+                .HasDefaultValue(false)
+                .HasColumnName("is_public");
+
             builder.Property(e => e.Description).HasColumnName("description");
             builder.Property(e => e.Country).HasMaxLength(100).HasColumnName("country");
             builder.Property(e => e.LogoUrl).HasColumnName("logo_url");

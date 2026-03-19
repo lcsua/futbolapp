@@ -7,6 +7,7 @@ namespace FootballManager.Application.UseCases.Leagues.CreateDivision
         public Guid LeagueId { get; set; }
         public Guid UserId { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string? Slug { get; set; }
         public string? Description { get; set; }
     }
 }

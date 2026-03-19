@@ -15,6 +15,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicLeagueService>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicTeamService>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicMatchService>();
+builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicStructuredService>();
 
 var app = builder.Build();
 

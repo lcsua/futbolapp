@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 
 namespace FootballManager.Application.UseCases.Leagues.UpdateLeague
@@ -35,7 +36,15 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateLeague
             if (league == null)
                 throw new KeyNotFoundException($"League {request.LeagueId} not found.");
 
-            league.UpdateDetails(request.Name, request.Country, request.Description ?? string.Empty, request.LogoUrl ?? string.Empty);
+            var slug = SlugGenerator.Generate(!string.IsNullOrWhiteSpace(request.Slug) ? request.Slug : request.Name);
+            if (string.IsNullOrWhiteSpace(slug))
+                throw new ArgumentException("Could not generate a valid slug from the league name.");
+
+            var existingBySlug = await _leagueRepository.GetBySlugAsync(slug, cancellationToken);
+            if (existingBySlug != null && existingBySlug.Id != request.LeagueId)
+                throw new ArgumentException("Slug already in use, please choose another one");
+
+            league.UpdateDetails(request.Name, request.Country, slug, request.Description ?? string.Empty, request.LogoUrl ?? string.Empty, request.IsPublic, request.IsActive);
             _leagueRepository.Update(league);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }

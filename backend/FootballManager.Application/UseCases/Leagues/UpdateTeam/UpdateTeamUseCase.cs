@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 
 namespace FootballManager.Application.UseCases.Leagues.UpdateTeam
@@ -38,6 +40,20 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateTeam
                 throw new ForbiddenAccessException("Team does not belong to this league.");
 
             team.UpdateName(request.Name, request.ShortName);
+            if (!string.IsNullOrWhiteSpace(request.Slug))
+            {
+                var slug = SlugGenerator.Generate(request.Slug);
+                var existing = await _teamRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
+                var slugs = existing.Where(t => t.Id != request.TeamId).Select(t => t.Slug).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var finalSlug = slug;
+                var counter = 1;
+                while (slugs.Contains(finalSlug))
+                {
+                    finalSlug = $"{slug}-{counter}";
+                    counter++;
+                }
+                team.SetSlug(finalSlug);
+            }
             team.UpdateDetails(request.PrimaryColor, request.SecondaryColor, request.LogoUrl, request.Email, request.PhotoUrl);
             team.SetDelegateInfo(request.DelegateName, request.DelegateContact);
             team.SetFoundedYear(request.FoundedYear);

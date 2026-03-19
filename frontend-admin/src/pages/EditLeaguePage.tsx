@@ -66,8 +66,11 @@ export function EditLeaguePage() {
   const initialValues: LeagueFormData = {
     name: league.name,
     country: league.country,
+    slug: league.slug,
     description: league.description ?? '',
     logoUrl: league.logoUrl ?? '',
+    isPublic: league.isPublic ?? false,
+    isActive: league.isActive ?? true,
   }
 
   return (
@@ -82,6 +85,7 @@ export function EditLeaguePage() {
         error={error}
         submitLabel="Save"
         title="League details"
+        excludeLeagueId={leagueId}
       />
     </Box>
   )

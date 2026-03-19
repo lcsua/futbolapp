@@ -22,4 +22,3 @@ public class MatchController : Controller
         return View("~/Views/Public/Match.cshtml", model);
     }
 }
-

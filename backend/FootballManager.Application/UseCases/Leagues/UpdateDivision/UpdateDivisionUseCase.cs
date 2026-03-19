@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 
 namespace FootballManager.Application.UseCases.Leagues.UpdateDivision
@@ -37,7 +39,20 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateDivision
             if (division.LeagueId != request.LeagueId)
                 throw new ForbiddenAccessException("Division does not belong to this league.");
 
-            division.UpdateDetails(request.Name, request.Description);
+            var slug = !string.IsNullOrWhiteSpace(request.Slug)
+                ? SlugGenerator.Generate(request.Slug)
+                : SlugGenerator.Generate(request.Name);
+            var existing = await _divisionRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
+            var slugs = existing.Where(d => d.Id != request.DivisionId).Select(d => d.Slug).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var finalSlug = slug;
+            var counter = 1;
+            while (slugs.Contains(finalSlug))
+            {
+                finalSlug = $"{slug}-{counter}";
+                counter++;
+            }
+
+            division.UpdateDetails(request.Name, finalSlug, request.Description);
             _divisionRepository.Update(division);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }

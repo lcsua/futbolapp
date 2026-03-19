@@ -34,12 +34,6 @@ public class PublicLeagueService
         _leagueRepository = leagueRepository;
     }
 
-    private Guid ParseSlug(string slug)
-    {
-        if (Guid.TryParse(slug, out var id)) return id;
-        throw new KeyNotFoundException("Invalid slug format.");
-    }
-
     private async Task<Guid?> GetActiveSeasonIdAsync(Guid leagueId, CancellationToken cancellationToken)
     {
         var league = await _leagueRepository.GetByIdAsync(leagueId, cancellationToken);
@@ -50,29 +44,29 @@ public class PublicLeagueService
 
     public async Task<LeaguePublicDto?> GetLeagueAsync(string slug, CancellationToken cancellationToken = default)
     {
-        try
+        var league = await _leagueRepository.GetBySlugAsync(slug, cancellationToken);
+        if (league == null || !league.IsPublic)
+            return null;
+
+        return new LeaguePublicDto
         {
-            var leagueId = ParseSlug(slug);
-            var req = new GetLeagueRequest(leagueId, Guid.Empty, isPublic: true);
-            var res = await _getLeagueUseCase.ExecuteAsync(req, cancellationToken);
-            
-            return new LeaguePublicDto
-            {
-                Id = res.League.Id,
-                Name = res.League.Name,
-                Slug = res.League.Id.ToString(), // Or slug parameter
-                Country = res.League.Country,
-                Description = res.League.Description
-            };
-        }
-        catch (KeyNotFoundException) { return null; }
+            Id = league.Id,
+            Name = league.Name,
+            Slug = league.Slug,
+            Country = league.Country,
+            Description = league.Description ?? string.Empty
+        };
     }
 
     public async Task<List<StandingsRowPublicDto>> GetStandingsAsync(string slug, CancellationToken cancellationToken = default)
     {
+        var league = await _leagueRepository.GetBySlugAsync(slug, cancellationToken);
+        if (league == null || !league.IsPublic)
+            return new List<StandingsRowPublicDto>();
+
         try
         {
-            var leagueId = ParseSlug(slug);
+            var leagueId = league.Id;
             var seasonId = await GetActiveSeasonIdAsync(leagueId, cancellationToken);
             if (!seasonId.HasValue) return new List<StandingsRowPublicDto>();
 
@@ -107,9 +101,13 @@ public class PublicLeagueService
 
     public async Task<List<MatchPublicDto>> GetResultsAsync(string slug, CancellationToken cancellationToken = default)
     {
+        var league = await _leagueRepository.GetBySlugAsync(slug, cancellationToken);
+        if (league == null || !league.IsPublic)
+            return new List<MatchPublicDto>();
+
         try
         {
-            var leagueId = ParseSlug(slug);
+            var leagueId = league.Id;
             var seasonId = await GetActiveSeasonIdAsync(leagueId, cancellationToken);
             if (!seasonId.HasValue) return new List<MatchPublicDto>();
 
@@ -142,9 +140,13 @@ public class PublicLeagueService
 
     public async Task<List<MatchPublicDto>> GetFixtureAsync(string slug, CancellationToken cancellationToken = default)
     {
+        var league = await _leagueRepository.GetBySlugAsync(slug, cancellationToken);
+        if (league == null || !league.IsPublic)
+            return new List<MatchPublicDto>();
+
         try
         {
-            var leagueId = ParseSlug(slug);
+            var leagueId = league.Id;
             var seasonId = await GetActiveSeasonIdAsync(leagueId, cancellationToken);
             if (!seasonId.HasValue) return new List<MatchPublicDto>();
 

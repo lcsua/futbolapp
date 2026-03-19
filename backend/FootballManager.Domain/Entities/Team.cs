@@ -10,6 +10,7 @@ namespace FootballManager.Domain.Entities
         public virtual League League { get; private set; }
 
         public string Name { get; private set; }
+        public string Slug { get; private set; }
         public string ShortName { get; private set; }
         public string PrimaryColor { get; private set; }
         public string SecondaryColor { get; private set; }
@@ -25,11 +26,12 @@ namespace FootballManager.Domain.Entities
 
         protected Team() { }
 
-        public Team(League league, string name, string shortName = null, string email = null)
+        public Team(League league, string name, string slug, string shortName = null, string email = null)
         {
             League = league ?? throw new ArgumentNullException(nameof(league));
             LeagueId = league.Id;
             Name = !string.IsNullOrWhiteSpace(name) ? name : throw new ArgumentException("Team name cannot be empty.", nameof(name));
+            Slug = !string.IsNullOrWhiteSpace(slug) ? slug.ToLowerInvariant() : throw new ArgumentException("Team slug cannot be empty.", nameof(slug));
             ShortName = shortName ?? string.Empty;
             PrimaryColor = string.Empty;
             SecondaryColor = string.Empty;
@@ -44,6 +46,12 @@ namespace FootballManager.Domain.Entities
         {
             Name = !string.IsNullOrWhiteSpace(name) ? name : throw new ArgumentException("Team name cannot be empty.", nameof(name));
             ShortName = shortName ?? string.Empty;
+            UpdateTimestamp();
+        }
+
+        public void SetSlug(string slug)
+        {
+            Slug = !string.IsNullOrWhiteSpace(slug) ? slug.ToLowerInvariant() : throw new ArgumentException("Team slug cannot be empty.", nameof(slug));
             UpdateTimestamp();
         }
 

@@ -20,6 +20,13 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
                 .HasMaxLength(100)
                 .HasColumnName("name");
 
+            builder.Property(e => e.Slug)
+                .IsRequired()
+                .HasMaxLength(150)
+                .HasColumnName("slug");
+
+            builder.HasIndex(e => new { e.LeagueId, e.Slug }).IsUnique();
+
             builder.Property(e => e.ShortName).HasMaxLength(20).HasColumnName("short_name");
             builder.Property(e => e.PrimaryColor).HasMaxLength(50).HasColumnName("primary_color");
             builder.Property(e => e.SecondaryColor).HasMaxLength(50).HasColumnName("secondary_color");

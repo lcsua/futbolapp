@@ -39,6 +39,7 @@ using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.ImportFixtures;
 using FootballManager.Application.UseCases.Seasons.GetStandings;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Interfaces.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Collections.Generic;
@@ -87,6 +88,7 @@ namespace FootballManager.Api.Controllers
         private readonly IImportFixturesUseCase _importFixturesUseCase;
         private readonly IPreviewFixtureImportUseCase _previewFixtureImportUseCase;
         private readonly IGetStandingsUseCase _getStandingsUseCase;
+        private readonly ILeagueRepository _leagueRepository;
 
         public LeaguesController(
             ICreateLeagueUseCase createLeagueUseCase,
@@ -126,7 +128,8 @@ namespace FootballManager.Api.Controllers
             IGetSeasonFixturesUseCase getSeasonFixturesUseCase,
             IImportFixturesUseCase importFixturesUseCase,
             IPreviewFixtureImportUseCase previewFixtureImportUseCase,
-            IGetStandingsUseCase getStandingsUseCase)
+            IGetStandingsUseCase getStandingsUseCase,
+            ILeagueRepository leagueRepository)
         {
             _createLeagueUseCase = createLeagueUseCase ?? throw new ArgumentNullException(nameof(createLeagueUseCase));
             _createSeasonUseCase = createSeasonUseCase ?? throw new ArgumentNullException(nameof(createSeasonUseCase));
@@ -166,6 +169,17 @@ namespace FootballManager.Api.Controllers
             _importFixturesUseCase = importFixturesUseCase ?? throw new ArgumentNullException(nameof(importFixturesUseCase));
             _previewFixtureImportUseCase = previewFixtureImportUseCase ?? throw new ArgumentNullException(nameof(previewFixtureImportUseCase));
             _getStandingsUseCase = getStandingsUseCase ?? throw new ArgumentNullException(nameof(getStandingsUseCase));
+            _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
+        }
+
+        [HttpGet("check-slug")]
+        public async Task<IActionResult> CheckSlugAvailability([FromQuery] string slug, [FromQuery] Guid? excludeLeagueId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+                return BadRequest(new { available = false });
+            var existing = await _leagueRepository.GetBySlugAsync(slug, cancellationToken);
+            var available = existing == null || (excludeLeagueId.HasValue && existing.Id == excludeLeagueId.Value);
+            return Ok(new { available });
         }
 
         [HttpPost]
@@ -180,8 +194,15 @@ namespace FootballManager.Api.Controllers
 
             request.UserId = userId;
 
-            var response = await _createLeagueUseCase.ExecuteAsync(request, cancellationToken);
-            return CreatedAtAction(nameof(GetById), new { leagueId = response.Id }, response);
+            try
+            {
+                var response = await _createLeagueUseCase.ExecuteAsync(request, cancellationToken);
+                return CreatedAtAction(nameof(GetById), new { leagueId = response.Id }, response);
+            }
+            catch (ArgumentException ex) when (ex.Message.Contains("Slug already in use"))
+            {
+                return BadRequest(new { message = "Slug already in use, please choose another one" });
+            }
         }
 
         [HttpGet]
@@ -203,7 +224,7 @@ namespace FootballManager.Api.Controllers
 
             var request = new GetLeagueRequest(leagueId, userId);
             var response = await _getLeagueUseCase.ExecuteAsync(request, cancellationToken);
-            return Ok(response);
+            return Ok(response.League);
         }
 
         [HttpPut("{leagueId}")]
@@ -214,8 +235,16 @@ namespace FootballManager.Api.Controllers
 
             request.LeagueId = leagueId;
             request.UserId = userId;
-            await _updateLeagueUseCase.ExecuteAsync(request, cancellationToken);
-            return NoContent();
+
+            try
+            {
+                await _updateLeagueUseCase.ExecuteAsync(request, cancellationToken);
+                return NoContent();
+            }
+            catch (ArgumentException ex) when (ex.Message.Contains("Slug already in use"))
+            {
+                return BadRequest(new { message = "Slug already in use, please choose another one" });
+            }
         }
 
         [HttpGet("{leagueId}/seasons")]

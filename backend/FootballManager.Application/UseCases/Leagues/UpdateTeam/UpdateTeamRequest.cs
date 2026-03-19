@@ -8,6 +8,7 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateTeam
         public Guid TeamId { get; set; }
         public Guid UserId { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string? Slug { get; set; }
         public string? ShortName { get; set; }
         public string? PrimaryColor { get; set; }
         public string? SecondaryColor { get; set; }

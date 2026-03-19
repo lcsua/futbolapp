@@ -1,34 +1,42 @@
 using PublicWeb.Models.Public;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace PublicWeb.Services.Public;
 
 public class MatchPublicService
 {
-    private readonly HttpClient _httpClient;
-    private const string ApiBaseUrl = "http://localhost:5000/api";
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IMemoryCache _cache;
+    private readonly ILogger<MatchPublicService> _logger;
 
-    public MatchPublicService(HttpClient httpClient)
+    public MatchPublicService(IHttpClientFactory httpClientFactory, IMemoryCache cache, ILogger<MatchPublicService> logger)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
+        _cache = cache;
+        _logger = logger;
     }
 
     public async Task<MatchViewModel?> GetMatchByIdAsync(Guid id)
     {
+        string cacheKey = $"partido_{id}";
+        if (_cache.TryGetValue(cacheKey, out MatchViewModel? model)) return model;
+
         try
         {
-            var result = await _httpClient.GetFromJsonAsync<MatchViewModel>($"{ApiBaseUrl}/matches/{id}");
-            if (result != null) return result;
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            model = await client.GetFromJsonAsync<MatchViewModel>($"matches/{id}");
+            if (model != null)
+            {
+                _cache.Set(cacheKey, model, TimeSpan.FromMinutes(5));
+                return model;
+            }
         }
-        catch { }
-
-        return new MatchViewModel
+        catch (Exception ex)
         {
-            Id = id,
-            Kickoff = DateTime.Now.AddHours(5),
-            Status = "Scheduled",
-            HomeTeam = new TeamViewModel { Name = "Local", Slug = "local" },
-            AwayTeam = new TeamViewModel { Name = "Visitante", Slug = "visitante" }
-        };
+            _logger.LogError(ex, "Error calling backend API for match {Id}", id);
+        }
+
+        return null;
     }
 }

@@ -1,83 +1,111 @@
 using PublicWeb.Models.Public;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace PublicWeb.Services.Public;
 
 public class LeaguePublicService
 {
-    private readonly HttpClient _httpClient;
-    private const string ApiBaseUrl = "http://localhost:5000/api";
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IMemoryCache _cache;
+    private readonly ILogger<LeaguePublicService> _logger;
 
-    public LeaguePublicService(HttpClient httpClient)
+    public LeaguePublicService(IHttpClientFactory httpClientFactory, IMemoryCache cache, ILogger<LeaguePublicService> logger)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
+        _cache = cache;
+        _logger = logger;
     }
 
     public async Task<LeagueViewModel?> GetLeagueBySlugAsync(string slug)
     {
+        string cacheKey = $"liga_{slug}";
+        if (_cache.TryGetValue(cacheKey, out LeagueViewModel? model)) return model;
+
         try
         {
-            var result = await _httpClient.GetFromJsonAsync<LeagueViewModel>($"{ApiBaseUrl}/leagues/{slug}");
-            if (result != null) return result;
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            model = await client.GetFromJsonAsync<LeagueViewModel>($"leagues/{slug}");
+            if (model != null)
+            {
+                _cache.Set(cacheKey, model, TimeSpan.FromMinutes(10));
+                return model;
+            }
         }
-        catch { }
-
-        // Fallback simulado para que puedas ver el diseño de la web
-        return new LeagueViewModel
+        catch (Exception ex)
         {
-            Id = Guid.NewGuid(),
-            Name = "Liga de Prueba Muestra",
-            Slug = slug,
-            Country = "Argentina",
-            Description = "Esta es una liga de prueba para visualizar el diseño frontend."
-        };
+            _logger.LogError(ex, "Error calling backend API for league {Slug}", slug);
+        }
+
+        return null;
     }
 
     public async Task<List<StandingsRowViewModel>> GetStandingsAsync(string leagueSlug)
     {
+        string cacheKey = $"tabla_{leagueSlug}";
+        if (_cache.TryGetValue(cacheKey, out List<StandingsRowViewModel>? standings)) return standings ?? new();
+
         try
         {
-            var standings = await _httpClient.GetFromJsonAsync<List<StandingsRowViewModel>>($"{ApiBaseUrl}/leagues/{leagueSlug}/standings");
-            if (standings != null && standings.Any()) return standings;
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            standings = await client.GetFromJsonAsync<List<StandingsRowViewModel>>($"leagues/{leagueSlug}/standings");
+            if (standings != null)
+            {
+                _cache.Set(cacheKey, standings, TimeSpan.FromMinutes(5));
+                return standings;
+            }
         }
-        catch { }
-
-        // Fallback simulado
-        return new List<StandingsRowViewModel>
+        catch (Exception ex)
         {
-            new StandingsRowViewModel { Position = 1, Team = new TeamViewModel { Name = "Equipo A", Slug = "equipo-a" }, Played = 10, Won = 8, Drawn = 1, Lost = 1, GoalsFor = 20, GoalsAgainst = 5, Points = 25 },
-            new StandingsRowViewModel { Position = 2, Team = new TeamViewModel { Name = "Equipo B", Slug = "equipo-b" }, Played = 10, Won = 7, Drawn = 2, Lost = 1, GoalsFor = 15, GoalsAgainst = 8, Points = 23 },
-            new StandingsRowViewModel { Position = 3, Team = new TeamViewModel { Name = "Equipo C", Slug = "equipo-c" }, Played = 10, Won = 5, Drawn = 3, Lost = 2, GoalsFor = 12, GoalsAgainst = 9, Points = 18 },
-        };
+            _logger.LogError(ex, "Error calling backend API for standings in league {Slug}", leagueSlug);
+        }
+
+        return new List<StandingsRowViewModel>();
     }
 
     public async Task<List<MatchViewModel>> GetResultsAsync(string leagueSlug)
     {
+        string cacheKey = $"resultados_{leagueSlug}";
+        if (_cache.TryGetValue(cacheKey, out List<MatchViewModel>? results)) return results ?? new();
+
         try
         {
-            var results = await _httpClient.GetFromJsonAsync<List<MatchViewModel>>($"{ApiBaseUrl}/leagues/{leagueSlug}/results");
-            if (results != null && results.Any()) return results;
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            results = await client.GetFromJsonAsync<List<MatchViewModel>>($"leagues/{leagueSlug}/results");
+            if (results != null)
+            {
+                _cache.Set(cacheKey, results, TimeSpan.FromMinutes(5));
+                return results;
+            }
         }
-        catch { }
-
-        return new List<MatchViewModel>
+        catch (Exception ex)
         {
-            new MatchViewModel { Id = Guid.NewGuid(), Kickoff = DateTime.Now.AddDays(-2), Status = "Finished", HomeTeam = new TeamViewModel { Name="Equipo A", Slug="equipo-a" }, AwayTeam = new TeamViewModel { Name="Equipo B", Slug="equipo-b" }, HomeScore = 2, AwayScore = 1 }
-        };
+            _logger.LogError(ex, "Error calling backend API for results in league {Slug}", leagueSlug);
+        }
+
+        return new List<MatchViewModel>();
     }
 
     public async Task<List<MatchViewModel>> GetFixtureAsync(string leagueSlug)
     {
+        string cacheKey = $"fixture_{leagueSlug}";
+        if (_cache.TryGetValue(cacheKey, out List<MatchViewModel>? fixture)) return fixture ?? new();
+
         try
         {
-            var fixture = await _httpClient.GetFromJsonAsync<List<MatchViewModel>>($"{ApiBaseUrl}/leagues/{leagueSlug}/fixture");
-            if (fixture != null && fixture.Any()) return fixture;
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            fixture = await client.GetFromJsonAsync<List<MatchViewModel>>($"leagues/{leagueSlug}/fixture");
+            if (fixture != null)
+            {
+                _cache.Set(cacheKey, fixture, TimeSpan.FromMinutes(10));
+                return fixture;
+            }
         }
-        catch { }
-
-        return new List<MatchViewModel>
+        catch (Exception ex)
         {
-            new MatchViewModel { Id = Guid.NewGuid(), Kickoff = DateTime.Now.AddDays(2), Status = "Scheduled", HomeTeam = new TeamViewModel { Name="Equipo C", Slug="equipo-c" }, AwayTeam = new TeamViewModel { Name="Equipo D", Slug="equipo-d" } }
-        };
+            _logger.LogError(ex, "Error calling backend API for fixture in league {Slug}", leagueSlug);
+        }
+
+        return new List<MatchViewModel>();
     }
 }

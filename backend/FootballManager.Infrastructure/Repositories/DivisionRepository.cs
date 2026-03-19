@@ -26,6 +26,14 @@ namespace FootballManager.Infrastructure.Repositories
                 .SingleOrDefaultAsync(d => d.Id == id, cancellationToken);
         }
 
+        public async Task<Division?> GetByLeagueIdAndSlugAsync(Guid leagueId, string slug, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(slug)) return null;
+            return await _context.Divisions
+                .Include(d => d.League)
+                .SingleOrDefaultAsync(d => d.LeagueId == leagueId && d.Slug == slug.ToLowerInvariant(), cancellationToken);
+        }
+
         public async Task<List<Division>> GetByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken = default)
         {
             return await _context.Divisions

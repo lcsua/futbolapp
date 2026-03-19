@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Domain.Entities;
 using FootballManager.Domain.Enums;
@@ -35,11 +36,18 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
             if (await _leagueRepository.ExistsByNameAsync(request.Name, cancellationToken))
                 throw new LeagueAlreadyExistsException(request.Name);
 
+            var slug = SlugGenerator.Generate(!string.IsNullOrWhiteSpace(request.Slug) ? request.Slug : request.Name);
+            if (string.IsNullOrWhiteSpace(slug))
+                throw new ArgumentException("Could not generate a valid slug from the league name.");
+
+            if (await _leagueRepository.ExistsBySlugAsync(slug, cancellationToken))
+                throw new ArgumentException("Slug already in use, please choose another one");
+
             var creator = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
             if (creator == null)
                 throw new KeyNotFoundException($"User {request.UserId} not found.");
 
-            var league = new League(request.Name, request.Country, request.Description, request.LogoUrl);
+            var league = new League(request.Name, request.Country, slug, request.Description, request.LogoUrl, request.IsPublic, request.IsActive);
             await _leagueRepository.AddAsync(league, cancellationToken);
 
             var userLeague = new UserLeague(creator, league, UserRole.ADMIN);
@@ -47,7 +55,7 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return new CreateLeagueResponse(league.Id);
+            return new CreateLeagueResponse(league.Id, league.Slug);
         }
     }
 }

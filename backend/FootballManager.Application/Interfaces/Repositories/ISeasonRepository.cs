@@ -8,6 +8,7 @@ namespace FootballManager.Application.Interfaces.Repositories
     public interface ISeasonRepository
     {
         Task<Season?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+        Task<Season?> GetByLeagueIdAndNameAsync(Guid leagueId, string name, CancellationToken cancellationToken = default);
         Task<List<Season>> GetByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken = default);
         Task AddAsync(Season season, CancellationToken cancellationToken = default);
         void Update(Season season);

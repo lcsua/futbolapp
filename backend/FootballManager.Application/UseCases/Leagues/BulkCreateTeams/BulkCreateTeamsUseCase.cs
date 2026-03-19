@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Domain.Entities;
 
@@ -45,6 +46,7 @@ namespace FootballManager.Application.UseCases.Leagues.BulkCreateTeams
 
             var existingTeams = await _teamRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
             var existingNames = new HashSet<string>(existingTeams.Select(t => t.Name), StringComparer.OrdinalIgnoreCase);
+            var existingSlugs = new HashSet<string>(existingTeams.Select(t => t.Slug), StringComparer.OrdinalIgnoreCase);
 
             var namesToCreate = (request.Names ?? new List<string>())
                 .Select(n => n?.Trim() ?? string.Empty)
@@ -58,7 +60,17 @@ namespace FootballManager.Application.UseCases.Leagues.BulkCreateTeams
             foreach (var name in namesToCreate)
             {
                 var shortName = GenerateShortName(name);
-                var team = new Team(league, name, shortName, email: null);
+                var baseSlug = SlugGenerator.Generate(name);
+                var slug = baseSlug;
+                var counter = 1;
+                while (existingSlugs.Contains(slug))
+                {
+                    slug = $"{baseSlug}-{counter}";
+                    counter++;
+                }
+                existingSlugs.Add(slug);
+
+                var team = new Team(league, name, slug, shortName, email: null);
                 team.UpdateDetails("#FFFFFF", "#FFFFFF", "/images/default-team.png", null, "/images/default-team.png");
                 team.SetDelegateInfo("--", "--");
 

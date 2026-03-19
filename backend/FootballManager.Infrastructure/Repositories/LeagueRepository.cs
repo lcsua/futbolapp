@@ -26,6 +26,15 @@ namespace FootballManager.Infrastructure.Repositories
                 .SingleOrDefaultAsync(l => l.Id == id, cancellationToken);
         }
 
+        public async Task<League?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(slug)) return null;
+            return await _context.Leagues
+                .Include(l => l.Seasons)
+                .ThenInclude(s => s.DivisionSeasons)
+                .SingleOrDefaultAsync(l => l.Slug == slug.ToLowerInvariant(), cancellationToken);
+        }
+
         public async Task<List<League>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             return await _context.Leagues
@@ -47,6 +56,13 @@ namespace FootballManager.Infrastructure.Repositories
         {
             return await _context.Leagues
                 .AnyAsync(l => l.Name == name, cancellationToken);
+        }
+
+        public async Task<bool> ExistsBySlugAsync(string slug, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(slug)) return false;
+            return await _context.Leagues
+                .AnyAsync(l => l.Slug == slug.ToLowerInvariant(), cancellationToken);
         }
 
         public async Task AddAsync(League league, CancellationToken cancellationToken = default)

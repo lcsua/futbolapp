@@ -3,7 +3,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("BackendApi", client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7272/api/public/");
+});
 
 builder.Services.AddScoped<PublicWeb.Services.Public.LeaguePublicService>();
 builder.Services.AddScoped<PublicWeb.Services.Public.TeamPublicService>();

@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Domain.Entities;
 
@@ -39,11 +41,28 @@ namespace FootballManager.Application.UseCases.Leagues.CreateTeam
             if (league == null)
                 throw new KeyNotFoundException($"League {request.LeagueId} not found.");
 
-            var team = new Team(league, request.Name, request.ShortName, request.Email);
+            var baseSlug = SlugGenerator.Generate(request.Slug ?? request.Name);
+            var slug = await EnsureUniqueTeamSlugAsync(request.LeagueId, baseSlug, cancellationToken);
+
+            var team = new Team(league, request.Name, slug, request.ShortName, request.Email);
             await _teamRepository.AddAsync(team, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return new CreateTeamResponse(team.Id);
+        }
+
+        private async Task<string> EnsureUniqueTeamSlugAsync(Guid leagueId, string baseSlug, CancellationToken cancellationToken)
+        {
+            var existing = await _teamRepository.GetByLeagueIdAsync(leagueId, cancellationToken);
+            var slugs = existing.Select(t => t.Slug).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var slug = baseSlug;
+            var counter = 1;
+            while (slugs.Contains(slug))
+            {
+                slug = $"{baseSlug}-{counter}";
+                counter++;
+            }
+            return slug;
         }
     }
 }

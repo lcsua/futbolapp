@@ -20,6 +20,13 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
                 .HasMaxLength(50)
                 .HasColumnName("name");
 
+            builder.Property(e => e.Slug)
+                .IsRequired()
+                .HasMaxLength(150)
+                .HasColumnName("slug");
+
+            builder.HasIndex(e => new { e.LeagueId, e.Slug }).IsUnique();
+
             builder.Property(e => e.Description).HasColumnName("description");
 
             builder.Property(e => e.CreatedAt).HasColumnName("created_at");

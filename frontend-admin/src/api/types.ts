@@ -1,16 +1,22 @@
 export interface League {
   id: string
   name: string
+  slug: string
   country: string
   description: string
   logoUrl: string
+  isPublic: boolean
+  isActive: boolean
 }
 
 export interface LeagueFormData {
   name: string
   country: string
+  slug?: string
   description: string
   logoUrl: string
+  isPublic: boolean
+  isActive: boolean
 }
 
 export interface Season {
