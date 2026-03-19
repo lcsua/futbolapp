@@ -1,0 +1,62 @@
+@model PublicWeb.Models.Public.MatchViewModel
+@{
+    ViewData["Title"] = $"Partido: {Model.HomeTeam.Name} vs {Model.AwayTeam.Name}";
+}
+
+<div class="row mb-4">
+    <div class="col-12 text-center mt-4">
+        <p class="text-muted mb-1">@Model.Kickoff.ToString("dd MMMM yyyy - HH:mm")</p>
+        <span class="badge @(Model.Status == "Finished" ? "bg-success" : "bg-secondary") mb-3">
+            @(Model.Status == "Finished" ? "Finalizado" : Model.Status == "Scheduled" ? "Programado" : "En Juego")
+        </span>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4 border-0 bg-white">
+    <div class="card-body p-5">
+        <div class="row align-items-center text-center">
+            <div class="col-5">
+                <h2 class="fw-bold">
+                    <a href="/equipo/@Model.HomeTeam.Slug" class="text-decoration-none text-dark">
+                        @Model.HomeTeam.Name
+                    </a>
+                </h2>
+            </div>
+            <div class="col-2">
+                @if (Model.HomeScore.HasValue && Model.AwayScore.HasValue)
+                {
+                    <div class="display-3 fw-bold text-primary bg-light rounded px-3 py-2 border">
+                        @Model.HomeScore - @Model.AwayScore
+                    </div>
+                }
+                else
+                {
+                    <div class="display-5 text-muted">
+                        VS
+                    </div>
+                }
+            </div>
+            <div class="col-5">
+                <h2 class="fw-bold">
+                    <a href="/equipo/@Model.AwayTeam.Slug" class="text-decoration-none text-dark">
+                        @Model.AwayTeam.Name
+                    </a>
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-bold">
+                Incidencias del partido
+            </div>
+            <div class="card-body text-center p-5 text-muted">
+                <p>Las incidencias (goles, tarjetas, cambios) aparecerán aquí.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
