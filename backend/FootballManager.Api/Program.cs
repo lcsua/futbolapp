@@ -12,6 +12,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicLeagueService>();
+builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicTeamService>();
+builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicMatchService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

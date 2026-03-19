@@ -21,8 +21,8 @@ namespace FootballManager.Application.UseCases.Leagues.GetLeague
         public async Task<GetLeagueResponse> ExecuteAsync(GetLeagueRequest request, CancellationToken cancellationToken = default)
         {
             // 1. Validate Access
-            // Ensure the requesting user is a member of the target league before providing data.
-            var hasAccess = await _userLeagueRepository.IsUserInLeagueAsync(request.UserId, request.LeagueId, cancellationToken);
+            // Ensure the requesting user is a member of the target league before providing data, unless IsPublic.
+            var hasAccess = request.IsPublic || await _userLeagueRepository.IsUserInLeagueAsync(request.UserId, request.LeagueId, cancellationToken);
             if (!hasAccess)
             {
                 throw new ForbiddenAccessException($"User {request.UserId} does not have access to league {request.LeagueId}.");

@@ -7,4 +7,5 @@ public sealed class GetSeasonFixturesRequest
     public Guid LeagueId { get; set; }
     public Guid SeasonId { get; set; }
     public Guid UserId { get; set; }
+    public bool IsPublic { get; set; } = false;
 }

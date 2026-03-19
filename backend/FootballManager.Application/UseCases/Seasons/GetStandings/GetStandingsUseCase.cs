@@ -24,7 +24,7 @@ public sealed class GetStandingsUseCase : IGetStandingsUseCase
 
     public async Task<GetStandingsResponse> ExecuteAsync(GetStandingsRequest request, CancellationToken cancellationToken = default)
     {
-        var hasAccess = await _userLeagueRepository.IsUserInLeagueAsync(request.UserId, request.LeagueId, cancellationToken);
+        var hasAccess = request.IsPublic || await _userLeagueRepository.IsUserInLeagueAsync(request.UserId, request.LeagueId, cancellationToken);
         if (!hasAccess)
             throw new ForbiddenAccessException($"User does not have access to league {request.LeagueId}.");
 

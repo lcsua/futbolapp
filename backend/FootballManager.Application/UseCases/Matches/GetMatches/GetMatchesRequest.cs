@@ -9,4 +9,5 @@ public sealed class GetMatchesRequest
     public Guid? DivisionId { get; set; }
     public int? Round { get; set; }
     public Guid UserId { get; set; }
+    public bool IsPublic { get; set; } = false;
 }
