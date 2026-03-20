@@ -1,6 +1,11 @@
-@model List<PublicWeb.Models.Public.StandingsRowViewModel>
+@model PublicWeb.Models.Public.SeasonGroupedViewModel<PublicWeb.Models.Public.StandingsRowViewModel>
 @{
     var league = ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
+    var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
+    
+    var selectedSeason = seasons?.FirstOrDefault(s => Model != null && Model.SeasonSlug == s.Slug) ?? seasons?.FirstOrDefault();
+    var divisions = selectedSeason?.Divisions ?? new();
+    
     ViewData["Title"] = "Tabla de posiciones - " + league?.Name;
 }
 
@@ -22,63 +27,123 @@
         <a class="nav-link text-dark" href="/liga/@league?.Slug/resultados">Resultados</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link text-dark" href="/liga/@league?.Slug/fixture">Próximos partidos</a>
+        <a class="nav-link text-dark" href="/liga/@league?.Slug/partidos">Próximos partidos</a>
     </li>
 </ul>
 
-<div class="card shadow-sm">
-    <div class="card-header bg-white fw-bold">
-        Tabla de Posiciones
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover mb-0 align-middle text-center">
-                <thead class="table-dark">
-                    <tr>
-                        <th scope="col" style="width: 50px;">Pos</th>
-                        <th scope="col" class="text-start">Equipo</th>
-                        <th scope="col" title="Partidos Jugados">PJ</th>
-                        <th scope="col" title="Partidos Ganados">G</th>
-                        <th scope="col" title="Partidos Empatados">E</th>
-                        <th scope="col" title="Partidos Perdidos">P</th>
-                        <th scope="col" title="Goles a Favor">GF</th>
-                        <th scope="col" title="Goles en Contra">GC</th>
-                        <th scope="col" title="Diferencia de Gol">DG</th>
-                        <th scope="col" title="Puntos" class="fw-bold bg-primary text-white">PTS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
+@if (seasons != null && seasons.Any())
+{
+    <form method="get" class="mb-4 d-flex align-items-center bg-white p-3 rounded shadow-sm flex-wrap">
+        <div class="d-flex align-items-center me-4 mb-2 mb-md-0">
+            <label class="me-2 fw-bold text-dark">Temporada:</label>
+            <select name="season" class="form-select w-auto" onchange="this.form.submit()">
+                @foreach (var s in seasons)
+                {
+                    if (Model != null && Model.SeasonSlug == s.Slug)
                     {
-                        foreach (var row in Model)
-                        {
-                            <tr>
-                                <td class="fw-bold">@row.Position</td>
-                                <td class="text-start">
-                                    <a href="/equipo/@row.Team.Slug" class="text-decoration-none fw-bold text-dark">
-                                        @row.Team.Name
-                                    </a>
-                                </td>
-                                <td>@row.Played</td>
-                                <td>@row.Won</td>
-                                <td>@row.Drawn</td>
-                                <td>@row.Lost</td>
-                                <td>@row.GoalsFor</td>
-                                <td>@row.GoalsAgainst</td>
-                                <td>@row.GoalDifference</td>
-                                <td class="fw-bold fs-5 text-primary">@row.Points</td>
-                            </tr>
-                        }
+                        <option value="@s.Slug" selected>@s.Name</option>
                     }
                     else
                     {
-                        <tr>
-                            <td colspan="10" class="text-center p-4 text-muted">Aún no hay datos de posiciones.</td>
-                        </tr>
+                        <option value="@s.Slug">@s.Name</option>
                     }
-                </tbody>
-            </table>
+                }
+            </select>
         </div>
-    </div>
-</div>
+        
+        <div class="d-flex align-items-center mb-2 mb-md-0">
+            <label class="me-2 fw-bold text-dark">División:</label>
+            <select name="division" class="form-select w-auto" onchange="this.form.submit()">
+                <option value="all">Todas</option>
+                @foreach (var d in divisions)
+                {
+                    if (ViewBag.Division != null && ViewBag.Division == d.Slug)
+                    {
+                        <option value="@d.Slug" selected>@d.Name</option>
+                    }
+                    else
+                    {
+                        <option value="@d.Slug">@d.Name</option>
+                    }
+                }
+            </select>
+        </div>
+    </form>
+}
 
+<!-- Ad: Above the standings area -->
+@await Html.PartialAsync("_AdSenseBlock", "standings_top")
+
+@if (Model != null && Model.Divisions.Any())
+{
+    int loopIndex = 0;
+    foreach (var div in Model.Divisions)
+    {
+        <h4 class="fw-bold mt-4 mb-3 text-secondary border-bottom pb-2">@div.DivisionName</h4>
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive rounded-3 overflow-hidden">
+                    <table class="table table-striped table-hover mb-0 align-middle text-center border-0">
+                        <thead class="table-dark border-0">
+                            <tr>
+                                <th scope="col" style="width: 50px;">Pos</th>
+                                <th scope="col" class="text-start">Equipo</th>
+                                <th scope="col" title="Partidos Jugados">PJ</th>
+                                <th scope="col" title="Partidos Ganados">G</th>
+                                <th scope="col" title="Partidos Empatados">E</th>
+                                <th scope="col" title="Partidos Perdidos">P</th>
+                                <th scope="col" title="Goles a Favor">GF</th>
+                                <th scope="col" title="Goles en Contra">GC</th>
+                                <th scope="col" title="Diferencia de Gol">DG</th>
+                                <th scope="col" title="Puntos" class="fw-bold bg-primary text-white">PTS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (div.Data != null && div.Data.Any())
+                            {
+                                foreach (var row in div.Data)
+                                {
+                                    <tr>
+                                        <td class="fw-bold">@row.Position</td>
+                                        <td class="text-start">
+                                            <a href="/equipo/@row.Team.Slug" class="text-decoration-none fw-bold text-dark">
+                                                @row.Team.Name
+                                            </a>
+                                        </td>
+                                        <td>@row.Played</td>
+                                        <td>@row.Won</td>
+                                        <td>@row.Drawn</td>
+                                        <td>@row.Lost</td>
+                                        <td>@row.GoalsFor</td>
+                                        <td>@row.GoalsAgainst</td>
+                                        <td>@row.GoalDifference</td>
+                                        <td class="fw-bold fs-5 text-primary">@row.Points</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="10" class="text-center p-4 text-muted">Aún no hay datos de posiciones.</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        loopIndex++;
+        if (loopIndex == 1 && Model.Divisions.Count > 1)
+        {
+            <!-- Ad: After the first division table -->
+            @await Html.PartialAsync("_AdSenseBlock", "standings_between_divisions")
+        }
+    }
+}
+else
+{
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-5 text-center text-muted">Aún no hay datos de posiciones registrados.</div>
+    </div>
+}

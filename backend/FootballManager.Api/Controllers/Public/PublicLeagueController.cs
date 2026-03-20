@@ -40,25 +40,25 @@ public class PublicLeagueController : ControllerBase
     }
 
     [HttpGet("tabla")]
-    public async Task<IActionResult> GetStandings(string leagueSlug, [FromQuery] string? season)
+    public async Task<IActionResult> GetStandings(string leagueSlug, [FromQuery] string? season, [FromQuery] string? division)
     {
-        var result = await _service.GetLeagueStandingsAsync(leagueSlug, season);
+        var result = await _service.GetLeagueStandingsAsync(leagueSlug, season, division);
         if (result == null) return NotFound();
         return Ok(result);
     }
 
     [HttpGet("resultados")]
-    public async Task<IActionResult> GetResults(string leagueSlug, [FromQuery] string? season)
+    public async Task<IActionResult> GetResults(string leagueSlug, [FromQuery] string? season, [FromQuery] string? division, [FromQuery] int? round)
     {
-        var result = await _service.GetLeagueResultsAsync(leagueSlug, season);
+        var result = await _service.GetLeagueResultsAsync(leagueSlug, season, division, round);
         if (result == null) return NotFound();
         return Ok(result);
     }
 
     [HttpGet("partidos")]
-    public async Task<IActionResult> GetMatches(string leagueSlug, [FromQuery] string? season)
+    public async Task<IActionResult> GetMatches(string leagueSlug, [FromQuery] string? season, [FromQuery] string? division, [FromQuery] int? round)
     {
-        var result = await _service.GetLeagueMatchesAsync(leagueSlug, season);
+        var result = await _service.GetLeagueMatchesAsync(leagueSlug, season, division, round);
         if (result == null) return NotFound();
         return Ok(result);
     }

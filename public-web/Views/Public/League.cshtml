@@ -21,9 +21,12 @@
         <a class="nav-link text-dark" href="/liga/@Model.Slug/resultados">Resultados</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link text-dark" href="/liga/@Model.Slug/fixture">Próximos partidos</a>
+        <a class="nav-link text-dark" href="/liga/@Model.Slug/partidos">Próximos partidos</a>
     </li>
 </ul>
+
+<!-- Ad: Below League Header (Summary Page) -->
+@await Html.PartialAsync("_AdSenseBlock", "league_summary_top")
 
 <div class="row">
     <div class="col-md-8">

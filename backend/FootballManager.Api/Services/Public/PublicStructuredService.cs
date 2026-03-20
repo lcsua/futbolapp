@@ -239,6 +239,8 @@ public class PublicStructuredService
         if (league == null) return new();
 
         var seasons = await _db.Set<Season>()
+            .Include(s => s.DivisionSeasons)
+            .ThenInclude(ds => ds.Division)
             .Where(s => s.LeagueId == league.Id)
             .OrderByDescending(s => s.IsActive)
             .ThenByDescending(s => s.EndDate)
@@ -250,7 +252,13 @@ public class PublicStructuredService
             Name = s.Name,
             Slug = SlugHelper.NormalizeSlug(s.Name),
             EndDate = s.EndDate,
-            IsActive = s.IsActive
+            IsActive = s.IsActive,
+            Divisions = s.DivisionSeasons.Select(ds => new DivisionPublicDto
+            {
+                Id = ds.Division.Id,
+                Name = ds.Division.Name,
+                Slug = SlugHelper.NormalizeSlug(ds.Division.Name)
+            }).OrderBy(d => d.Name).ToList()
         }).ToList();
     }
 
@@ -272,7 +280,7 @@ public class PublicStructuredService
         return seasons.OrderByDescending(s => s.IsActive).ThenByDescending(s => s.EndDate).First();
     }
 
-    public async Task<SeasonGroupedDto<StandingsRowPublicDto>?> GetLeagueStandingsAsync(string leagueSlug, string? seasonSlug, CancellationToken cancellationToken = default)
+    public async Task<SeasonGroupedDto<StandingsRowPublicDto>?> GetLeagueStandingsAsync(string leagueSlug, string? seasonSlug, string? divisionSlug = null, CancellationToken cancellationToken = default)
     {
         var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
         if (league == null) return null;
@@ -286,10 +294,17 @@ public class PublicStructuredService
             SeasonSlug = SlugHelper.NormalizeSlug(season.Name)
         };
 
-        var divSeasons = await _db.Set<DivisionSeason>()
+        var divSeasonsQuery = _db.Set<DivisionSeason>()
             .Include(ds => ds.Division)
-            .Where(ds => ds.SeasonId == season.Id)
-            .ToListAsync(cancellationToken);
+            .Where(ds => ds.SeasonId == season.Id);
+
+        var divSeasons = await divSeasonsQuery.ToListAsync(cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(divisionSlug) && divisionSlug.ToLowerInvariant() != "all")
+        {
+            var targetDivSlug = SlugHelper.NormalizeSlug(divisionSlug);
+            divSeasons = divSeasons.Where(ds => SlugHelper.NormalizeSlug(ds.Division.Name) == targetDivSlug).ToList();
+        }
 
         var standingsReq = new GetStandingsRequest { LeagueId = league.Id, SeasonId = season.Id, IsPublic = true };
         var standingsRes = await _getStandingsUseCase.ExecuteAsync(standingsReq, cancellationToken);
@@ -325,7 +340,7 @@ public class PublicStructuredService
         return result;
     }
 
-    public async Task<SeasonGroupedDto<MatchPublicDto>?> GetLeagueResultsAsync(string leagueSlug, string? seasonSlug, CancellationToken cancellationToken = default)
+    public async Task<SeasonGroupedDto<MatchdayGroupDto>?> GetLeagueResultsAsync(string leagueSlug, string? seasonSlug, string? divisionSlug = null, int? round = null, CancellationToken cancellationToken = default)
     {
         var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
         if (league == null) return null;
@@ -333,36 +348,54 @@ public class PublicStructuredService
         var season = await GetTargetSeasonAsync(league.Id, seasonSlug, cancellationToken);
         if (season == null) return null;
 
-        var result = new SeasonGroupedDto<MatchPublicDto> { SeasonName = season.Name, SeasonSlug = SlugHelper.NormalizeSlug(season.Name) };
+        var result = new SeasonGroupedDto<MatchdayGroupDto> { SeasonName = season.Name, SeasonSlug = SlugHelper.NormalizeSlug(season.Name) };
 
         var divSeasons = await _db.Set<DivisionSeason>().Include(ds => ds.Division)
             .Where(ds => ds.SeasonId == season.Id).ToListAsync(cancellationToken);
 
-        var allFixtures = await _db.Set<Fixture>()
+        if (!string.IsNullOrWhiteSpace(divisionSlug) && divisionSlug.ToLowerInvariant() != "all")
+        {
+            var targetDivSlug = SlugHelper.NormalizeSlug(divisionSlug);
+            divSeasons = divSeasons.Where(ds => SlugHelper.NormalizeSlug(ds.Division.Name) == targetDivSlug).ToList();
+        }
+
+        var allFixturesQuery = _db.Set<Fixture>()
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.Result)
-            .Where(f => f.SeasonId == season.Id && f.Status == Domain.Enums.MatchStatus.COMPLETED)
+            .Where(f => f.SeasonId == season.Id && f.Status == Domain.Enums.MatchStatus.COMPLETED);
+
+        if (round.HasValue)
+        {
+            allFixturesQuery = allFixturesQuery.Where(f => f.RoundNumber == round.Value);
+        }
+
+        var allFixtures = await allFixturesQuery
             .OrderByDescending(f => f.MatchDate).ThenByDescending(f => f.StartTime)
             .ToListAsync(cancellationToken);
 
         foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
         {
-            var matches = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(MapToMatchDto).ToList();
-            if (matches.Any())
+            var matchesForDiv = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(MapToMatchDto).ToList();
+            if (matchesForDiv.Any())
             {
-                result.Divisions.Add(new DivisionGroupDto<MatchPublicDto>
+                var matchdays = matchesForDiv.GroupBy(m => allFixtures.First(f => f.Id == m.Id).RoundNumber)
+                    .Select(g => new MatchdayGroupDto { Round = g.Key, Matches = g.ToList() })
+                    .OrderByDescending(md => md.Round)
+                    .ToList();
+
+                result.Divisions.Add(new DivisionGroupDto<MatchdayGroupDto>
                 {
                     DivisionName = ds.Division.Name,
                     DivisionSlug = SlugHelper.NormalizeSlug(ds.Division.Name),
-                    Data = matches
+                    Data = matchdays
                 });
             }
         }
         return result;
     }
 
-    public async Task<SeasonGroupedDto<MatchPublicDto>?> GetLeagueMatchesAsync(string leagueSlug, string? seasonSlug, CancellationToken cancellationToken = default)
+    public async Task<SeasonGroupedDto<MatchdayGroupDto>?> GetLeagueMatchesAsync(string leagueSlug, string? seasonSlug, string? divisionSlug = null, int? round = null, CancellationToken cancellationToken = default)
     {
         var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
         if (league == null) return null;
@@ -370,29 +403,47 @@ public class PublicStructuredService
         var season = await GetTargetSeasonAsync(league.Id, seasonSlug, cancellationToken);
         if (season == null) return null;
 
-        var result = new SeasonGroupedDto<MatchPublicDto> { SeasonName = season.Name, SeasonSlug = SlugHelper.NormalizeSlug(season.Name) };
+        var result = new SeasonGroupedDto<MatchdayGroupDto> { SeasonName = season.Name, SeasonSlug = SlugHelper.NormalizeSlug(season.Name) };
 
         var divSeasons = await _db.Set<DivisionSeason>().Include(ds => ds.Division)
             .Where(ds => ds.SeasonId == season.Id).ToListAsync(cancellationToken);
 
-        var allFixtures = await _db.Set<Fixture>()
+        if (!string.IsNullOrWhiteSpace(divisionSlug) && divisionSlug.ToLowerInvariant() != "all")
+        {
+            var targetDivSlug = SlugHelper.NormalizeSlug(divisionSlug);
+            divSeasons = divSeasons.Where(ds => SlugHelper.NormalizeSlug(ds.Division.Name) == targetDivSlug).ToList();
+        }
+
+        var allFixturesQuery = _db.Set<Fixture>()
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.Result)
-            .Where(f => f.SeasonId == season.Id && f.Status != Domain.Enums.MatchStatus.COMPLETED)
+            .Where(f => f.SeasonId == season.Id && f.Status != Domain.Enums.MatchStatus.COMPLETED);
+
+        if (round.HasValue)
+        {
+            allFixturesQuery = allFixturesQuery.Where(f => f.RoundNumber == round.Value);
+        }
+
+        var allFixtures = await allFixturesQuery
             .OrderBy(f => f.MatchDate).ThenBy(f => f.StartTime)
             .ToListAsync(cancellationToken);
 
         foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
         {
-            var matches = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(MapToMatchDto).ToList();
-            if (matches.Any())
+            var matchesForDiv = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(MapToMatchDto).ToList();
+            if (matchesForDiv.Any())
             {
-                result.Divisions.Add(new DivisionGroupDto<MatchPublicDto>
+                var matchdays = matchesForDiv.GroupBy(m => allFixtures.First(f => f.Id == m.Id).RoundNumber)
+                    .Select(g => new MatchdayGroupDto { Round = g.Key, Matches = g.ToList() })
+                    .OrderBy(md => md.Round)
+                    .ToList();
+
+                result.Divisions.Add(new DivisionGroupDto<MatchdayGroupDto>
                 {
                     DivisionName = ds.Division.Name,
                     DivisionSlug = SlugHelper.NormalizeSlug(ds.Division.Name),
-                    Data = matches
+                    Data = matchdays
                 });
             }
         }

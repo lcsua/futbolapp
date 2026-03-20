@@ -40,15 +40,43 @@ public class LeaguePublicService
         return null;
     }
 
-    public async Task<List<StandingsRowViewModel>> GetStandingsAsync(string leagueSlug)
+    public async Task<List<SeasonViewModel>> GetLeagueMetaAsync(string slug)
     {
-        string cacheKey = $"tabla_{leagueSlug}";
-        if (_cache.TryGetValue(cacheKey, out List<StandingsRowViewModel>? standings)) return standings ?? new();
+        string cacheKey = $"liga_meta_{slug}";
+        if (_cache.TryGetValue(cacheKey, out List<SeasonViewModel>? meta)) return meta ?? new();
 
         try
         {
             var client = _httpClientFactory.CreateClient("BackendApi");
-            standings = await client.GetFromJsonAsync<List<StandingsRowViewModel>>($"leagues/{leagueSlug}/standings");
+            meta = await client.GetFromJsonAsync<List<SeasonViewModel>>($"liga/{slug}/meta");
+            if (meta != null)
+            {
+                _cache.Set(cacheKey, meta, TimeSpan.FromMinutes(15));
+                return meta;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calling backend API for meta in league {Slug}", slug);
+        }
+
+        return new();
+    }
+
+    public async Task<SeasonGroupedViewModel<StandingsRowViewModel>?> GetStandingsAsync(string leagueSlug, string? seasonSlug, string? divisionSlug)
+    {
+        string querySeason = string.IsNullOrWhiteSpace(seasonSlug) ? "" : $"season={seasonSlug}";
+        string queryDiv = string.IsNullOrWhiteSpace(divisionSlug) || divisionSlug == "all" ? "" : $"division={divisionSlug}";
+        string query = string.Join("&", new[] { querySeason, queryDiv }.Where(q => !string.IsNullOrEmpty(q)));
+        query = string.IsNullOrEmpty(query) ? "" : "?" + query;
+
+        string cacheKey = $"tabla_{leagueSlug}_{seasonSlug ?? "default"}_{divisionSlug ?? "all"}";
+        if (_cache.TryGetValue(cacheKey, out SeasonGroupedViewModel<StandingsRowViewModel>? standings)) return standings;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            standings = await client.GetFromJsonAsync<SeasonGroupedViewModel<StandingsRowViewModel>>($"liga/{leagueSlug}/tabla{query}");
             if (standings != null)
             {
                 _cache.Set(cacheKey, standings, TimeSpan.FromMinutes(5));
@@ -60,18 +88,24 @@ public class LeaguePublicService
             _logger.LogError(ex, "Error calling backend API for standings in league {Slug}", leagueSlug);
         }
 
-        return new List<StandingsRowViewModel>();
+        return null;
     }
 
-    public async Task<List<MatchViewModel>> GetResultsAsync(string leagueSlug)
+    public async Task<SeasonGroupedViewModel<MatchdayGroupViewModel>?> GetResultsAsync(string leagueSlug, string? seasonSlug, string? divisionSlug, int? round)
     {
-        string cacheKey = $"resultados_{leagueSlug}";
-        if (_cache.TryGetValue(cacheKey, out List<MatchViewModel>? results)) return results ?? new();
+        string querySeason = string.IsNullOrWhiteSpace(seasonSlug) ? "" : $"season={seasonSlug}";
+        string queryDiv = string.IsNullOrWhiteSpace(divisionSlug) || divisionSlug == "all" ? "" : $"division={divisionSlug}";
+        string queryRound = round.HasValue ? $"round={round}" : "";
+        string query = string.Join("&", new[] { querySeason, queryDiv, queryRound }.Where(q => !string.IsNullOrEmpty(q)));
+        query = string.IsNullOrEmpty(query) ? "" : "?" + query;
+
+        string cacheKey = $"resultados_{leagueSlug}_{seasonSlug ?? "default"}_{divisionSlug ?? "all"}_{round?.ToString() ?? "all"}";
+        if (_cache.TryGetValue(cacheKey, out SeasonGroupedViewModel<MatchdayGroupViewModel>? results)) return results;
 
         try
         {
             var client = _httpClientFactory.CreateClient("BackendApi");
-            results = await client.GetFromJsonAsync<List<MatchViewModel>>($"leagues/{leagueSlug}/results");
+            results = await client.GetFromJsonAsync<SeasonGroupedViewModel<MatchdayGroupViewModel>>($"liga/{leagueSlug}/resultados{query}");
             if (results != null)
             {
                 _cache.Set(cacheKey, results, TimeSpan.FromMinutes(5));
@@ -83,18 +117,24 @@ public class LeaguePublicService
             _logger.LogError(ex, "Error calling backend API for results in league {Slug}", leagueSlug);
         }
 
-        return new List<MatchViewModel>();
+        return null;
     }
 
-    public async Task<List<MatchViewModel>> GetFixtureAsync(string leagueSlug)
+    public async Task<SeasonGroupedViewModel<MatchdayGroupViewModel>?> GetFixtureAsync(string leagueSlug, string? seasonSlug, string? divisionSlug, int? round)
     {
-        string cacheKey = $"fixture_{leagueSlug}";
-        if (_cache.TryGetValue(cacheKey, out List<MatchViewModel>? fixture)) return fixture ?? new();
+        string querySeason = string.IsNullOrWhiteSpace(seasonSlug) ? "" : $"season={seasonSlug}";
+        string queryDiv = string.IsNullOrWhiteSpace(divisionSlug) || divisionSlug == "all" ? "" : $"division={divisionSlug}";
+        string queryRound = round.HasValue ? $"round={round}" : "";
+        string query = string.Join("&", new[] { querySeason, queryDiv, queryRound }.Where(q => !string.IsNullOrEmpty(q)));
+        query = string.IsNullOrEmpty(query) ? "" : "?" + query;
+
+        string cacheKey = $"fixture_{leagueSlug}_{seasonSlug ?? "default"}_{divisionSlug ?? "all"}_{round?.ToString() ?? "all"}";
+        if (_cache.TryGetValue(cacheKey, out SeasonGroupedViewModel<MatchdayGroupViewModel>? fixture)) return fixture;
 
         try
         {
             var client = _httpClientFactory.CreateClient("BackendApi");
-            fixture = await client.GetFromJsonAsync<List<MatchViewModel>>($"leagues/{leagueSlug}/fixture");
+            fixture = await client.GetFromJsonAsync<SeasonGroupedViewModel<MatchdayGroupViewModel>>($"liga/{leagueSlug}/partidos{query}");
             if (fixture != null)
             {
                 _cache.Set(cacheKey, fixture, TimeSpan.FromMinutes(10));
@@ -106,6 +146,6 @@ public class LeaguePublicService
             _logger.LogError(ex, "Error calling backend API for fixture in league {Slug}", leagueSlug);
         }
 
-        return new List<MatchViewModel>();
+        return null;
     }
 }

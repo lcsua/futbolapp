@@ -52,6 +52,7 @@ public class SeasonPublicDto
     public string Slug { get; set; } = string.Empty;
     public DateOnly? EndDate { get; set; }
     public bool IsActive { get; set; }
+    public List<DivisionPublicDto> Divisions { get; set; } = new();
 }
 
 public class DivisionPublicDto
@@ -98,4 +99,10 @@ public class SeasonGroupedDto<T>
     public string SeasonName { get; set; } = string.Empty;
     public string SeasonSlug { get; set; } = string.Empty;
     public List<DivisionGroupDto<T>> Divisions { get; set; } = new();
+}
+
+public class MatchdayGroupDto
+{
+    public int Round { get; set; }
+    public List<MatchPublicDto> Matches { get; set; } = new();
 }

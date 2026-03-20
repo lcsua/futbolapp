@@ -1,0 +1,25 @@
+@model string
+@*
+  Reusable AdSense Component
+  Model: The Ad Slot ID provided as a string parameter
+  Customize width or style if a specific slot demands it.
+*@
+<div class="ad-container my-4 d-flex justify-content-center w-100 overflow-hidden" 
+     style="min-height: 100px; background-color: #f8f9fa; border: 1px dashed #e9ecef; border-radius: 8px;">
+    <!-- Ad slot identifier helps us track injections or style individually -->
+    <div class="w-100 px-2 py-3 text-center ad-wrapper">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-6942296606634637"
+             data-ad-slot="@Model"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>
+            try {
+                (adsbygoogle = window.adsbygoogle || []).push({});
+            } catch (ex) {
+                console.warn("Failed to invoke AdSense push", ex);
+            }
+        </script>
+    </div>
+</div>
