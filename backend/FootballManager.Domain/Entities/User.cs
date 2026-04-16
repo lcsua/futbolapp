@@ -32,6 +32,7 @@ namespace FootballManager.Domain.Entities
             IsActive = true;
         }
 
+
         public void AssignRole(UserRole role)
         {
             Role = role;
