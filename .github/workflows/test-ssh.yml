@@ -9,13 +9,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Test connection
+      - name: Print something locally
+        run: |
+          echo "LOCAL STEP OK"
+
+      - name: Test SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            echo "Connected!"
+            echo "CONNECTED OK"
+            pwd
             whoami
             hostname
