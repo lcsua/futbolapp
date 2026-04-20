@@ -28,7 +28,16 @@ namespace FootballManager.Application.UseCases.Leagues.GetLeagueDivisions
                 throw new ForbiddenAccessException($"User {request.UserId} does not have access to league {request.LeagueId}.");
 
             var divisions = await _divisionRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
-            var dtos = divisions.Select(d => new DivisionDto(d.Id, d.LeagueId, d.Name, d.Description)).ToList();
+            var dtos = divisions
+                .Select(d => new DivisionDto(
+                    d.Id,
+                    d.LeagueId,
+                    d.Name,
+                    d.Description,
+                    d.KickoffRestrictionEnabled,
+                    d.KickoffRestrictionStart,
+                    d.KickoffRestrictionEnd))
+                .ToList();
             return new GetLeagueDivisionsResponse(dtos);
         }
     }

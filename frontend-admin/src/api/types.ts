@@ -37,11 +37,18 @@ export interface Division {
   leagueId: string
   name: string
   description: string | null
+  /** When true, fixture generation will not assign kickoffs in [start, end). */
+  kickoffRestrictionEnabled?: boolean
+  kickoffRestrictionStart?: string | null
+  kickoffRestrictionEnd?: string | null
 }
 
 export interface DivisionFormData {
   name: string
   description: string
+  kickoffRestrictionEnabled: boolean
+  kickoffRestrictionStart: string | null
+  kickoffRestrictionEnd: string | null
 }
 
 export interface Field {

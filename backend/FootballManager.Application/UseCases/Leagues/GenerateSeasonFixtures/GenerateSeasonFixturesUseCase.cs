@@ -95,6 +95,10 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
             throw new BusinessException("At least one match day must be configured in competition rules.");
 
         var divisionsOrdered = divisionSeasons.OrderBy(ds => ds.Division.Name).ToList();
+        var divisionById = divisionsOrdered
+            .Select(ds => ds.Division)
+            .DistinctBy(d => d.Id)
+            .ToDictionary(d => d.Id);
         var allRounds = new List<FixtureDraftRoundDto>();
         var teamFieldUsage = new TeamFieldUsage();
 
@@ -146,12 +150,26 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
                     $"Required: {matchesThisRound.Count} slots, available: {slots.Count}. " +
                     "Configure field availability for the match day or reduce the number of matches.");
 
-            var matchTeamIds = matchesThisRound
-                .Select(m => (m.Home.Team.Id, m.Away.Team.Id))
+            bool IsKickoffSlotAllowed(Guid divisionId, TimeOnly kickoff)
+            {
+                if (!divisionById.TryGetValue(divisionId, out var division))
+                    return true;
+                return !division.IsKickoffInBlockedWindow(kickoff);
+            }
+
+            var matchInfos = matchesThisRound
+                .Select(m => (m.Ds.DivisionId, m.Home.Team.Id, m.Away.Team.Id))
                 .ToList();
-            var assignments = slotScheduler.AssignMatchesToSlotsWithFairness(matchTeamIds, slots, teamFieldUsage);
+            var assignments = slotScheduler.AssignMatchesToSlotsWithFairness(
+                matchInfos,
+                slots,
+                teamFieldUsage,
+                IsKickoffSlotAllowed,
+                null);
             if (assignments == null)
-                throw new BusinessException($"Not enough field availability for round {roundIndex + 1}.");
+                throw new BusinessException(
+                    $"Could not assign all matches for round {roundIndex + 1} ({matchDate:yyyy-MM-dd}). " +
+                    "Check field availability and division kickoff time restrictions (e.g. blocked hours for senior divisions).");
 
             var fieldById = availableFields.ToDictionary(f => f.Id);
 

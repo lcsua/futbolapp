@@ -69,6 +69,9 @@ export function EditDivisionPage() {
   const initialValues: DivisionFormData = {
     name: division.name,
     description: division.description ?? '',
+    kickoffRestrictionEnabled: division.kickoffRestrictionEnabled ?? false,
+    kickoffRestrictionStart: division.kickoffRestrictionStart ?? null,
+    kickoffRestrictionEnd: division.kickoffRestrictionEnd ?? null,
   }
 
   return (
@@ -80,6 +83,7 @@ export function EditDivisionPage() {
         Edit division
       </Typography>
       <DivisionForm
+        key={`${division.id}-${division.kickoffRestrictionEnabled}-${division.kickoffRestrictionStart ?? ''}-${division.kickoffRestrictionEnd ?? ''}`}
         initialValues={initialValues}
         onSubmit={handleSubmit}
         loading={updateMutation.isPending}

@@ -44,7 +44,23 @@ namespace FootballManager.Application.UseCases.Leagues.CreateDivision
             var baseSlug = SlugGenerator.Generate(request.Slug ?? request.Name);
             var slug = await EnsureUniqueDivisionSlugAsync(request.LeagueId, baseSlug, cancellationToken);
 
-            var division = new Division(league, request.Name, slug, request.Description);
+            Division division;
+            try
+            {
+                division = new Division(
+                    league,
+                    request.Name,
+                    slug,
+                    request.Description,
+                    request.KickoffRestrictionEnabled,
+                    request.KickoffRestrictionStart,
+                    request.KickoffRestrictionEnd);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new BusinessException(ex.Message);
+            }
+
             await _divisionRepository.AddAsync(division, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 

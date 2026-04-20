@@ -128,6 +128,20 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("league_id");
 
+                    b.Property<bool>("KickoffRestrictionEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("kickoff_restriction_enabled");
+
+                    b.Property<TimeOnly?>("KickoffRestrictionEnd")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("kickoff_restriction_end");
+
+                    b.Property<TimeOnly?>("KickoffRestrictionStart")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("kickoff_restriction_start");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)

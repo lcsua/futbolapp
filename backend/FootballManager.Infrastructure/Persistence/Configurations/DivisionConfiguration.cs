@@ -29,6 +29,13 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
 
             builder.Property(e => e.Description).HasColumnName("description");
 
+            builder.Property(e => e.KickoffRestrictionEnabled)
+                .HasDefaultValue(false)
+                .HasColumnName("kickoff_restriction_enabled");
+
+            builder.Property(e => e.KickoffRestrictionStart).HasColumnName("kickoff_restriction_start");
+            builder.Property(e => e.KickoffRestrictionEnd).HasColumnName("kickoff_restriction_end");
+
             builder.Property(e => e.CreatedAt).HasColumnName("created_at");
             builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             builder.Property(e => e.DeletedAt).HasColumnName("deleted_at");

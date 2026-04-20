@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Domain.Entities;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 
@@ -53,6 +54,18 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateDivision
             }
 
             division.UpdateDetails(request.Name, finalSlug, request.Description);
+            try
+            {
+                division.SetKickoffRestriction(
+                    request.KickoffRestrictionEnabled,
+                    request.KickoffRestrictionStart,
+                    request.KickoffRestrictionEnd);
+            }
+            catch (ArgumentException ex)
+            {
+                throw new BusinessException(ex.Message);
+            }
+
             _divisionRepository.Update(division);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }

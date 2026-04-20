@@ -10,5 +10,9 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateDivision
         public string Name { get; set; } = string.Empty;
         public string? Slug { get; set; }
         public string? Description { get; set; }
+
+        public bool KickoffRestrictionEnabled { get; set; }
+        public TimeOnly? KickoffRestrictionStart { get; set; }
+        public TimeOnly? KickoffRestrictionEnd { get; set; }
     }
 }

@@ -76,11 +76,12 @@ public sealed class FieldSlotScheduler
             if (start.AddMinutes(_totalMatchDurationMinutes) > end)
                 continue;
 
-            var current = start;
+            var current = CeilToFiveMinuteGrid(start);
             while (current.AddMinutes(_totalMatchDurationMinutes) <= end)
             {
                 slots.Add(new FieldSlot(avail.FieldId, matchDate, current));
-                current = current.Add(TimeSpan.FromMinutes(_totalMatchDurationMinutes));
+                var nextStart = current.AddMinutes(_totalMatchDurationMinutes);
+                current = CeilToFiveMinuteGrid(nextStart);
             }
         }
 
@@ -115,15 +116,17 @@ public sealed class FieldSlotScheduler
     /// combined usage for both teams (team A usage + team B usage on that field).
     /// Only considers slots that are in the given list (already respect field_availability).
     /// </summary>
-    /// <param name="matches">Each element is (HomeTeamId, AwayTeamId)</param>
+    /// <param name="matches">Each element is (DivisionId, HomeTeamId, AwayTeamId)</param>
     /// <param name="slots">Available slots from GenerateSlotsForMatchday (respects field_availability)</param>
     /// <param name="teamFieldUsage">Running usage counts; updated as assignments are made</param>
+    /// <param name="isKickoffSlotAllowedForDivision">When not null, slots where this returns false for the match division are skipped (e.g. blocked heat window).</param>
     /// <param name="random">Optional RNG for shuffling slot order and tie-breaking</param>
     /// <returns>One (FieldId, Date, StartTime) per match, or null if not enough slots</returns>
     public IReadOnlyList<(Guid FieldId, DateOnly Date, TimeOnly StartTime)> AssignMatchesToSlotsWithFairness(
-        IReadOnlyList<(Guid HomeTeamId, Guid AwayTeamId)> matches,
+        IReadOnlyList<(Guid DivisionId, Guid HomeTeamId, Guid AwayTeamId)> matches,
         IReadOnlyList<FieldSlot> slots,
         TeamFieldUsage teamFieldUsage,
+        Func<Guid, TimeOnly, bool>? isKickoffSlotAllowedForDivision = null,
         Random random = null)
     {
         if (matches == null || matches.Count == 0)
@@ -140,7 +143,7 @@ public sealed class FieldSlotScheduler
 
         var result = new List<(Guid FieldId, DateOnly Date, TimeOnly StartTime)>(matches.Count);
 
-        foreach (var (homeTeamId, awayTeamId) in matches)
+        foreach (var (divisionId, homeTeamId, awayTeamId) in matches)
         {
             var bestScore = int.MaxValue;
             var candidates = new List<int>();
@@ -148,6 +151,10 @@ public sealed class FieldSlotScheduler
             foreach (var idx in availableIndices)
             {
                 var slot = slots[idx];
+                if (isKickoffSlotAllowedForDivision != null &&
+                    !isKickoffSlotAllowedForDivision(divisionId, slot.StartTime))
+                    continue;
+
                 var score = teamFieldUsage.GetUsage(homeTeamId, slot.FieldId)
                             + teamFieldUsage.GetUsage(awayTeamId, slot.FieldId);
                 if (score < bestScore)
@@ -174,6 +181,24 @@ public sealed class FieldSlotScheduler
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Rounds kickoff up to the next "natural" 5-minute mark (:00, :05, …, :55), independent of
+    /// <see cref="_slotGranularityMinutes"/> (e.g. 12:04 → 12:05, 15:18 → 15:20, 14:32 → 14:35).
+    /// Applied after each slot so chained times don’t drift to odd minutes when match duration isn’t a multiple of 5.
+    /// </summary>
+    private static TimeOnly CeilToFiveMinuteGrid(TimeOnly time)
+    {
+        var totalMinutes = time.Hour * 60 + time.Minute;
+        if (time.Second > 0 || time.Millisecond > 0)
+            totalMinutes++;
+
+        var ceiled = (totalMinutes + 4) / 5 * 5;
+        if (ceiled >= 24 * 60)
+            return new TimeOnly(23, 55, 0);
+
+        return new TimeOnly(ceiled / 60, ceiled % 60, 0);
     }
 
     private static void Shuffle<T>(IList<T> list, Random rng)
