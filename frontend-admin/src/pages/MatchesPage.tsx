@@ -16,7 +16,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import { useQuery } from '@tanstack/react-query'
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
+import { Link as RouterLink, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { matchesService, type MatchListItem } from '../api/matches'
 import { seasonsService } from '../api/seasons'
@@ -30,7 +30,6 @@ import UploadFileIcon from '@mui/icons-material/UploadFile'
 export function MatchesPage() {
   const leagueId = useLeagueId()
   const { leagueId: leagueIdInPath } = useParams<{ leagueId?: string }>()
-  const navigate = useNavigate()
   const [seasonId, setSeasonId] = useState('')
   const [divisionId, setDivisionId] = useState<string>('')
   const [round, setRound] = useState<string>('')
@@ -225,7 +224,6 @@ export function MatchesPage() {
                   <MatchCard
                     key={m.id}
                     match={m}
-                    leagueId={leagueId!}
                     matchDetailPath={leagueIdInPath ? `/leagues/${leagueIdInPath}/matches/${m.id}` : `/matches/${m.id}`}
                     onEditResult={() => setResultModalMatch(m)}
                   />
@@ -266,12 +264,10 @@ export function MatchesPage() {
 
 function MatchCard({
   match,
-  leagueId,
   matchDetailPath,
   onEditResult,
 }: {
   match: MatchListItem
-  leagueId: string
   matchDetailPath: string
   onEditResult: () => void
 }) {

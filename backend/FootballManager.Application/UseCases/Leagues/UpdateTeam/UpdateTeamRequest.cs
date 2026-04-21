@@ -14,6 +14,8 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateTeam
         public string? SecondaryColor { get; set; }
         public string? LogoUrl { get; set; }
         public string? Email { get; set; }
+        public Guid? ClubId { get; set; }
+        public string? Suffix { get; set; }
         public int? FoundedYear { get; set; }
         public string? DelegateName { get; set; }
         public string? DelegateContact { get; set; }

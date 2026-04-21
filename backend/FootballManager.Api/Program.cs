@@ -26,6 +26,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseMiddleware<FootballManager.Api.Middleware.DevAuthMiddleware>();
 app.UseMiddleware<FootballManager.Api.Middleware.ExceptionHandlingMiddleware>();
 app.MapControllers();

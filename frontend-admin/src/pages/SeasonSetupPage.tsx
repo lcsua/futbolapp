@@ -23,6 +23,10 @@ import { divisionsService } from '../api/divisions'
 import { teamsService } from '../api/teams'
 import { useLeagueId } from '../contexts/LeagueContext'
 
+function getTeamDisplayName(team: { name: string; displayName?: string | null }) {
+  return team.displayName ?? team.name
+}
+
 export function SeasonSetupPage() {
   const leagueId = useLeagueId()
   const queryClient = useQueryClient()
@@ -67,7 +71,7 @@ export function SeasonSetupPage() {
         } catch (e) {
           const msg = e instanceof Error ? e.message : 'Failed to assign team'
           const team = teams.find((t) => t.id === teamId)
-          errors.push(team ? `${team.name}: ${msg}` : msg)
+          errors.push(team ? `${getTeamDisplayName(team)}: ${msg}` : msg)
         }
       }
       if (errors.length > 0) throw new Error(errors.join('\n'))
@@ -93,6 +97,11 @@ export function SeasonSetupPage() {
   }
 
   const canSave = !!leagueId && !!seasonId && !!divisionId && teamIds.length > 0 && !assignMutation.isPending
+  const sortedTeams = [...teams].sort((a, b) => {
+    const nameCmp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    if (nameCmp !== 0) return nameCmp
+    return (a.suffix ?? '').localeCompare(b.suffix ?? '', undefined, { sensitivity: 'base' })
+  })
 
   if (!leagueId) {
     return (
@@ -178,19 +187,19 @@ export function SeasonSetupPage() {
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {selected.map((id) => {
                   const t = teams.find((x) => x.id === id)
-                  return <Chip key={id} label={t?.name ?? id} size="small" />
+                  return <Chip key={id} label={t ? getTeamDisplayName(t) : id} size="small" />
                 })}
               </Box>
             )}
           >
-            {teams.map((t) => {
+            {sortedTeams.map((t) => {
               const alreadyAssigned = assignedTeamIds.includes(t.id)
               return (
                 <MenuItem key={t.id} value={t.id} disabled={alreadyAssigned}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                     <ListItemText
-                      primary={alreadyAssigned ? `${t.name} (Already assigned)` : t.name}
-                      secondary={alreadyAssigned ? undefined : t.shortName || undefined}
+                      primary={alreadyAssigned ? `${getTeamDisplayName(t)} (Already assigned)` : getTeamDisplayName(t)}
+                      secondary={alreadyAssigned ? undefined : (t.clubName ? `Club: ${t.clubName}` : t.shortName || undefined)}
                       primaryTypographyProps={alreadyAssigned ? { color: 'text.secondary' } : undefined}
                     />
                     {teamIds.includes(t.id) && <CheckIcon fontSize="small" color="primary" />}

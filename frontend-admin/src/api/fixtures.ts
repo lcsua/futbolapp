@@ -59,8 +59,12 @@ export const fixturesService = {
   get: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
     apiClient.get<GetFixturesResponse>(`/api/leagues/${leagueId}/seasons/${seasonId}/fixtures`, signal),
 
-  generate: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
-    apiClient.post<FixtureDraft>(`/api/leagues/${leagueId}/seasons/${seasonId}/fixtures/generate`, {}, signal),
+  generate: (leagueId: string, seasonId: string, divisionId?: string, signal?: AbortSignal) =>
+    apiClient.post<FixtureDraft>(
+      `/api/leagues/${leagueId}/seasons/${seasonId}/fixtures/generate`,
+      { divisionId: divisionId || undefined },
+      signal,
+    ),
 
   commit: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
     apiClient.post<void>(`/api/leagues/${leagueId}/seasons/${seasonId}/fixtures/commit`, {}, signal),

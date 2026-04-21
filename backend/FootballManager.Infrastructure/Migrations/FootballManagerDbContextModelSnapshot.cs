@@ -22,6 +22,49 @@ namespace FootballManager.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.Club", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid>("LeagueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("league_id");
+
+                    b.Property<string>("LogoUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("logo_url");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("clubs", (string)null);
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.CompetitionMatchDay", b =>
                 {
                     b.Property<Guid>("Id")
@@ -124,10 +167,6 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
-                    b.Property<Guid>("LeagueId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("league_id");
-
                     b.Property<bool>("KickoffRestrictionEnabled")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -141,6 +180,10 @@ namespace FootballManager.Infrastructure.Migrations
                     b.Property<TimeOnly?>("KickoffRestrictionStart")
                         .HasColumnType("time without time zone")
                         .HasColumnName("kickoff_restriction_start");
+
+                    b.Property<Guid>("LeagueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("league_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1007,6 +1050,10 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("ClubId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("club_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -1080,14 +1127,18 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("character varying(150)")
                         .HasColumnName("slug");
 
+                    b.Property<string>("Suffix")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("suffix");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LeagueId", "Name")
-                        .IsUnique();
+                    b.HasIndex("ClubId");
 
                     b.HasIndex("LeagueId", "Slug")
                         .IsUnique();
@@ -1244,6 +1295,17 @@ namespace FootballManager.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("user_leagues", (string)null);
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.Club", b =>
+                {
+                    b.HasOne("FootballManager.Domain.Entities.League", "League")
+                        .WithMany("Clubs")
+                        .HasForeignKey("LeagueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("League");
                 });
 
             modelBuilder.Entity("FootballManager.Domain.Entities.CompetitionMatchDay", b =>
@@ -1477,11 +1539,18 @@ namespace FootballManager.Infrastructure.Migrations
 
             modelBuilder.Entity("FootballManager.Domain.Entities.Team", b =>
                 {
+                    b.HasOne("FootballManager.Domain.Entities.Club", "Club")
+                        .WithMany()
+                        .HasForeignKey("ClubId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("FootballManager.Domain.Entities.League", "League")
                         .WithMany("Teams")
                         .HasForeignKey("LeagueId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Club");
 
                     b.Navigation("League");
                 });
@@ -1548,6 +1617,8 @@ namespace FootballManager.Infrastructure.Migrations
 
             modelBuilder.Entity("FootballManager.Domain.Entities.League", b =>
                 {
+                    b.Navigation("Clubs");
+
                     b.Navigation("Divisions");
 
                     b.Navigation("Fields");

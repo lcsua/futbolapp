@@ -51,6 +51,20 @@ export const apiClient = {
     return handleResponse<T>(response)
   },
 
+  async postForm<T>(path: string, formData: FormData, signal?: AbortSignal): Promise<T> {
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: 'POST',
+      headers: (() => {
+        const token = getToken()
+        return token ? { Authorization: `Bearer ${token}` } : undefined
+      })(),
+      body: formData,
+      signal,
+      credentials: 'include',
+    })
+    return handleResponse<T>(response)
+  },
+
   async put<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
     const response = await fetch(`${baseUrl}${path}`, {
       method: 'PUT',

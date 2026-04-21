@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import {
   Alert,
@@ -60,6 +60,7 @@ export function FixturesPage() {
   const queryClient = useQueryClient()
   const [seasonId, setSeasonId] = useState<string>('')
   const [divisionId, setDivisionId] = useState<string>('')
+  const [teamFilter, setTeamFilter] = useState<string>('')
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
 
@@ -83,7 +84,7 @@ export function FixturesPage() {
   })
 
   const generateMutation = useMutation({
-    mutationFn: () => fixturesService.generate(leagueId!, seasonId),
+    mutationFn: () => fixturesService.generate(leagueId!, seasonId, divisionId || undefined),
     onSuccess: () => {
       setSnackbar({ message: 'Fixture draft generated.', severity: 'success' })
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
@@ -116,6 +117,36 @@ export function FixturesPage() {
   const fixtures = fixturesData?.fixtures
   const isDraft = fixturesData?.isDraft ?? false
   const hasFixtures = fixtures && fixtures.rounds.length > 0
+
+  const teamOptions = useMemo(() => {
+    if (!fixtures) return []
+    const names = new Set<string>()
+    for (const round of fixtures.rounds) {
+      for (const match of round.matches) {
+        names.add(match.homeTeamName)
+        names.add(match.awayTeamName)
+      }
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b))
+  }, [fixtures])
+
+  const visibleRounds = useMemo(() => {
+    if (!fixtures) return []
+    return fixtures.rounds
+      .map((round) => {
+        const matches = round.matches
+          .filter((m) => !teamFilter || m.homeTeamName === teamFilter || m.awayTeamName === teamFilter)
+          .slice()
+          .sort((a, b) => {
+            const timeCmp = (a.kickoffTime ?? '').localeCompare(b.kickoffTime ?? '')
+            if (timeCmp !== 0) return timeCmp
+            return a.fieldName.localeCompare(b.fieldName)
+          })
+
+        return { ...round, matches }
+      })
+      .filter((round) => round.matches.length > 0)
+  }, [fixtures, teamFilter])
 
   if (!leagueId) {
     return (
@@ -176,11 +207,29 @@ export function FixturesPage() {
                 ))}
               </Select>
             </FormControl>
+            <FormControl size="small" sx={{ minWidth: 220 }} disabled={!hasFixtures}>
+              <InputLabel id="team-filter-label">Team filter</InputLabel>
+              <Select
+                labelId="team-filter-label"
+                label="Team filter"
+                value={teamFilter}
+                onChange={(e) => setTeamFilter(e.target.value)}
+              >
+                <MenuItem value="">
+                  <em>All teams</em>
+                </MenuItem>
+                {teamOptions.map((team) => (
+                  <MenuItem key={team} value={team}>
+                    {team}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <Button
               variant="outlined"
               startIcon={hasFixtures ? <RefreshIcon /> : <AutoFixHighIcon />}
               onClick={hasFixtures ? handleRegenerate : handleGenerate}
-              disabled={generateMutation.isPending}
+              disabled={generateMutation.isPending || !divisionId}
             >
               {hasFixtures ? 'Regenerate' : 'Generate'} Fixture
             </Button>
@@ -207,6 +256,13 @@ export function FixturesPage() {
             )}
             {hasFixtures && !isDraft && (
               <Chip label="Committed" color="success" size="small" />
+            )}
+            {teamFilter && (
+              <Chip
+                label={`Filtered: ${teamFilter}`}
+                size="small"
+                onDelete={() => setTeamFilter('')}
+              />
             )}
           </>
         )}
@@ -267,7 +323,7 @@ export function FixturesPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {fixtures!.rounds.map((round) =>
+              {visibleRounds.map((round) =>
                 round.matches.map((m, idx) => (
                   <TableRow key={`${round.roundNumber}-${idx}-${m.homeTeamDivisionSeasonId}-${m.awayTeamDivisionSeasonId}`}>
                     <TableCell>{idx === 0 ? round.roundNumber : ''}</TableCell>

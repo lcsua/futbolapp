@@ -8,8 +8,12 @@ namespace FootballManager.Domain.Entities
     {
         public Guid LeagueId { get; private set; }
         public virtual League League { get; private set; }
+        public Guid? ClubId { get; private set; }
+        public virtual Club? Club { get; private set; }
 
         public string Name { get; private set; }
+        public string? Suffix { get; private set; }
+        public string DisplayName => string.IsNullOrWhiteSpace(Suffix) ? Name : $"{Name} {Suffix}";
         public string Slug { get; private set; }
         public string ShortName { get; private set; }
         public string PrimaryColor { get; private set; }
@@ -26,26 +30,35 @@ namespace FootballManager.Domain.Entities
 
         protected Team() { }
 
-        public Team(League league, string name, string slug, string shortName = null, string email = null)
+        public Team(League league, string name, string slug, string shortName = null, string email = null, Guid? clubId = null, string? suffix = null)
         {
             League = league ?? throw new ArgumentNullException(nameof(league));
             LeagueId = league.Id;
             Name = !string.IsNullOrWhiteSpace(name) ? name : throw new ArgumentException("Team name cannot be empty.", nameof(name));
+            Suffix = NormalizeSuffix(suffix);
             Slug = !string.IsNullOrWhiteSpace(slug) ? slug.ToLowerInvariant() : throw new ArgumentException("Team slug cannot be empty.", nameof(slug));
             ShortName = shortName ?? string.Empty;
             PrimaryColor = string.Empty;
             SecondaryColor = string.Empty;
             Email = email;
+            ClubId = clubId;
             LogoUrl = string.Empty;
             DelegateName = string.Empty;
             DelegateContact = string.Empty;
             PhotoUrl = string.Empty;
         }
 
-        public void UpdateName(string name, string shortName = null)
+        public void UpdateName(string name, string shortName = null, string? suffix = null)
         {
             Name = !string.IsNullOrWhiteSpace(name) ? name : throw new ArgumentException("Team name cannot be empty.", nameof(name));
             ShortName = shortName ?? string.Empty;
+            Suffix = NormalizeSuffix(suffix);
+            UpdateTimestamp();
+        }
+
+        public void AssignClub(Guid? clubId)
+        {
+            ClubId = clubId;
             UpdateTimestamp();
         }
 
@@ -83,6 +96,14 @@ namespace FootballManager.Domain.Entities
             var player = new Player(this, firstName, lastName, birthDate, document);
             _players.Add(player);
             return player;
+        }
+
+        private static string? NormalizeSuffix(string? suffix)
+        {
+            if (string.IsNullOrWhiteSpace(suffix))
+                return null;
+
+            return suffix.Trim();
         }
     }
 }

@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react'
 import {
+  Autocomplete,
   Box,
   Button,
   TextField,
@@ -7,8 +8,10 @@ import {
   Alert,
   CircularProgress,
   Grid,
+  FormControlLabel,
+  Switch,
 } from '@mui/material'
-import type { TeamFormData } from '../api/types'
+import type { Club, TeamFormData } from '../api/types'
 
 const MAX_FILE_BYTES = 1024 * 1024
 const ACCEPT_IMAGES = 'image/jpeg,image/png,image/gif,image/webp'
@@ -20,6 +23,8 @@ function isValidEmail(value: string): boolean {
 
 export interface TeamFormProps {
   initialValues?: Partial<TeamFormData>
+  clubs?: Club[]
+  clubsLoading?: boolean
   onSubmit: (data: TeamFormData) => void | Promise<void>
   loading?: boolean
   error?: string | null
@@ -29,6 +34,8 @@ export interface TeamFormProps {
 
 const defaultValues: TeamFormData = {
   name: '',
+  suffix: '',
+  clubId: undefined,
   shortName: '',
   primaryColor: '#000000',
   secondaryColor: '#ffffff',
@@ -42,6 +49,8 @@ const defaultValues: TeamFormData = {
 
 export function TeamForm({
   initialValues,
+  clubs = [],
+  clubsLoading = false,
   onSubmit,
   loading = false,
   error = null,
@@ -50,6 +59,9 @@ export function TeamForm({
 }: TeamFormProps) {
   const values: TeamFormData = { ...defaultValues, ...initialValues }
   const [name, setName] = useState(values.name)
+  const [suffix, setSuffix] = useState(values.suffix ?? '')
+  const [assignToClub, setAssignToClub] = useState(!!values.clubId)
+  const [clubId, setClubId] = useState(values.clubId ?? '')
   const [shortName, setShortName] = useState(values.shortName ?? '')
   const [primaryColor, setPrimaryColor] = useState(values.primaryColor ?? '#000000')
   const [secondaryColor, setSecondaryColor] = useState(values.secondaryColor ?? '#ffffff')
@@ -172,6 +184,8 @@ export function TeamForm({
     }
     const data: TeamFormData = {
       name: nameTrim,
+      suffix: suffix.trim() || undefined,
+      clubId: assignToClub && clubId ? clubId : undefined,
       shortName: shortName.trim() || undefined,
       primaryColor: primaryColor || undefined,
       secondaryColor: secondaryColor || undefined,
@@ -214,11 +228,57 @@ export function TeamForm({
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             fullWidth
+            label="Suffix (optional)"
+            value={suffix}
+            onChange={(e) => setSuffix(e.target.value)}
+            disabled={loading}
+            helperText="If omitted, backend may assign one automatically if needed."
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField
+            fullWidth
             label="Short name"
             value={shortName}
             onChange={(e) => setShortName(e.target.value)}
             disabled={loading}
           />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={assignToClub}
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  setAssignToClub(checked)
+                  if (!checked) setClubId('')
+                }}
+                disabled={loading}
+              />
+            }
+            label="Assign to a club"
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          {assignToClub && (
+            <Autocomplete
+              options={clubs}
+              loading={clubsLoading}
+              value={clubs.find((c) => c.id === clubId) ?? null}
+              onChange={(_, club) => setClubId(club?.id ?? '')}
+              getOptionLabel={(option) => option.name}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Club"
+                  placeholder="Select a club"
+                  disabled={loading}
+                />
+              )}
+            />
+          )}
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <TextField

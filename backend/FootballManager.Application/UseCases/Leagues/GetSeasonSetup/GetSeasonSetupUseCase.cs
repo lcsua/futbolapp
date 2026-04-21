@@ -66,7 +66,7 @@ namespace FootballManager.Application.UseCases.Leagues.GetSeasonSetup
             var unassignedTeams = teams
                 .Where(t => !assignedTeamIds.Contains(t.Id))
                 .Select(ToTeamDto)
-                .OrderBy(t => t.Name)
+                .OrderBy(t => t.DisplayName)
                 .ToList();
 
             var divisionDtos = divisions
@@ -79,7 +79,20 @@ namespace FootballManager.Application.UseCases.Leagues.GetSeasonSetup
 
         private static TeamDto ToTeamDto(Team t)
         {
-            return new TeamDto(t.Id, t.Name, t.ShortName, t.LogoUrl, t.Email, t.FoundedYear, t.DelegateName, t.DelegateContact, t.PhotoUrl);
+            return new TeamDto(
+                t.Id,
+                t.Name,
+                t.Suffix,
+                t.DisplayName,
+                t.ShortName,
+                t.LogoUrl,
+                t.Email,
+                t.FoundedYear,
+                t.DelegateName,
+                t.DelegateContact,
+                t.PhotoUrl,
+                t.ClubId,
+                t.Club?.Name);
         }
     }
 }

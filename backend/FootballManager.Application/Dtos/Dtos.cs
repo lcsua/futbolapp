@@ -4,7 +4,21 @@ namespace FootballManager.Application.Dtos
 {
     public record LeagueDto(Guid Id, string Name, string Slug, string Country, string Description, string LogoUrl, bool IsPublic, bool IsActive);
     public record SeasonDto(Guid Id, string Name, DateOnly StartDate, DateOnly? EndDate);
-    public record TeamDto(Guid Id, string Name, string ShortName, string LogoUrl, string? Email, int? FoundedYear, string DelegateName, string DelegateContact, string PhotoUrl);
+    public record ClubDto(Guid Id, string Name, string LogoUrl);
+    public record TeamDto(
+        Guid Id,
+        string Name,
+        string? Suffix,
+        string DisplayName,
+        string ShortName,
+        string LogoUrl,
+        string? Email,
+        int? FoundedYear,
+        string DelegateName,
+        string DelegateContact,
+        string PhotoUrl,
+        Guid? ClubId,
+        string? ClubName);
     public record DivisionDto(
         Guid Id,
         Guid LeagueId,

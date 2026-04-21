@@ -56,7 +56,21 @@ namespace FootballManager.Application.UseCases.Leagues.GetLeagueTeams
             }
 
             var teams = await _teamRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
-            var teamDtos = teams.ConvertAll(t => new TeamDto(t.Id, t.Name, t.ShortName, t.LogoUrl, t.Email, t.FoundedYear, t.DelegateName, t.DelegateContact, t.PhotoUrl));
+            var teamDtos = teams.ConvertAll(
+                t => new TeamDto(
+                    t.Id,
+                    t.Name,
+                    t.Suffix,
+                    t.DisplayName,
+                    t.ShortName,
+                    t.LogoUrl,
+                    t.Email,
+                    t.FoundedYear,
+                    t.DelegateName,
+                    t.DelegateContact,
+                    t.PhotoUrl,
+                    t.ClubId,
+                    t.Club?.Name));
             return new GetLeagueTeamsResponse(teamDtos);
         }
     }

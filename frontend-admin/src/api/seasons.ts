@@ -10,6 +10,10 @@ export interface SeasonSetupDivision {
 export interface TeamInSetup {
   id: string
   name: string
+  suffix?: string | null
+  displayName?: string
+  clubId?: string | null
+  clubName?: string | null
   shortName: string | null
   logoUrl: string | null
   email: string | null

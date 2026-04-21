@@ -14,6 +14,7 @@ namespace FootballManager.Infrastructure.Persistence
         public DbSet<Season> Seasons { get; set; }
         public DbSet<Division> Divisions { get; set; }
         public DbSet<DivisionSeason> DivisionSeasons { get; set; }
+        public DbSet<Club> Clubs { get; set; }
         public DbSet<Team> Teams { get; set; }
         public DbSet<TeamDivisionSeason> TeamDivisionSeasons { get; set; }
         public DbSet<Player> Players { get; set; }

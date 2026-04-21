@@ -25,6 +25,19 @@ namespace FootballManager.Infrastructure.Repositories
                 .AnyAsync(tds => tds.TeamId == teamId && tds.DivisionSeasonId == divisionSeasonId, cancellationToken);
         }
 
+        public async Task<bool> ExistsByDivisionSeasonAndTeamIdentityAsync(Guid divisionSeasonId, string teamName, string? teamSuffix, CancellationToken cancellationToken = default)
+        {
+            var normalizedName = teamName.Trim();
+            var normalizedSuffix = string.IsNullOrWhiteSpace(teamSuffix) ? null : teamSuffix.Trim();
+
+            return await _context.TeamDivisionSeasons
+                .Where(tds => tds.DivisionSeasonId == divisionSeasonId)
+                .AnyAsync(
+                    tds => tds.Team.Name == normalizedName &&
+                           ((tds.Team.Suffix == null && normalizedSuffix == null) || tds.Team.Suffix == normalizedSuffix),
+                    cancellationToken);
+        }
+
         public async Task<List<Guid>> GetTeamIdsAssignedToSeasonAsync(Guid seasonId, CancellationToken cancellationToken = default)
         {
             return await _context.TeamDivisionSeasons

@@ -19,6 +19,9 @@ import {
   CircularProgress,
   Snackbar,
   Chip,
+  Tooltip,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import SaveIcon from '@mui/icons-material/Save'
@@ -39,27 +42,53 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { seasonsService, type TeamInSetup } from '../api/seasons'
 import { useLeagueId } from '../contexts/LeagueContext'
+import { QuickCreateTeamForDivisionDialog } from '../components/QuickCreateTeamForDivisionDialog'
 
 const UNASSIGNED_ID = 'unassigned'
 
 type BoardDivision = { divisionId: string; divisionName: string; teams: TeamInSetup[] }
 
-function TeamCardContent({ team }: { team: TeamInSetup }) {
+function getTeamDisplayName(team: TeamInSetup): string {
+  return team.displayName ?? team.name
+}
+
+function sortTeamsByNameAndSuffix(teams: TeamInSetup[]): TeamInSetup[] {
+  return [...teams].sort((a, b) => {
+    const nameCmp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+    if (nameCmp !== 0) return nameCmp
+    return (a.suffix ?? '').localeCompare(b.suffix ?? '', undefined, { sensitivity: 'base' })
+  })
+}
+
+function TeamCardContent({ team, divisionName }: { team: TeamInSetup; divisionName: string }) {
+  const tooltipLines = [
+    `Display name: ${getTeamDisplayName(team)}`,
+    team.clubName ? `Club: ${team.clubName}` : null,
+    `Division: ${divisionName}`,
+  ].filter(Boolean) as string[]
+
   return (
-    <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
-      <Typography variant="body2" fontWeight={500}>
-        {team.name}
-      </Typography>
-      {team.shortName && (
-        <Typography variant="caption" color="text.secondary">
-          {team.shortName}
+    <Tooltip title={tooltipLines.join(' | ')} arrow>
+      <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
+        <Typography variant="body2" fontWeight={500}>
+          {getTeamDisplayName(team)}
         </Typography>
-      )}
-    </CardContent>
+        {team.clubName ? (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+            Club: {team.clubName}
+          </Typography>
+        ) : null}
+        {team.shortName && (
+          <Typography variant="caption" color="text.secondary">
+            {team.shortName}
+          </Typography>
+        )}
+      </CardContent>
+    </Tooltip>
   )
 }
 
-function TeamCard({ team }: { team: TeamInSetup }) {
+function TeamCard({ team, divisionName }: { team: TeamInSetup; divisionName: string }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: team.id,
     data: { team },
@@ -82,7 +111,7 @@ function TeamCard({ team }: { team: TeamInSetup }) {
       }}
       variant="outlined"
     >
-      <TeamCardContent team={team} />
+      <TeamCardContent team={team} divisionName={divisionName} />
     </Card>
   )
 }
@@ -95,6 +124,8 @@ function DroppableColumn({
   onRenderCard,
   colorHint = 'default',
   isSticky = false,
+  groupByClub = false,
+  onHeaderDoubleClick,
 }: {
   id: string
   title: string
@@ -103,8 +134,20 @@ function DroppableColumn({
   onRenderCard: (team: TeamInSetup) => React.ReactNode
   colorHint?: 'default' | 'unassigned'
   isSticky?: boolean
+  groupByClub?: boolean
+  onHeaderDoubleClick?: () => void
 }) {
   const { isOver, setNodeRef } = useDroppable({ id })
+  const renderedTeams = sortTeamsByNameAndSuffix(teams)
+  const groupedTeams = groupByClub
+    ? renderedTeams.reduce<Record<string, TeamInSetup[]>>((acc, team) => {
+        const key = team.clubName || 'No club'
+        if (!acc[key]) acc[key] = []
+        acc[key].push(team)
+        return acc
+      }, {})
+    : null
+
   return (
     <Paper
       ref={setNodeRef}
@@ -128,7 +171,17 @@ function DroppableColumn({
       }}
     >
       <CardContent sx={{ pb: 0, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            mb: 1,
+            ...(onHeaderDoubleClick && { cursor: 'pointer', userSelect: 'none' }),
+          }}
+          onDoubleClick={onHeaderDoubleClick}
+          title={onHeaderDoubleClick ? 'Double-click to add a team to this division' : undefined}
+        >
           <Typography variant="subtitle1" fontWeight={600}>
             {title}
           </Typography>
@@ -139,8 +192,19 @@ function DroppableColumn({
             <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
               No teams assigned
             </Typography>
+          ) : groupByClub && groupedTeams ? (
+            Object.entries(groupedTeams).map(([clubName, clubTeams]) => (
+              <Box key={clubName} sx={{ mb: 1.25 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  {clubName}
+                </Typography>
+                {clubTeams.map((t) => (
+                  <Box key={t.id}>{onRenderCard(t)}</Box>
+                ))}
+              </Box>
+            ))
           ) : (
-            teams.map((t) => (
+            renderedTeams.map((t) => (
               <Box key={t.id}>{onRenderCard(t)}</Box>
             ))
           )}
@@ -158,7 +222,9 @@ export function AdvancedSeasonSetupPage() {
   const [activeTeam, setActiveTeam] = useState<TeamInSetup | null>(null)
   const [copyDialogOpen, setCopyDialogOpen] = useState(false)
   const [sourceSeasonId, setSourceSeasonId] = useState<string>('')
+  const [groupByClub, setGroupByClub] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
+  const [quickCreateDivision, setQuickCreateDivision] = useState<{ divisionId: string; divisionName: string } | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -351,7 +417,8 @@ export function AdvancedSeasonSetupPage() {
         Advanced season setup
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Drag teams between Unassigned and divisions. Save when done.
+        Drag teams between Unassigned and divisions. Save when done. Double-click a division title to create a team
+        and assign it to that division.
       </Typography>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mb: 3 }}>
@@ -389,7 +456,28 @@ export function AdvancedSeasonSetupPage() {
         >
           Save changes
         </Button>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={groupByClub}
+              onChange={(e) => setGroupByClub(e.target.checked)}
+            />
+          }
+          label="Group by club"
+        />
       </Box>
+
+      {leagueId && seasonId && quickCreateDivision && (
+        <QuickCreateTeamForDivisionDialog
+          open
+          onClose={() => setQuickCreateDivision(null)}
+          onCreated={() => setSnackbar({ message: 'Team created and assigned to the division.', severity: 'success' })}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          divisionId={quickCreateDivision.divisionId}
+          divisionName={quickCreateDivision.divisionName}
+        />
+      )}
 
       <Dialog open={copyDialogOpen} onClose={() => { setCopyDialogOpen(false); setSourceSeasonId('') }} maxWidth="xs" fullWidth>
         <DialogTitle>Copy from another season</DialogTitle>
@@ -477,7 +565,8 @@ export function AdvancedSeasonSetupPage() {
                 teamIds={board.unassignedTeams.map((t) => t.id)}
                 colorHint="unassigned"
                 isSticky
-                onRenderCard={(team) => <TeamCard key={team.id} team={team} />}
+                groupByClub={groupByClub}
+                onRenderCard={(team) => <TeamCard key={team.id} team={team} divisionName="Unassigned" />}
               />
               {board.divisions.map((div) => (
                 <DroppableColumn
@@ -486,7 +575,11 @@ export function AdvancedSeasonSetupPage() {
                   title={div.divisionName}
                   teams={div.teams}
                   teamIds={div.teams.map((t) => t.id)}
-                  onRenderCard={(team) => <TeamCard key={team.id} team={team} />}
+                  groupByClub={groupByClub}
+                  onHeaderDoubleClick={() =>
+                    setQuickCreateDivision({ divisionId: div.divisionId, divisionName: div.divisionName })
+                  }
+                  onRenderCard={(team) => <TeamCard key={team.id} team={team} divisionName={div.divisionName} />}
                 />
               ))}
             </Box>
@@ -495,7 +588,7 @@ export function AdvancedSeasonSetupPage() {
           <DragOverlay>
             {activeTeam ? (
               <Card elevation={1} sx={{ cursor: 'grabbing' }} variant="outlined">
-                <TeamCardContent team={activeTeam} />
+                <TeamCardContent team={activeTeam} divisionName="Dragging" />
               </Card>
             ) : null}
           </DragOverlay>

@@ -23,6 +23,9 @@ namespace FootballManager.Domain.Entities
         private readonly List<Team> _teams = new();
         public virtual IReadOnlyCollection<Team> Teams => _teams.AsReadOnly();
 
+        private readonly List<Club> _clubs = new();
+        public virtual IReadOnlyCollection<Club> Clubs => _clubs.AsReadOnly();
+
         private readonly List<Field> _fields = new();
         public virtual IReadOnlyCollection<Field> Fields => _fields.AsReadOnly();
 

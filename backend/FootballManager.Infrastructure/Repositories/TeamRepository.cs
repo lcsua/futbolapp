@@ -24,6 +24,7 @@ namespace FootballManager.Infrastructure.Repositories
             return await _context.Teams
                 .Include(t => t.Players)
                 .Include(t => t.League)
+                .Include(t => t.Club)
                 .SingleOrDefaultAsync(t => t.Id == id, cancellationToken);
         }
 
@@ -32,6 +33,7 @@ namespace FootballManager.Infrastructure.Repositories
             if (string.IsNullOrWhiteSpace(slug)) return null;
             return await _context.Teams
                 .Include(t => t.League)
+                .Include(t => t.Club)
                 .SingleOrDefaultAsync(t => t.LeagueId == leagueId && t.Slug == slug.ToLowerInvariant(), cancellationToken);
         }
 
@@ -39,6 +41,7 @@ namespace FootballManager.Infrastructure.Repositories
         {
             return await _context.Teams
                 .AsNoTracking()
+                .Include(t => t.Club)
                 .Where(t => t.LeagueId == leagueId)
                 .OrderBy(t => t.Name)
                 .ToListAsync(cancellationToken);

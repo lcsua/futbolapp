@@ -11,15 +11,18 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateTeam
     public class UpdateTeamUseCase : IUpdateTeamUseCase
     {
         private readonly ITeamRepository _teamRepository;
+        private readonly IClubRepository _clubRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public UpdateTeamUseCase(
             ITeamRepository teamRepository,
+            IClubRepository clubRepository,
             IUserLeagueRepository userLeagueRepository,
             IUnitOfWork unitOfWork)
         {
             _teamRepository = teamRepository ?? throw new ArgumentNullException(nameof(teamRepository));
+            _clubRepository = clubRepository ?? throw new ArgumentNullException(nameof(clubRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
@@ -39,7 +42,15 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateTeam
             if (team.LeagueId != request.LeagueId)
                 throw new ForbiddenAccessException("Team does not belong to this league.");
 
-            team.UpdateName(request.Name, request.ShortName);
+            if (request.ClubId.HasValue)
+            {
+                var club = await _clubRepository.GetByIdAsync(request.ClubId.Value, cancellationToken);
+                if (club == null || club.LeagueId != request.LeagueId)
+                    throw new BusinessException("Club not found in this league.");
+            }
+
+            team.UpdateName(request.Name, request.ShortName, request.Suffix);
+            team.AssignClub(request.ClubId);
             if (!string.IsNullOrWhiteSpace(request.Slug))
             {
                 var slug = SlugGenerator.Generate(request.Slug);

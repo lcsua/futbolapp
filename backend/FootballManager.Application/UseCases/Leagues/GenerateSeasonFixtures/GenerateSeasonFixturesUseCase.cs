@@ -69,6 +69,11 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
             throw new BusinessException("Match rules must be configured for this season (or at league level) before generating fixtures.");
 
         var divisionSeasons = await _divisionSeasonRepository.GetBySeasonIdAsync(request.SeasonId, cancellationToken);
+        if (request.DivisionId.HasValue)
+            divisionSeasons = divisionSeasons.Where(ds => ds.DivisionId == request.DivisionId.Value).ToList();
+        if (divisionSeasons.Count == 0)
+            throw new BusinessException("No divisions configured for fixture generation with the selected filters.");
+
         var fields = await _fieldRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
         var availableFields = fields.Where(f => f.IsAvailable).ToList();
 

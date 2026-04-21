@@ -10,7 +10,10 @@ using FootballManager.Application.UseCases.Leagues.GetLeagueTeams;
 using FootballManager.Application.UseCases.Leagues.UpdateLeague;
 using FootballManager.Application.UseCases.Leagues.UpdateSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeagueDivisions;
+using FootballManager.Application.UseCases.Leagues.GetLeagueClubs;
 using FootballManager.Application.UseCases.Leagues.CreateDivision;
+using FootballManager.Application.UseCases.Leagues.CreateClub;
+using FootballManager.Application.UseCases.Leagues.UpdateClub;
 using FootballManager.Application.UseCases.Leagues.UpdateDivision;
 using FootballManager.Application.UseCases.Leagues.CreateTeam;
 using FootballManager.Application.UseCases.Leagues.BulkCreateTeams;
@@ -41,8 +44,10 @@ using FootballManager.Application.UseCases.Seasons.GetStandings;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Interfaces.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using System.Collections.Generic;
+using System.IO;
 
 namespace FootballManager.Api.Controllers
 {
@@ -59,7 +64,10 @@ namespace FootballManager.Api.Controllers
         private readonly IUpdateLeagueUseCase _updateLeagueUseCase;
         private readonly IUpdateSeasonUseCase _updateSeasonUseCase;
         private readonly IGetLeagueDivisionsUseCase _getLeagueDivisionsUseCase;
+        private readonly IGetLeagueClubsUseCase _getLeagueClubsUseCase;
         private readonly ICreateDivisionUseCase _createDivisionUseCase;
+        private readonly ICreateClubUseCase _createClubUseCase;
+        private readonly IUpdateClubUseCase _updateClubUseCase;
         private readonly IUpdateDivisionUseCase _updateDivisionUseCase;
         private readonly ICreateTeamUseCase _createTeamUseCase;
         private readonly IBulkCreateTeamsUseCase _bulkCreateTeamsUseCase;
@@ -89,6 +97,7 @@ namespace FootballManager.Api.Controllers
         private readonly IPreviewFixtureImportUseCase _previewFixtureImportUseCase;
         private readonly IGetStandingsUseCase _getStandingsUseCase;
         private readonly ILeagueRepository _leagueRepository;
+        private readonly IUserLeagueRepository _userLeagueRepository;
 
         public LeaguesController(
             ICreateLeagueUseCase createLeagueUseCase,
@@ -100,7 +109,10 @@ namespace FootballManager.Api.Controllers
             IUpdateLeagueUseCase updateLeagueUseCase,
             IUpdateSeasonUseCase updateSeasonUseCase,
             IGetLeagueDivisionsUseCase getLeagueDivisionsUseCase,
+            IGetLeagueClubsUseCase getLeagueClubsUseCase,
             ICreateDivisionUseCase createDivisionUseCase,
+            ICreateClubUseCase createClubUseCase,
+            IUpdateClubUseCase updateClubUseCase,
             IUpdateDivisionUseCase updateDivisionUseCase,
             ICreateTeamUseCase createTeamUseCase,
             IBulkCreateTeamsUseCase bulkCreateTeamsUseCase,
@@ -129,7 +141,8 @@ namespace FootballManager.Api.Controllers
             IImportFixturesUseCase importFixturesUseCase,
             IPreviewFixtureImportUseCase previewFixtureImportUseCase,
             IGetStandingsUseCase getStandingsUseCase,
-            ILeagueRepository leagueRepository)
+            ILeagueRepository leagueRepository,
+            IUserLeagueRepository userLeagueRepository)
         {
             _createLeagueUseCase = createLeagueUseCase ?? throw new ArgumentNullException(nameof(createLeagueUseCase));
             _createSeasonUseCase = createSeasonUseCase ?? throw new ArgumentNullException(nameof(createSeasonUseCase));
@@ -140,7 +153,10 @@ namespace FootballManager.Api.Controllers
             _updateLeagueUseCase = updateLeagueUseCase ?? throw new ArgumentNullException(nameof(updateLeagueUseCase));
             _updateSeasonUseCase = updateSeasonUseCase ?? throw new ArgumentNullException(nameof(updateSeasonUseCase));
             _getLeagueDivisionsUseCase = getLeagueDivisionsUseCase ?? throw new ArgumentNullException(nameof(getLeagueDivisionsUseCase));
+            _getLeagueClubsUseCase = getLeagueClubsUseCase ?? throw new ArgumentNullException(nameof(getLeagueClubsUseCase));
             _createDivisionUseCase = createDivisionUseCase ?? throw new ArgumentNullException(nameof(createDivisionUseCase));
+            _createClubUseCase = createClubUseCase ?? throw new ArgumentNullException(nameof(createClubUseCase));
+            _updateClubUseCase = updateClubUseCase ?? throw new ArgumentNullException(nameof(updateClubUseCase));
             _updateDivisionUseCase = updateDivisionUseCase ?? throw new ArgumentNullException(nameof(updateDivisionUseCase));
             _createTeamUseCase = createTeamUseCase ?? throw new ArgumentNullException(nameof(createTeamUseCase));
             _bulkCreateTeamsUseCase = bulkCreateTeamsUseCase ?? throw new ArgumentNullException(nameof(bulkCreateTeamsUseCase));
@@ -170,6 +186,7 @@ namespace FootballManager.Api.Controllers
             _previewFixtureImportUseCase = previewFixtureImportUseCase ?? throw new ArgumentNullException(nameof(previewFixtureImportUseCase));
             _getStandingsUseCase = getStandingsUseCase ?? throw new ArgumentNullException(nameof(getStandingsUseCase));
             _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
+            _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
         }
 
         [HttpGet("check-slug")]
@@ -295,6 +312,17 @@ namespace FootballManager.Api.Controllers
             return Ok(response.Divisions);
         }
 
+        [HttpGet("{leagueId}/clubs")]
+        public async Task<IActionResult> GetClubs([FromRoute] Guid leagueId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetLeagueClubsRequest(leagueId, userId);
+            var response = await _getLeagueClubsUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response.Clubs);
+        }
+
         [HttpPost("{leagueId}/divisions")]
         public async Task<IActionResult> CreateDivision([FromRoute] Guid leagueId, [FromBody] CreateDivisionRequest request, CancellationToken cancellationToken)
         {
@@ -305,6 +333,74 @@ namespace FootballManager.Api.Controllers
             request.UserId = userId;
             var response = await _createDivisionUseCase.ExecuteAsync(request, cancellationToken);
             return CreatedAtAction(nameof(GetDivisions), new { leagueId }, response);
+        }
+
+        [HttpPost("{leagueId}/clubs")]
+        public async Task<IActionResult> CreateClub([FromRoute] Guid leagueId, [FromBody] CreateClubRequest request, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            request.LeagueId = leagueId;
+            request.UserId = userId;
+            var response = await _createClubUseCase.ExecuteAsync(request, cancellationToken);
+            return Created(string.Empty, response);
+        }
+
+        [HttpPut("{leagueId}/clubs/{clubId}")]
+        public async Task<IActionResult> UpdateClub([FromRoute] Guid leagueId, [FromRoute] Guid clubId, [FromBody] UpdateClubRequest request, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            request.LeagueId = leagueId;
+            request.ClubId = clubId;
+            request.UserId = userId;
+            await _updateClubUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPost("{leagueId}/uploads/images")]
+        [RequestSizeLimit(10 * 1024 * 1024)]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadLeagueImage([FromRoute] Guid leagueId, [FromForm] UploadLeagueImageRequest request, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var hasAccess = await _userLeagueRepository.IsUserInLeagueAsync(userId, leagueId, cancellationToken);
+            if (!hasAccess) return Forbid();
+
+            var file = request?.File;
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "An image file is required." });
+
+            if (file.Length > 5 * 1024 * 1024)
+                return BadRequest(new { message = "Image size must be up to 5 MB." });
+
+            if (string.IsNullOrWhiteSpace(file.ContentType) || !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "Only image uploads are allowed." });
+
+            var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+            var allowedExts = new HashSet<string> { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            if (string.IsNullOrWhiteSpace(ext) || !allowedExts.Contains(ext))
+                return BadRequest(new { message = "Allowed image extensions: .jpg, .jpeg, .png, .gif, .webp" });
+
+            var relativeDir = Path.Combine("uploads", "leagues", leagueId.ToString(), "images");
+            var rootDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativeDir);
+            Directory.CreateDirectory(rootDir);
+
+            var fileName = $"{Guid.NewGuid():N}{ext}";
+            var fullPath = Path.Combine(rootDir, fileName);
+
+            await using (var fs = new FileStream(fullPath, FileMode.Create))
+            {
+                await file.CopyToAsync(fs, cancellationToken);
+            }
+
+            var relativeUrl = $"/{relativeDir.Replace("\\", "/")}/{fileName}";
+            var publicUrl = $"{Request.Scheme}://{Request.Host}{relativeUrl}";
+            return Ok(new { url = publicUrl, relativeUrl });
         }
 
         [HttpPut("{leagueId}/divisions/{divisionId}")]
@@ -608,12 +704,18 @@ namespace FootballManager.Api.Controllers
         }
 
         [HttpPost("{leagueId}/seasons/{seasonId}/fixtures/generate")]
-        public async Task<IActionResult> GenerateSeasonFixtures([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        public async Task<IActionResult> GenerateSeasonFixtures([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, [FromBody] GenerateSeasonFixturesBody? body, CancellationToken cancellationToken)
         {
             var userId = GetUserId();
             if (userId == Guid.Empty) return Unauthorized();
 
-            var request = new GenerateSeasonFixturesRequest { LeagueId = leagueId, SeasonId = seasonId, UserId = userId };
+            var request = new GenerateSeasonFixturesRequest
+            {
+                LeagueId = leagueId,
+                SeasonId = seasonId,
+                DivisionId = body?.DivisionId,
+                UserId = userId
+            };
             var response = await _generateSeasonFixturesUseCase.ExecuteAsync(request, cancellationToken);
             return Ok(response.Draft);
         }
@@ -690,5 +792,15 @@ namespace FootballManager.Api.Controllers
         public Guid SeasonId { get; set; }
         public Guid DivisionId { get; set; }
         public string? CsvText { get; set; }
+    }
+
+    public class GenerateSeasonFixturesBody
+    {
+        public Guid? DivisionId { get; set; }
+    }
+
+    public class UploadLeagueImageRequest
+    {
+        public IFormFile? File { get; set; }
     }
 }

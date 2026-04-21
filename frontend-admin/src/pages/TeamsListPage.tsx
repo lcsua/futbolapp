@@ -14,11 +14,13 @@ import {
   Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import DomainAddIcon from '@mui/icons-material/DomainAdd'
 import { useQuery } from '@tanstack/react-query'
 import { teamsService } from '../api/teams'
 import { leaguesService } from '../api/leagues'
 import { useLeagueId, useActiveLeague } from '../contexts/LeagueContext'
 import type { Team } from '../api/types'
+import { CreateClubDialog } from '../components/CreateClubDialog'
 
 export function TeamsListPage() {
   const params = useParams<{ leagueId?: string }>()
@@ -27,9 +29,11 @@ export function TeamsListPage() {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [clubDialogOpen, setClubDialogOpen] = useState(false)
   const fromParams = !!params.leagueId
   const seasonsBase = fromParams && leagueId ? `/leagues/${leagueId}/seasons` : '/seasons'
   const divisionsBase = fromParams && leagueId ? `/leagues/${leagueId}/divisions` : '/divisions'
+  const clubsBase = fromParams && leagueId ? `/leagues/${leagueId}/clubs` : '/clubs'
   const teamsBase = fromParams && leagueId ? `/leagues/${leagueId}/teams` : '/teams'
 
   const { data: league } = useQuery({
@@ -45,15 +49,19 @@ export function TeamsListPage() {
 
   const filteredTeams = useMemo(() => {
     if (!teams) return []
+    const term = searchTerm.toLowerCase()
     return teams.filter((team) =>
-      team.name.toLowerCase().includes(searchTerm.toLowerCase())
+      (team.displayName ?? team.name).toLowerCase().includes(term) ||
+      (team.clubName ?? '').toLowerCase().includes(term)
     )
   }, [teams, searchTerm])
 
   const sortedTeams = useMemo(() => {
     return [...filteredTeams].sort((a: Team, b: Team) => {
-      if (sortOrder === 'asc') return a.name.localeCompare(b.name)
-      return b.name.localeCompare(a.name)
+      const base = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+      const suffixCmp = (a.suffix ?? '').localeCompare(b.suffix ?? '', undefined, { sensitivity: 'base' })
+      const result = base !== 0 ? base : suffixCmp
+      return sortOrder === 'asc' ? result : -result
     })
   }, [filteredTeams, sortOrder])
 
@@ -92,6 +100,10 @@ export function TeamsListPage() {
           Seasons
         </Button>
         <Typography color="text.secondary">/</Typography>
+        <Button component={RouterLink} to={clubsBase} size="small">
+          Clubs
+        </Button>
+        <Typography color="text.secondary">/</Typography>
         <Button component={RouterLink} to={divisionsBase} size="small">
           Divisions
         </Button>
@@ -100,9 +112,14 @@ export function TeamsListPage() {
         <Typography variant="h5" component="h2" fontWeight={600}>
           {league?.name ?? activeLeague?.name ?? 'League'} — Teams
         </Typography>
-        <Button component={RouterLink} to={`${teamsBase}/new`} variant="contained" startIcon={<AddIcon />}>
-          Create team
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button variant="outlined" startIcon={<DomainAddIcon />} onClick={() => setClubDialogOpen(true)}>
+            Create club
+          </Button>
+          <Button component={RouterLink} to={`${teamsBase}/new`} variant="contained" startIcon={<AddIcon />}>
+            Create team
+          </Button>
+        </Box>
       </Box>
 
       <Box
@@ -161,8 +178,13 @@ export function TeamsListPage() {
               >
                 <CardContent>
                   <Typography variant="h6" component="h3" gutterBottom>
-                    {team.name}
+                    {team.displayName ?? team.name}
                   </Typography>
+                  {team.clubName ? (
+                    <Typography variant="body2" color="text.secondary">
+                      Club: {team.clubName}
+                    </Typography>
+                  ) : null}
                   {team.shortName ? (
                     <Typography variant="body2" color="text.secondary">
                       {team.shortName}
@@ -174,6 +196,7 @@ export function TeamsListPage() {
           ))}
         </Box>
       )}
+      <CreateClubDialog open={clubDialogOpen} leagueId={leagueId} onClose={() => setClubDialogOpen(false)} />
     </Box>
   )
 }

@@ -10,5 +10,9 @@ namespace FootballManager.Application.UseCases.Leagues.CreateTeam
         public string? Slug { get; set; }
         public string? ShortName { get; set; }
         public string? Email { get; set; }
+        public Guid? ClubId { get; set; }
+        public string? Suffix { get; set; }
+        public Guid? SeasonId { get; set; }
+        public Guid? DivisionId { get; set; }
     }
 }

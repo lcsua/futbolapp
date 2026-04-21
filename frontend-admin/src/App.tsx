@@ -14,6 +14,7 @@ import { DivisionsListPage } from './pages/DivisionsListPage'
 import { CreateDivisionPage } from './pages/CreateDivisionPage'
 import { EditDivisionPage } from './pages/EditDivisionPage'
 import { TeamsListPage } from './pages/TeamsListPage'
+import { ClubsListPage } from './pages/ClubsListPage'
 import { CreateTeamPage } from './pages/CreateTeamPage'
 import { EditTeamPage } from './pages/EditTeamPage'
 import { BulkTeamImportPage } from './pages/BulkTeamImportPage'
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="leagues/:leagueId/divisions/new" element={<CreateDivisionPage />} />
           <Route path="leagues/:leagueId/divisions/:divisionId/edit" element={<EditDivisionPage />} />
           <Route path="leagues/:leagueId/teams" element={<TeamsListPage />} />
+          <Route path="leagues/:leagueId/clubs" element={<ClubsListPage />} />
           <Route path="leagues/:leagueId/teams/new" element={<CreateTeamPage />} />
           <Route path="leagues/:leagueId/teams/bulk" element={<BulkTeamImportPage />} />
           <Route path="leagues/:leagueId/teams/:teamId/edit" element={<EditTeamPage />} />
@@ -77,6 +79,7 @@ export default function App() {
             <Route path="divisions/new" element={<CreateDivisionPage />} />
             <Route path="divisions/:divisionId/edit" element={<EditDivisionPage />} />
             <Route path="teams" element={<TeamsListPage />} />
+            <Route path="clubs" element={<ClubsListPage />} />
             <Route path="teams/new" element={<CreateTeamPage />} />
             <Route path="teams/bulk" element={<BulkTeamImportPage />} />
             <Route path="teams/:teamId/edit" element={<EditTeamPage />} />

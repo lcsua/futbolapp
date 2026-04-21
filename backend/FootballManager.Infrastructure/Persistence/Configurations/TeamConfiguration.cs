@@ -14,11 +14,16 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.Property(e => e.Id).HasColumnName("id");
 
             builder.Property(e => e.LeagueId).HasColumnName("league_id");
+            builder.Property(e => e.ClubId).HasColumnName("club_id");
 
             builder.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(100)
                 .HasColumnName("name");
+
+            builder.Property(e => e.Suffix)
+                .HasMaxLength(10)
+                .HasColumnName("suffix");
 
             builder.Property(e => e.Slug)
                 .IsRequired()
@@ -41,11 +46,14 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             builder.Property(e => e.DeletedAt).HasColumnName("deleted_at");
 
-            builder.HasIndex(e => new { e.LeagueId, e.Name }).IsUnique();
-
             builder.HasOne(e => e.League)
                 .WithMany(l => l.Teams)
                 .HasForeignKey(e => e.LeagueId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(e => e.Club)
+                .WithMany()
+                .HasForeignKey(e => e.ClubId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasMany(e => e.Players)

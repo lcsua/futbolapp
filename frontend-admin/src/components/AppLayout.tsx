@@ -21,6 +21,7 @@ import LeaderboardIcon from '@mui/icons-material/Leaderboard'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import ViewListIcon from '@mui/icons-material/ViewList'
 import GroupsIcon from '@mui/icons-material/Groups'
+import ApartmentIcon from '@mui/icons-material/Apartment'
 import PlaceIcon from '@mui/icons-material/Place'
 import SettingsIcon from '@mui/icons-material/Settings'
 import RuleIcon from '@mui/icons-material/Rule'
@@ -40,6 +41,7 @@ const NAV_ITEMS = [
   { to: '/season-setup/advanced', label: 'Advanced season setup', icon: <SettingsIcon /> },
   { to: '/divisions', label: 'Divisions', icon: <ViewListIcon /> },
   { to: '/teams', label: 'Teams', icon: <GroupsIcon /> },
+  { to: '/clubs', label: 'Clubs', icon: <ApartmentIcon /> },
   { to: '/teams/bulk', label: 'Bulk Import', icon: <UploadFileIcon /> },
   { to: '/fields', label: 'Fields', icon: <PlaceIcon /> },
   { to: '/fixtures', label: 'Fixtures', icon: <EventIcon /> },

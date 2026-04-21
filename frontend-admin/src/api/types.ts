@@ -75,6 +75,10 @@ export interface FieldFormData {
 export interface Team {
   id: string
   name: string
+  suffix?: string | null
+  displayName?: string
+  clubId?: string | null
+  clubName?: string | null
   shortName: string | null
   logoUrl: string | null
   email: string | null
@@ -86,6 +90,8 @@ export interface Team {
 
 export interface TeamFormData {
   name: string
+  suffix?: string
+  clubId?: string
   shortName?: string
   primaryColor?: string
   secondaryColor?: string
@@ -95,6 +101,14 @@ export interface TeamFormData {
   email?: string
   logoUrl?: string
   photoUrl?: string
+  seasonId?: string
+  divisionId?: string
+}
+
+export interface Club {
+  id: string
+  name: string
+  logoUrl: string
 }
 
 export interface ApiError {

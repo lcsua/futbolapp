@@ -17,6 +17,7 @@ namespace FootballManager.Infrastructure
             services.AddScoped<ILeagueRepository, LeagueRepository>();
             services.AddScoped<ISeasonRepository, SeasonRepository>();
             services.AddScoped<ITeamRepository, TeamRepository>();
+            services.AddScoped<IClubRepository, ClubRepository>();
             services.AddScoped<IUserLeagueRepository, UserLeagueRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IDivisionRepository, DivisionRepository>();
