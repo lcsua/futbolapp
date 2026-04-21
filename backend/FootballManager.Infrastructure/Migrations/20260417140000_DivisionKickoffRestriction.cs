@@ -1,10 +1,13 @@
 using System;
+using FootballManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 #nullable disable
 
 namespace FootballManager.Infrastructure.Migrations
 {
+    [DbContext(typeof(FootballManagerDbContext))]
     [Migration("20260417140000_DivisionKickoffRestriction")]
     public partial class DivisionKickoffRestriction : Migration
     {
