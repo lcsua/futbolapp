@@ -1,0 +1,40 @@
+name: Deploy Backend API (.NET)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Uncomment and update the working-directory based on your solution structure
+      # - name: Restore dependencies
+      #   run: dotnet restore
+      #   working-directory: ./src/BackendApi
+
+      # - name: Build
+      #   run: dotnet build --no-restore --configuration Release
+      #   working-directory: ./src/BackendApi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "Conectado al servidor para desplegar el Backend API"
+            # Aquí puedes agregar los comandos para actualizar tu backend, por ejemplo:
+            # cd /ruta/al/proyecto/backend
+            # git pull origin main
+            # dotnet publish -c Release
+            # systemctl restart tu-servicio-backend.service

@@ -1,0 +1,40 @@
+name: Deploy Public Web (.NET)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Uncomment and update the working-directory based on your solution structure
+      # - name: Restore dependencies
+      #   run: dotnet restore
+      #   working-directory: ./src/PublicWeb
+
+      # - name: Build
+      #   run: dotnet build --no-restore --configuration Release
+      #   working-directory: ./src/PublicWeb
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            echo "Conectado al servidor para desplegar el Public Web"
+            # Aquí puedes agregar los comandos para actualizar tu public web, por ejemplo:
+            # cd /ruta/al/proyecto/public-web
+            # git pull origin main
+            # dotnet publish -c Release
+            # systemctl restart tu-servicio-web.service
