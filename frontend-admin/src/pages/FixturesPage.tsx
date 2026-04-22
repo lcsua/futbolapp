@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import {
   Alert,
@@ -143,9 +143,14 @@ export function FixturesPage() {
             return a.fieldName.localeCompare(b.fieldName)
           })
 
-        return { ...round, matches }
+        const byeTeams = (round.byeTeams ?? [])
+          .filter((b) => !teamFilter || b.teamName === teamFilter)
+          .slice()
+          .sort((a, b) => a.divisionName.localeCompare(b.divisionName) || a.teamName.localeCompare(b.teamName))
+
+        return { ...round, matches, byeTeams }
       })
-      .filter((round) => round.matches.length > 0)
+      .filter((round) => round.matches.length > 0 || round.byeTeams.length > 0)
   }, [fixtures, teamFilter])
 
   if (!leagueId) {
@@ -323,19 +328,35 @@ export function FixturesPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {visibleRounds.map((round) =>
-                round.matches.map((m, idx) => (
-                  <TableRow key={`${round.roundNumber}-${idx}-${m.homeTeamDivisionSeasonId}-${m.awayTeamDivisionSeasonId}`}>
-                    <TableCell>{idx === 0 ? round.roundNumber : ''}</TableCell>
-                    <TableCell>{idx === 0 ? formatDate(round.matchDate) : ''}</TableCell>
-                    <TableCell>{m.divisionName}</TableCell>
-                    <TableCell>{m.fieldName}</TableCell>
-                    <TableCell>{formatTime(m.kickoffTime)}</TableCell>
-                    <TableCell>{m.homeTeamName}</TableCell>
-                    <TableCell>{m.awayTeamName}</TableCell>
-                  </TableRow>
-                )),
-              )}
+              {visibleRounds.map((round) => (
+                <Fragment key={`round-${round.roundNumber}-${round.matchDate ?? 'no-date'}`}>
+                  {round.matches.map((m, idx) => (
+                    <TableRow key={`${round.roundNumber}-${idx}-${m.homeTeamDivisionSeasonId}-${m.awayTeamDivisionSeasonId}`}>
+                      <TableCell>{idx === 0 ? round.roundNumber : ''}</TableCell>
+                      <TableCell>{idx === 0 ? formatDate(round.matchDate) : ''}</TableCell>
+                      <TableCell>{m.divisionName}</TableCell>
+                      <TableCell>{m.fieldName}</TableCell>
+                      <TableCell>{formatTime(m.kickoffTime)}</TableCell>
+                      <TableCell>{m.homeTeamName}</TableCell>
+                      <TableCell>{m.awayTeamName}</TableCell>
+                    </TableRow>
+                  ))}
+                  {round.byeTeams.map((bye, byeIdx) => {
+                    const showRoundHeader = round.matches.length === 0 && byeIdx === 0
+                    return (
+                      <TableRow key={`${round.roundNumber}-bye-${bye.divisionSeasonId}-${bye.teamDivisionSeasonId}`}>
+                        <TableCell>{showRoundHeader ? round.roundNumber : ''}</TableCell>
+                        <TableCell>{showRoundHeader ? formatDate(round.matchDate) : ''}</TableCell>
+                        <TableCell>{bye.divisionName}</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>{bye.teamName}</TableCell>
+                        <TableCell>Libre</TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </Fragment>
+              ))}
             </TableBody>
           </Table>
         </TableContainer>

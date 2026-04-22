@@ -3,6 +3,7 @@ using System;
 using FootballManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FootballManager.Infrastructure.Migrations
 {
     [DbContext(typeof(FootballManagerDbContext))]
-    partial class FootballManagerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260421220415_HierarchicalMatchSchedulingRules")]
+    partial class HierarchicalMatchSchedulingRules
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -218,6 +221,10 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("division_season_id");
 
+                    b.Property<string>("AllowedFieldIdsJson")
+                        .HasColumnType("text")
+                        .HasColumnName("allowed_field_ids_json");
+
                     b.Property<string>("AllowedTimeRangesJson")
                         .HasColumnType("text")
                         .HasColumnName("allowed_time_ranges_json");
@@ -226,25 +233,9 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("break_between_matches_minutes");
 
-                    b.Property<int?>("BreakMinutes")
+                    b.Property<int?>("MatchDurationMinutes")
                         .HasColumnType("integer")
-                        .HasColumnName("halftime_break_minutes");
-
-                    b.Property<int?>("FirstMatchToleranceMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("first_match_tolerance_minutes");
-
-                    b.Property<int?>("HalfMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("half_minutes");
-
-                    b.Property<int?>("SlotGranularityMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("slot_granularity_minutes");
-
-                    b.Property<int?>("WarmupBufferMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("warmup_buffer_minutes");
+                        .HasColumnName("match_duration_minutes");
 
                     b.HasKey("DivisionSeasonId");
 
@@ -627,6 +618,64 @@ namespace FootballManager.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("leagues", (string)null);
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.LeagueMatchRules", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DefaultAllowedFieldIdsJson")
+                        .HasColumnType("text")
+                        .HasColumnName("default_allowed_field_ids_json");
+
+                    b.Property<string>("DefaultAllowedTimeRangesJson")
+                        .HasColumnType("text")
+                        .HasColumnName("default_allowed_time_ranges_json");
+
+                    b.Property<int?>("DefaultBreakBetweenMatchesMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("default_break_between_matches_minutes");
+
+                    b.Property<int?>("DefaultMatchDurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("default_match_duration_minutes");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid>("LeagueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("league_id");
+
+                    b.Property<Guid?>("SeasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueId")
+                        .IsUnique()
+                        .HasFilter("season_id IS NULL");
+
+                    b.HasIndex("SeasonId");
+
+                    b.HasIndex("LeagueId", "SeasonId")
+                        .IsUnique()
+                        .HasFilter("season_id IS NOT NULL");
+
+                    b.ToTable("league_match_rules", (string)null);
                 });
 
             modelBuilder.Entity("FootballManager.Domain.Entities.MatchEvent", b =>
@@ -1530,6 +1579,24 @@ namespace FootballManager.Infrastructure.Migrations
                     b.Navigation("Field");
 
                     b.Navigation("HomeTeamDivisionSeason");
+
+                    b.Navigation("League");
+
+                    b.Navigation("Season");
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.LeagueMatchRules", b =>
+                {
+                    b.HasOne("FootballManager.Domain.Entities.League", "League")
+                        .WithMany()
+                        .HasForeignKey("LeagueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FootballManager.Domain.Entities.Season", "Season")
+                        .WithMany()
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("League");
 

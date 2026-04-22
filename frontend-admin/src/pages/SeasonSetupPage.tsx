@@ -122,6 +122,14 @@ export function SeasonSetupPage() {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Assign teams to a division for a season. Each team can be in only one division per season. Manage teams under Teams.
       </Typography>
+      {seasonId ? (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Para configurar <strong>duración de partidos, horarios y campos por categoría</strong>, usa{' '}
+          <Button component={RouterLink} to={`/seasons/${seasonId}/division-scheduling`} size="small" variant="contained" color="secondary">
+            Reglas por división (esta temporada)
+          </Button>
+        </Alert>
+      ) : null}
 
       {assignError && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setAssignError(null)}>
@@ -217,6 +225,18 @@ export function SeasonSetupPage() {
         >
           {assignMutation.isPending ? <CircularProgress size={24} color="inherit" /> : 'Save assignment'}
         </Button>
+        {seasonId && divisionId && (
+          <Button
+            component={RouterLink}
+            to={`/seasons/${seasonId}/divisions/${divisionId}/division-scheduling-rules`}
+            variant="contained"
+            color="secondary"
+            size="small"
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            Abrir reglas de esta división (partidos y campos)
+          </Button>
+        )}
       </Box>
     </Box>
   )

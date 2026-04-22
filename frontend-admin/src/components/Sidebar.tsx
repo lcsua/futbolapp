@@ -11,10 +11,11 @@ import CloseIcon from '@mui/icons-material/Close'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import GroupIcon from '@mui/icons-material/Group'
 import IconButton from '@mui/material/IconButton'
+import { useTranslation } from 'react-i18next'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Leagues', icon: <DashboardIcon /> },
-  { to: '/seasons', label: 'Seasons', icon: <GroupIcon /> },
+  { to: '/', txKey: 'nav.leagues', icon: <DashboardIcon /> },
+  { to: '/seasons', txKey: 'nav.seasons', icon: <GroupIcon /> },
 ]
 
 type SidebarProps = {
@@ -23,6 +24,7 @@ type SidebarProps = {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
+  const { t } = useTranslation()
   const location = useLocation()
 
   return (
@@ -42,7 +44,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </IconButton>
       </Box>
       <List component="nav" sx={{ px: 1 }}>
-        {NAV_ITEMS.map(({ to, label, icon }) => (
+        {NAV_ITEMS.map(({ to, txKey, icon }) => (
           <ListItemButton
             key={to}
             component={RouterLink}
@@ -51,7 +53,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             onClick={onClose}
           >
             <ListItemIcon>{icon}</ListItemIcon>
-            <ListItemText primary={label} />
+            <ListItemText primary={t(txKey)} />
           </ListItemButton>
         ))}
       </List>

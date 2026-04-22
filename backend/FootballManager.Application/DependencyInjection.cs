@@ -38,12 +38,16 @@ using FootballManager.Application.UseCases.Leagues.GenerateSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.ImportFixtures;
+using FootballManager.Application.UseCases.Leagues.GetSchedulingEffectiveForDivision;
+using FootballManager.Application.UseCases.Leagues.GetDivisionSchedulingExtras;
+using FootballManager.Application.UseCases.Leagues.UpsertDivisionSchedulingExtras;
 using FootballManager.Application.UseCases.Seasons.GetStandings;
 using FootballManager.Application.UseCases.Matches.GetMatches;
 using FootballManager.Application.UseCases.Matches.GetMatchById;
 using FootballManager.Application.UseCases.Matches.UpdateMatchResult;
 using FootballManager.Application.UseCases.Matches.AddMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatchIncident;
+using FootballManager.Application.Interfaces;
 using FootballManager.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -53,6 +57,8 @@ namespace FootballManager.Application
     {
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
+            services.AddScoped<IMatchRulesResolver, MatchRulesResolver>();
+
             services.AddScoped<ILoginUseCase, LoginUseCase>();
             services.AddScoped<ICreateLeagueUseCase, CreateLeagueUseCase>();
             services.AddScoped<ICreateSeasonUseCase, CreateSeasonUseCase>();
@@ -94,6 +100,9 @@ namespace FootballManager.Application
             services.AddScoped<IGetSeasonFixturesUseCase, GetSeasonFixturesUseCase>();
             services.AddScoped<IImportFixturesUseCase, ImportFixturesUseCase>();
             services.AddScoped<IPreviewFixtureImportUseCase, PreviewFixtureImportUseCase>();
+            services.AddScoped<IGetSchedulingEffectiveForDivisionUseCase, GetSchedulingEffectiveForDivisionUseCase>();
+            services.AddScoped<IGetDivisionSchedulingExtrasUseCase, GetDivisionSchedulingExtrasUseCase>();
+            services.AddScoped<IUpsertDivisionSchedulingExtrasUseCase, UpsertDivisionSchedulingExtrasUseCase>();
             services.AddScoped<IGetStandingsUseCase, GetStandingsUseCase>();
             services.AddScoped<IGetMatchesUseCase, GetMatchesUseCase>();
             services.AddScoped<IGetMatchByIdUseCase, GetMatchByIdUseCase>();

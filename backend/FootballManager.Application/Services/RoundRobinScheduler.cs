@@ -85,6 +85,9 @@ public static class RoundRobinScheduler
         int teamCount)
     {
         var lastWasHome = new bool?[teamCount];
+        var sameVenueStreak = new int[teamCount];
+        var homeCounts = new int[teamCount];
+        var awayCounts = new int[teamCount];
         var firstLegMinWasHome = new Dictionary<(int Min, int Max), bool>();
 
         var result = new List<IReadOnlyList<(int Home, int Away)>>(unorderedRounds.Count);
@@ -104,11 +107,11 @@ public static class RoundRobinScheduler
                 }
                 else
                 {
-                    // Independiente por pareja: maximiza alternancia respecto a la fecha anterior
-                    var minHomeScore = AlternationScore(lastWasHome, min, isHome: true) +
-                                       AlternationScore(lastWasHome, max, isHome: false);
-                    var maxHomeScore = AlternationScore(lastWasHome, min, isHome: false) +
-                                       AlternationScore(lastWasHome, max, isHome: true);
+                    // Independiente por pareja: prioriza cortar rachas y balancear local/visitante acumulado.
+                    var minHomeScore = OrientationScore(lastWasHome, sameVenueStreak, homeCounts, awayCounts, min, isHome: true) +
+                                       OrientationScore(lastWasHome, sameVenueStreak, homeCounts, awayCounts, max, isHome: false);
+                    var maxHomeScore = OrientationScore(lastWasHome, sameVenueStreak, homeCounts, awayCounts, min, isHome: false) +
+                                       OrientationScore(lastWasHome, sameVenueStreak, homeCounts, awayCounts, max, isHome: true);
 
                     if (minHomeScore > maxHomeScore)
                     {
@@ -122,16 +125,16 @@ public static class RoundRobinScheduler
                     }
                     else
                     {
-                        // Empate en satisfacción: índice menor de local (determinístico)
-                        home = min;
-                        away = max;
+                        var preferMinHome = IsMinHomeBetterForBalance(min, max, homeCounts, awayCounts);
+                        home = preferMinHome ? min : max;
+                        away = preferMinHome ? max : min;
                     }
 
                     firstLegMinWasHome[(min, max)] = home == min;
                 }
 
-                lastWasHome[home] = true;
-                lastWasHome[away] = false;
+                UpdateTeamVenueTracking(home, isHome: true, lastWasHome, sameVenueStreak, homeCounts, awayCounts);
+                UpdateTeamVenueTracking(away, isHome: false, lastWasHome, sameVenueStreak, homeCounts, awayCounts);
                 oriented.Add((home, away));
             }
 
@@ -141,14 +144,59 @@ public static class RoundRobinScheduler
         return result;
     }
 
-    /// <summary>Higher score = better match for alternating home/away after the previous round.</summary>
-    private static int AlternationScore(IReadOnlyList<bool?> lastWasHome, int team, bool isHome)
+    /// <summary>Higher score = better orientation considering alternation streaks and current balance.</summary>
+    private static int OrientationScore(
+        IReadOnlyList<bool?> lastWasHome,
+        IReadOnlyList<int> sameVenueStreak,
+        IReadOnlyList<int> homeCounts,
+        IReadOnlyList<int> awayCounts,
+        int team,
+        bool isHome)
     {
         var prev = lastWasHome[team];
-        if (prev == null)
-            return 1;
-        if (prev.Value)
-            return isHome ? 0 : 2;
-        return isHome ? 2 : 0;
+        var alternationScore = prev switch
+        {
+            null => 2,
+            true when isHome => -2 - sameVenueStreak[team],
+            false when !isHome => -2 - sameVenueStreak[team],
+            _ => 4 + sameVenueStreak[team]
+        };
+
+        var balance = homeCounts[team] - awayCounts[team];
+        var balanceScore = isHome ? -balance : balance;
+        return alternationScore + balanceScore;
+    }
+
+    private static bool IsMinHomeBetterForBalance(int min, int max, IReadOnlyList<int> homeCounts, IReadOnlyList<int> awayCounts)
+    {
+        var minHomeDiff = Math.Abs((homeCounts[min] + 1) - awayCounts[min]) +
+                          Math.Abs(homeCounts[max] - (awayCounts[max] + 1));
+        var maxHomeDiff = Math.Abs(homeCounts[min] - (awayCounts[min] + 1)) +
+                          Math.Abs((homeCounts[max] + 1) - awayCounts[max]);
+        if (minHomeDiff < maxHomeDiff) return true;
+        if (maxHomeDiff < minHomeDiff) return false;
+
+        if (homeCounts[min] < homeCounts[max]) return true;
+        if (homeCounts[max] < homeCounts[min]) return false;
+        return min <= max;
+    }
+
+    private static void UpdateTeamVenueTracking(
+        int team,
+        bool isHome,
+        bool?[] lastWasHome,
+        int[] sameVenueStreak,
+        int[] homeCounts,
+        int[] awayCounts)
+    {
+        var prev = lastWasHome[team];
+        if (prev.HasValue && prev.Value == isHome)
+            sameVenueStreak[team]++;
+        else
+            sameVenueStreak[team] = 1;
+
+        lastWasHome[team] = isHome;
+        if (isHome) homeCounts[team]++;
+        else awayCounts[team]++;
     }
 }

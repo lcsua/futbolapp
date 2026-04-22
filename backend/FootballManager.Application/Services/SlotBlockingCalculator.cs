@@ -1,3 +1,4 @@
+using FootballManager.Application.Dtos;
 using FootballManager.Domain.Entities;
 
 namespace FootballManager.Application.Services
@@ -28,6 +29,16 @@ namespace FootballManager.Application.Services
             var baseDuration = GetBaseDurationMinutes(rule);
             if (!isFirstMatchOfDivisionInRound) return baseDuration;
             return baseDuration + (rule?.FirstMatchToleranceMinutes ?? 0);
+        }
+
+        public static int GetBaseDurationMinutes(EffectiveMatchRulesDto rule) =>
+            rule?.TotalMatchSlotBlockMinutes ?? 0;
+
+        public static int GetSlotBlockingDurationMinutes(EffectiveMatchRulesDto rule, bool isFirstMatchOfDivisionInRound)
+        {
+            if (rule == null) return 0;
+            if (!isFirstMatchOfDivisionInRound) return rule.TotalMatchSlotBlockMinutes;
+            return rule.TotalMatchSlotBlockMinutes + rule.FirstMatchToleranceMinutes;
         }
 
         /// <summary>

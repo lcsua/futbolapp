@@ -22,6 +22,8 @@ namespace FootballManager.Infrastructure.Persistence
         public DbSet<FieldAvailability> FieldAvailabilities { get; set; }
         public DbSet<FieldBlackout> FieldBlackouts { get; set; }
         public DbSet<MatchRule> MatchRules { get; set; }
+        public DbSet<DivisionMatchRules> DivisionMatchRules { get; set; }
+        public DbSet<DivisionSeasonField> DivisionSeasonFields { get; set; }
         public DbSet<CompetitionRule> CompetitionRules { get; set; }
         public DbSet<CompetitionMatchDay> CompetitionMatchDays { get; set; }
         public DbSet<Fixture> Fixtures { get; set; }

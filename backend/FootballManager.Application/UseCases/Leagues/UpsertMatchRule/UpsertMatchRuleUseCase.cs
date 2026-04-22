@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Interfaces;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Domain.Entities;
 
@@ -14,19 +15,22 @@ namespace FootballManager.Application.UseCases.Leagues.UpsertMatchRule
         private readonly IMatchRuleRepository _ruleRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMatchRulesResolver _matchRulesResolver;
 
         public UpsertMatchRuleUseCase(
             ILeagueRepository leagueRepository,
             ISeasonRepository seasonRepository,
             IMatchRuleRepository ruleRepository,
             IUserLeagueRepository userLeagueRepository,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IMatchRulesResolver matchRulesResolver)
         {
             _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
             _seasonRepository = seasonRepository ?? throw new ArgumentNullException(nameof(seasonRepository));
             _ruleRepository = ruleRepository ?? throw new ArgumentNullException(nameof(ruleRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _matchRulesResolver = matchRulesResolver ?? throw new ArgumentNullException(nameof(matchRulesResolver));
         }
 
         public async Task ExecuteAsync(UpsertMatchRuleRequest request, CancellationToken cancellationToken = default)
@@ -59,6 +63,7 @@ namespace FootballManager.Application.UseCases.Leagues.UpsertMatchRule
                 _ruleRepository.Update(rule);
             }
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+            _matchRulesResolver.InvalidateCache();
         }
     }
 }

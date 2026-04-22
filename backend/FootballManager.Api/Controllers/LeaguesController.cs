@@ -40,6 +40,9 @@ using FootballManager.Application.UseCases.Leagues.GenerateSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.ImportFixtures;
+using FootballManager.Application.UseCases.Leagues.GetSchedulingEffectiveForDivision;
+using FootballManager.Application.UseCases.Leagues.GetDivisionSchedulingExtras;
+using FootballManager.Application.UseCases.Leagues.UpsertDivisionSchedulingExtras;
 using FootballManager.Application.UseCases.Seasons.GetStandings;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Interfaces.Repositories;
@@ -96,6 +99,9 @@ namespace FootballManager.Api.Controllers
         private readonly IImportFixturesUseCase _importFixturesUseCase;
         private readonly IPreviewFixtureImportUseCase _previewFixtureImportUseCase;
         private readonly IGetStandingsUseCase _getStandingsUseCase;
+        private readonly IGetSchedulingEffectiveForDivisionUseCase _getSchedulingEffectiveForDivisionUseCase;
+        private readonly IGetDivisionSchedulingExtrasUseCase _getDivisionSchedulingExtrasUseCase;
+        private readonly IUpsertDivisionSchedulingExtrasUseCase _upsertDivisionSchedulingExtrasUseCase;
         private readonly ILeagueRepository _leagueRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
 
@@ -141,6 +147,9 @@ namespace FootballManager.Api.Controllers
             IImportFixturesUseCase importFixturesUseCase,
             IPreviewFixtureImportUseCase previewFixtureImportUseCase,
             IGetStandingsUseCase getStandingsUseCase,
+            IGetSchedulingEffectiveForDivisionUseCase getSchedulingEffectiveForDivisionUseCase,
+            IGetDivisionSchedulingExtrasUseCase getDivisionSchedulingExtrasUseCase,
+            IUpsertDivisionSchedulingExtrasUseCase upsertDivisionSchedulingExtrasUseCase,
             ILeagueRepository leagueRepository,
             IUserLeagueRepository userLeagueRepository)
         {
@@ -185,6 +194,9 @@ namespace FootballManager.Api.Controllers
             _importFixturesUseCase = importFixturesUseCase ?? throw new ArgumentNullException(nameof(importFixturesUseCase));
             _previewFixtureImportUseCase = previewFixtureImportUseCase ?? throw new ArgumentNullException(nameof(previewFixtureImportUseCase));
             _getStandingsUseCase = getStandingsUseCase ?? throw new ArgumentNullException(nameof(getStandingsUseCase));
+            _getSchedulingEffectiveForDivisionUseCase = getSchedulingEffectiveForDivisionUseCase ?? throw new ArgumentNullException(nameof(getSchedulingEffectiveForDivisionUseCase));
+            _getDivisionSchedulingExtrasUseCase = getDivisionSchedulingExtrasUseCase ?? throw new ArgumentNullException(nameof(getDivisionSchedulingExtrasUseCase));
+            _upsertDivisionSchedulingExtrasUseCase = upsertDivisionSchedulingExtrasUseCase ?? throw new ArgumentNullException(nameof(upsertDivisionSchedulingExtrasUseCase));
             _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
         }
@@ -621,6 +633,69 @@ namespace FootballManager.Api.Controllers
             return NoContent();
         }
 
+        [HttpGet("{leagueId}/seasons/{seasonId}/divisions/{divisionId}/scheduling-effective")]
+        public async Task<IActionResult> GetSchedulingEffectiveForDivision(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid seasonId,
+            [FromRoute] Guid divisionId,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var response = await _getSchedulingEffectiveForDivisionUseCase.ExecuteAsync(
+                new GetSchedulingEffectiveForDivisionRequest(leagueId, seasonId, divisionId, userId),
+                cancellationToken);
+            return Ok(response);
+        }
+
+        [HttpGet("{leagueId}/seasons/{seasonId}/divisions/{divisionId}/scheduling-extras")]
+        public async Task<IActionResult> GetDivisionSchedulingExtras(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid seasonId,
+            [FromRoute] Guid divisionId,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var response = await _getDivisionSchedulingExtrasUseCase.ExecuteAsync(
+                new GetDivisionSchedulingExtrasRequest(leagueId, seasonId, divisionId, userId),
+                cancellationToken);
+            return Ok(response);
+        }
+
+        [HttpPut("{leagueId}/seasons/{seasonId}/divisions/{divisionId}/scheduling-extras")]
+        public async Task<IActionResult> UpsertDivisionSchedulingExtras(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid seasonId,
+            [FromRoute] Guid divisionId,
+            [FromBody] UpsertDivisionSchedulingExtrasBody? body,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            body ??= new UpsertDivisionSchedulingExtrasBody();
+            var request = new UpsertDivisionSchedulingExtrasRequest
+            {
+                UserId = userId,
+                LeagueId = leagueId,
+                SeasonId = seasonId,
+                DivisionId = divisionId,
+                HalfMinutes = body.HalfMinutes,
+                BreakMinutes = body.BreakMinutes,
+                WarmupBufferMinutes = body.WarmupBufferMinutes,
+                SlotGranularityMinutes = body.SlotGranularityMinutes,
+                FirstMatchToleranceMinutes = body.FirstMatchToleranceMinutes,
+                BreakBetweenMatchesMinutes = body.BreakBetweenMatchesMinutes,
+                AllowedTimeRangesJson = body.AllowedTimeRangesJson,
+                ExplicitFieldIds = body.ExplicitFieldIds,
+            };
+            await _upsertDivisionSchedulingExtrasUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
         [HttpGet("{leagueId}/fields/{fieldId}/availability")]
         public async Task<IActionResult> GetFieldAvailability([FromRoute] Guid leagueId, [FromRoute] Guid fieldId, CancellationToken cancellationToken)
         {
@@ -802,5 +877,17 @@ namespace FootballManager.Api.Controllers
     public class UploadLeagueImageRequest
     {
         public IFormFile? File { get; set; }
+    }
+
+    public class UpsertDivisionSchedulingExtrasBody
+    {
+        public int? HalfMinutes { get; set; }
+        public int? BreakMinutes { get; set; }
+        public int? WarmupBufferMinutes { get; set; }
+        public int? SlotGranularityMinutes { get; set; }
+        public int? FirstMatchToleranceMinutes { get; set; }
+        public int? BreakBetweenMatchesMinutes { get; set; }
+        public string? AllowedTimeRangesJson { get; set; }
+        public List<Guid>? ExplicitFieldIds { get; set; }
     }
 }

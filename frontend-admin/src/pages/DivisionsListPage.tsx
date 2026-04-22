@@ -14,8 +14,10 @@ import { useQuery } from '@tanstack/react-query'
 import { divisionsService } from '../api/divisions'
 import { leaguesService } from '../api/leagues'
 import { useLeagueId, useActiveLeague } from '../contexts/LeagueContext'
+import { useTranslation } from 'react-i18next'
 
 export function DivisionsListPage() {
+  const { t } = useTranslation()
   const params = useParams<{ leagueId?: string }>()
   const leagueId = useLeagueId()
   const activeLeague = useActiveLeague()
@@ -37,8 +39,8 @@ export function DivisionsListPage() {
 
   if (!leagueId) {
     return (
-      <Alert severity="error" action={<Button onClick={() => navigate('/')}>Go to Leagues</Button>}>
-        No league selected. Choose a league from the selector or open a league from the list.
+      <Alert severity="error" action={<Button onClick={() => navigate('/')}>{t('divisions.goToLeagues')}</Button>}>
+        {t('divisions.noLeague')}
       </Alert>
     )
   }
@@ -54,7 +56,7 @@ export function DivisionsListPage() {
   if (isError) {
     return (
       <Alert severity="error">
-        {error instanceof Error ? error.message : 'Failed to load divisions'}
+        {error instanceof Error ? error.message : t('divisions.loadError')}
       </Alert>
     )
   }
@@ -63,25 +65,25 @@ export function DivisionsListPage() {
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Button component={RouterLink} to="/" size="small">
-          Leagues
+          {t('nav.leagues')}
         </Button>
         <Typography color="text.secondary">/</Typography>
         <Button component={RouterLink} to={seasonsBase} size="small">
-          Seasons
+          {t('nav.seasons')}
         </Button>
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
         <Typography variant="h5" component="h2" fontWeight={600}>
-          {league?.name ?? activeLeague?.name ?? 'League'} — Divisions
+          {league?.name ?? activeLeague?.name ?? ''} — {t('nav.divisions')}
         </Typography>
         <Button component={RouterLink} to={`${divisionsBase}/new`} variant="contained" startIcon={<AddIcon />}>
-          Create division
+          {t('divisions.create')}
         </Button>
       </Box>
 
       {!divisions?.length ? (
         <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
-          No divisions yet. Create one to get started.
+          {t('divisions.empty')}
         </Typography>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>

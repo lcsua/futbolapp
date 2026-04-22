@@ -11,6 +11,7 @@ import {
 import { matchRulesService } from '../api/matchRules'
 import type { MatchRuleFormData } from '../api/types'
 import { useLeagueId } from '../contexts/LeagueContext'
+import { useTranslation } from 'react-i18next'
 
 const defaultForm: MatchRuleFormData = {
   halfMinutes: 45,
@@ -21,6 +22,7 @@ const defaultForm: MatchRuleFormData = {
 }
 
 export function MatchRulesPage() {
+  const { t } = useTranslation()
   const leagueId = useLeagueId()
   const queryClient = useQueryClient()
   const [halfMinutes, setHalfMinutes] = useState(defaultForm.halfMinutes)
@@ -84,7 +86,7 @@ export function MatchRulesPage() {
   if (!leagueId) {
     return (
       <Alert severity="info">
-        Select a league to configure match rules.
+        {t('matchRules.selectLeague')}
       </Alert>
     )
   }
@@ -100,7 +102,7 @@ export function MatchRulesPage() {
   if (isError && !(error instanceof Error && error.message.includes('404'))) {
     return (
       <Alert severity="error">
-        {error instanceof Error ? error.message : 'Failed to load match rules'}
+        {error instanceof Error ? error.message : t('matchRules.loadError')}
       </Alert>
     )
   }
@@ -108,25 +110,25 @@ export function MatchRulesPage() {
   return (
     <Box>
       <Typography variant="h5" component="h1" sx={{ mb: 3, fontWeight: 600 }}>
-        Match rules
+        {t('matchRules.title')}
       </Typography>
 
       <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 400 }}>
         {success && (
           <Alert severity="success" sx={{ mb: 2 }}>
-            Rules saved.
+            {t('matchRules.saved')}
           </Alert>
         )}
         {putMutation.isError && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {putMutation.error instanceof Error ? putMutation.error.message : 'Failed to save'}
+            {putMutation.error instanceof Error ? putMutation.error.message : t('common.saveError')}
           </Alert>
         )}
 
         <TextField
           fullWidth
           type="number"
-          label="Half (minutes)"
+          label={t('matchRules.halfMinutes')}
           value={halfMinutes}
           onChange={(e) => setHalfMinutes(Math.max(1, parseInt(e.target.value, 10) || 0))}
           inputProps={{ min: 1 }}
@@ -135,7 +137,7 @@ export function MatchRulesPage() {
         <TextField
           fullWidth
           type="number"
-          label="Break (minutes)"
+          label={t('matchRules.breakMinutes')}
           value={breakMinutes}
           onChange={(e) => setBreakMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
           inputProps={{ min: 0 }}
@@ -144,7 +146,7 @@ export function MatchRulesPage() {
         <TextField
           fullWidth
           type="number"
-          label="Warmup buffer (minutes)"
+          label={t('matchRules.warmupBufferMinutes')}
           value={warmupBufferMinutes}
           onChange={(e) => setWarmupBufferMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
           inputProps={{ min: 0 }}
@@ -153,7 +155,7 @@ export function MatchRulesPage() {
         <TextField
           fullWidth
           type="number"
-          label="Slot granularity (minutes)"
+          label={t('matchRules.slotGranularityMinutes')}
           value={slotGranularityMinutes}
           onChange={(e) => setSlotGranularityMinutes(Math.max(1, parseInt(e.target.value, 10) || 1))}
           inputProps={{ min: 1 }}
@@ -162,7 +164,7 @@ export function MatchRulesPage() {
         <TextField
           fullWidth
           type="number"
-          label="First match tolerance (minutes)"
+          label={t('matchRules.firstMatchToleranceMinutes')}
           value={firstMatchToleranceMinutes}
           onChange={(e) => setFirstMatchToleranceMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
           inputProps={{ min: 0, step: 5 }}
@@ -175,7 +177,7 @@ export function MatchRulesPage() {
           disabled={putMutation.isPending}
           sx={{ minWidth: 120 }}
         >
-          {putMutation.isPending ? <CircularProgress size={24} color="inherit" /> : 'Save'}
+          {putMutation.isPending ? <CircularProgress size={24} color="inherit" /> : t('common.save')}
         </Button>
       </Box>
     </Box>

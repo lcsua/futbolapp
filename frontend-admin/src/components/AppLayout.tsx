@@ -30,31 +30,32 @@ import EventIcon from '@mui/icons-material/Event'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import { useAuth } from '../contexts/AuthContext'
 import { LeagueSelector } from './LeagueSelector'
+import { useTranslation } from 'react-i18next'
 
-const APP_TITLE = 'Football Admin'
 const DRAWER_WIDTH = 260
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Leagues', icon: <EmojiEventsIcon /> },
-  { to: '/seasons', label: 'Seasons', icon: <CalendarMonthIcon /> },
-  { to: '/season-setup', label: 'Season setup', icon: <SettingsIcon /> },
-  { to: '/season-setup/advanced', label: 'Advanced season setup', icon: <SettingsIcon /> },
-  { to: '/divisions', label: 'Divisions', icon: <ViewListIcon /> },
-  { to: '/teams', label: 'Teams', icon: <GroupsIcon /> },
-  { to: '/clubs', label: 'Clubs', icon: <ApartmentIcon /> },
-  { to: '/teams/bulk', label: 'Bulk Import', icon: <UploadFileIcon /> },
-  { to: '/fields', label: 'Fields', icon: <PlaceIcon /> },
-  { to: '/fixtures', label: 'Fixtures', icon: <EventIcon /> },
-  { to: '/matches', label: 'Matches', icon: <SportsSoccerIcon /> },
-  { to: '/standings', label: 'Standings', icon: <LeaderboardIcon /> },
+  { to: '/', txKey: 'nav.leagues', icon: <EmojiEventsIcon /> },
+  { to: '/seasons', txKey: 'nav.seasons', icon: <CalendarMonthIcon /> },
+  { to: '/season-setup', txKey: 'nav.seasonSetup', icon: <SettingsIcon /> },
+  { to: '/season-setup/advanced', txKey: 'nav.advancedSeasonSetup', icon: <SettingsIcon /> },
+  { to: '/divisions', txKey: 'nav.divisions', icon: <ViewListIcon /> },
+  { to: '/teams', txKey: 'nav.teams', icon: <GroupsIcon /> },
+  { to: '/clubs', txKey: 'nav.clubs', icon: <ApartmentIcon /> },
+  { to: '/teams/bulk', txKey: 'nav.bulkImport', icon: <UploadFileIcon /> },
+  { to: '/fields', txKey: 'nav.fields', icon: <PlaceIcon /> },
+  { to: '/fixtures', txKey: 'nav.fixtures', icon: <EventIcon /> },
+  { to: '/matches', txKey: 'nav.matches', icon: <SportsSoccerIcon /> },
+  { to: '/standings', txKey: 'nav.standings', icon: <LeaderboardIcon /> },
 ]
 
 const COMPETITION_SETTINGS_ITEMS = [
-  { to: '/competition-rules', label: 'Competition rules', icon: <RuleIcon /> },
-  { to: '/match-rules', label: 'Match rules', icon: <ScheduleIcon /> },
+  { to: '/competition-rules', txKey: 'nav.competitionRules', icon: <RuleIcon /> },
+  { to: '/match-rules', txKey: 'nav.matchRules', icon: <ScheduleIcon /> },
 ]
 
 export function AppLayout() {
+  const { t } = useTranslation()
   const theme = useTheme()
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'))
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -64,7 +65,7 @@ export function AppLayout() {
   const drawer = (
     <Box sx={{ pt: 2 }}>
       <List component="nav" sx={{ px: 1 }}>
-        {NAV_ITEMS.map(({ to, label, icon }) => {
+        {NAV_ITEMS.map(({ to, txKey, icon }) => {
           const selected =
             to === '/'
               ? location.pathname === '/' || location.pathname.startsWith('/leagues')
@@ -80,16 +81,16 @@ export function AppLayout() {
             onClick={() => !isDesktop && setMobileOpen(false)}
           >
             <ListItemIcon>{icon}</ListItemIcon>
-            <ListItemText primary={label} />
+            <ListItemText primary={t(txKey)} />
           </ListItemButton>
           )
         })}
       </List>
       <Typography variant="overline" color="text.secondary" sx={{ px: 2, pt: 2, pb: 0.5, display: 'block' }}>
-        Competition settings
+        {t('nav.competitionSettings')}
       </Typography>
       <List component="nav" sx={{ px: 1 }}>
-        {COMPETITION_SETTINGS_ITEMS.map(({ to, label, icon }) => (
+        {COMPETITION_SETTINGS_ITEMS.map(({ to, txKey, icon }) => (
           <ListItemButton
             key={to}
             component={RouterLink}
@@ -98,7 +99,7 @@ export function AppLayout() {
             onClick={() => !isDesktop && setMobileOpen(false)}
           >
             <ListItemIcon>{icon}</ListItemIcon>
-            <ListItemText primary={label} />
+            <ListItemText primary={t(txKey)} />
           </ListItemButton>
         ))}
       </List>
@@ -130,7 +131,7 @@ export function AppLayout() {
           </IconButton>
           <SportsSoccerIcon color="primary" sx={{ mr: 1.5, display: { xs: 'none', sm: 'block' } }} />
           <Typography variant="h6" component="h1" sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-            {APP_TITLE}
+            {t('app.title')}
           </Typography>
           <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
             <LeagueSelector />

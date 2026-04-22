@@ -76,12 +76,12 @@ public sealed class FieldSlotScheduler
             if (start.AddMinutes(_totalMatchDurationMinutes) > end)
                 continue;
 
-            var current = CeilToFiveMinuteGrid(start);
+            var current = CeilTimeToGranularity(start, _slotGranularityMinutes);
             while (current.AddMinutes(_totalMatchDurationMinutes) <= end)
             {
                 slots.Add(new FieldSlot(avail.FieldId, matchDate, current));
                 var nextStart = current.AddMinutes(_totalMatchDurationMinutes);
-                current = CeilToFiveMinuteGrid(nextStart);
+                current = CeilTimeToGranularity(nextStart, _slotGranularityMinutes);
             }
         }
 
@@ -183,18 +183,15 @@ public sealed class FieldSlotScheduler
         return result;
     }
 
-    /// <summary>
-    /// Rounds kickoff up to the next "natural" 5-minute mark (:00, :05, …, :55), independent of
-    /// <see cref="_slotGranularityMinutes"/> (e.g. 12:04 → 12:05, 15:18 → 15:20, 14:32 → 14:35).
-    /// Applied after each slot so chained times don’t drift to odd minutes when match duration isn’t a multiple of 5.
-    /// </summary>
-    private static TimeOnly CeilToFiveMinuteGrid(TimeOnly time)
+    /// <summary>Rounds kickoff up to the next grid aligned to <paramref name="granularityMinutes"/>.</summary>
+    public static TimeOnly CeilTimeToGranularity(TimeOnly time, int granularityMinutes)
     {
+        var gran = Math.Max(1, granularityMinutes);
         var totalMinutes = time.Hour * 60 + time.Minute;
         if (time.Second > 0 || time.Millisecond > 0)
             totalMinutes++;
 
-        var ceiled = (totalMinutes + 4) / 5 * 5;
+        var ceiled = (totalMinutes + gran - 1) / gran * gran;
         if (ceiled >= 24 * 60)
             return new TimeOnly(23, 55, 0);
 

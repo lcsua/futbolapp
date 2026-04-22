@@ -1,0 +1,83 @@
+{
+  "translation": {
+    "app": {
+      "title": "Ligap Admin"
+    },
+    "nav": {
+      "leagues": "Ligas",
+      "seasons": "Temporadas",
+      "seasonSetup": "Configuración de temporada",
+      "advancedSeasonSetup": "Configuración avanzada",
+      "divisions": "Divisiones",
+      "teams": "Equipos",
+      "clubs": "Clubes",
+      "bulkImport": "Importación masiva",
+      "fields": "Canchas",
+      "fixtures": "Fixture",
+      "matches": "Partidos",
+      "standings": "Posiciones",
+      "competitionRules": "Reglas de competición",
+      "matchRules": "Reglas del partido",
+      "competitionSettings": "Configuración"
+    },
+    "common": {
+      "save": "Guardar",
+      "saveError": "Error al guardar"
+    },
+    "matchRules": {
+      "title": "Reglas de partido",
+      "selectLeague": "Selecciona una liga para configurar las reglas.",
+      "loadError": "Error al cargar las reglas de partido",
+      "saved": "Reglas guardadas.",
+      "halfMinutes": "Tiempo de juego (minutos)",
+      "breakMinutes": "Descanso (minutos)",
+      "warmupBufferMinutes": "Calentamiento previo (minutos)",
+      "slotGranularityMinutes": "Intervalo horario (minutos)",
+      "firstMatchToleranceMinutes": "Tolerancia primer partido (minutos)"
+    },
+    "seasons": {
+      "noLeague": "No hay liga seleccionada. Elegí una liga del menú o abrí una de la lista.",
+      "goToLeagues": "Ir a Ligas",
+      "loadError": "Error al cargar las temporadas",
+      "create": "Crear temporada",
+      "empty": "No hay temporadas todavía. Creá una para empezar.",
+      "edit": "Editar temporada",
+      "schedulingRules": "Reglas por división (partidos y canchas)"
+    },
+    "divisions": {
+      "noLeague": "No hay liga seleccionada. Elegí una liga del menú o abrí una de la lista.",
+      "goToLeagues": "Ir a Ligas",
+      "loadError": "Error al cargar las divisiones",
+      "create": "Crear división",
+      "empty": "No hay divisiones todavía. Creá una para empezar."
+    },
+    "divisionRules": {
+      "backToDivisions": "← Volver a la lista de divisiones (esta temporada)",
+      "title": "Reglas de partidos por división",
+      "inheritanceInfo": "Los valores heredan de las reglas de liga. Los campos usan solo la lista explícita.",
+      "globalDefaults": "Regla global del torneo",
+      "copyGlobals": "Copiar valores globales al formulario",
+      "preview": "Valores que aplican (para generación automática)",
+      "fieldsAllowed": "IDs de canchas permitidas:",
+      "fieldsAll": "Canchas: Todas las de la liga (sin restricción)",
+      "overrides": "Modificaciones exclusivas de esta división",
+      "overridesInfo": "Utiliza \"Limpiar reglas\" para revertir todo a los valores globales.",
+      "saveRules": "Guardar reglas de la división",
+      "clearRules": "Limpiar reglas",
+      "explicitFields": "Canchas permitidas (opcional)",
+      "explicitFieldsInfo": "Si elegís alguna, la división jugará SÓLO en estas canchas.",
+      "saveFields": "Guardar canchas permitidas",
+      "clearFields": "Limpiar canchas",
+      "leagueRules": "Reglas de liga",
+      "seasonSetup": "Configurar temporada",
+      "breakBetween": "Descanso entre partidos en misma cancha (min)",
+      "timeRanges": "Franjas horarias de inicio permitidas",
+      "timeRangesHelp": "Solo se permiten horarios de inicio dentro de estas franjas. Dejá vacío para heredar la regla de la liga.",
+      "addKickoffRange": "Agregar franja",
+      "removeRange": "Quitar franja",
+      "rangeStart": "Desde",
+      "rangeEnd": "Hasta",
+      "invalidRangeHint": "El fin debe ser posterior al inicio. Corregí o borrá la fila inválida."
+    }
+  }
+}

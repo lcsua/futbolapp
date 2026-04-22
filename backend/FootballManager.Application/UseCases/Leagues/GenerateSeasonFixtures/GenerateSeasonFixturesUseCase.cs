@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Dtos;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Interfaces;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Application.Services;
 using FootballManager.Domain.Entities;
@@ -19,6 +20,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
     private readonly IDivisionSeasonRepository _divisionSeasonRepository;
     private readonly ICompetitionRuleRepository _competitionRuleRepository;
     private readonly IMatchRuleRepository _matchRuleRepository;
+    private readonly IMatchRulesResolver _matchRulesResolver;
     private readonly IFieldRepository _fieldRepository;
     private readonly IFieldAvailabilityRepository _fieldAvailabilityRepository;
     private readonly IFixtureDraftStore _draftStore;
@@ -30,6 +32,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         IDivisionSeasonRepository divisionSeasonRepository,
         ICompetitionRuleRepository competitionRuleRepository,
         IMatchRuleRepository matchRuleRepository,
+        IMatchRulesResolver matchRulesResolver,
         IFieldRepository fieldRepository,
         IFieldAvailabilityRepository fieldAvailabilityRepository,
         IFixtureDraftStore draftStore,
@@ -40,6 +43,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         _divisionSeasonRepository = divisionSeasonRepository ?? throw new ArgumentNullException(nameof(divisionSeasonRepository));
         _competitionRuleRepository = competitionRuleRepository ?? throw new ArgumentNullException(nameof(competitionRuleRepository));
         _matchRuleRepository = matchRuleRepository ?? throw new ArgumentNullException(nameof(matchRuleRepository));
+        _matchRulesResolver = matchRulesResolver ?? throw new ArgumentNullException(nameof(matchRulesResolver));
         _fieldRepository = fieldRepository ?? throw new ArgumentNullException(nameof(fieldRepository));
         _fieldAvailabilityRepository = fieldAvailabilityRepository ?? throw new ArgumentNullException(nameof(fieldAvailabilityRepository));
         _draftStore = draftStore ?? throw new ArgumentNullException(nameof(draftStore));
@@ -87,9 +91,6 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
                 throw new BusinessException($"Division '{ds.Division.Name}' must have at least 2 teams.");
         }
 
-        var totalMatchDuration = matchRule.HalfMinutes * 2 + matchRule.BreakMinutes + matchRule.WarmupBufferMinutes;
-        var slotScheduler = new FieldSlotScheduler(matchRule.SlotGranularityMinutes, totalMatchDuration);
-
         var fieldIds = availableFields.Select(f => f.Id).ToList();
         var allAvailabilities = await _fieldAvailabilityRepository.GetByFieldIdsAsync(fieldIds, cancellationToken);
         if (allAvailabilities.Count == 0)
@@ -106,6 +107,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
             .ToDictionary(d => d.Id);
         var allRounds = new List<FixtureDraftRoundDto>();
         var teamFieldUsage = new TeamFieldUsage();
+        var byeCounters = new Dictionary<Guid, Dictionary<Guid, int>>();
 
         var maxRounds = 0;
         var divisionRounds = new Dictionary<Guid, IReadOnlyList<IReadOnlyList<(int Home, int Away)>>>();
@@ -116,11 +118,13 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
             var pairings = RoundRobinScheduler.Generate(teams.Count, competitionRule.IsHomeAway);
             divisionRounds[ds.Id] = pairings;
             maxRounds = Math.Max(maxRounds, pairings.Count);
+            byeCounters[ds.Id] = teams.ToDictionary(t => t.Id, _ => 0);
         }
 
         for (var roundIndex = 0; roundIndex < maxRounds; roundIndex++)
         {
             var matchesThisRound = new List<(DivisionSeason Ds, TeamDivisionSeason Home, TeamDivisionSeason Away)>();
+            var byesThisRound = new List<FixtureDraftByeDto>();
 
             var divCount = divisionsOrdered.Count;
             var firstDivIndex = (divCount - 1 - (roundIndex % divCount) + divCount) % divCount;
@@ -137,23 +141,49 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
                 if (roundIndex >= pairings.Count) continue;
 
                 var teams = ds.TeamAssignments.OrderBy(ta => ta.Team.Name).ToList();
+                var matchedThisDivisionRound = new HashSet<Guid>();
                 foreach (var (homeIdx, awayIdx) in pairings[roundIndex])
                 {
                     if (homeIdx >= teams.Count || awayIdx >= teams.Count || homeIdx == awayIdx)
                         continue;
-                    matchesThisRound.Add((ds, teams[homeIdx], teams[awayIdx]));
+                    var home = teams[homeIdx];
+                    var away = teams[awayIdx];
+                    matchesThisRound.Add((ds, home, away));
+                    matchedThisDivisionRound.Add(home.Id);
+                    matchedThisDivisionRound.Add(away.Id);
+                }
+
+                if (teams.Count % 2 != 0)
+                {
+                    foreach (var team in teams)
+                    {
+                        if (matchedThisDivisionRound.Contains(team.Id))
+                            continue;
+
+                        byesThisRound.Add(new FixtureDraftByeDto(
+                            ds.Id,
+                            ds.Division.Name,
+                            team.Id,
+                            team.Team.Name));
+
+                        if (byeCounters.TryGetValue(ds.Id, out var teamCounter) &&
+                            teamCounter.ContainsKey(team.Id))
+                        {
+                            teamCounter[team.Id]++;
+                        }
+                    }
                 }
             }
 
             var matchDate = GetMatchDateForRound(season.StartDate, matchDays, roundIndex);
             var dayOfWeek = (int)matchDate.ToDateTime(TimeOnly.MinValue).DayOfWeek;
-            var slots = slotScheduler.GenerateSlotsForMatchday(matchDate, dayOfWeek, allAvailabilities);
 
-            if (slots.Count < matchesThisRound.Count)
-                throw new BusinessException(
-                    $"Not enough field availability to schedule all matches for round {roundIndex + 1} ({matchDate:yyyy-MM-dd}). " +
-                    $"Required: {matchesThisRound.Count} slots, available: {slots.Count}. " +
-                    "Configure field availability for the match day or reduce the number of matches.");
+            var matchesWithRules = new List<(DivisionSeason Ds, TeamDivisionSeason Home, TeamDivisionSeason Away, EffectiveMatchRulesDto Rules)>();
+            foreach (var (ds, home, away) in matchesThisRound)
+            {
+                var eff = await _matchRulesResolver.GetEffectiveRulesAsync(ds.Id, cancellationToken).ConfigureAwait(false);
+                matchesWithRules.Add((ds, home, away, eff));
+            }
 
             bool IsKickoffSlotAllowed(Guid divisionId, TimeOnly kickoff)
             {
@@ -162,21 +192,20 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
                 return !division.IsKickoffInBlockedWindow(kickoff);
             }
 
-            var matchInfos = matchesThisRound
-                .Select(m => (m.Ds.DivisionId, m.Home.Team.Id, m.Away.Team.Id))
-                .ToList();
-            var assignments = slotScheduler.AssignMatchesToSlotsWithFairness(
-                matchInfos,
-                slots,
+            var fieldById = availableFields.ToDictionary(f => f.Id);
+            var assignments = CrossDivisionFairMatchAssigner.Assign(
+                matchesWithRules,
+                matchDate,
+                dayOfWeek,
+                allAvailabilities,
+                fieldById,
                 teamFieldUsage,
                 IsKickoffSlotAllowed,
                 null);
             if (assignments == null)
                 throw new BusinessException(
                     $"Could not assign all matches for round {roundIndex + 1} ({matchDate:yyyy-MM-dd}). " +
-                    "Check field availability and division kickoff time restrictions (e.g. blocked hours for senior divisions).");
-
-            var fieldById = availableFields.ToDictionary(f => f.Id);
+                    "Check field availability, division-specific allowed fields/time ranges, league scheduling rules, and division kickoff restrictions.");
 
             var draftMatches = new List<FixtureDraftMatchDto>();
             for (var m = 0; m < matchesThisRound.Count; m++)
@@ -208,8 +237,10 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
                 ));
             }
 
-            allRounds.Add(new FixtureDraftRoundDto(roundIndex + 1, matchDate, draftMatches));
+            allRounds.Add(new FixtureDraftRoundDto(roundIndex + 1, matchDate, draftMatches, byesThisRound));
         }
+
+        ValidateByeDistribution(divisionsOrdered, competitionRule.IsHomeAway, byeCounters);
 
         LogFieldDistributionSummary(teamFieldUsage, availableFields);
 
@@ -217,6 +248,40 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         _draftStore.Set(request.SeasonId, draft);
 
         return new GenerateSeasonFixturesResponse(draft);
+    }
+
+    private static void ValidateByeDistribution(
+        IReadOnlyList<DivisionSeason> divisions,
+        bool isHomeAway,
+        IReadOnlyDictionary<Guid, Dictionary<Guid, int>> byeCounters)
+    {
+        foreach (var ds in divisions)
+        {
+            var teamCount = ds.TeamAssignments.Count;
+            if (teamCount % 2 == 0)
+                continue;
+
+            var expectedByesPerTeam = isHomeAway ? 2 : 1;
+            if (!byeCounters.TryGetValue(ds.Id, out var counters))
+                continue;
+
+            var invalid = counters
+                .Where(x => x.Value != expectedByesPerTeam)
+                .Select(x =>
+                {
+                    var team = ds.TeamAssignments.FirstOrDefault(t => t.Id == x.Key);
+                    var teamName = team?.Team.Name ?? x.Key.ToString();
+                    return $"{teamName}={x.Value}";
+                })
+                .ToList();
+
+            if (invalid.Count == 0)
+                continue;
+
+            throw new BusinessException(
+                $"Invalid bye distribution for division '{ds.Division.Name}'. " +
+                $"Expected {expectedByesPerTeam} bye(s) per team, found: {string.Join(", ", invalid)}");
+        }
     }
 
     private static DateOnly GetFirstMatchDate(DateOnly seasonStart, int matchDayOfWeek)

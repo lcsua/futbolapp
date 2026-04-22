@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import { theme } from './theme'
+import './i18n' // Import i18n setup here
 import App from './App'
 import './index.css'
 

@@ -68,7 +68,8 @@ public sealed class GetSeasonFixturesUseCase : IGetSeasonFixturesUseCase
                         f.Field?.Name,
                         f.MatchDate,
                         f.StartTime
-                    )).ToList()))
+                    )).ToList(),
+                null))
             .ToList();
 
         return new GetSeasonFixturesResponse(new FixtureDraftDto(rounds), isDraft: false);

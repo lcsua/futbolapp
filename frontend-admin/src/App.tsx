@@ -25,6 +25,8 @@ import { CreateFieldPage } from './pages/CreateFieldPage'
 import { EditFieldPage } from './pages/EditFieldPage'
 import { CompetitionRulesPage } from './pages/CompetitionRulesPage'
 import { MatchRulesPage } from './pages/MatchRulesPage'
+import { DivisionSchedulingRulesPage } from './pages/DivisionSchedulingRulesPage'
+import { SeasonDivisionSchedulingHubPage } from './pages/SeasonDivisionSchedulingHubPage'
 import { FixturesPage } from './pages/FixturesPage'
 import { MatchesPage } from './pages/MatchesPage'
 import { MatchDetailPage } from './pages/MatchDetailPage'
@@ -52,6 +54,10 @@ export default function App() {
           <Route path="leagues/:leagueId/seasons" element={<SeasonsListPage />} />
           <Route path="leagues/:leagueId/seasons/new" element={<CreateSeasonPage />} />
           <Route path="leagues/:leagueId/seasons/:seasonId/edit" element={<EditSeasonPage />} />
+          <Route
+            path="leagues/:leagueId/seasons/:seasonId/division-scheduling"
+            element={<SeasonDivisionSchedulingHubPage />}
+          />
           <Route path="leagues/:leagueId/divisions" element={<DivisionsListPage />} />
           <Route path="leagues/:leagueId/divisions/new" element={<CreateDivisionPage />} />
           <Route path="leagues/:leagueId/divisions/:divisionId/edit" element={<EditDivisionPage />} />
@@ -67,6 +73,10 @@ export default function App() {
           <Route path="leagues/:leagueId/fields/:fieldId/edit" element={<EditFieldPage />} />
           <Route path="leagues/:leagueId/competition-rules" element={<CompetitionRulesPage />} />
           <Route path="leagues/:leagueId/match-rules" element={<MatchRulesPage />} />
+          <Route
+            path="leagues/:leagueId/seasons/:seasonId/divisions/:divisionId/division-scheduling-rules"
+            element={<DivisionSchedulingRulesPage />}
+          />
           <Route path="leagues/:leagueId/fixtures" element={<FixturesPage />} />
           <Route path="leagues/:leagueId/matches" element={<MatchesPage />} />
           <Route path="leagues/:leagueId/matches/:matchId" element={<MatchDetailPage />} />
@@ -75,6 +85,7 @@ export default function App() {
             <Route path="seasons" element={<SeasonsListPage />} />
             <Route path="seasons/new" element={<CreateSeasonPage />} />
             <Route path="seasons/:seasonId/edit" element={<EditSeasonPage />} />
+            <Route path="seasons/:seasonId/division-scheduling" element={<SeasonDivisionSchedulingHubPage />} />
             <Route path="divisions" element={<DivisionsListPage />} />
             <Route path="divisions/new" element={<CreateDivisionPage />} />
             <Route path="divisions/:divisionId/edit" element={<EditDivisionPage />} />
@@ -90,6 +101,10 @@ export default function App() {
             <Route path="fields/:fieldId/edit" element={<EditFieldPage />} />
             <Route path="competition-rules" element={<CompetitionRulesPage />} />
             <Route path="match-rules" element={<MatchRulesPage />} />
+            <Route
+              path="seasons/:seasonId/divisions/:divisionId/division-scheduling-rules"
+              element={<DivisionSchedulingRulesPage />}
+            />
             <Route path="fixtures" element={<FixturesPage />} />
             <Route path="matches" element={<MatchesPage />} />
             <Route path="matches/:matchId" element={<MatchDetailPage />} />

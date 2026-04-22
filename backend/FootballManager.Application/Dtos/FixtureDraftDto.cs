@@ -7,7 +7,8 @@ public sealed record FixtureDraftDto(
 public sealed record FixtureDraftRoundDto(
     int RoundNumber,
     DateOnly? MatchDate,
-    IReadOnlyList<FixtureDraftMatchDto> Matches
+    IReadOnlyList<FixtureDraftMatchDto> Matches,
+    IReadOnlyList<FixtureDraftByeDto>? ByeTeams = null
 );
 
 public sealed record FixtureDraftMatchDto(
@@ -21,4 +22,11 @@ public sealed record FixtureDraftMatchDto(
     string? FieldName,
     DateOnly? Date,
     TimeOnly? KickoffTime
+);
+
+public sealed record FixtureDraftByeDto(
+    Guid DivisionSeasonId,
+    string DivisionName,
+    Guid TeamDivisionSeasonId,
+    string TeamName
 );

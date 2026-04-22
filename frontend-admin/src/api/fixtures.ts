@@ -13,10 +13,18 @@ export interface FixtureDraftMatch {
   kickoffTime: string
 }
 
+export interface FixtureDraftByeTeam {
+  divisionSeasonId: string
+  divisionName: string
+  teamDivisionSeasonId: string
+  teamName: string
+}
+
 export interface FixtureDraftRound {
   roundNumber: number
   matchDate: string
   matches: FixtureDraftMatch[]
+  byeTeams?: FixtureDraftByeTeam[] | null
 }
 
 export interface FixtureDraft {

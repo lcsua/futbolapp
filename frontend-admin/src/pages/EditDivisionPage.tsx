@@ -79,9 +79,16 @@ export function EditDivisionPage() {
       <Button component={RouterLink} to={divisionsBase} startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
         Back to divisions
       </Button>
-      <Typography variant="h5" component="h1" sx={{ mb: 3, fontWeight: 600 }}>
+      <Typography variant="h5" component="h1" sx={{ mb: 2, fontWeight: 600 }}>
         Edit division
       </Typography>
+      <Alert severity="info" sx={{ mb: 3 }}>
+        Las reglas de partido por categoría (duración, horarios, campos) se configuran <strong>por temporada</strong>: ve a{' '}
+        <Button component={RouterLink} to="/seasons" size="small">
+          Temporadas
+        </Button>{' '}
+        → elige una temporada → <strong>Reglas por división</strong>.
+      </Alert>
       <DivisionForm
         key={`${division.id}-${division.kickoffRestrictionEnabled}-${division.kickoffRestrictionStart ?? ''}-${division.kickoffRestrictionEnd ?? ''}`}
         initialValues={initialValues}

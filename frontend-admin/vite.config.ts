@@ -13,7 +13,7 @@ export default defineConfig({
       },
     },
     allowedHosts: [
-      '3e29-181-177-24-84.ngrok-free.app'
+      '3c3f-181-177-24-84.ngrok-free.app'
     ]
   },
 })

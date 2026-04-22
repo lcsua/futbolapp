@@ -1,0 +1,83 @@
+{
+  "translation": {
+    "app": {
+      "title": "Ligap Admin"
+    },
+    "nav": {
+      "leagues": "Leagues",
+      "seasons": "Seasons",
+      "seasonSetup": "Season setup",
+      "advancedSeasonSetup": "Advanced season setup",
+      "divisions": "Divisions",
+      "teams": "Teams",
+      "clubs": "Clubs",
+      "bulkImport": "Bulk Import",
+      "fields": "Fields",
+      "fixtures": "Fixtures",
+      "matches": "Matches",
+      "standings": "Standings",
+      "competitionRules": "Competition rules",
+      "matchRules": "Match rules",
+      "competitionSettings": "Competition settings"
+    },
+    "common": {
+      "save": "Save",
+      "saveError": "Failed to save"
+    },
+    "matchRules": {
+      "title": "Match rules",
+      "selectLeague": "Select a league to configure match rules.",
+      "loadError": "Failed to load match rules",
+      "saved": "Rules saved.",
+      "halfMinutes": "Half (minutes)",
+      "breakMinutes": "Break (minutes)",
+      "warmupBufferMinutes": "Warmup buffer (minutes)",
+      "slotGranularityMinutes": "Slot granularity (minutes)",
+      "firstMatchToleranceMinutes": "First match tolerance (minutes)"
+    },
+    "seasons": {
+      "noLeague": "No league selected. Choose a league from the selector or open a league from the list.",
+      "goToLeagues": "Go to Leagues",
+      "loadError": "Failed to load seasons",
+      "create": "Create season",
+      "empty": "No seasons yet. Create one to get started.",
+      "edit": "Edit season",
+      "schedulingRules": "Division scheduling rules (matches and fields)"
+    },
+    "divisions": {
+      "noLeague": "No league selected. Choose a league from the selector or open a league from the list.",
+      "goToLeagues": "Go to Leagues",
+      "loadError": "Failed to load divisions",
+      "create": "Create division",
+      "empty": "No divisions yet. Create one to get started."
+    },
+    "divisionRules": {
+      "backToDivisions": "← Back to divisions list (this season)",
+      "title": "Division match & scheduling rules",
+      "inheritanceInfo": "Values inherit from league match rules when left empty. Field allow-list uses division_season_fields only.",
+      "globalDefaults": "Global match rule (defaults)",
+      "copyGlobals": "Copy globals into form",
+      "preview": "Effective preview",
+      "fieldsAllowed": "Allowed field IDs:",
+      "fieldsAll": "Fields: all league fields (no explicit allow-list)",
+      "overrides": "Division overrides",
+      "overridesInfo": "Save sends explicit numbers/JSON; use “Clear division row” to fall back fully to globals.",
+      "saveRules": "Save division rules",
+      "clearRules": "Clear division row",
+      "explicitFields": "Explicit field allow-list",
+      "explicitFieldsInfo": "When any fields are selected, auto scheduling only uses these fields.",
+      "saveFields": "Save field allow-list",
+      "clearFields": "Clear allow-list",
+      "leagueRules": "League match rules",
+      "seasonSetup": "Season setup",
+      "breakBetween": "Break between matches on same field (minutes)",
+      "timeRanges": "Allowed kickoff time windows",
+      "timeRangesHelp": "Only kickoffs within these windows are allowed for this division. Leave empty to inherit league defaults.",
+      "addKickoffRange": "Add time window",
+      "removeRange": "Remove window",
+      "rangeStart": "Start",
+      "rangeEnd": "End",
+      "invalidRangeHint": "Each window must end after it starts. Fix or remove the invalid row."
+    }
+  }
+}
