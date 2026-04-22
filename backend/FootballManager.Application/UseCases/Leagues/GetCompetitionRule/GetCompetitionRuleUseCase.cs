@@ -24,7 +24,8 @@ namespace FootballManager.Application.UseCases.Leagues.GetCompetitionRule
             if (!hasAccess)
                 throw new ForbiddenAccessException($"User {request.UserId} does not have access to league {request.LeagueId}.");
 
-            var rule = await _ruleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, request.SeasonId, cancellationToken);
+            // Regla global por liga (seasonId = null).
+            var rule = await _ruleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, null, cancellationToken);
             if (rule == null)
                 return null;
 

@@ -62,10 +62,10 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         if (season.LeagueId != request.LeagueId)
             throw new ForbiddenAccessException("Season does not belong to this league.");
 
-        var competitionRule = await _competitionRuleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, request.SeasonId, cancellationToken)
-            ?? await _competitionRuleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, null, cancellationToken);
+        // Reglas de competencia globales por liga.
+        var competitionRule = await _competitionRuleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, null, cancellationToken);
         if (competitionRule == null)
-            throw new BusinessException("Competition rules must be configured for this season (or at league level) before generating fixtures.");
+            throw new BusinessException("Competition rules must be configured at league level before generating fixtures.");
 
         var matchRule = await _matchRuleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, request.SeasonId, cancellationToken)
             ?? await _matchRuleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, null, cancellationToken);

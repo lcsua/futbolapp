@@ -19,7 +19,7 @@ import {
   Paper,
 } from '@mui/material'
 import { fixturesService, type PreviewFixtureRow } from '../api/fixtures'
-
+import { useTranslation } from 'react-i18next'
 const CSV_PLACEHOLDER = `round,home_team,away_team
 1,TIGRES,LEONES
 1,PUMAS,HALCONES`
@@ -41,6 +41,7 @@ export function ImportFixtureModal({
   divisionId,
   onSuccess,
 }: ImportFixtureModalProps) {
+  const { t } = useTranslation()
   const [csvText, setCsvText] = useState('')
   const [preview, setPreview] = useState<{
     importType: string
@@ -63,7 +64,7 @@ export function ImportFixtureModal({
       })
       setPreview({ importType: res.importType, rows: res.rows, errors: res.errors })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error loading preview')
+      setError(e instanceof Error ? e.message : t('fixtures.importModal.errorLoadingPreview'))
     } finally {
       setLoading(false)
     }
@@ -87,7 +88,7 @@ export function ImportFixtureModal({
       onClose()
       reset()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error importing fixtures')
+      setError(e instanceof Error ? e.message : t('fixtures.importModal.errorImporting'))
     } finally {
       setImporting(false)
     }
@@ -108,10 +109,10 @@ export function ImportFixtureModal({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>Import Fixture</DialogTitle>
+      <DialogTitle>{t('fixtures.importModal.title')}</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          Paste CSV with 3 columns (round, home_team, away_team), 4 (round, date, home_team, away_team), or 6 (round, date, time, field, home_team, away_team).
+          {t('fixtures.importModal.instructions')}
         </Typography>
         <TextField
           fullWidth
@@ -138,7 +139,7 @@ export function ImportFixtureModal({
         {preview && !loading && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" color="text.secondary">
-              Format detected: {preview.importType}
+              {t('fixtures.importModal.formatDetected')} {preview.importType}
             </Typography>
             {preview.errors.length > 0 && (
               <Alert severity="warning" sx={{ mt: 1 }}>
@@ -152,17 +153,17 @@ export function ImportFixtureModal({
                 <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Round</TableCell>
-                      {preview.importType !== 'Simple' && <TableCell>Date</TableCell>}
+                      <TableCell>{t('fixtures.cols.round')}</TableCell>
+                      {preview.importType !== 'Simple' && <TableCell>{t('fixtures.cols.date')}</TableCell>}
                       {preview.importType === 'Full' && (
                         <>
-                          <TableCell>Time</TableCell>
-                          <TableCell>Field</TableCell>
+                          <TableCell>{t('fixtures.cols.time')}</TableCell>
+                          <TableCell>{t('fixtures.cols.field')}</TableCell>
                         </>
                       )}
-                      <TableCell>Home</TableCell>
-                      <TableCell>Away</TableCell>
-                      {preview.rows.some((r) => r.rowError) && <TableCell>Error</TableCell>}
+                      <TableCell>{t('fixtures.cols.home')}</TableCell>
+                      <TableCell>{t('fixtures.cols.away')}</TableCell>
+                      {preview.rows.some((r) => r.rowError) && <TableCell>{t('fixtures.importModal.errorCol')}</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -193,16 +194,16 @@ export function ImportFixtureModal({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleClose}>{t('common.cancel')}</Button>
         <Button onClick={handlePreview} disabled={!csvText.trim() || loading} variant="outlined">
-          Preview
+          {t('fixtures.importModal.previewButton')}
         </Button>
         <Button
           onClick={handleImport}
           disabled={!canImport || importing}
           variant="contained"
         >
-          {importing ? <CircularProgress size={24} /> : 'Import'}
+          {importing ? <CircularProgress size={24} /> : t('fixtures.importModal.importButton')}
         </Button>
       </DialogActions>
     </Dialog>

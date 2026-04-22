@@ -5,18 +5,12 @@ import {
   Box,
   Button,
   CircularProgress,
-  FormControl,
   FormControlLabel,
-  InputLabel,
-  MenuItem,
-  Select,
   Switch,
   TextField,
   Typography,
 } from '@mui/material'
-import type { SelectChangeEvent } from '@mui/material/Select'
 import { competitionRulesService } from '../api/competitionRules'
-import { seasonsService } from '../api/seasons'
 import type { CompetitionRuleFormData } from '../api/types'
 import { useLeagueId } from '../contexts/LeagueContext'
 
@@ -31,23 +25,16 @@ const defaultForm: CompetitionRuleFormData = {
 export function CompetitionRulesPage() {
   const leagueId = useLeagueId()
   const queryClient = useQueryClient()
-  const [seasonId, setSeasonId] = useState<string | null>(null)
   const [matchesPerWeek, setMatchesPerWeek] = useState(defaultForm.matchesPerWeek)
   const [isHomeAway, setIsHomeAway] = useState(defaultForm.isHomeAway)
   const [matchDays, setMatchDays] = useState<number[]>(defaultForm.matchDays)
   const [success, setSuccess] = useState(false)
 
-  const { data: seasons } = useQuery({
-    queryKey: ['leagues', leagueId, 'seasons'],
-    queryFn: ({ signal }) => seasonsService.getByLeagueId(leagueId!, signal),
-    enabled: !!leagueId,
-  })
-
   const { data: rule, isLoading, isError, error } = useQuery({
-    queryKey: ['leagues', leagueId, 'competition-rules', seasonId],
+    queryKey: ['leagues', leagueId, 'competition-rules', 'global'],
     queryFn: async ({ signal }) => {
       try {
-        return await competitionRulesService.get(leagueId!, seasonId ?? undefined, signal)
+        return await competitionRulesService.get(leagueId!, undefined, signal)
       } catch (e) {
         if (e instanceof Error && (e.message.includes('Not Found') || e.message.includes('404')))
           return null
@@ -71,18 +58,13 @@ export function CompetitionRulesPage() {
 
   const putMutation = useMutation({
     mutationFn: (data: CompetitionRuleFormData) =>
-      competitionRulesService.put(leagueId!, { ...data, seasonId: seasonId ?? undefined }, undefined),
+      competitionRulesService.put(leagueId!, { ...data, seasonId: null }, undefined),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'competition-rules'] })
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     },
   })
-
-  const handleSeasonChange = (e: SelectChangeEvent<string>) => {
-    const v = e.target.value
-    setSeasonId(v === '' ? null : v)
-  }
 
   const handleDayToggle = (day: number) => {
     setMatchDays((prev) =>
@@ -93,7 +75,7 @@ export function CompetitionRulesPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     putMutation.mutate({
-      seasonId: seasonId ?? null,
+      seasonId: null,
       matchesPerWeek,
       isHomeAway,
       matchDays,
@@ -131,6 +113,9 @@ export function CompetitionRulesPage() {
       </Typography>
 
       <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 560 }}>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          These rules are global for the whole league and apply to all divisions.
+        </Alert>
         {success && (
           <Alert severity="success" sx={{ mb: 2 }}>
             Rules saved.
@@ -141,23 +126,6 @@ export function CompetitionRulesPage() {
             {putMutation.error instanceof Error ? putMutation.error.message : 'Failed to save'}
           </Alert>
         )}
-
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel id="season-label">Season</InputLabel>
-          <Select
-            labelId="season-label"
-            label="Season"
-            value={seasonId ?? ''}
-            onChange={handleSeasonChange}
-          >
-            <MenuItem value="">League default</MenuItem>
-            {seasons?.map((s) => (
-              <MenuItem key={s.id} value={s.id}>
-                {s.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
 
         <TextField
           fullWidth

@@ -78,6 +78,62 @@
       "rangeStart": "Start",
       "rangeEnd": "End",
       "invalidRangeHint": "Each window must end after it starts. Fix or remove the invalid row."
+    },
+    "fixtures": {
+      "draftGenerated": "Fixture draft generated.",
+      "generateFailed": "Generate failed",
+      "saved": "Fixtures saved.",
+      "saveFailed": "Save failed",
+      "noLeague": "No league selected. Choose a league from the selector.",
+      "goToLeagues": "Go to Leagues",
+      "backToSeasons": "Back to seasons",
+      "title": "Fixtures",
+      "description": "Generate fixtures for a season, preview them, then save when ready. Once saved, the season is locked (team assignments cannot be changed).",
+      "season": "Season",
+      "selectSeason": "Select season",
+      "division": "Division",
+      "selectDivision": "Select division",
+      "teamFilter": "Team filter",
+      "allTeams": "All teams",
+      "generate": "Generate Fixture",
+      "regenerate": "Regenerate Fixture",
+      "import": "Import Fixture",
+      "save": "Save Fixture",
+      "draftStatus": "Draft (not saved)",
+      "committedStatus": "Committed",
+      "filtered": "Filtered: ",
+      "emptyPrompt": "Select a season and click Generate Fixture to create a draft.",
+      "matchDaySourceConfigured": "Active match days (global rule): {{days}}",
+      "matchDaySourceMissing": "No match days are configured in global competition rules.",
+      "bye": "Bye",
+      "days": {
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday"
+      },
+      "importModal": {
+        "title": "Import Fixture",
+        "instructions": "Paste CSV with 3 columns (round, home_team, away_team), 4 (round, date, home_team, away_team), or 6 (round, date, time, field, home_team, away_team).",
+        "errorLoadingPreview": "Error loading preview",
+        "errorImporting": "Error importing fixtures",
+        "formatDetected": "Format detected:",
+        "previewButton": "Preview",
+        "importButton": "Import",
+        "errorCol": "Error"
+      },
+      "cols": {
+        "round": "Round",
+        "date": "Date",
+        "division": "Division",
+        "field": "Field",
+        "time": "Time",
+        "home": "Home",
+        "away": "Away"
+      }
     }
   }
 }

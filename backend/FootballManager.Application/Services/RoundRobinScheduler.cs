@@ -90,11 +90,8 @@ public static class RoundRobinScheduler
         var awayCounts = new int[teamCount];
         var firstLegMinWasHome = new Dictionary<(int Min, int Max), bool>();
 
-        var result = new List<IReadOnlyList<(int Home, int Away)>>(unorderedRounds.Count);
-
         foreach (var round in unorderedRounds)
         {
-            var oriented = new List<(int Home, int Away)>(round.Count);
             foreach (var (min, max) in round)
             {
                 int home;
@@ -107,18 +104,38 @@ public static class RoundRobinScheduler
                 }
                 else
                 {
-                    // Independiente por pareja: prioriza cortar rachas y balancear local/visitante acumulado.
-                    var minHomeScore = OrientationScore(lastWasHome, sameVenueStreak, homeCounts, awayCounts, min, isHome: true) +
-                                       OrientationScore(lastWasHome, sameVenueStreak, homeCounts, awayCounts, max, isHome: false);
-                    var maxHomeScore = OrientationScore(lastWasHome, sameVenueStreak, homeCounts, awayCounts, min, isHome: false) +
-                                       OrientationScore(lastWasHome, sameVenueStreak, homeCounts, awayCounts, max, isHome: true);
+                    // Independiente por pareja:
+                    // 1) minimizar repeticiones consecutivas (H-H / A-A) cuando exista alternativa;
+                    // 2) luego minimizar racha y desbalance acumulado.
+                    var minHomeMetrics = EvaluatePairOrientation(lastWasHome, sameVenueStreak, homeCounts, awayCounts, min, max, minIsHome: true);
+                    var maxHomeMetrics = EvaluatePairOrientation(lastWasHome, sameVenueStreak, homeCounts, awayCounts, min, max, minIsHome: false);
 
-                    if (minHomeScore > maxHomeScore)
+                    if (minHomeMetrics.RepeatedCount < maxHomeMetrics.RepeatedCount)
                     {
                         home = min;
                         away = max;
                     }
-                    else if (maxHomeScore > minHomeScore)
+                    else if (maxHomeMetrics.RepeatedCount < minHomeMetrics.RepeatedCount)
+                    {
+                        home = max;
+                        away = min;
+                    }
+                    else if (minHomeMetrics.MaxProjectedStreak < maxHomeMetrics.MaxProjectedStreak)
+                    {
+                        home = min;
+                        away = max;
+                    }
+                    else if (maxHomeMetrics.MaxProjectedStreak < minHomeMetrics.MaxProjectedStreak)
+                    {
+                        home = max;
+                        away = min;
+                    }
+                    else if (minHomeMetrics.BalancePenalty < maxHomeMetrics.BalancePenalty)
+                    {
+                        home = min;
+                        away = max;
+                    }
+                    else if (maxHomeMetrics.BalancePenalty < minHomeMetrics.BalancePenalty)
                     {
                         home = max;
                         away = min;
@@ -135,17 +152,149 @@ public static class RoundRobinScheduler
 
                 UpdateTeamVenueTracking(home, isHome: true, lastWasHome, sameVenueStreak, homeCounts, awayCounts);
                 UpdateTeamVenueTracking(away, isHome: false, lastWasHome, sameVenueStreak, homeCounts, awayCounts);
-                oriented.Add((home, away));
             }
-
-            result.Add(oriented);
         }
 
+        var optimizedFirstLeg = OptimizeFirstLegOrientations(unorderedRounds, teamCount, firstLegMinWasHome);
+        return BuildOrientedRounds(unorderedRounds, optimizedFirstLeg);
+    }
+
+    private static Dictionary<(int Min, int Max), bool> OptimizeFirstLegOrientations(
+        IReadOnlyList<IReadOnlyList<(int Min, int Max)>> unorderedRounds,
+        int teamCount,
+        IReadOnlyDictionary<(int Min, int Max), bool> seed)
+    {
+        var current = seed.ToDictionary(x => x.Key, x => x.Value);
+        if (current.Count == 0) return current;
+
+        var currentPenalty = EvaluateSchedulePenalty(unorderedRounds, teamCount, current);
+        var improved = true;
+        while (improved)
+        {
+            improved = false;
+            var bestPair = ((int Min, int Max)?)null;
+            var bestPenalty = currentPenalty;
+
+            foreach (var pair in current.Keys.ToList())
+            {
+                current[pair] = !current[pair];
+                var p = EvaluateSchedulePenalty(unorderedRounds, teamCount, current);
+                current[pair] = !current[pair];
+
+                if (p < bestPenalty)
+                {
+                    bestPenalty = p;
+                    bestPair = pair;
+                }
+            }
+
+            if (bestPair.HasValue)
+            {
+                current[bestPair.Value] = !current[bestPair.Value];
+                currentPenalty = bestPenalty;
+                improved = true;
+            }
+        }
+
+        return current;
+    }
+
+    private static IReadOnlyList<IReadOnlyList<(int Home, int Away)>> BuildOrientedRounds(
+        IReadOnlyList<IReadOnlyList<(int Min, int Max)>> unorderedRounds,
+        IReadOnlyDictionary<(int Min, int Max), bool> firstLegMinWasHome)
+    {
+        var seenPairCount = new Dictionary<(int Min, int Max), int>();
+        var result = new List<IReadOnlyList<(int Home, int Away)>>(unorderedRounds.Count);
+        foreach (var round in unorderedRounds)
+        {
+            var oriented = new List<(int Home, int Away)>(round.Count);
+            foreach (var pair in round)
+            {
+                var count = seenPairCount.TryGetValue(pair, out var c) ? c + 1 : 1;
+                seenPairCount[pair] = count;
+
+                var minHomeFirstLeg = firstLegMinWasHome.GetValueOrDefault(pair, true);
+                var minIsHome = count == 1 ? minHomeFirstLeg : !minHomeFirstLeg;
+                oriented.Add(minIsHome ? (pair.Min, pair.Max) : (pair.Max, pair.Min));
+            }
+            result.Add(oriented);
+        }
         return result;
     }
 
-    /// <summary>Higher score = better orientation considering alternation streaks and current balance.</summary>
-    private static int OrientationScore(
+    private static int EvaluateSchedulePenalty(
+        IReadOnlyList<IReadOnlyList<(int Min, int Max)>> unorderedRounds,
+        int teamCount,
+        IReadOnlyDictionary<(int Min, int Max), bool> firstLegMinWasHome)
+    {
+        var orientedRounds = BuildOrientedRounds(unorderedRounds, firstLegMinWasHome);
+        var homeCounts = new int[teamCount];
+        var awayCounts = new int[teamCount];
+        var lastVenue = new int[teamCount]; // 0=none, 1=home, -1=away
+        var streak = new int[teamCount];
+
+        var repeatedPenalty = 0;
+        var longStreakPenalty = 0;
+
+        foreach (var round in orientedRounds)
+        {
+            foreach (var (home, away) in round)
+            {
+                homeCounts[home]++;
+                awayCounts[away]++;
+
+                repeatedPenalty += UpdateStreakPenalty(home, venue: 1, lastVenue, streak, ref longStreakPenalty);
+                repeatedPenalty += UpdateStreakPenalty(away, venue: -1, lastVenue, streak, ref longStreakPenalty);
+            }
+            // Bye does not reset venue preference/streak.
+        }
+
+        var balancePenalty = 0;
+        for (var t = 0; t < teamCount; t++)
+            balancePenalty += Math.Abs(homeCounts[t] - awayCounts[t]);
+
+        // Lexicographic-like weighting: first avoid repeats, then long streaks, then overall balance.
+        return (repeatedPenalty * 10_000) + (longStreakPenalty * 1_000) + balancePenalty;
+    }
+
+    private static int UpdateStreakPenalty(
+        int team,
+        int venue,
+        int[] lastVenue,
+        int[] streak,
+        ref int longStreakPenalty)
+    {
+        if (lastVenue[team] == venue)
+        {
+            streak[team]++;
+            if (streak[team] > 2)
+                longStreakPenalty += (streak[team] - 2);
+            return 1;
+        }
+
+        lastVenue[team] = venue;
+        streak[team] = 1;
+        return 0;
+    }
+
+    private static PairOrientationMetrics EvaluatePairOrientation(
+        IReadOnlyList<bool?> lastWasHome,
+        IReadOnlyList<int> sameVenueStreak,
+        IReadOnlyList<int> homeCounts,
+        IReadOnlyList<int> awayCounts,
+        int min,
+        int max,
+        bool minIsHome)
+    {
+        var minMetrics = EvaluateTeamProjection(lastWasHome, sameVenueStreak, homeCounts, awayCounts, min, minIsHome);
+        var maxMetrics = EvaluateTeamProjection(lastWasHome, sameVenueStreak, homeCounts, awayCounts, max, !minIsHome);
+        return new PairOrientationMetrics(
+            minMetrics.Repeated + maxMetrics.Repeated,
+            Math.Max(minMetrics.ProjectedStreak, maxMetrics.ProjectedStreak),
+            minMetrics.ProjectedAbsBalance + maxMetrics.ProjectedAbsBalance);
+    }
+
+    private static TeamProjectionMetrics EvaluateTeamProjection(
         IReadOnlyList<bool?> lastWasHome,
         IReadOnlyList<int> sameVenueStreak,
         IReadOnlyList<int> homeCounts,
@@ -154,17 +303,12 @@ public static class RoundRobinScheduler
         bool isHome)
     {
         var prev = lastWasHome[team];
-        var alternationScore = prev switch
-        {
-            null => 2,
-            true when isHome => -2 - sameVenueStreak[team],
-            false when !isHome => -2 - sameVenueStreak[team],
-            _ => 4 + sameVenueStreak[team]
-        };
-
-        var balance = homeCounts[team] - awayCounts[team];
-        var balanceScore = isHome ? -balance : balance;
-        return alternationScore + balanceScore;
+        var repeated = prev.HasValue && prev.Value == isHome ? 1 : 0;
+        var projectedStreak = repeated == 1 ? sameVenueStreak[team] + 1 : 1;
+        var projectedHome = homeCounts[team] + (isHome ? 1 : 0);
+        var projectedAway = awayCounts[team] + (isHome ? 0 : 1);
+        var projectedAbsBalance = Math.Abs(projectedHome - projectedAway);
+        return new TeamProjectionMetrics(repeated, projectedStreak, projectedAbsBalance);
     }
 
     private static bool IsMinHomeBetterForBalance(int min, int max, IReadOnlyList<int> homeCounts, IReadOnlyList<int> awayCounts)
@@ -199,4 +343,7 @@ public static class RoundRobinScheduler
         if (isHome) homeCounts[team]++;
         else awayCounts[team]++;
     }
+
+    private readonly record struct TeamProjectionMetrics(int Repeated, int ProjectedStreak, int ProjectedAbsBalance);
+    private readonly record struct PairOrientationMetrics(int RepeatedCount, int MaxProjectedStreak, int BalancePenalty);
 }

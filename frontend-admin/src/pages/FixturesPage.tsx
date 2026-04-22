@@ -30,8 +30,10 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { fixturesService } from '../api/fixtures'
 import { seasonsService } from '../api/seasons'
 import { divisionsService } from '../api/divisions'
+import { competitionRulesService } from '../api/competitionRules'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
+import { useTranslation } from 'react-i18next'
 
 function formatTime(timeStr: string): string {
   try {
@@ -42,9 +44,15 @@ function formatTime(timeStr: string): string {
   }
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString(undefined, {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr)
+    if (!m) return dateStr
+    const year = parseInt(m[1], 10)
+    const month = parseInt(m[2], 10) - 1
+    const day = parseInt(m[3], 10)
+    // Parse as local date to avoid timezone shifts (YYYY-MM-DD is UTC in JS Date parser).
+    return new Date(year, month, day).toLocaleDateString(locale, {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
@@ -56,6 +64,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function FixturesPage() {
+  const { t, i18n } = useTranslation()
   const leagueId = useLeagueId()
   const queryClient = useQueryClient()
   const [seasonId, setSeasonId] = useState<string>('')
@@ -83,25 +92,40 @@ export function FixturesPage() {
     retry: false,
   })
 
+  const { data: globalCompetitionRule } = useQuery({
+    queryKey: ['leagues', leagueId, 'competition-rules', 'global'],
+    queryFn: async ({ signal }) => {
+      try {
+        return await competitionRulesService.get(leagueId!, undefined, signal)
+      } catch (e) {
+        if (e instanceof Error && (e.message.includes('Not Found') || e.message.includes('404')))
+          return null
+        throw e
+      }
+    },
+    enabled: !!leagueId,
+    retry: false,
+  })
+
   const generateMutation = useMutation({
     mutationFn: () => fixturesService.generate(leagueId!, seasonId, divisionId || undefined),
     onSuccess: () => {
-      setSnackbar({ message: 'Fixture draft generated.', severity: 'success' })
+      setSnackbar({ message: t('fixtures.draftGenerated'), severity: 'success' })
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
     },
     onError: (err) => {
-      setSnackbar({ message: err instanceof Error ? err.message : 'Generate failed', severity: 'error' })
+      setSnackbar({ message: err instanceof Error ? err.message : t('fixtures.generateFailed'), severity: 'error' })
     },
   })
 
   const commitMutation = useMutation({
     mutationFn: () => fixturesService.commit(leagueId!, seasonId),
     onSuccess: () => {
-      setSnackbar({ message: 'Fixtures saved.', severity: 'success' })
+      setSnackbar({ message: t('fixtures.saved'), severity: 'success' })
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
     },
     onError: (err) => {
-      setSnackbar({ message: err instanceof Error ? err.message : 'Save failed', severity: 'error' })
+      setSnackbar({ message: err instanceof Error ? err.message : t('fixtures.saveFailed'), severity: 'error' })
     },
   })
 
@@ -117,6 +141,22 @@ export function FixturesPage() {
   const fixtures = fixturesData?.fixtures
   const isDraft = fixturesData?.isDraft ?? false
   const hasFixtures = fixtures && fixtures.rounds.length > 0
+  const dayNames = [
+    t('fixtures.days.sunday'),
+    t('fixtures.days.monday'),
+    t('fixtures.days.tuesday'),
+    t('fixtures.days.wednesday'),
+    t('fixtures.days.thursday'),
+    t('fixtures.days.friday'),
+    t('fixtures.days.saturday'),
+  ]
+  const configuredMatchDays = (globalCompetitionRule?.matchDays ?? [])
+    .filter((d) => d >= 0 && d <= 6)
+    .sort((a, b) => a - b)
+  const configuredMatchDaysText = configuredMatchDays
+    .map((d) => `${dayNames[d]} (${d})`)
+    .join(', ')
+  const dateLocale = i18n.language?.toLowerCase().startsWith('es') ? 'es-AR' : 'en-US'
 
   const teamOptions = useMemo(() => {
     if (!fixtures) return []
@@ -155,8 +195,8 @@ export function FixturesPage() {
 
   if (!leagueId) {
     return (
-      <Alert severity="error" action={<Button component={RouterLink} to="/">Go to Leagues</Button>}>
-        No league selected. Choose a league from the selector.
+      <Alert severity="error" action={<Button component={RouterLink} to="/">{t('fixtures.goToLeagues')}</Button>}>
+        {t('fixtures.noLeague')}
       </Alert>
     )
   }
@@ -164,26 +204,26 @@ export function FixturesPage() {
   return (
     <Box>
       <Button component={RouterLink} to="/seasons" startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
-        Back to seasons
+        {t('fixtures.backToSeasons')}
       </Button>
       <Typography variant="h5" component="h1" sx={{ mb: 2, fontWeight: 600 }}>
-        Fixtures
+        {t('fixtures.title')}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Generate fixtures for a season, preview them, then save when ready. Once saved, the season is locked (team assignments cannot be changed).
+        {t('fixtures.description')}
       </Typography>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mb: 3 }}>
         <FormControl size="small" sx={{ minWidth: 220 }} disabled={seasonsLoading}>
-          <InputLabel id="season-label">Season</InputLabel>
+          <InputLabel id="season-label">{t('fixtures.season')}</InputLabel>
           <Select
             labelId="season-label"
-            label="Season"
+            label={t('fixtures.season')}
             value={seasonId}
             onChange={handleSeasonChange}
           >
             <MenuItem value="">
-              <em>Select season</em>
+              <em>{t('fixtures.selectSeason')}</em>
             </MenuItem>
             {seasons.map((s) => (
               <MenuItem key={s.id} value={s.id}>
@@ -195,15 +235,15 @@ export function FixturesPage() {
         {!!seasonId && (
           <>
             <FormControl size="small" sx={{ minWidth: 180 }} disabled={!seasonId}>
-              <InputLabel id="division-label">Division</InputLabel>
+              <InputLabel id="division-label">{t('fixtures.division')}</InputLabel>
               <Select
                 labelId="division-label"
-                label="Division"
+                label={t('fixtures.division')}
                 value={divisionId}
                 onChange={(e) => setDivisionId(e.target.value)}
               >
                 <MenuItem value="">
-                  <em>Select division</em>
+                  <em>{t('fixtures.selectDivision')}</em>
                 </MenuItem>
                 {divisions.map((d) => (
                   <MenuItem key={d.id} value={d.id}>
@@ -213,15 +253,15 @@ export function FixturesPage() {
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: 220 }} disabled={!hasFixtures}>
-              <InputLabel id="team-filter-label">Team filter</InputLabel>
+              <InputLabel id="team-filter-label">{t('fixtures.teamFilter')}</InputLabel>
               <Select
                 labelId="team-filter-label"
-                label="Team filter"
+                label={t('fixtures.teamFilter')}
                 value={teamFilter}
                 onChange={(e) => setTeamFilter(e.target.value)}
               >
                 <MenuItem value="">
-                  <em>All teams</em>
+                  <em>{t('fixtures.allTeams')}</em>
                 </MenuItem>
                 {teamOptions.map((team) => (
                   <MenuItem key={team} value={team}>
@@ -236,7 +276,7 @@ export function FixturesPage() {
               onClick={hasFixtures ? handleRegenerate : handleGenerate}
               disabled={generateMutation.isPending || !divisionId}
             >
-              {hasFixtures ? 'Regenerate' : 'Generate'} Fixture
+              {hasFixtures ? t('fixtures.regenerate') : t('fixtures.generate')}
             </Button>
             <Button
               variant="outlined"
@@ -244,7 +284,7 @@ export function FixturesPage() {
               onClick={() => setImportModalOpen(true)}
               disabled={!divisionId}
             >
-              Import Fixture
+              {t('fixtures.import')}
             </Button>
             {hasFixtures && (
               <Button
@@ -253,18 +293,18 @@ export function FixturesPage() {
                 onClick={handleSave}
                 disabled={commitMutation.isPending || !isDraft}
               >
-                Save Fixture
+                {t('fixtures.save')}
               </Button>
             )}
             {hasFixtures && isDraft && (
-              <Chip label="Draft (not saved)" color="warning" size="small" />
+              <Chip label={t('fixtures.draftStatus')} color="warning" size="small" />
             )}
             {hasFixtures && !isDraft && (
-              <Chip label="Committed" color="success" size="small" />
+              <Chip label={t('fixtures.committedStatus')} color="success" size="small" />
             )}
             {teamFilter && (
               <Chip
-                label={`Filtered: ${teamFilter}`}
+                label={`${t('fixtures.filtered')} ${teamFilter}`}
                 size="small"
                 onDelete={() => setTeamFilter('')}
               />
@@ -296,8 +336,20 @@ export function FixturesPage() {
 
       {!fixturesLoading && seasonId && !hasFixtures && (
         <Typography color="text.secondary">
-          Select a season and click Generate Fixture to create a draft.
+          {t('fixtures.emptyPrompt')}
         </Typography>
+      )}
+
+      {!!seasonId && (
+        configuredMatchDays.length > 0 ? (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            {t('fixtures.matchDaySourceConfigured', { days: configuredMatchDaysText })}
+          </Alert>
+        ) : (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {t('fixtures.matchDaySourceMissing')}
+          </Alert>
+        )
       )}
 
       {leagueId && seasonId && divisionId && (
@@ -318,13 +370,13 @@ export function FixturesPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell><strong>Round</strong></TableCell>
-                <TableCell><strong>Date</strong></TableCell>
-                <TableCell><strong>Division</strong></TableCell>
-                <TableCell><strong>Field</strong></TableCell>
-                <TableCell><strong>Time</strong></TableCell>
-                <TableCell><strong>Home</strong></TableCell>
-                <TableCell><strong>Away</strong></TableCell>
+                <TableCell><strong>{t('fixtures.cols.round')}</strong></TableCell>
+                <TableCell><strong>{t('fixtures.cols.date')}</strong></TableCell>
+                <TableCell><strong>{t('fixtures.cols.division')}</strong></TableCell>
+                <TableCell><strong>{t('fixtures.cols.field')}</strong></TableCell>
+                <TableCell><strong>{t('fixtures.cols.time')}</strong></TableCell>
+                <TableCell><strong>{t('fixtures.cols.home')}</strong></TableCell>
+                <TableCell><strong>{t('fixtures.cols.away')}</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -333,7 +385,7 @@ export function FixturesPage() {
                   {round.matches.map((m, idx) => (
                     <TableRow key={`${round.roundNumber}-${idx}-${m.homeTeamDivisionSeasonId}-${m.awayTeamDivisionSeasonId}`}>
                       <TableCell>{idx === 0 ? round.roundNumber : ''}</TableCell>
-                      <TableCell>{idx === 0 ? formatDate(round.matchDate) : ''}</TableCell>
+                      <TableCell>{idx === 0 ? formatDate(round.matchDate, dateLocale) : ''}</TableCell>
                       <TableCell>{m.divisionName}</TableCell>
                       <TableCell>{m.fieldName}</TableCell>
                       <TableCell>{formatTime(m.kickoffTime)}</TableCell>
@@ -346,12 +398,12 @@ export function FixturesPage() {
                     return (
                       <TableRow key={`${round.roundNumber}-bye-${bye.divisionSeasonId}-${bye.teamDivisionSeasonId}`}>
                         <TableCell>{showRoundHeader ? round.roundNumber : ''}</TableCell>
-                        <TableCell>{showRoundHeader ? formatDate(round.matchDate) : ''}</TableCell>
+                        <TableCell>{showRoundHeader ? formatDate(round.matchDate, dateLocale) : ''}</TableCell>
                         <TableCell>{bye.divisionName}</TableCell>
                         <TableCell>-</TableCell>
                         <TableCell>-</TableCell>
                         <TableCell>{bye.teamName}</TableCell>
-                        <TableCell>Libre</TableCell>
+                        <TableCell>{t('fixtures.bye')}</TableCell>
                       </TableRow>
                     )
                   })}

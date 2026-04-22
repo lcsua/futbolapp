@@ -10,20 +10,17 @@ namespace FootballManager.Application.UseCases.Leagues.UpsertCompetitionRule
     public class UpsertCompetitionRuleUseCase : IUpsertCompetitionRuleUseCase
     {
         private readonly ILeagueRepository _leagueRepository;
-        private readonly ISeasonRepository _seasonRepository;
         private readonly ICompetitionRuleRepository _ruleRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public UpsertCompetitionRuleUseCase(
             ILeagueRepository leagueRepository,
-            ISeasonRepository seasonRepository,
             ICompetitionRuleRepository ruleRepository,
             IUserLeagueRepository userLeagueRepository,
             IUnitOfWork unitOfWork)
         {
             _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
-            _seasonRepository = seasonRepository ?? throw new ArgumentNullException(nameof(seasonRepository));
             _ruleRepository = ruleRepository ?? throw new ArgumentNullException(nameof(ruleRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
@@ -39,18 +36,11 @@ namespace FootballManager.Application.UseCases.Leagues.UpsertCompetitionRule
             if (league == null)
                 throw new KeyNotFoundException($"League {request.LeagueId} not found.");
 
-            Season season = null;
-            if (request.SeasonId.HasValue)
-            {
-                season = await _seasonRepository.GetByIdAsync(request.SeasonId.Value, cancellationToken);
-                if (season == null || season.LeagueId != request.LeagueId)
-                    throw new KeyNotFoundException($"Season {request.SeasonId} not found or does not belong to league.");
-            }
-
-            var rule = await _ruleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, request.SeasonId, cancellationToken);
+            // Regla global por liga: ignoramos seasonId aunque llegue desde cliente antiguo.
+            var rule = await _ruleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, null, cancellationToken);
             if (rule == null)
             {
-                rule = new CompetitionRule(league, request.MatchesPerWeek, request.IsHomeAway, season);
+                rule = new CompetitionRule(league, request.MatchesPerWeek, request.IsHomeAway, season: null);
                 await _ruleRepository.AddAsync(rule, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }

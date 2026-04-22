@@ -8,11 +8,14 @@ import {
   Skeleton,
 } from '@mui/material'
 import { useQuery } from '@tanstack/react-query'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useLeagueContext } from '../contexts/LeagueContext'
 import { leaguesService } from '../api/leagues'
 
 export function LeagueSelector() {
   const { activeLeague, setActiveLeague } = useLeagueContext()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { data: leagues, isLoading, isError } = useQuery({
     queryKey: ['leagues'],
     queryFn: ({ signal }) => leaguesService.getMyLeagues(signal),
@@ -24,8 +27,18 @@ export function LeagueSelector() {
       if (!leagues) return
       const league = value === '' ? null : leagues.find((l) => l.id === value) ?? null
       setActiveLeague(league)
+
+      const match = location.pathname.match(/^\/leagues\/[^/]+(\/.*)?$/)
+      if (match) {
+        if (league) {
+          const suffix = match[1] ?? ''
+          navigate(`/leagues/${league.id}${suffix}`)
+        } else {
+          navigate('/')
+        }
+      }
     },
-    [leagues, setActiveLeague],
+    [leagues, setActiveLeague, location.pathname, navigate],
   )
 
   useEffect(() => {

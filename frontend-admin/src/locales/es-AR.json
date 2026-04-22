@@ -78,6 +78,62 @@
       "rangeStart": "Desde",
       "rangeEnd": "Hasta",
       "invalidRangeHint": "El fin debe ser posterior al inicio. Corregí o borrá la fila inválida."
+    },
+    "fixtures": {
+      "draftGenerated": "Fixture borrador generado.",
+      "generateFailed": "Error al generar",
+      "saved": "Fixture guardado.",
+      "saveFailed": "Error al guardar",
+      "noLeague": "No hay liga seleccionada. Elegí una liga del menú.",
+      "goToLeagues": "Ir a Ligas",
+      "backToSeasons": "Volver a temporadas",
+      "title": "Fixture",
+      "description": "Generá el fixture para una temporada, previsualizalo y guardalo cuando esté listo. Una vez guardado, la temporada queda confirmada (no se pueden cambiar las asignaciones de equipos).",
+      "season": "Temporada",
+      "selectSeason": "Seleccionar temporada",
+      "division": "División",
+      "selectDivision": "Seleccionar división",
+      "teamFilter": "Filtro por equipo",
+      "allTeams": "Todos los equipos",
+      "generate": "Generar Fixture",
+      "regenerate": "Regenerar Fixture",
+      "import": "Importar Fixture",
+      "save": "Guardar Fixture",
+      "draftStatus": "Borrador (no guardado)",
+      "committedStatus": "Confirmado",
+      "filtered": "Filtrado: ",
+      "emptyPrompt": "Seleccioná una temporada y hacé clic en Generar Fixture para crear un borrador.",
+      "matchDaySourceConfigured": "Días de juego activos (regla global): {{days}}",
+      "matchDaySourceMissing": "No hay días de juego definidos en Reglas de competición globales.",
+      "bye": "Libre",
+      "days": {
+        "sunday": "Domingo",
+        "monday": "Lunes",
+        "tuesday": "Martes",
+        "wednesday": "Miércoles",
+        "thursday": "Jueves",
+        "friday": "Viernes",
+        "saturday": "Sábado"
+      },
+      "importModal": {
+        "title": "Importar Fixture",
+        "instructions": "Pegá CSV con 3 columnas (round, home_team, away_team), 4 (round, date, home_team, away_team), o 6 (round, date, time, field, home_team, away_team).",
+        "errorLoadingPreview": "Error al previsualizar",
+        "errorImporting": "Error al importar el fixture",
+        "formatDetected": "Formato detectado:",
+        "previewButton": "Previsualizar",
+        "importButton": "Importar",
+        "errorCol": "Error"
+      },
+      "cols": {
+        "round": "Fecha",
+        "date": "Día",
+        "division": "División",
+        "field": "Cancha",
+        "time": "Hora",
+        "home": "Local",
+        "away": "Visitante"
+      }
     }
   }
 }
