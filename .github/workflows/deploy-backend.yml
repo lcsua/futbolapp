@@ -1,40 +1,48 @@
-name: Deploy Backend API (.NET)
+name: Deploy Backend API
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
 
-      # Uncomment and update the working-directory based on your solution structure
-      # - name: Restore dependencies
-      #   run: dotnet restore
-      #   working-directory: ./src/BackendApi
+    - name: Restore dependencies
+      working-directory: ./backend/FootballManager.Api
+      run: dotnet restore
 
-      # - name: Build
-      #   run: dotnet build --no-restore --configuration Release
-      #   working-directory: ./src/BackendApi
+    - name: Build
+      working-directory: ./backend/FootballManager.Api
+      run: dotnet build --configuration Release --no-restore
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            echo "Conectado al servidor para desplegar el Backend API"
-            # Aquí puedes agregar los comandos para actualizar tu backend, por ejemplo:
-            # cd /ruta/al/proyecto/backend
-            # git pull origin main
-            # dotnet publish -c Release
-            # systemctl restart tu-servicio-backend.service
+    - name: Publish
+      working-directory: ./backend/FootballManager.Api
+      run: dotnet publish --configuration Release --no-build --output ./publish
+
+    - name: Copy files via SSH
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        source: "backend/FootballManager.Api/publish/*"
+        target: "/home/lucas/apps/futbolnet/api"
+        strip_components: 3
+
+    - name: Restart Service
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          sudo systemctl restart futbolnet-api
