@@ -22,7 +22,8 @@
     },
     "common": {
       "save": "Guardar",
-      "saveError": "Error al guardar"
+      "saveError": "Error al guardar",
+      "logout": "Cerrar sesión"
     },
     "matchRules": {
       "title": "Reglas de partido",

@@ -22,7 +22,8 @@
     },
     "common": {
       "save": "Save",
-      "saveError": "Failed to save"
+      "saveError": "Failed to save",
+      "logout": "Log out"
     },
     "matchRules": {
       "title": "Match rules",

@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Outlet, Link as RouterLink, useLocation } from 'react-router-dom'
+import { Outlet, Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   AppBar,
   Box,
+  Button,
   Drawer,
   IconButton,
   List,
@@ -60,7 +61,13 @@ export function AppLayout() {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'))
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
-  const { user } = useAuth()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   const drawer = (
     <Box sx={{ pt: 2 }}>
@@ -137,9 +144,14 @@ export function AppLayout() {
             <LeagueSelector />
           </Box>
           {user && (
-            <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-              {user.email}
-            </Typography>
+            <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                {user.email}
+              </Typography>
+              <Button size="small" variant="outlined" onClick={handleLogout}>
+                {t('common.logout')}
+              </Button>
+            </Box>
           )}
         </Toolbar>
       </AppBar>
