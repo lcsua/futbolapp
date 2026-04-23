@@ -307,13 +307,7 @@ export function FixturesPage() {
       )
       .join('')
 
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer')
-    if (!printWindow) {
-      setSnackbar({ message: t('fixtures.printBlocked'), severity: 'error' })
-      return
-    }
-
-    printWindow.document.write(`
+    const html = `
       <!doctype html>
       <html>
         <head>
@@ -345,11 +339,44 @@ export function FixturesPage() {
           </table>
         </body>
       </html>
-    `)
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
-    printWindow.close()
+    `
+
+    // Use an off-screen iframe so printing works even when pop-ups are blocked.
+    try {
+      const iframe = document.createElement('iframe')
+      iframe.style.position = 'fixed'
+      iframe.style.right = '0'
+      iframe.style.bottom = '0'
+      iframe.style.width = '0'
+      iframe.style.height = '0'
+      iframe.style.border = '0'
+      iframe.setAttribute('aria-hidden', 'true')
+
+      const cleanup = () => {
+        if (iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe)
+        }
+      }
+
+      iframe.onload = () => {
+        const frameWindow = iframe.contentWindow
+        if (!frameWindow) {
+          cleanup()
+          setSnackbar({ message: t('fixtures.printBlocked'), severity: 'error' })
+          return
+        }
+
+        frameWindow.onafterprint = cleanup
+        frameWindow.focus()
+        frameWindow.print()
+        window.setTimeout(cleanup, 1500)
+      }
+
+      document.body.appendChild(iframe)
+      iframe.srcdoc = html
+    } catch {
+      setSnackbar({ message: t('fixtures.printBlocked'), severity: 'error' })
+    }
   }
 
   if (!leagueId) {
