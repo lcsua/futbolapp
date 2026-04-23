@@ -2,6 +2,7 @@ import { apiClient } from './apiClient'
 
 export interface LoginRequest {
   email: string
+  password: string
 }
 
 export interface LoginResponse {
@@ -12,6 +13,6 @@ export interface LoginResponse {
 }
 
 export const authApi = {
-  login: (email: string, signal?: AbortSignal) =>
-    apiClient.post<LoginResponse>('/api/auth/login', { email }, signal),
+  login: (email: string, password: string, signal?: AbortSignal) =>
+    apiClient.post<LoginResponse>('/api/auth/login', { email, password }, signal),
 }

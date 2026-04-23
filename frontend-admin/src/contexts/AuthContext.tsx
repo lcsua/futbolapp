@@ -16,7 +16,7 @@ import {
 type AuthContextValue = {
   user: StoredAuthUser | null
   isAuthenticated: boolean
-  login: (email: string) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
   logout: () => void
 }
 
@@ -32,8 +32,8 @@ function readStoredAuth(): StoredAuthUser | null {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<StoredAuthUser | null>(readStoredAuth)
 
-  const login = useCallback(async (email: string) => {
-    const res = await authApi.login(email.trim())
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await authApi.login(email.trim(), password)
     const stored: StoredAuthUser = {
       userId: res.userId,
       email: res.email,

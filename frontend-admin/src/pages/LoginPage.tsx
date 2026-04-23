@@ -16,6 +16,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -26,9 +27,13 @@ export function LoginPage() {
       setError('Enter your email')
       return
     }
+    if (!password.trim()) {
+      setError('Enter your password')
+      return
+    }
     setLoading(true)
     try {
-      await login(email.trim())
+      await login(email.trim(), password)
       navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
@@ -68,7 +73,7 @@ export function LoginPage() {
             Football Admin
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Dev login — email only
+            Login with email and password
           </Typography>
         </Box>
 
@@ -84,6 +89,17 @@ export function LoginPage() {
             error={!!error}
             sx={{ mb: 2 }}
             autoFocus
+          />
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            error={!!error}
+            sx={{ mb: 2 }}
           />
 
           {error && (
