@@ -108,6 +108,7 @@
       "committedStatus": "Confirmado",
       "filtered": "Filtrado: ",
       "emptyPrompt": "Seleccioná una temporada y hacé clic en Generar Fixture para crear un borrador.",
+      "emptyForFilters": "No hay partidos del fixture para los filtros seleccionados.",
       "matchDaySourceConfigured": "Días de juego activos (regla global): {{days}}",
       "matchDaySourceMissing": "No hay días de juego definidos en Reglas de competición globales.",
       "bye": "Libre",

@@ -108,6 +108,7 @@
       "committedStatus": "Committed",
       "filtered": "Filtered: ",
       "emptyPrompt": "Select a season and click Generate Fixture to create a draft.",
+      "emptyForFilters": "There are no fixture matches for the selected filters.",
       "matchDaySourceConfigured": "Active match days (global rule): {{days}}",
       "matchDaySourceMissing": "No match days are configured in global competition rules.",
       "bye": "Bye",

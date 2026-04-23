@@ -158,6 +158,7 @@ export function FixturesPage() {
   const handleSeasonChange = (e: SelectChangeEvent<string>) => {
     setSeasonId(e.target.value)
     setDivisionId('')
+    setTeamFilter('')
   }
 
   const handleGenerate = () => generateMutation.mutate()
@@ -167,6 +168,7 @@ export function FixturesPage() {
   const fixtures = fixturesData?.fixtures
   const isDraft = fixturesData?.isDraft ?? false
   const hasFixtures = fixtures && fixtures.rounds.length > 0
+  const selectedDivisionName = divisionId ? (divisions.find((d) => d.id === divisionId)?.name ?? null) : null
   const dayNames = [
     t('fixtures.days.sunday'),
     t('fixtures.days.monday'),
@@ -185,21 +187,32 @@ export function FixturesPage() {
   const dateLocale = i18n.language?.toLowerCase().startsWith('es') ? 'es-AR' : 'en-US'
   const leagueName = activeLeague?.id === leagueId ? activeLeague.name : (leagueById?.name ?? leagueId ?? '')
 
-  const teamOptions = useMemo(() => {
+  const divisionFilteredRounds = useMemo(() => {
     if (!fixtures) return []
+    return fixtures.rounds
+      .map((round) => {
+        const matches = round.matches.filter((m) => !selectedDivisionName || m.divisionName === selectedDivisionName)
+        const byeTeams = (round.byeTeams ?? []).filter(
+          (b) => !selectedDivisionName || b.divisionName === selectedDivisionName,
+        )
+        return { ...round, matches, byeTeams }
+      })
+      .filter((round) => round.matches.length > 0 || round.byeTeams.length > 0)
+  }, [fixtures, selectedDivisionName])
+
+  const teamOptions = useMemo(() => {
     const names = new Set<string>()
-    for (const round of fixtures.rounds) {
+    for (const round of divisionFilteredRounds) {
       for (const match of round.matches) {
         names.add(match.homeTeamName)
         names.add(match.awayTeamName)
       }
     }
     return Array.from(names).sort((a, b) => a.localeCompare(b))
-  }, [fixtures])
+  }, [divisionFilteredRounds])
 
   const visibleRounds = useMemo(() => {
-    if (!fixtures) return []
-    return fixtures.rounds
+    return divisionFilteredRounds
       .map((round) => {
         const matches = round.matches
           .filter((m) => !teamFilter || m.homeTeamName === teamFilter || m.awayTeamName === teamFilter)
@@ -218,7 +231,8 @@ export function FixturesPage() {
         return { ...round, matches, byeTeams }
       })
       .filter((round) => round.matches.length > 0 || round.byeTeams.length > 0)
-  }, [fixtures, teamFilter])
+  }, [divisionFilteredRounds, teamFilter])
+  const hasVisibleFixtures = visibleRounds.length > 0
 
   const handleDownload = () => {
     if (!hasFixtures) return
@@ -444,7 +458,10 @@ export function FixturesPage() {
                 labelId="division-label"
                 label={t('fixtures.division')}
                 value={divisionId}
-                onChange={(e) => setDivisionId(e.target.value)}
+                onChange={(e) => {
+                  setDivisionId(e.target.value)
+                  setTeamFilter('')
+                }}
               >
                 <MenuItem value="">
                   <em>{t('fixtures.selectDivision')}</em>
@@ -456,7 +473,7 @@ export function FixturesPage() {
                 ))}
               </Select>
             </FormControl>
-            <FormControl size="small" sx={{ minWidth: 220 }} disabled={!hasFixtures}>
+            <FormControl size="small" sx={{ minWidth: 220 }} disabled={!hasVisibleFixtures}>
               <InputLabel id="team-filter-label">{t('fixtures.teamFilter')}</InputLabel>
               <Select
                 labelId="team-filter-label"
@@ -553,6 +570,9 @@ export function FixturesPage() {
           {t('fixtures.emptyPrompt')}
         </Typography>
       )}
+      {!fixturesLoading && seasonId && hasFixtures && !hasVisibleFixtures && (
+        <Typography color="text.secondary">{t('fixtures.emptyForFilters')}</Typography>
+      )}
 
       {!!seasonId && (
         configuredMatchDays.length > 0 ? (
@@ -579,7 +599,7 @@ export function FixturesPage() {
         />
       )}
 
-      {!fixturesLoading && hasFixtures && (
+      {!fixturesLoading && hasVisibleFixtures && (
         <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
           <Table size="small">
             <TableHead>
