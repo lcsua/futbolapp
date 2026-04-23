@@ -23,6 +23,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
     private readonly IMatchRulesResolver _matchRulesResolver;
     private readonly IFieldRepository _fieldRepository;
     private readonly IFieldAvailabilityRepository _fieldAvailabilityRepository;
+    private readonly IFixtureRepository _fixtureRepository;
     private readonly IFixtureDraftStore _draftStore;
     private readonly ILogger<GenerateSeasonFixturesUseCase> _logger;
 
@@ -35,6 +36,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         IMatchRulesResolver matchRulesResolver,
         IFieldRepository fieldRepository,
         IFieldAvailabilityRepository fieldAvailabilityRepository,
+        IFixtureRepository fixtureRepository,
         IFixtureDraftStore draftStore,
         ILogger<GenerateSeasonFixturesUseCase> logger)
     {
@@ -46,6 +48,7 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         _matchRulesResolver = matchRulesResolver ?? throw new ArgumentNullException(nameof(matchRulesResolver));
         _fieldRepository = fieldRepository ?? throw new ArgumentNullException(nameof(fieldRepository));
         _fieldAvailabilityRepository = fieldAvailabilityRepository ?? throw new ArgumentNullException(nameof(fieldAvailabilityRepository));
+        _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
         _draftStore = draftStore ?? throw new ArgumentNullException(nameof(draftStore));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -245,6 +248,14 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
         LogFieldDistributionSummary(teamFieldUsage, availableFields);
 
         var draft = new FixtureDraftDto(allRounds);
+        if (request.DivisionId.HasValue)
+        {
+            var replacedDivisionSeasonIds = divisionSeasons
+                .Select(ds => ds.Id)
+                .ToHashSet();
+            var baseDraft = await BuildBaseDraftAsync(request.SeasonId, cancellationToken);
+            draft = MergeDivisionDraft(baseDraft, draft, replacedDivisionSeasonIds);
+        }
         _draftStore.Set(request.SeasonId, draft);
 
         return new GenerateSeasonFixturesResponse(draft);
@@ -282,6 +293,101 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
                 $"Invalid bye distribution for division '{ds.Division.Name}'. " +
                 $"Expected {expectedByesPerTeam} bye(s) per team, found: {string.Join(", ", invalid)}");
         }
+    }
+
+    private async Task<FixtureDraftDto> BuildBaseDraftAsync(Guid seasonId, CancellationToken cancellationToken)
+    {
+        var existingDraft = _draftStore.Get(seasonId);
+        if (existingDraft != null)
+            return existingDraft;
+
+        var fixtures = await _fixtureRepository.GetBySeasonIdAsync(seasonId, cancellationToken);
+        if (fixtures.Count == 0)
+            return new FixtureDraftDto(Array.Empty<FixtureDraftRoundDto>());
+
+        var rounds = fixtures
+            .GroupBy(f => new { f.RoundNumber, f.MatchDate })
+            .OrderBy(g => g.Key.RoundNumber)
+            .ThenBy(g => g.Key.MatchDate ?? DateOnly.MinValue)
+            .Select(g => new FixtureDraftRoundDto(
+                g.Key.RoundNumber,
+                g.Key.MatchDate,
+                g.OrderBy(f => f.StartTime ?? TimeOnly.MaxValue).ThenBy(f => f.Field?.Name ?? "")
+                    .Select(f => new FixtureDraftMatchDto(
+                        f.DivisionSeasonId,
+                        f.DivisionSeason.Division.Name,
+                        f.HomeTeamDivisionSeasonId,
+                        f.HomeTeamDivisionSeason.Team.Name,
+                        f.AwayTeamDivisionSeasonId,
+                        f.AwayTeamDivisionSeason.Team.Name,
+                        f.FieldId,
+                        f.Field?.Name,
+                        f.MatchDate,
+                        f.StartTime
+                    )).ToList(),
+                null))
+            .ToList();
+
+        return new FixtureDraftDto(rounds);
+    }
+
+    private static FixtureDraftDto MergeDivisionDraft(
+        FixtureDraftDto baseDraft,
+        FixtureDraftDto divisionDraft,
+        HashSet<Guid> replacedDivisionSeasonIds)
+    {
+        var byRound = new Dictionary<(int RoundNumber, DateOnly? MatchDate), (List<FixtureDraftMatchDto> Matches, List<FixtureDraftByeDto> ByeTeams)>();
+
+        static void UpsertRound(
+            Dictionary<(int RoundNumber, DateOnly? MatchDate), (List<FixtureDraftMatchDto> Matches, List<FixtureDraftByeDto> ByeTeams)> byRound,
+            FixtureDraftRoundDto round,
+            HashSet<Guid>? skipDivisionSeasonIds)
+        {
+            var key = (round.RoundNumber, round.MatchDate);
+            if (!byRound.TryGetValue(key, out var slot))
+            {
+                slot = (new List<FixtureDraftMatchDto>(), new List<FixtureDraftByeDto>());
+                byRound[key] = slot;
+            }
+
+            foreach (var match in round.Matches)
+            {
+                if (skipDivisionSeasonIds != null && skipDivisionSeasonIds.Contains(match.DivisionSeasonId))
+                    continue;
+                slot.Matches.Add(match);
+            }
+
+            foreach (var bye in round.ByeTeams ?? Array.Empty<FixtureDraftByeDto>())
+            {
+                if (skipDivisionSeasonIds != null && skipDivisionSeasonIds.Contains(bye.DivisionSeasonId))
+                    continue;
+                slot.ByeTeams.Add(bye);
+            }
+        }
+
+        foreach (var round in baseDraft.Rounds)
+            UpsertRound(byRound, round, replacedDivisionSeasonIds);
+        foreach (var round in divisionDraft.Rounds)
+            UpsertRound(byRound, round, null);
+
+        var mergedRounds = byRound
+            .OrderBy(x => x.Key.RoundNumber)
+            .ThenBy(x => x.Key.MatchDate ?? DateOnly.MinValue)
+            .Select(x => new FixtureDraftRoundDto(
+                x.Key.RoundNumber,
+                x.Key.MatchDate,
+                x.Value.Matches
+                    .OrderBy(m => m.KickoffTime ?? TimeOnly.MaxValue)
+                    .ThenBy(m => m.FieldName ?? string.Empty)
+                    .ToList(),
+                x.Value.ByeTeams
+                    .OrderBy(b => b.DivisionName)
+                    .ThenBy(b => b.TeamName)
+                    .ToList()))
+            .Where(r => r.Matches.Count > 0 || (r.ByeTeams?.Count ?? 0) > 0)
+            .ToList();
+
+        return new FixtureDraftDto(mergedRounds);
     }
 
     private static DateOnly GetFirstMatchDate(DateOnly seasonStart, int matchDayOfWeek)
