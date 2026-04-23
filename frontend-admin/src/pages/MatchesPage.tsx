@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
+import { useTranslation } from 'react-i18next'
 import {
   Alert,
   Box,
@@ -28,6 +29,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 
 export function MatchesPage() {
+  const { t } = useTranslation()
   const leagueId = useLeagueId()
   const { leagueId: leagueIdInPath } = useParams<{ leagueId?: string }>()
   const [seasonId, setSeasonId] = useState('')
@@ -104,8 +106,8 @@ export function MatchesPage() {
 
   if (!leagueId) {
     return (
-      <Alert severity="error" action={<Button component={RouterLink} to="/">Go to Leagues</Button>}>
-        No league selected.
+      <Alert severity="error" action={<Button component={RouterLink} to="/">{t('matches.goToLeagues')}</Button>}>
+        {t('matches.noLeague')}
       </Alert>
     )
   }
@@ -113,23 +115,23 @@ export function MatchesPage() {
   return (
     <Box>
       <Button component={RouterLink} to="/seasons" startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
-        Back to seasons
+        {t('matches.backToSeasons')}
       </Button>
       <Typography variant="h5" component="h1" sx={{ mb: 2, fontWeight: 600 }}>
-        Matches
+        {t('matches.title')}
       </Typography>
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mb: 3 }}>
         <FormControl size="small" sx={{ minWidth: 200 }} disabled={seasonsLoading}>
-          <InputLabel id="season-label">Season</InputLabel>
+          <InputLabel id="season-label">{t('matches.season')}</InputLabel>
           <Select
             labelId="season-label"
-            label="Season"
+            label={t('matches.season')}
             value={seasonId}
             onChange={handleSeasonChange}
           >
             <MenuItem value="">
-              <em>Select season</em>
+              <em>{t('matches.selectSeason')}</em>
             </MenuItem>
             {seasons.map((s) => (
               <MenuItem key={s.id} value={s.id}>
@@ -139,15 +141,15 @@ export function MatchesPage() {
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 180 }} disabled={!seasonId}>
-          <InputLabel id="division-label">Division</InputLabel>
+          <InputLabel id="division-label">{t('matches.division')}</InputLabel>
           <Select
             labelId="division-label"
-            label="Division"
+            label={t('matches.division')}
             value={divisionId}
             onChange={handleDivisionChange}
           >
             <MenuItem value="">
-              <em>All</em>
+              <em>{t('matches.all')}</em>
             </MenuItem>
             {divisions.map((d) => (
               <MenuItem key={d.id} value={d.id}>
@@ -157,15 +159,15 @@ export function MatchesPage() {
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 120 }} disabled={!seasonId}>
-          <InputLabel id="round-label">Round</InputLabel>
+          <InputLabel id="round-label">{t('matches.round')}</InputLabel>
           <Select
             labelId="round-label"
-            label="Round"
+            label={t('matches.round')}
             value={round}
             onChange={handleRoundChange}
           >
             <MenuItem value="">
-              <em>All</em>
+              <em>{t('matches.all')}</em>
             </MenuItem>
             {roundNumbers.map((r) => (
               <MenuItem key={r} value={String(r)}>
@@ -175,15 +177,15 @@ export function MatchesPage() {
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 200 }} disabled={!seasonId || allRounds.length === 0}>
-          <InputLabel id="team-label">Team</InputLabel>
+          <InputLabel id="team-label">{t('matches.team')}</InputLabel>
           <Select
             labelId="team-label"
-            label="Team"
+            label={t('matches.team')}
             value={teamId}
             onChange={handleTeamChange}
           >
             <MenuItem value="">
-              <em>All</em>
+              <em>{t('matches.all')}</em>
             </MenuItem>
             {teams.map(([id, name]) => (
               <MenuItem key={id} value={id}>
@@ -198,7 +200,7 @@ export function MatchesPage() {
           onClick={() => setImportModalOpen(true)}
           disabled={!seasonId || !divisionId}
         >
-          Import Fixture
+          {t('matches.importFixture')}
         </Button>
       </Box>
 
@@ -209,7 +211,7 @@ export function MatchesPage() {
       )}
 
       {!matchesLoading && seasonId && rounds.length === 0 && (
-        <Typography color="text.secondary">No matches found. Generate fixtures first.</Typography>
+        <Typography color="text.secondary">{t('matches.noMatches')}</Typography>
       )}
 
       {!matchesLoading && rounds.length > 0 && (
@@ -217,7 +219,7 @@ export function MatchesPage() {
           {rounds.map((group) => (
             <Box key={`${group.roundNumber}-${group.divisionName}`}>
               <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
-                Round {group.roundNumber} — {group.divisionName}
+                {t('matches.roundTitle', { round: group.roundNumber, division: group.divisionName })}
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 2 }}>
                 {group.matches.map((m) => (
@@ -271,6 +273,7 @@ function MatchCard({
   matchDetailPath: string
   onEditResult: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <Card
       variant="outlined"
@@ -323,10 +326,10 @@ function MatchCard({
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
           <Button size="small" startIcon={<EditIcon />} onClick={onEditResult}>
-            Edit Result
+            {t('matches.editResult')}
           </Button>
           <Button size="small" component={RouterLink} to={matchDetailPath} startIcon={<VisibilityIcon />}>
-            View Details
+            {t('matches.viewDetails')}
           </Button>
         </Box>
       </CardContent>

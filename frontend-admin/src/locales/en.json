@@ -139,6 +139,23 @@
         "home": "Home",
         "away": "Away"
       }
+    },
+    "matches": {
+      "title": "Matches",
+      "backToSeasons": "Back to seasons",
+      "season": "Season",
+      "selectSeason": "Select season",
+      "division": "Division",
+      "all": "All",
+      "round": "Round",
+      "team": "Team",
+      "importFixture": "Import Fixture",
+      "noMatches": "No matches found. Generate fixtures first.",
+      "roundTitle": "Round {{round}} — {{division}}",
+      "editResult": "Edit Result",
+      "viewDetails": "View Details",
+      "noLeague": "No league selected.",
+      "goToLeagues": "Go to Leagues"
     }
   }
 }

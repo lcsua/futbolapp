@@ -139,6 +139,23 @@
         "home": "Local",
         "away": "Visitante"
       }
+    },
+    "matches": {
+      "title": "Partidos",
+      "backToSeasons": "Volver a temporadas",
+      "season": "Temporada",
+      "selectSeason": "Seleccionar temporada",
+      "division": "División",
+      "all": "Todos",
+      "round": "Fecha",
+      "team": "Equipo",
+      "importFixture": "Importar Fixture",
+      "noMatches": "No se encontraron partidos. Generá el fixture primero.",
+      "roundTitle": "Fecha {{round}} — {{division}}",
+      "editResult": "Editar Resultado",
+      "viewDetails": "Ver Detalles",
+      "noLeague": "No hay liga seleccionada.",
+      "goToLeagues": "Ir a Ligas"
     }
   }
 }
