@@ -24,6 +24,8 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import SaveIcon from '@mui/icons-material/Save'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
+import DownloadIcon from '@mui/icons-material/Download'
+import PrintIcon from '@mui/icons-material/Print'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -61,6 +63,22 @@ function formatDate(dateStr: string, locale: string): string {
   } catch {
     return dateStr
   }
+}
+
+function escapeCsvCell(value: string): string {
+  if (value.includes('"') || value.includes(',') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`
+  }
+  return value
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 export function FixturesPage() {
@@ -193,6 +211,147 @@ export function FixturesPage() {
       .filter((round) => round.matches.length > 0 || round.byeTeams.length > 0)
   }, [fixtures, teamFilter])
 
+  const handleDownload = () => {
+    if (!hasFixtures) return
+
+    try {
+      const headers = [
+        t('fixtures.cols.round'),
+        t('fixtures.cols.date'),
+        t('fixtures.cols.division'),
+        t('fixtures.cols.field'),
+        t('fixtures.cols.time'),
+        t('fixtures.cols.home'),
+        t('fixtures.cols.away'),
+      ]
+
+      const rows: string[] = [headers.map(escapeCsvCell).join(',')]
+
+      for (const round of visibleRounds) {
+        for (const match of round.matches) {
+          rows.push(
+            [
+              String(round.roundNumber),
+              round.matchDate ? formatDate(round.matchDate, dateLocale) : '',
+              match.divisionName,
+              match.fieldName,
+              formatTime(match.kickoffTime),
+              match.homeTeamName,
+              match.awayTeamName,
+            ]
+              .map(escapeCsvCell)
+              .join(','),
+          )
+        }
+
+        for (const bye of round.byeTeams) {
+          rows.push(
+            [
+              String(round.roundNumber),
+              round.matchDate ? formatDate(round.matchDate, dateLocale) : '',
+              bye.divisionName,
+              '-',
+              '-',
+              bye.teamName,
+              t('fixtures.bye'),
+            ]
+              .map(escapeCsvCell)
+              .join(','),
+          )
+        }
+      }
+
+      const csv = '\uFEFF' + rows.join('\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `fixtures-${seasonId}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch {
+      setSnackbar({ message: t('fixtures.downloadFailed'), severity: 'error' })
+    }
+  }
+
+  const handlePrint = () => {
+    if (!hasFixtures) return
+
+    const title = `${t('fixtures.title')} - ${seasonId}`
+    const tableRows = visibleRounds
+      .flatMap((round) => [
+        ...round.matches.map((match) => [
+          round.roundNumber,
+          round.matchDate ? formatDate(round.matchDate, dateLocale) : '',
+          match.divisionName,
+          match.fieldName,
+          formatTime(match.kickoffTime),
+          match.homeTeamName,
+          match.awayTeamName,
+        ]),
+        ...round.byeTeams.map((bye) => [
+          round.roundNumber,
+          round.matchDate ? formatDate(round.matchDate, dateLocale) : '',
+          bye.divisionName,
+          '-',
+          '-',
+          bye.teamName,
+          t('fixtures.bye'),
+        ]),
+      ])
+      .map(
+        (cells) =>
+          `<tr>${cells.map((cell) => `<td>${escapeHtml(String(cell))}</td>`).join('')}</tr>`,
+      )
+      .join('')
+
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer')
+    if (!printWindow) {
+      setSnackbar({ message: t('fixtures.printBlocked'), severity: 'error' })
+      return
+    }
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>${escapeHtml(title)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; }
+            h1 { font-size: 20px; margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+            th { background: #f5f5f5; }
+          </style>
+        </head>
+        <body>
+          <h1>${escapeHtml(title)}</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>${escapeHtml(t('fixtures.cols.round'))}</th>
+                <th>${escapeHtml(t('fixtures.cols.date'))}</th>
+                <th>${escapeHtml(t('fixtures.cols.division'))}</th>
+                <th>${escapeHtml(t('fixtures.cols.field'))}</th>
+                <th>${escapeHtml(t('fixtures.cols.time'))}</th>
+                <th>${escapeHtml(t('fixtures.cols.home'))}</th>
+                <th>${escapeHtml(t('fixtures.cols.away'))}</th>
+              </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+    printWindow.close()
+  }
+
   if (!leagueId) {
     return (
       <Alert severity="error" action={<Button component={RouterLink} to="/">{t('fixtures.goToLeagues')}</Button>}>
@@ -286,6 +445,16 @@ export function FixturesPage() {
             >
               {t('fixtures.import')}
             </Button>
+            {hasFixtures && (
+              <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownload}>
+                {t('fixtures.download')}
+              </Button>
+            )}
+            {hasFixtures && (
+              <Button variant="outlined" startIcon={<PrintIcon />} onClick={handlePrint}>
+                {t('fixtures.print')}
+              </Button>
+            )}
             {hasFixtures && (
               <Button
                 variant="contained"
