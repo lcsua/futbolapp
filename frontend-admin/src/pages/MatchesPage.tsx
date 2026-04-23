@@ -65,6 +65,8 @@ export function MatchesPage() {
         signal
       ),
     enabled: !!leagueId && !!seasonId,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 
   const handleSeasonChange = (e: SelectChangeEvent<string>) => {
