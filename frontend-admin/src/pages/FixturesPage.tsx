@@ -33,7 +33,8 @@ import { fixturesService } from '../api/fixtures'
 import { seasonsService } from '../api/seasons'
 import { divisionsService } from '../api/divisions'
 import { competitionRulesService } from '../api/competitionRules'
-import { useLeagueId } from '../contexts/LeagueContext'
+import { leaguesService } from '../api/leagues'
+import { useActiveLeague, useLeagueId } from '../contexts/LeagueContext'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
 import { useTranslation } from 'react-i18next'
 
@@ -84,6 +85,7 @@ function escapeHtml(value: string): string {
 export function FixturesPage() {
   const { t, i18n } = useTranslation()
   const leagueId = useLeagueId()
+  const activeLeague = useActiveLeague()
   const queryClient = useQueryClient()
   const [seasonId, setSeasonId] = useState<string>('')
   const [divisionId, setDivisionId] = useState<string>('')
@@ -123,6 +125,12 @@ export function FixturesPage() {
     },
     enabled: !!leagueId,
     retry: false,
+  })
+
+  const { data: leagueById } = useQuery({
+    queryKey: ['leagues', leagueId, 'details'],
+    queryFn: ({ signal }) => leaguesService.getById(leagueId!, signal),
+    enabled: !!leagueId && (!activeLeague || activeLeague.id !== leagueId),
   })
 
   const generateMutation = useMutation({
@@ -175,6 +183,7 @@ export function FixturesPage() {
     .map((d) => `${dayNames[d]} (${d})`)
     .join(', ')
   const dateLocale = i18n.language?.toLowerCase().startsWith('es') ? 'es-AR' : 'en-US'
+  const leagueName = activeLeague?.id === leagueId ? activeLeague.name : (leagueById?.name ?? leagueId ?? '')
 
   const teamOptions = useMemo(() => {
     if (!fixtures) return []
@@ -279,7 +288,7 @@ export function FixturesPage() {
   const handlePrint = () => {
     if (!hasFixtures) return
 
-    const title = `${t('fixtures.title')} - ${seasonId}`
+    const title = `${t('fixtures.title')} - ${leagueName}`
     const tableRows = visibleRounds
       .flatMap((round) => [
         ...round.matches.map((match) => [
@@ -345,11 +354,12 @@ export function FixturesPage() {
     try {
       const iframe = document.createElement('iframe')
       iframe.style.position = 'fixed'
-      iframe.style.right = '0'
+      iframe.style.right = '-10000px'
       iframe.style.bottom = '0'
-      iframe.style.width = '0'
-      iframe.style.height = '0'
+      iframe.style.width = '1024px'
+      iframe.style.height = '768px'
       iframe.style.border = '0'
+      iframe.style.visibility = 'hidden'
       iframe.setAttribute('aria-hidden', 'true')
 
       const cleanup = () => {
@@ -358,22 +368,30 @@ export function FixturesPage() {
         }
       }
 
+      let printed = false
       iframe.onload = () => {
+        if (printed) return
+
         const frameWindow = iframe.contentWindow
+        const frameDocument = iframe.contentDocument
         if (!frameWindow) {
           cleanup()
           setSnackbar({ message: t('fixtures.printBlocked'), severity: 'error' })
           return
         }
+        if (!frameDocument?.body || !frameDocument.body.innerText.trim()) {
+          return
+        }
 
+        printed = true
         frameWindow.onafterprint = cleanup
         frameWindow.focus()
         frameWindow.print()
         window.setTimeout(cleanup, 1500)
       }
 
-      document.body.appendChild(iframe)
       iframe.srcdoc = html
+      document.body.appendChild(iframe)
     } catch {
       setSnackbar({ message: t('fixtures.printBlocked'), severity: 'error' })
     }
