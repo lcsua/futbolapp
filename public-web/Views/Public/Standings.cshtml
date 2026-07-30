@@ -84,22 +84,22 @@
     foreach (var div in Model.Divisions)
     {
         <h4 class="fw-bold mt-4 mb-3 text-secondary border-bottom pb-2">@div.DivisionName</h4>
-        <div class="card shadow-sm mb-4 border-0">
+        <div class="card shadow-sm mb-4 border-0 standings-card">
             <div class="card-body p-0">
-                <div class="table-responsive rounded-3 overflow-hidden">
-                    <table class="table table-striped table-hover mb-0 align-middle text-center border-0">
+                <div class="table-responsive standings-scroll">
+                    <table class="table table-striped table-hover mb-0 align-middle text-center border-0 standings-table">
                         <thead class="table-dark border-0">
                             <tr>
-                                <th scope="col" style="width: 50px;">Pos</th>
+                                <th scope="col" class="standings-pos">#</th>
                                 <th scope="col" class="text-start">Equipo</th>
                                 <th scope="col" title="Partidos Jugados">PJ</th>
                                 <th scope="col" title="Partidos Ganados">G</th>
                                 <th scope="col" title="Partidos Empatados">E</th>
                                 <th scope="col" title="Partidos Perdidos">P</th>
-                                <th scope="col" title="Goles a Favor">GF</th>
-                                <th scope="col" title="Goles en Contra">GC</th>
-                                <th scope="col" title="Diferencia de Gol">DG</th>
-                                <th scope="col" title="Puntos" class="fw-bold bg-primary text-white">PTS</th>
+                                <th scope="col" class="d-none d-md-table-cell" title="Goles a Favor">GF</th>
+                                <th scope="col" class="d-none d-md-table-cell" title="Goles en Contra">GC</th>
+                                <th scope="col" class="d-none d-md-table-cell" title="Diferencia de Gol">DG</th>
+                                <th scope="col" title="Puntos" class="fw-bold bg-primary text-white standings-pts">PTS</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -107,21 +107,26 @@
                             {
                                 foreach (var row in div.Data)
                                 {
+                                    var fullName = row.Team.Name;
+                                    var shortName = GetMobileTeamName(row.Team);
                                     <tr>
-                                        <td class="fw-bold">@row.Position</td>
-                                        <td class="text-start">
-                                            <a href="@Url.Content($"~/equipo/{row.Team.Slug}")" class="text-decoration-none fw-bold text-dark">
-                                                @row.Team.Name
+                                        <td class="fw-bold standings-pos">@row.Position</td>
+                                        <td class="text-start standings-team">
+                                            <a href="@Url.Content($"~/equipo/{row.Team.Slug}")"
+                                               class="text-decoration-none fw-bold text-dark standings-team-link"
+                                               title="@fullName">
+                                                <span class="d-none d-md-inline">@fullName</span>
+                                                <span class="d-md-none">@shortName</span>
                                             </a>
                                         </td>
                                         <td>@row.Played</td>
                                         <td>@row.Won</td>
                                         <td>@row.Drawn</td>
                                         <td>@row.Lost</td>
-                                        <td>@row.GoalsFor</td>
-                                        <td>@row.GoalsAgainst</td>
-                                        <td>@row.GoalDifference</td>
-                                        <td class="fw-bold fs-5 text-primary">@row.Points</td>
+                                        <td class="d-none d-md-table-cell">@row.GoalsFor</td>
+                                        <td class="d-none d-md-table-cell">@row.GoalsAgainst</td>
+                                        <td class="d-none d-md-table-cell">@row.GoalDifference</td>
+                                        <td class="fw-bold text-primary standings-pts">@row.Points</td>
                                     </tr>
                                 }
                             }
@@ -150,4 +155,32 @@ else
     <div class="card shadow-sm border-0">
         <div class="card-body p-5 text-center text-muted">Aún no hay datos de posiciones registrados.</div>
     </div>
+}
+
+@functions {
+    private static readonly HashSet<string> SkipWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "de", "del", "la", "las", "los", "el", "y", "a", "en", "por"
+    };
+
+    private static string GetMobileTeamName(PublicWeb.Models.Public.TeamViewModel team)
+    {
+        if (!string.IsNullOrWhiteSpace(team.ShortName))
+            return team.ShortName.Trim();
+
+        var name = team.Name?.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(name))
+            return name;
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length <= 1)
+            return name;
+
+        var meaningful = parts.Where(p => !SkipWords.Contains(p)).ToArray();
+        if (meaningful.Length == 0)
+            return parts[^1];
+
+        // Prefer the distinctive last word: "Jueves de Sometidos" → "Sometidos"
+        return meaningful[^1];
+    }
 }
