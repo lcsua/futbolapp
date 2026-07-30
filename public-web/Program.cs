@@ -15,6 +15,12 @@ builder.Services.AddScoped<PublicWeb.Services.Public.MatchPublicService>();
 
 var app = builder.Build();
 
+var pathBase = app.Configuration["PublicWeb:PathBase"];
+if (!string.IsNullOrWhiteSpace(pathBase))
+{
+    app.UsePathBase(pathBase);
+}
+
 /// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

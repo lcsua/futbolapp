@@ -74,11 +74,53 @@ jobs:
           Environment=ASPNETCORE_ENVIRONMENT=Production
           Environment=ASPNETCORE_URLS=http://127.0.0.1:5002
           Environment=BackendApi__BaseUrl=http://127.0.0.1:5143/api/public/
+          Environment=PublicWeb__PathBase=/public-web
 
           [Install]
           WantedBy=multi-user.target
           EOF
+            nginx_file="$(mktemp)"
+            cat > "$nginx_file" <<'EOF'
+          server {
+              listen 80;
+              server_name 194.163.129.125;
+
+              location = / {
+                  return 200 "ROOT OK";
+              }
+
+              location = /public-web {
+                  return 301 /public-web/;
+              }
+
+              location /public-web/ {
+                  proxy_pass http://127.0.0.1:5002;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+
+              location /backoffice/ {
+                  alias /home/lucas/apps/futbolnet/backoffice/;
+                  try_files $uri $uri/ /backoffice/index.html;
+              }
+
+              location /api/ {
+                  proxy_pass http://127.0.0.1:5143/api/;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+          }
+          EOF
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' mv "$service_file" /etc/systemd/system/futbolnet-web.service
+            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' mv "$nginx_file" /etc/nginx/conf.d/futbolnet-public-web.conf
+            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' nginx -t
+            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl reload nginx
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl daemon-reload
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl enable futbolnet-web
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl restart futbolnet-web
@@ -86,8 +128,8 @@ jobs:
           else
             pkill -x PublicWeb || true
             cd /home/lucas/apps/futbolnet/web
-            setsid env ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:5002 BackendApi__BaseUrl=http://127.0.0.1:5143/api/public/ ./PublicWeb > public-web.log 2>&1 < /dev/null &
+            setsid env ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:5002 BackendApi__BaseUrl=http://127.0.0.1:5143/api/public/ PublicWeb__PathBase=/public-web ./PublicWeb > public-web.log 2>&1 < /dev/null &
           fi
 
           sleep 5
-          curl -fsS http://127.0.0.1:5002/ >/dev/null
+          curl -fsS http://127.0.0.1:5002/public-web/ >/dev/null
