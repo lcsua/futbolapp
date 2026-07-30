@@ -51,9 +51,9 @@ jobs:
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          pkill -f '/home/lucas/apps/futbolnet/web/PublicWeb' || true
+          pkill -x PublicWeb || true
           chmod +x /home/lucas/apps/futbolnet/web/PublicWeb
           cd /home/lucas/apps/futbolnet/web
-          nohup env ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:5002 BackendApi__BaseUrl=http://127.0.0.1:5143/api/public/ ./PublicWeb > public-web.log 2>&1 &
+          setsid env ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:5002 BackendApi__BaseUrl=http://127.0.0.1:5143/api/public/ ./PublicWeb > public-web.log 2>&1 < /dev/null &
           sleep 5
           curl -fsS http://127.0.0.1:5002/ >/dev/null
