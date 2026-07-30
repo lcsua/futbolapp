@@ -14,7 +14,6 @@ public class LeagueController : Controller
     }
 
     [HttpGet("")]
-    [HttpGet("/liga")]
     public async Task<IActionResult> Index()
     {
         var leagues = await _leagueService.GetPublicLeaguesAsync();

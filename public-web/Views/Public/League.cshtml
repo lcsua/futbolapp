@@ -4,7 +4,7 @@
 }
 
 <div class="mb-3">
-    <a href="/liga" class="text-decoration-none small text-muted">← Todas las ligas</a>
+    <a href="@Url.Content("~/liga")" class="text-decoration-none small text-muted">← Todas las ligas</a>
 </div>
 
 <div class="card mb-4 shadow-sm border-0 bg-white">
@@ -16,16 +16,16 @@
 
 <ul class="nav nav-pills mb-4 nav-fill bg-white p-2 border rounded shadow-sm">
     <li class="nav-item">
-        <a class="nav-link active fw-bold" href="/liga/@Model.Slug">Resumen</a>
+        <a class="nav-link active fw-bold" href="@Url.Content($"~/liga/{Model.Slug}")">Resumen</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link text-dark" href="/liga/@Model.Slug/tabla">Tabla de posiciones</a>
+        <a class="nav-link text-dark" href="@Url.Content($"~/liga/{Model.Slug}/tabla")">Tabla de posiciones</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link text-dark" href="/liga/@Model.Slug/resultados">Resultados</a>
+        <a class="nav-link text-dark" href="@Url.Content($"~/liga/{Model.Slug}/resultados")">Resultados</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link text-dark" href="/liga/@Model.Slug/partidos">Próximos partidos</a>
+        <a class="nav-link text-dark" href="@Url.Content($"~/liga/{Model.Slug}/partidos")">Próximos partidos</a>
     </li>
 </ul>
 
@@ -51,4 +51,3 @@
         }
     </div>
 </div>
-
