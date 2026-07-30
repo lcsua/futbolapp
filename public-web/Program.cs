@@ -5,11 +5,16 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("BackendApi", client =>
 {
-    var baseUrl = builder.Configuration["BackendApi:BaseUrl"] ?? "http://127.0.0.1:5143/api/public/";
+    // Prefer nginx local proxy in production so we don't depend on the API bind port.
+    var baseUrl = builder.Configuration["BackendApi:BaseUrl"] ?? "http://127.0.0.1/api/public/";
     if (!baseUrl.EndsWith('/'))
         baseUrl += "/";
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromSeconds(15);
+
+    var hostHeader = builder.Configuration["BackendApi:HostHeader"];
+    if (!string.IsNullOrWhiteSpace(hostHeader))
+        client.DefaultRequestHeaders.Host = hostHeader;
 });
 
 builder.Services.AddScoped<PublicWeb.Services.Public.LeaguePublicService>();
