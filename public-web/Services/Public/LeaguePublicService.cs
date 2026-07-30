@@ -26,10 +26,14 @@ public class LeaguePublicService
         try
         {
             var client = _httpClientFactory.CreateClient("BackendApi");
-            leagues = await client.GetFromJsonAsync<List<LeagueViewModel>>("liga");
+            var requestUri = new Uri(client.BaseAddress!, "liga");
+            _logger.LogInformation("Fetching public leagues from {Url}", requestUri);
+
+            leagues = await client.GetFromJsonAsync<List<LeagueViewModel>>(requestUri);
             if (leagues != null)
             {
-                _cache.Set(cacheKey, leagues, TimeSpan.FromMinutes(5));
+                if (leagues.Count > 0)
+                    _cache.Set(cacheKey, leagues, TimeSpan.FromMinutes(5));
                 return leagues;
             }
         }
@@ -49,7 +53,10 @@ public class LeaguePublicService
         try
         {
             var client = _httpClientFactory.CreateClient("BackendApi");
-            model = await client.GetFromJsonAsync<LeagueViewModel>($"liga/{slug}");
+            var requestUri = new Uri(client.BaseAddress!, $"liga/{slug}");
+            _logger.LogInformation("Fetching league {Slug} from {Url}", slug, requestUri);
+
+            model = await client.GetFromJsonAsync<LeagueViewModel>(requestUri);
             if (model != null)
             {
                 _cache.Set(cacheKey, model, TimeSpan.FromMinutes(10));
