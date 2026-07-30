@@ -123,6 +123,7 @@ jobs:
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl reload nginx
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl daemon-reload
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl enable futbolnet-web
+            pkill -x PublicWeb || true
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl restart futbolnet-web
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl is-active --quiet futbolnet-web
           else
