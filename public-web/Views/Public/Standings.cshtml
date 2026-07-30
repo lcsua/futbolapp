@@ -177,10 +177,15 @@ else
             return name;
 
         var meaningful = parts.Where(p => !SkipWords.Contains(p)).ToArray();
-        if (meaningful.Length == 0)
-            return parts[^1];
+        var lastWord = meaningful.Length > 0 ? meaningful[^1] : parts[^1];
+        var firstWord = parts[0];
 
-        // Prefer the distinctive last word: "Jueves de Sometidos" → "Sometidos"
-        return meaningful[^1];
+        // Same token → nothing to abbreviate
+        if (string.Equals(firstWord, lastWord, StringComparison.OrdinalIgnoreCase))
+            return lastWord;
+
+        var initial = char.ToUpperInvariant(firstWord[0]);
+        // "Jueves de Sometidos" → "J.Sometidos", "Barrio Oeste" → "B.Oeste"
+        return $"{initial}.{lastWord}";
     }
 }
