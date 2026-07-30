@@ -79,16 +79,11 @@ jobs:
           [Install]
           WantedBy=multi-user.target
           EOF
-            nginx_file="$(mktemp)"
-            cat > "$nginx_file" <<'EOF'
-          server {
-              listen 80;
-              server_name 194.163.129.125;
+            nginx_patch="$(mktemp)"
+            cat > "$nginx_patch" <<'PY'
+          from pathlib import Path
 
-              location = / {
-                  return 200 "ROOT OK";
-              }
-
+          block = """    # BEGIN FUTBOLNET PUBLIC WEB
               location = /public-web {
                   return 301 /public-web/;
               }
@@ -101,24 +96,47 @@ jobs:
                   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                   proxy_set_header X-Forwarded-Proto $scheme;
               }
+              # END FUTBOLNET PUBLIC WEB
+          """
 
-              location /backoffice/ {
-                  alias /home/lucas/apps/futbolnet/backoffice/;
-                  try_files $uri $uri/ /backoffice/index.html;
-              }
+          candidates = [
+              *Path("/etc/nginx/sites-enabled").glob("*"),
+              *Path("/etc/nginx/conf.d").glob("*.conf"),
+          ]
+          target = None
+          for path in candidates:
+              if not path.is_file() or path.name == "futbolnet-public-web.conf":
+                  continue
+              text = path.read_text()
+              if "/backoffice/" in text or "ROOT OK" in text:
+                  target = path
+                  break
 
-              location /api/ {
-                  proxy_pass http://127.0.0.1:5143/api/;
-                  proxy_http_version 1.1;
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto $scheme;
-              }
-          }
-          EOF
+          if target is None:
+              raise SystemExit("Could not find existing futbolnet nginx server config")
+
+          text = target.read_text()
+          start = text.find("# BEGIN FUTBOLNET PUBLIC WEB")
+          end = text.find("# END FUTBOLNET PUBLIC WEB")
+          if start != -1 and end != -1:
+              end = text.find("\n", end)
+              if end == -1:
+                  end = len(text)
+              text = text[:start] + block + text[end + 1:]
+          else:
+              marker = text.find("    location /backoffice/")
+              if marker == -1:
+                  marker = text.rfind("}")
+              if marker == -1:
+                  raise SystemExit(f"Could not find insertion point in {target}")
+              text = text[:marker] + block + "\n" + text[marker:]
+
+          target.write_text(text)
+          PY
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' mv "$service_file" /etc/systemd/system/futbolnet-web.service
-            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' mv "$nginx_file" /etc/nginx/conf.d/futbolnet-public-web.conf
+            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' rm -f /etc/nginx/conf.d/futbolnet-public-web.conf
+            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' python3 "$nginx_patch"
+            rm -f "$nginx_patch"
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' nginx -t
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl reload nginx
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl daemon-reload
