@@ -9,7 +9,8 @@
     <div class="col-lg-6 mx-auto">
         <p class="lead mb-4 text-secondary">Resultados, tabla y fixture automático al alcance de todos. Únete a miles de ligas que ya modernizaron sus torneos con LigApp.</p>
         <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-            <a href="/login" class="btn btn-primary btn-lg px-4 gap-3 fw-bold">Crear mi liga gratis</a>
+            <a href="@Url.Content("~/login")" class="btn btn-primary btn-lg px-4 gap-3 fw-bold">Crear mi liga gratis</a>
+            <a href="@Url.Content("~/liga")" class="btn btn-outline-primary btn-lg px-4 fw-bold">Explorar ligas</a>
             <a href="#como-funciona" class="btn btn-outline-secondary btn-lg px-4">Ver cómo funciona</a>
         </div>
     </div>
@@ -96,13 +97,13 @@
 <div class="text-center mb-5 pt-4 border-top">
     <h2>Planes a tu medida</h2>
     <p class="text-muted">Desde ligas de barrio hasta confederaciones.</p>
-    <a href="/precios" class="btn btn-outline-primary mt-2">Ver planes detallados</a>
+    <a href="@Url.Content("~/precios")" class="btn btn-outline-primary mt-2">Ver planes detallados</a>
 </div>
 
 <!-- CTA FINAL -->
 <div class="bg-primary text-white text-center rounded-3 p-5 shadow">
     <h2>¿Listo para organizar como un profesional?</h2>
     <p class="lead mb-4">La pasión del fútbol merece la mejor gestión.</p>
-    <a class="btn btn-light btn-lg fw-bold text-primary px-5" href="/login">Comenzar ahora</a>
+    <a class="btn btn-light btn-lg fw-bold text-primary px-5" href="@Url.Content("~/login")">Comenzar ahora</a>
 </div>
 
