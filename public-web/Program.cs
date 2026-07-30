@@ -5,7 +5,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("BackendApi", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7272/api/public/");
+    var baseUrl = builder.Configuration["BackendApi:BaseUrl"] ?? "https://localhost:7272/api/public/";
+    client.BaseAddress = new Uri(baseUrl);
 });
 
 builder.Services.AddScoped<PublicWeb.Services.Public.LeaguePublicService>();
