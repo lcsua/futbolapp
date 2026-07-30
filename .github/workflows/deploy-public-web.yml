@@ -2,6 +2,12 @@ name: Deploy Public Web
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'public-web/**'
+      - '.github/workflows/deploy-public-web.yml'
 
 jobs:
   deploy:
