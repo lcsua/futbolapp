@@ -1,0 +1,41 @@
+@model List<PublicWeb.Models.Public.LeagueViewModel>
+@{
+    ViewData["Title"] = "Ligas";
+    ViewData["Description"] = "Explorá todas las ligas públicas disponibles en LigApp.";
+}
+
+<div class="mb-4">
+    <h1 class="fw-bold mb-1">Ligas</h1>
+    <p class="text-muted mb-0">Elegí una liga para ver tabla, resultados y próximos partidos.</p>
+</div>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="p-5 text-center text-muted bg-white border rounded shadow-sm">
+        No hay ligas públicas disponibles por el momento.
+    </div>
+}
+else
+{
+    <div class="list-group shadow-sm">
+        @foreach (var league in Model)
+        {
+            <a href="/liga/@league.Slug" class="list-group-item list-group-item-action p-3">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <h2 class="h5 fw-bold mb-1">@league.Name</h2>
+                        @if (!string.IsNullOrWhiteSpace(league.Country))
+                        {
+                            <p class="text-muted mb-1 small">@league.Country</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(league.Description))
+                        {
+                            <p class="mb-0 text-secondary">@(league.Description.Length > 140 ? league.Description[..140] + "…" : league.Description)</p>
+                        }
+                    </div>
+                    <span class="text-primary fw-semibold text-nowrap align-self-center">Ver liga →</span>
+                </div>
+            </a>
+        }
+    </div>
+}

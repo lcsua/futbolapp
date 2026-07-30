@@ -13,8 +13,16 @@ public class LeagueController : Controller
         _leagueService = leagueService;
     }
 
+    [HttpGet("")]
+    [HttpGet("/liga")]
+    public async Task<IActionResult> Index()
+    {
+        var leagues = await _leagueService.GetPublicLeaguesAsync();
+        return View("~/Views/Public/LeaguesIndex.cshtml", leagues);
+    }
+
     [HttpGet("{slug}")]
-    public async Task<IActionResult> Index(string slug)
+    public async Task<IActionResult> Details(string slug)
     {
         var model = await _leagueService.GetLeagueBySlugAsync(slug);
         if (model == null) return NotFound();

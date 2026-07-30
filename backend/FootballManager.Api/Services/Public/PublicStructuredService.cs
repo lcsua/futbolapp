@@ -54,6 +54,23 @@ public class PublicStructuredService
         return teams.FirstOrDefault(t => SlugHelper.NormalizeSlug(t.Name) == targetSlug);
     }
 
+    public async Task<List<LeaguePublicDto>> GetPublicLeaguesAsync(CancellationToken cancellationToken = default)
+    {
+        return await _db.Leagues
+            .AsNoTracking()
+            .Where(l => l.IsPublic && l.IsActive)
+            .OrderBy(l => l.Name)
+            .Select(l => new LeaguePublicDto
+            {
+                Id = l.Id,
+                Name = l.Name,
+                Slug = l.Slug,
+                Country = l.Country ?? string.Empty,
+                Description = l.Description ?? string.Empty
+            })
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<LeaguePublicDto?> GetLeagueSummaryAsync(string leagueSlug, CancellationToken cancellationToken = default)
     {
         var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);

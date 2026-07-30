@@ -17,6 +17,30 @@ public class LeaguePublicService
         _logger = logger;
     }
 
+    public async Task<List<LeagueViewModel>> GetPublicLeaguesAsync()
+    {
+        const string cacheKey = "ligas_publicas";
+        if (_cache.TryGetValue(cacheKey, out List<LeagueViewModel>? leagues) && leagues != null)
+            return leagues;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            leagues = await client.GetFromJsonAsync<List<LeagueViewModel>>("liga");
+            if (leagues != null)
+            {
+                _cache.Set(cacheKey, leagues, TimeSpan.FromMinutes(5));
+                return leagues;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calling backend API for public leagues list");
+        }
+
+        return new();
+    }
+
     public async Task<LeagueViewModel?> GetLeagueBySlugAsync(string slug)
     {
         string cacheKey = $"liga_{slug}";

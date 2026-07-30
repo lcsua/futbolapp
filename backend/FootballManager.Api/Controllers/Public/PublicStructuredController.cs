@@ -24,6 +24,16 @@ public class PublicStructuredController : ControllerBase
     }
 
     /// <summary>
+    /// List all public and active leagues.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetPublicLeagues()
+    {
+        var result = await _structuredService.GetPublicLeaguesAsync(HttpContext.RequestAborted);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Team summary: active seasons, next matches, last results, basic stats.
     /// </summary>
     [HttpGet("{leagueSlug}/torneo/{season}/equipo/{teamSlug}")]
