@@ -22,7 +22,6 @@ namespace FootballManager.Infrastructure
                     .SetBasePath(basePath)
                     .AddJsonFile("appsettings.json", optional: true)
                     .AddJsonFile("appsettings.Production.json", optional: true)
-                    .AddEnvironmentVariables()
                     .Build();
 
                 connectionString = configuration.GetConnectionString("DefaultConnection");
