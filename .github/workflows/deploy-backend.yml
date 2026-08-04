@@ -100,6 +100,8 @@ jobs:
 
           CONN="$(resolve_connection)"
           echo "Applying EF migrations..."
+          export ConnectionStrings__DefaultConnection="$CONN"
+          export DATABASE_CONNECTION="$CONN"
           ./efbundle --connection "$CONN"
           echo "Migrations applied."
 
