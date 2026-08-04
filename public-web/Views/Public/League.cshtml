@@ -29,25 +29,10 @@
     </li>
 </ul>
 
-<!-- Ad: Below League Header (Summary Page) -->
-@await Html.PartialAsync("_AdSenseBlock", "league_summary_top")
-
-<div class="row">
-    <div class="col-md-8">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white fw-bold">Acerca de la liga</div>
-            <div class="card-body">
-                <p>@Model.Description</p>
-                <div class="alert alert-info">¡Bienvenido a la página oficial de @Model.Name! Aquí podrás seguir todo el torneo.</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        @if (ViewData["HideAds"] == null || !(bool)ViewData["HideAds"])
-        {
-            <div class="card text-center mb-4 border-0 bg-light p-4">
-                <small class="text-muted">Espacio publicitario (300x250)</small>
-            </div>
-        }
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white fw-bold">Acerca de la liga</div>
+    <div class="card-body">
+        <p>@Model.Description</p>
+        <div class="alert alert-info">¡Bienvenido a la página oficial de @Model.Name! Aquí podrás seguir todo el torneo.</div>
     </div>
 </div>

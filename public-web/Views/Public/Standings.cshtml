@@ -75,12 +75,8 @@
     </form>
 }
 
-<!-- Ad: Above the standings area -->
-@await Html.PartialAsync("_AdSenseBlock", "standings_top")
-
 @if (Model != null && Model.Divisions.Any())
 {
-    int loopIndex = 0;
     foreach (var div in Model.Divisions)
     {
         <h4 class="fw-bold mt-4 mb-3 text-secondary border-bottom pb-2">@div.DivisionName</h4>
@@ -141,13 +137,6 @@
                 </div>
             </div>
         </div>
-        
-        loopIndex++;
-        if (loopIndex == 1 && Model.Divisions.Count > 1)
-        {
-            <!-- Ad: After the first division table -->
-            @await Html.PartialAsync("_AdSenseBlock", "standings_between_divisions")
-        }
     }
 }
 else

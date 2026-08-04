@@ -75,9 +75,6 @@
     </form>
 }
 
-<!-- Ad: Above the fixture matchdays navigation -->
-@await Html.PartialAsync("_AdSenseBlock", "fixture_top")
-
 @if (Model != null && Model.Divisions.Any())
 {
     foreach (var div in Model.Divisions)
@@ -124,9 +121,6 @@
                             </div>
                         }
                         </div>
-                        
-                        <!-- Ad: Below Matchday Matches -->
-                        @await Html.PartialAsync("_AdSenseBlock", "fixture_below_matches")
                     }
                     else
                     {
