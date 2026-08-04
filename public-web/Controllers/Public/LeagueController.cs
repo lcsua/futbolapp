@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace PublicWeb.Controllers.Public;
 
-[Route("liga")]
+[Route("ligas")]
 public class LeagueController : Controller
 {
     private readonly LeaguePublicService _leagueService;

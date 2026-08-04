@@ -118,7 +118,7 @@ export function LeagueForm({
 
   const slugError = slugAvailable === false
   const publicUrl = slug.trim()
-    ? `${publicBaseUrl.replace(/\/$/, '')}/liga/${slug.trim()}`
+    ? `${publicBaseUrl.replace(/\/$/, '')}/ligas/${slug.trim()}`
     : ''
 
   return (

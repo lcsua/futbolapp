@@ -2,7 +2,7 @@ import { apiClient } from './apiClient'
 import type { League, LeagueFormData } from './types'
 
 function generateSlug(input: string): string {
-  return input
+  const base = input
     .trim()
     .toLowerCase()
     .normalize('NFD')
@@ -11,6 +11,13 @@ function generateSlug(input: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
+
+  const cleaned = base
+    .split('-')
+    .filter((token) => token && token !== 'liga' && token !== 'ligas')
+    .join('-')
+
+  return cleaned || base
 }
 
 export const leaguesService = {

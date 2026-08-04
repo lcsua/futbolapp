@@ -36,7 +36,7 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateLeague
             if (league == null)
                 throw new KeyNotFoundException($"League {request.LeagueId} not found.");
 
-            var slug = SlugGenerator.Generate(!string.IsNullOrWhiteSpace(request.Slug) ? request.Slug : request.Name);
+            var slug = SlugGenerator.GenerateLeagueSlug(!string.IsNullOrWhiteSpace(request.Slug) ? request.Slug : request.Name);
             if (string.IsNullOrWhiteSpace(slug))
                 throw new ArgumentException("Could not generate a valid slug from the league name.");
 

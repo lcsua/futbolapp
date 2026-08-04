@@ -36,7 +36,7 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
             if (await _leagueRepository.ExistsByNameAsync(request.Name, cancellationToken))
                 throw new LeagueAlreadyExistsException(request.Name);
 
-            var slug = SlugGenerator.Generate(!string.IsNullOrWhiteSpace(request.Slug) ? request.Slug : request.Name);
+            var slug = SlugGenerator.GenerateLeagueSlug(!string.IsNullOrWhiteSpace(request.Slug) ? request.Slug : request.Name);
             if (string.IsNullOrWhiteSpace(slug))
                 throw new ArgumentException("Could not generate a valid slug from the league name.");
 

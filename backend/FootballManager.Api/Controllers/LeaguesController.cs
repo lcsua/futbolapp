@@ -206,7 +206,12 @@ namespace FootballManager.Api.Controllers
         {
             if (string.IsNullOrWhiteSpace(slug))
                 return BadRequest(new { available = false });
-            var existing = await _leagueRepository.GetBySlugAsync(slug, cancellationToken);
+
+            var normalizedSlug = FootballManager.Application.Helpers.SlugGenerator.GenerateLeagueSlug(slug);
+            if (string.IsNullOrWhiteSpace(normalizedSlug))
+                return BadRequest(new { available = false });
+
+            var existing = await _leagueRepository.GetBySlugAsync(normalizedSlug, cancellationToken);
             var available = existing == null || (excludeLeagueId.HasValue && existing.Id == excludeLeagueId.Value);
             return Ok(new { available });
         }
