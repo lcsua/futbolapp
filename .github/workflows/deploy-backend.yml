@@ -28,6 +28,23 @@ jobs:
       working-directory: ./backend/FootballManager.Api
       run: dotnet publish --configuration Release --no-build --output ./publish
 
+    - name: Install EF tool
+      run: |
+        dotnet tool install --global dotnet-ef --version 8.0.2
+        echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Create EF migration bundle
+      working-directory: ./backend
+      run: |
+        dotnet ef migrations bundle \
+          --project FootballManager.Infrastructure/FootballManager.Infrastructure.csproj \
+          --startup-project FootballManager.Api/FootballManager.Api.csproj \
+          --configuration Release \
+          --self-contained \
+          --target-runtime linux-x64 \
+          --output ./FootballManager.Api/publish/efbundle \
+          --force
+
     - name: Copy files via SSH
       uses: appleboy/scp-action@v0.1.7
       with:
@@ -38,11 +55,54 @@ jobs:
         target: "/home/lucas/apps/futbolnet/api"
         strip_components: 3
 
-    - name: Restart Service
+    - name: Apply migrations and restart service
       uses: appleboy/ssh-action@v1.0.3
+      env:
+        DATABASE_CONNECTION: ${{ secrets.DATABASE_CONNECTION }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
+        envs: DATABASE_CONNECTION
         script: |
+          set -euo pipefail
+          cd /home/lucas/apps/futbolnet/api
+          chmod +x ./efbundle
+
+          resolve_connection() {
+            if [ -n "${DATABASE_CONNECTION:-}" ]; then
+              printf '%s' "$DATABASE_CONNECTION"
+              return
+            fi
+
+            unit_conn="$(systemctl show futbolnet-api -p Environment --value 2>/dev/null | tr ' ' '\n' | sed -n 's/^ConnectionStrings__DefaultConnection=//p' | tail -n1 || true)"
+            if [ -n "$unit_conn" ]; then
+              printf '%s' "$unit_conn"
+              return
+            fi
+
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          for name in ("appsettings.Production.json", "appsettings.json"):
+              path = Path(name)
+              if not path.exists():
+                  continue
+              data = json.loads(path.read_text())
+              conn = (data.get("ConnectionStrings") or {}).get("DefaultConnection")
+              if conn:
+                  print(conn)
+                  raise SystemExit(0)
+          raise SystemExit("No database connection string found. Set GitHub secret DATABASE_CONNECTION or appsettings.Production.json on the server.")
+          PY
+          }
+
+          CONN="$(resolve_connection)"
+          echo "Applying EF migrations..."
+          ./efbundle --connection "$CONN"
+          echo "Migrations applied."
+
           sudo systemctl restart futbolnet-api
+          sudo systemctl is-active --quiet futbolnet-api
+          echo "futbolnet-api restarted."
