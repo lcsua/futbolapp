@@ -24,6 +24,7 @@ import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import SaveIcon from '@mui/icons-material/Save'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DownloadIcon from '@mui/icons-material/Download'
 import PrintIcon from '@mui/icons-material/Print'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -36,6 +37,7 @@ import { competitionRulesService } from '../api/competitionRules'
 import { leaguesService } from '../api/leagues'
 import { useActiveLeague, useLeagueId } from '../contexts/LeagueContext'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
+import { CopyFixturesModal } from '../components/CopyFixturesModal'
 import { useTranslation } from 'react-i18next'
 
 function formatTime(timeStr: string | null | undefined): string {
@@ -98,6 +100,7 @@ export function FixturesPage() {
   const [divisionId, setDivisionId] = useState<string>('')
   const [teamFilter, setTeamFilter] = useState<string>('')
   const [importModalOpen, setImportModalOpen] = useState(false)
+  const [copyModalOpen, setCopyModalOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
@@ -526,6 +529,14 @@ export function FixturesPage() {
             >
               {t('fixtures.import')}
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<ContentCopyIcon />}
+              onClick={() => setCopyModalOpen(true)}
+              disabled={seasonClosed || seasons.length < 2}
+            >
+              {t('fixtures.copyFromSeason')}
+            </Button>
             {hasFixtures && (
               <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownload}>
                 {t('fixtures.download')}
@@ -614,6 +625,25 @@ export function FixturesPage() {
           divisionId={divisionId}
           onSuccess={() => {
             void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
+          }}
+        />
+      )}
+
+      {leagueId && seasonId && (
+        <CopyFixturesModal
+          open={copyModalOpen}
+          onClose={() => setCopyModalOpen(false)}
+          leagueId={leagueId}
+          targetSeasonId={seasonId}
+          seasons={seasons}
+          initialDivisionId={divisionId}
+          divisions={divisions}
+          onSuccess={(copiedCount) => {
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
+            setSnackbar({
+              message: t('fixtures.copySuccess', { count: copiedCount }),
+              severity: 'success',
+            })
           }}
         />
       )}

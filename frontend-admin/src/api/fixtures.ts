@@ -57,6 +57,17 @@ export interface ImportFixturesResponse {
   errors: string[]
 }
 
+export interface CopyFixturesFromSeasonBody {
+  sourceSeasonId: string
+  divisionId?: string | null
+  invertHomes: boolean
+}
+
+export interface CopyFixturesFromSeasonResponse {
+  copiedCount: number
+  errors: string[]
+}
+
 export interface FixtureImportBody {
   seasonId: string
   divisionId: string
@@ -82,4 +93,16 @@ export const fixturesService = {
 
   importFixtures: (leagueId: string, body: FixtureImportBody, signal?: AbortSignal) =>
     apiClient.post<ImportFixturesResponse>(`/api/leagues/${leagueId}/fixtures/import`, body, signal),
+
+  copyFromSeason: (
+    leagueId: string,
+    targetSeasonId: string,
+    body: CopyFixturesFromSeasonBody,
+    signal?: AbortSignal
+  ) =>
+    apiClient.post<CopyFixturesFromSeasonResponse>(
+      `/api/leagues/${leagueId}/seasons/${targetSeasonId}/fixtures/copy`,
+      body,
+      signal
+    ),
 }

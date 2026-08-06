@@ -23,7 +23,8 @@
     "common": {
       "save": "Guardar",
       "saveError": "Error al guardar",
-      "logout": "Cerrar sesión"
+      "logout": "Cerrar sesión",
+      "cancel": "Cancelar"
     },
     "matchRules": {
       "title": "Reglas de partido",
@@ -104,6 +105,23 @@
       "generate": "Generar Fixture",
       "regenerate": "Regenerar Fixture",
       "import": "Importar Fixture",
+      "copyFromSeason": "Copiar de otra temporada",
+      "copySuccess": "Se copiaron {{count}} enfrentamientos.",
+      "copyModal": {
+        "title": "Copiar fixture desde otra temporada",
+        "description": "Solo se copian los enfrentamientos (rondas y equipos). No se copian fechas, horarios ni canchas. Los equipos deben estar ya asignados en la temporada destino.",
+        "sourceSeason": "Temporada de origen",
+        "noSource": "No hay otra temporada en esta liga para copiar.",
+        "scope": "Alcance",
+        "scopeAll": "Toda la temporada (todas las divisiones)",
+        "scopeDivision": "Solo una división",
+        "invertHomes": "Invertir localía (A vs B pasa a ser B vs A)",
+        "invertHomesHint": "Útil para alternar locales y visitantes respecto a la temporada anterior.",
+        "replaceWarning": "Se reemplazan los fixtures existentes de las divisiones afectadas en la temporada destino.",
+        "submit": "Copiar enfrentamientos",
+        "cancel": "Cancelar",
+        "failed": "No se pudo copiar el fixture"
+      },
       "download": "Descargar Fixture",
       "print": "Imprimir Fixture",
       "downloadFailed": "No se pudo descargar el fixture",

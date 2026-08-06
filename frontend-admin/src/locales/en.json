@@ -23,7 +23,8 @@
     "common": {
       "save": "Save",
       "saveError": "Failed to save",
-      "logout": "Log out"
+      "logout": "Log out",
+      "cancel": "Cancel"
     },
     "matchRules": {
       "title": "Match rules",
@@ -104,6 +105,23 @@
       "generate": "Generate Fixture",
       "regenerate": "Regenerate Fixture",
       "import": "Import Fixture",
+      "copyFromSeason": "Copy from another season",
+      "copySuccess": "Copied {{count}} matchups.",
+      "copyModal": {
+        "title": "Copy fixtures from another season",
+        "description": "Only matchups are copied (rounds and teams). Dates, times and fields are not copied. Teams must already be assigned in the target season.",
+        "sourceSeason": "Source season",
+        "noSource": "There is no other season in this league to copy from.",
+        "scope": "Scope",
+        "scopeAll": "Entire season (all divisions)",
+        "scopeDivision": "One division only",
+        "invertHomes": "Invert home/away (A vs B becomes B vs A)",
+        "invertHomesHint": "Useful to alternate home and away relative to the previous season.",
+        "replaceWarning": "Existing fixtures for the affected divisions in the target season will be replaced.",
+        "submit": "Copy matchups",
+        "cancel": "Cancel",
+        "failed": "Could not copy fixtures"
+      },
       "download": "Download Fixture",
       "print": "Print Fixture",
       "downloadFailed": "Could not download fixtures",
