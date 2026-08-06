@@ -26,6 +26,12 @@ namespace FootballManager.Api.Middleware
             {
                 await _next(context);
             }
+            catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+            {
+                // Client navigated away / aborted the request; not an application error.
+                if (!context.Response.HasStarted)
+                    context.Response.StatusCode = 499;
+            }
             catch (Exception ex)
             {
                 await HandleExceptionAsync(context, ex);
