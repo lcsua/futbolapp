@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   Alert,
   Box,
@@ -35,18 +36,32 @@ export function SeasonForm({
   submitLabel,
   title,
 }: SeasonFormProps) {
-  const values: SeasonFormData = { ...defaultValues, ...initialValues }
+  const merged = { ...defaultValues, ...initialValues }
+  const [name, setName] = useState(merged.name)
+  const [startDate, setStartDate] = useState(merged.startDate)
+  const [endDate, setEndDate] = useState(merged.endDate || '')
+  const [isPublic, setIsPublic] = useState(merged.isPublic === true)
+
+  useEffect(() => {
+    setName(initialValues?.name ?? '')
+    setStartDate(initialValues?.startDate ?? '')
+    setEndDate(initialValues?.endDate ?? '')
+    setIsPublic(initialValues?.isPublic === true)
+  }, [
+    initialValues?.name,
+    initialValues?.startDate,
+    initialValues?.endDate,
+    initialValues?.isPublic,
+  ])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const form = e.currentTarget
-    const data: SeasonFormData = {
-      name: (form.elements.namedItem('name') as HTMLInputElement).value.trim(),
-      startDate: (form.elements.namedItem('startDate') as HTMLInputElement).value.trim(),
-      endDate: (form.elements.namedItem('endDate') as HTMLInputElement).value.trim(),
-      isPublic: (form.elements.namedItem('isPublic') as HTMLInputElement).checked,
-    }
-    void onSubmit(data)
+    void onSubmit({
+      name: name.trim(),
+      startDate: startDate.trim(),
+      endDate: endDate.trim(),
+      isPublic,
+    })
   }
 
   return (
@@ -66,7 +81,8 @@ export function SeasonForm({
         name="name"
         label="Nombre"
         required
-        defaultValue={values.name}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
         disabled={loading}
         sx={{ mb: 2 }}
         autoFocus
@@ -77,7 +93,8 @@ export function SeasonForm({
         label="Fecha de inicio"
         type="date"
         required
-        defaultValue={values.startDate}
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
         disabled={loading}
         InputLabelProps={{ shrink: true }}
         sx={{ mb: 2 }}
@@ -87,7 +104,8 @@ export function SeasonForm({
         name="endDate"
         label="Fecha de fin"
         type="date"
-        defaultValue={values.endDate || ''}
+        value={endDate}
+        onChange={(e) => setEndDate(e.target.value)}
         disabled={loading}
         InputLabelProps={{ shrink: true }}
         sx={{ mb: 2 }}
@@ -96,8 +114,8 @@ export function SeasonForm({
         sx={{ mb: 0.5, alignItems: 'flex-start' }}
         control={
           <Checkbox
-            name="isPublic"
-            defaultChecked={values.isPublic}
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
             disabled={loading}
             sx={{ pt: 0.25 }}
           />

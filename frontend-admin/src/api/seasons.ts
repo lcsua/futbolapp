@@ -37,10 +37,28 @@ export const seasonsService = {
     apiClient.get<Season[]>(`/api/leagues/${leagueId}/seasons`, signal),
 
   create: (leagueId: string, data: SeasonFormData, signal?: AbortSignal) =>
-    apiClient.post<{ id: string }>(`/api/leagues/${leagueId}/seasons`, data, signal),
+    apiClient.post<{ id: string }>(
+      `/api/leagues/${leagueId}/seasons`,
+      {
+        name: data.name,
+        startDate: data.startDate,
+        endDate: data.endDate?.trim() ? data.endDate : null,
+        isPublic: !!data.isPublic,
+      },
+      signal
+    ),
 
   update: (leagueId: string, seasonId: string, data: SeasonFormData, signal?: AbortSignal) =>
-    apiClient.put<void>(`/api/leagues/${leagueId}/seasons/${seasonId}`, data, signal),
+    apiClient.put<void>(
+      `/api/leagues/${leagueId}/seasons/${seasonId}`,
+      {
+        name: data.name,
+        startDate: data.startDate,
+        endDate: data.endDate?.trim() ? data.endDate : null,
+        isPublic: !!data.isPublic,
+      },
+      signal
+    ),
 
   close: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
     apiClient.post<{ pendingResultsCount: number }>(

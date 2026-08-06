@@ -23,7 +23,7 @@ import { seasonsService } from '../api/seasons'
 import { divisionsService } from '../api/divisions'
 import { teamsService } from '../api/teams'
 import { matchesService } from '../api/matches'
-import type { SeasonFormData } from '../api/types'
+import type { Season, SeasonFormData } from '../api/types'
 import { useLeagueId } from '../contexts/LeagueContext'
 
 function countPendingResults(
@@ -77,8 +77,23 @@ export function EditSeasonPage() {
   const updateMutation = useMutation({
     mutationFn: (data: SeasonFormData) =>
       seasonsService.update(leagueId!, seasonId!, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons'] })
+    onSuccess: async (_void, data) => {
+      await queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons'] })
+      queryClient.setQueryData<Season[]>(
+        ['leagues', leagueId, 'seasons'],
+        (prev) =>
+          prev?.map((s) =>
+            s.id === seasonId
+              ? {
+                  ...s,
+                  name: data.name,
+                  startDate: data.startDate,
+                  endDate: data.endDate?.trim() ? data.endDate : null,
+                  isPublic: !!data.isPublic,
+                }
+              : s
+          ) ?? prev
+      )
       navigate(seasonsBase, { replace: true })
     },
     onError: (err) => {
