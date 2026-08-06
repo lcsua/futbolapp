@@ -7,10 +7,10 @@ export interface FixtureDraftMatch {
   homeTeamName: string
   awayTeamDivisionSeasonId: string
   awayTeamName: string
-  fieldId: string
-  fieldName: string
-  date: string
-  kickoffTime: string
+  fieldId?: string | null
+  fieldName?: string | null
+  date?: string | null
+  kickoffTime?: string | null
 }
 
 export interface FixtureDraftByeTeam {
@@ -22,7 +22,7 @@ export interface FixtureDraftByeTeam {
 
 export interface FixtureDraftRound {
   roundNumber: number
-  matchDate: string
+  matchDate?: string | null
   matches: FixtureDraftMatch[]
   byeTeams?: FixtureDraftByeTeam[] | null
 }

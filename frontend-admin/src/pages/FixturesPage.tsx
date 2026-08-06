@@ -38,19 +38,25 @@ import { useActiveLeague, useLeagueId } from '../contexts/LeagueContext'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
 import { useTranslation } from 'react-i18next'
 
-function formatTime(timeStr: string): string {
+function formatTime(timeStr: string | null | undefined): string {
+  if (!timeStr) return '-'
   try {
-    const parts = timeStr.split(':')
+    // API may return "HH:mm:ss" or "HH:mm"
+    const asString = typeof timeStr === 'string' ? timeStr : String(timeStr)
+    const parts = asString.split(':')
+    if (parts.length < 2) return asString
     return `${parts[0]}:${parts[1] ?? '00'}`
   } catch {
-    return timeStr
+    return String(timeStr)
   }
 }
 
-function formatDate(dateStr: string, locale: string): string {
+function formatDate(dateStr: string | null | undefined, locale: string): string {
+  if (!dateStr) return '-'
   try {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr)
-    if (!m) return dateStr
+    const asString = typeof dateStr === 'string' ? dateStr : String(dateStr)
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(asString)
+    if (!m) return asString
     const year = parseInt(m[1], 10)
     const month = parseInt(m[2], 10) - 1
     const day = parseInt(m[3], 10)
@@ -62,19 +68,20 @@ function formatDate(dateStr: string, locale: string): string {
       day: 'numeric',
     })
   } catch {
-    return dateStr
+    return String(dateStr)
   }
 }
 
-function escapeCsvCell(value: string): string {
-  if (value.includes('"') || value.includes(',') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`
+function escapeCsvCell(value: string | null | undefined): string {
+  const text = value ?? ''
+  if (text.includes('"') || text.includes(',') || text.includes('\n')) {
+    return `"${text.replace(/"/g, '""')}"`
   }
-  return value
+  return text
 }
 
-function escapeHtml(value: string): string {
-  return value
+function escapeHtml(value: string | null | undefined): string {
+  return (value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -218,15 +225,19 @@ export function FixturesPage() {
           .filter((m) => !teamFilter || m.homeTeamName === teamFilter || m.awayTeamName === teamFilter)
           .slice()
           .sort((a, b) => {
-            const timeCmp = (a.kickoffTime ?? '').localeCompare(b.kickoffTime ?? '')
+            const timeCmp = (a.kickoffTime ?? '').toString().localeCompare((b.kickoffTime ?? '').toString())
             if (timeCmp !== 0) return timeCmp
-            return a.fieldName.localeCompare(b.fieldName)
+            return (a.fieldName ?? '').localeCompare(b.fieldName ?? '')
           })
 
         const byeTeams = (round.byeTeams ?? [])
           .filter((b) => !teamFilter || b.teamName === teamFilter)
           .slice()
-          .sort((a, b) => a.divisionName.localeCompare(b.divisionName) || a.teamName.localeCompare(b.teamName))
+          .sort(
+            (a, b) =>
+              (a.divisionName ?? '').localeCompare(b.divisionName ?? '') ||
+              (a.teamName ?? '').localeCompare(b.teamName ?? ''),
+          )
 
         return { ...round, matches, byeTeams }
       })
@@ -257,7 +268,7 @@ export function FixturesPage() {
               String(round.roundNumber),
               round.matchDate ? formatDate(round.matchDate, dateLocale) : '',
               match.divisionName,
-              match.fieldName,
+              match.fieldName || '-',
               formatTime(match.kickoffTime),
               match.homeTeamName,
               match.awayTeamName,
@@ -309,7 +320,7 @@ export function FixturesPage() {
           round.roundNumber,
           round.matchDate ? formatDate(round.matchDate, dateLocale) : '',
           match.divisionName,
-          match.fieldName,
+          match.fieldName || '-',
           formatTime(match.kickoffTime),
           match.homeTeamName,
           match.awayTeamName,
@@ -621,7 +632,7 @@ export function FixturesPage() {
                       <TableCell>{idx === 0 ? round.roundNumber : ''}</TableCell>
                       <TableCell>{idx === 0 ? formatDate(round.matchDate, dateLocale) : ''}</TableCell>
                       <TableCell>{m.divisionName}</TableCell>
-                      <TableCell>{m.fieldName}</TableCell>
+                      <TableCell>{m.fieldName || '-'}</TableCell>
                       <TableCell>{formatTime(m.kickoffTime)}</TableCell>
                       <TableCell>{m.homeTeamName}</TableCell>
                       <TableCell>{m.awayTeamName}</TableCell>
