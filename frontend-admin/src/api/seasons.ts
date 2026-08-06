@@ -70,6 +70,9 @@ export const seasonsService = {
   reopen: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
     apiClient.post<void>(`/api/leagues/${leagueId}/seasons/${seasonId}/reopen`, {}, signal),
 
+  delete: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
+    apiClient.delete(`/api/leagues/${leagueId}/seasons/${seasonId}`, signal),
+
   getAssignedTeamIds: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
     apiClient.get<{ teamIds: string[] }>(`/api/leagues/${leagueId}/seasons/${seasonId}/assigned-team-ids`, signal),
 

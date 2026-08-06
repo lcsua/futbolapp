@@ -10,5 +10,6 @@ namespace FootballManager.Application.Interfaces.Repositories
         Task<MatchRule?> GetByLeagueAndSeasonAsync(Guid leagueId, Guid? seasonId, CancellationToken cancellationToken = default);
         Task AddAsync(MatchRule rule, CancellationToken cancellationToken = default);
         void Update(MatchRule rule);
+        Task RemoveBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
     }
 }

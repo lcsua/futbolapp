@@ -12,9 +12,11 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  TextField,
   Typography,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import LockIcon from '@mui/icons-material/Lock'
 import LockOpenIcon from '@mui/icons-material/LockOpen'
 import { Link as RouterLink } from 'react-router-dom'
@@ -50,6 +52,8 @@ export function EditSeasonPage() {
   const [closeDialogOpen, setCloseDialogOpen] = useState(false)
   const [pendingCount, setPendingCount] = useState<number | null>(null)
   const [pendingLoading, setPendingLoading] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const seasonsBase = params.leagueId && leagueId ? `/leagues/${leagueId}/seasons` : '/seasons'
 
   const { data: seasons, isLoading, isError, error: queryError } = useQuery({
@@ -125,6 +129,23 @@ export function EditSeasonPage() {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: () => seasonsService.delete(leagueId!, seasonId!),
+    onSuccess: async () => {
+      setDeleteDialogOpen(false)
+      await queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons'] })
+      queryClient.setQueryData<Season[]>(
+        ['leagues', leagueId, 'seasons'],
+        (prev) => prev?.filter((s) => s.id !== seasonId) ?? prev
+      )
+      navigate(seasonsBase, { replace: true })
+    },
+    onError: (err) => {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar la temporada')
+      setDeleteDialogOpen(false)
+    },
+  })
+
   const handleSubmit = (data: SeasonFormData) => {
     setError(null)
     updateMutation.mutate(data)
@@ -174,6 +195,9 @@ export function EditSeasonPage() {
     endDate: season.endDate ?? '',
     isPublic: season.isPublic === true,
   }
+
+  const canConfirmDelete =
+    !!season && deleteConfirmName.trim().localeCompare(season.name.trim(), undefined, { sensitivity: 'accent' }) === 0
 
   return (
     <Box>
@@ -226,7 +250,7 @@ export function EditSeasonPage() {
             color="warning"
             startIcon={<LockIcon />}
             onClick={() => void openCloseDialog()}
-            disabled={closeMutation.isPending}
+            disabled={closeMutation.isPending || deleteMutation.isPending}
           >
             Cerrar temporada
           </Button>
@@ -236,11 +260,23 @@ export function EditSeasonPage() {
             color="primary"
             startIcon={<LockOpenIcon />}
             onClick={() => reopenMutation.mutate()}
-            disabled={reopenMutation.isPending}
+            disabled={reopenMutation.isPending || deleteMutation.isPending}
           >
             {reopenMutation.isPending ? <CircularProgress size={22} /> : 'Reabrir temporada'}
           </Button>
         )}
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<DeleteForeverIcon />}
+          onClick={() => {
+            setDeleteConfirmName('')
+            setDeleteDialogOpen(true)
+          }}
+          disabled={deleteMutation.isPending}
+        >
+          Eliminar temporada
+        </Button>
       </Box>
 
       {divisions && divisions.length > 0 && (
@@ -304,6 +340,47 @@ export function EditSeasonPage() {
             disabled={pendingLoading || closeMutation.isPending}
           >
             {closeMutation.isPending ? <CircularProgress size={22} color="inherit" /> : 'Cerrar de todos modos'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => !deleteMutation.isPending && setDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Eliminar temporada de forma permanente</DialogTitle>
+        <DialogContent>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            Esta acción <strong>no se puede deshacer</strong>. Se borrará por completo la temporada
+            &quot;{season.name}&quot; y todo lo que depende de ella: divisiones asignadas, equipos,
+            fixtures, resultados, incidentes y reglas propias de la temporada.
+          </Alert>
+          <DialogContentText sx={{ mb: 2 }}>
+            Para confirmar, escribí el nombre exacto de la temporada:
+          </DialogContentText>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Nombre de la temporada"
+            placeholder={season.name}
+            value={deleteConfirmName}
+            onChange={(e) => setDeleteConfirmName(e.target.value)}
+            disabled={deleteMutation.isPending}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleteMutation.isPending}>
+            Cancelar
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => deleteMutation.mutate()}
+            disabled={!canConfirmDelete || deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? <CircularProgress size={22} color="inherit" /> : 'Eliminar definitivamente'}
           </Button>
         </DialogActions>
       </Dialog>

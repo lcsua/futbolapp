@@ -11,6 +11,7 @@ using FootballManager.Application.UseCases.Leagues.UpdateLeague;
 using FootballManager.Application.UseCases.Leagues.UpdateSeason;
 using FootballManager.Application.UseCases.Leagues.CloseSeason;
 using FootballManager.Application.UseCases.Leagues.ReopenSeason;
+using FootballManager.Application.UseCases.Leagues.DeleteSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeagueDivisions;
 using FootballManager.Application.UseCases.Leagues.GetLeagueClubs;
 using FootballManager.Application.UseCases.Leagues.CreateDivision;
@@ -70,6 +71,7 @@ namespace FootballManager.Api.Controllers
         private readonly IUpdateSeasonUseCase _updateSeasonUseCase;
         private readonly ICloseSeasonUseCase _closeSeasonUseCase;
         private readonly IReopenSeasonUseCase _reopenSeasonUseCase;
+        private readonly IDeleteSeasonUseCase _deleteSeasonUseCase;
         private readonly IGetLeagueDivisionsUseCase _getLeagueDivisionsUseCase;
         private readonly IGetLeagueClubsUseCase _getLeagueClubsUseCase;
         private readonly ICreateDivisionUseCase _createDivisionUseCase;
@@ -120,6 +122,7 @@ namespace FootballManager.Api.Controllers
             IUpdateSeasonUseCase updateSeasonUseCase,
             ICloseSeasonUseCase closeSeasonUseCase,
             IReopenSeasonUseCase reopenSeasonUseCase,
+            IDeleteSeasonUseCase deleteSeasonUseCase,
             IGetLeagueDivisionsUseCase getLeagueDivisionsUseCase,
             IGetLeagueClubsUseCase getLeagueClubsUseCase,
             ICreateDivisionUseCase createDivisionUseCase,
@@ -169,6 +172,7 @@ namespace FootballManager.Api.Controllers
             _updateSeasonUseCase = updateSeasonUseCase ?? throw new ArgumentNullException(nameof(updateSeasonUseCase));
             _closeSeasonUseCase = closeSeasonUseCase ?? throw new ArgumentNullException(nameof(closeSeasonUseCase));
             _reopenSeasonUseCase = reopenSeasonUseCase ?? throw new ArgumentNullException(nameof(reopenSeasonUseCase));
+            _deleteSeasonUseCase = deleteSeasonUseCase ?? throw new ArgumentNullException(nameof(deleteSeasonUseCase));
             _getLeagueDivisionsUseCase = getLeagueDivisionsUseCase ?? throw new ArgumentNullException(nameof(getLeagueDivisionsUseCase));
             _getLeagueClubsUseCase = getLeagueClubsUseCase ?? throw new ArgumentNullException(nameof(getLeagueClubsUseCase));
             _createDivisionUseCase = createDivisionUseCase ?? throw new ArgumentNullException(nameof(createDivisionUseCase));
@@ -355,6 +359,22 @@ namespace FootballManager.Api.Controllers
                 UserId = userId,
             };
             await _reopenSeasonUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpDelete("{leagueId}/seasons/{seasonId}")]
+        public async Task<IActionResult> DeleteSeason([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new DeleteSeasonRequest
+            {
+                LeagueId = leagueId,
+                SeasonId = seasonId,
+                UserId = userId,
+            };
+            await _deleteSeasonUseCase.ExecuteAsync(request, cancellationToken);
             return NoContent();
         }
 

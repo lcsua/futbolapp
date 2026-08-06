@@ -54,5 +54,17 @@ namespace FootballManager.Infrastructure.Repositories
         {
             _context.Seasons.Update(season);
         }
+
+        public void Remove(Season season)
+        {
+            _context.Seasons.Remove(season);
+        }
+
+        public async Task RemoveByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            await _context.Seasons
+                .Where(s => s.Id == id)
+                .ExecuteDeleteAsync(cancellationToken);
+        }
     }
 }

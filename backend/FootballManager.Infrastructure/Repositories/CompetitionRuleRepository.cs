@@ -45,5 +45,14 @@ namespace FootballManager.Infrastructure.Repositories
         {
             await _context.CompetitionMatchDays.AddAsync(matchDay, cancellationToken);
         }
+
+        public async Task RemoveBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default)
+        {
+            var toRemove = await _context.CompetitionRules
+                .Include(c => c.MatchDays)
+                .Where(c => c.SeasonId == seasonId)
+                .ToListAsync(cancellationToken);
+            _context.CompetitionRules.RemoveRange(toRemove);
+        }
     }
 }

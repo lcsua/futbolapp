@@ -12,5 +12,6 @@ namespace FootballManager.Application.Interfaces.Repositories
         void Update(CompetitionRule rule);
         Task RemoveMatchDaysAsync(Guid ruleId, CancellationToken cancellationToken = default);
         Task AddMatchDayAsync(CompetitionMatchDay matchDay, CancellationToken cancellationToken = default);
+        Task RemoveBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
     }
 }

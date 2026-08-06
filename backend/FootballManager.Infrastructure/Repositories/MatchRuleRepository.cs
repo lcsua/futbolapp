@@ -32,5 +32,13 @@ namespace FootballManager.Infrastructure.Repositories
         {
             _context.MatchRules.Update(rule);
         }
+
+        public async Task RemoveBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default)
+        {
+            var toRemove = await _context.MatchRules
+                .Where(m => m.SeasonId == seasonId)
+                .ToListAsync(cancellationToken);
+            _context.MatchRules.RemoveRange(toRemove);
+        }
     }
 }

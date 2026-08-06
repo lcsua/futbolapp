@@ -8,6 +8,7 @@ using FootballManager.Application.UseCases.Leagues.GetLeagueTeams;
 using FootballManager.Application.UseCases.Leagues.UpdateLeague;
 using FootballManager.Application.UseCases.Leagues.CloseSeason;
 using FootballManager.Application.UseCases.Leagues.ReopenSeason;
+using FootballManager.Application.UseCases.Leagues.DeleteSeason;
 using FootballManager.Application.UseCases.Leagues.UpdateSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeagueDivisions;
 using FootballManager.Application.UseCases.Leagues.GetLeagueClubs;
@@ -72,6 +73,7 @@ namespace FootballManager.Application
             services.AddScoped<IUpdateSeasonUseCase, UpdateSeasonUseCase>();
             services.AddScoped<ICloseSeasonUseCase, CloseSeasonUseCase>();
             services.AddScoped<IReopenSeasonUseCase, ReopenSeasonUseCase>();
+            services.AddScoped<IDeleteSeasonUseCase, DeleteSeasonUseCase>();
             services.AddScoped<IGetLeagueDivisionsUseCase, GetLeagueDivisionsUseCase>();
             services.AddScoped<IGetLeagueClubsUseCase, GetLeagueClubsUseCase>();
             services.AddScoped<ICreateDivisionUseCase, CreateDivisionUseCase>();
