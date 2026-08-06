@@ -175,6 +175,8 @@ export function FixturesPage() {
   const fixtures = fixturesData?.fixtures
   const isDraft = fixturesData?.isDraft ?? false
   const hasFixtures = fixtures && fixtures.rounds.length > 0
+  const selectedSeason = seasons.find((s) => s.id === seasonId)
+  const seasonClosed = !!selectedSeason && selectedSeason.isActive === false
   const selectedDivisionName = divisionId ? (divisions.find((d) => d.id === divisionId)?.name ?? null) : null
   const dayNames = [
     t('fixtures.days.sunday'),
@@ -442,6 +444,12 @@ export function FixturesPage() {
         {t('fixtures.description')}
       </Typography>
 
+      {seasonClosed && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {t('seasons.closedWarning')}
+        </Alert>
+      )}
+
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mb: 3 }}>
         <FormControl size="small" sx={{ minWidth: 220 }} disabled={seasonsLoading}>
           <InputLabel id="season-label">{t('fixtures.season')}</InputLabel>
@@ -506,7 +514,7 @@ export function FixturesPage() {
               variant="outlined"
               startIcon={hasFixtures ? <RefreshIcon /> : <AutoFixHighIcon />}
               onClick={hasFixtures ? handleRegenerate : handleGenerate}
-              disabled={generateMutation.isPending || !divisionId}
+              disabled={seasonClosed || generateMutation.isPending || !divisionId}
             >
               {hasFixtures ? t('fixtures.regenerate') : t('fixtures.generate')}
             </Button>
@@ -514,7 +522,7 @@ export function FixturesPage() {
               variant="outlined"
               startIcon={<UploadFileIcon />}
               onClick={() => setImportModalOpen(true)}
-              disabled={!divisionId}
+              disabled={seasonClosed || !divisionId}
             >
               {t('fixtures.import')}
             </Button>
@@ -533,7 +541,7 @@ export function FixturesPage() {
                 variant="contained"
                 startIcon={commitMutation.isPending ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
                 onClick={handleSave}
-                disabled={commitMutation.isPending || !isDraft}
+                disabled={seasonClosed || commitMutation.isPending || !isDraft}
               >
                 {t('fixtures.save')}
               </Button>

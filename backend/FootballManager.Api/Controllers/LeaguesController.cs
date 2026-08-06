@@ -9,6 +9,8 @@ using FootballManager.Application.UseCases.Leagues.GetLeagueSeasons;
 using FootballManager.Application.UseCases.Leagues.GetLeagueTeams;
 using FootballManager.Application.UseCases.Leagues.UpdateLeague;
 using FootballManager.Application.UseCases.Leagues.UpdateSeason;
+using FootballManager.Application.UseCases.Leagues.CloseSeason;
+using FootballManager.Application.UseCases.Leagues.ReopenSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeagueDivisions;
 using FootballManager.Application.UseCases.Leagues.GetLeagueClubs;
 using FootballManager.Application.UseCases.Leagues.CreateDivision;
@@ -66,6 +68,8 @@ namespace FootballManager.Api.Controllers
         private readonly IGetLeagueTeamsUseCase _getLeagueTeamsUseCase;
         private readonly IUpdateLeagueUseCase _updateLeagueUseCase;
         private readonly IUpdateSeasonUseCase _updateSeasonUseCase;
+        private readonly ICloseSeasonUseCase _closeSeasonUseCase;
+        private readonly IReopenSeasonUseCase _reopenSeasonUseCase;
         private readonly IGetLeagueDivisionsUseCase _getLeagueDivisionsUseCase;
         private readonly IGetLeagueClubsUseCase _getLeagueClubsUseCase;
         private readonly ICreateDivisionUseCase _createDivisionUseCase;
@@ -114,6 +118,8 @@ namespace FootballManager.Api.Controllers
             IGetLeagueTeamsUseCase getLeagueTeamsUseCase,
             IUpdateLeagueUseCase updateLeagueUseCase,
             IUpdateSeasonUseCase updateSeasonUseCase,
+            ICloseSeasonUseCase closeSeasonUseCase,
+            IReopenSeasonUseCase reopenSeasonUseCase,
             IGetLeagueDivisionsUseCase getLeagueDivisionsUseCase,
             IGetLeagueClubsUseCase getLeagueClubsUseCase,
             ICreateDivisionUseCase createDivisionUseCase,
@@ -161,6 +167,8 @@ namespace FootballManager.Api.Controllers
             _getLeagueTeamsUseCase = getLeagueTeamsUseCase ?? throw new ArgumentNullException(nameof(getLeagueTeamsUseCase));
             _updateLeagueUseCase = updateLeagueUseCase ?? throw new ArgumentNullException(nameof(updateLeagueUseCase));
             _updateSeasonUseCase = updateSeasonUseCase ?? throw new ArgumentNullException(nameof(updateSeasonUseCase));
+            _closeSeasonUseCase = closeSeasonUseCase ?? throw new ArgumentNullException(nameof(closeSeasonUseCase));
+            _reopenSeasonUseCase = reopenSeasonUseCase ?? throw new ArgumentNullException(nameof(reopenSeasonUseCase));
             _getLeagueDivisionsUseCase = getLeagueDivisionsUseCase ?? throw new ArgumentNullException(nameof(getLeagueDivisionsUseCase));
             _getLeagueClubsUseCase = getLeagueClubsUseCase ?? throw new ArgumentNullException(nameof(getLeagueClubsUseCase));
             _createDivisionUseCase = createDivisionUseCase ?? throw new ArgumentNullException(nameof(createDivisionUseCase));
@@ -315,6 +323,38 @@ namespace FootballManager.Api.Controllers
             request.SeasonId = seasonId;
             request.UserId = userId;
             await _updateSeasonUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpPost("{leagueId}/seasons/{seasonId}/close")]
+        public async Task<IActionResult> CloseSeason([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new CloseSeasonRequest
+            {
+                LeagueId = leagueId,
+                SeasonId = seasonId,
+                UserId = userId,
+            };
+            var response = await _closeSeasonUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response);
+        }
+
+        [HttpPost("{leagueId}/seasons/{seasonId}/reopen")]
+        public async Task<IActionResult> ReopenSeason([FromRoute] Guid leagueId, [FromRoute] Guid seasonId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new ReopenSeasonRequest
+            {
+                LeagueId = leagueId,
+                SeasonId = seasonId,
+                UserId = userId,
+            };
+            await _reopenSeasonUseCase.ExecuteAsync(request, cancellationToken);
             return NoContent();
         }
 

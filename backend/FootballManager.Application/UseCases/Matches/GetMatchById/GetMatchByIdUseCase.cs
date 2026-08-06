@@ -50,6 +50,8 @@ public sealed class GetMatchByIdUseCase : IGetMatchByIdUseCase
 
         return new GetMatchByIdResponse(
             fixture.Id,
+            fixture.SeasonId,
+            fixture.Season?.IsActive ?? true,
             fixture.RoundNumber,
             fixture.DivisionSeason?.Division?.Name ?? "",
             homeTeam?.Name ?? "",

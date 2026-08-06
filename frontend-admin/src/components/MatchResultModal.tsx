@@ -14,6 +14,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Alert,
 } from '@mui/material'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { matchesService, MATCH_STATUSES } from '../api/matches'
@@ -23,11 +24,12 @@ interface MatchResultModalProps {
   open: boolean
   match: MatchListItem
   leagueId: string
+  seasonClosed?: boolean
   onClose: () => void
   onSaved?: () => void
 }
 
-export function MatchResultModal({ open, match, leagueId, onClose, onSaved }: MatchResultModalProps) {
+export function MatchResultModal({ open, match, leagueId, seasonClosed = false, onClose, onSaved }: MatchResultModalProps) {
   const queryClient = useQueryClient()
   const [homeScore, setHomeScore] = useState<string>(String(match.homeScore ?? ''))
   const [awayScore, setAwayScore] = useState<string>(String(match.awayScore ?? ''))
@@ -73,6 +75,11 @@ export function MatchResultModal({ open, match, leagueId, onClose, onSaved }: Ma
       <DialogTitle>Edit result</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          {seasonClosed && (
+            <Alert severity="warning">
+              This season is closed. Edit only if a ruling requires changing the result after closure.
+            </Alert>
+          )}
           <Box
             sx={{
               display: 'grid',

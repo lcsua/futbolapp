@@ -22,6 +22,7 @@ namespace FootballManager.Infrastructure.Repositories
         public async Task<Fixture> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return await _context.Fixtures
+                .Include(f => f.Season)
                 .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
                 .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team)
                 .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team)

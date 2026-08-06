@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Typography,
 } from '@mui/material'
@@ -96,9 +97,18 @@ export function SeasonsListPage() {
           {seasons.map((season) => (
             <Card key={season.id} variant="outlined" sx={{ height: '100%' }}>
               <CardContent>
-                <Typography variant="h6" component="h3" gutterBottom>
-                  {season.name}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+                  <Typography variant="h6" component="h3">
+                    {season.name}
+                  </Typography>
+                  <Chip
+                    size="small"
+                    color={season.isActive === false ? 'default' : 'success'}
+                    label={
+                      season.isActive === false ? t('seasons.statusClosed') : t('seasons.statusOpen')
+                    }
+                  />
+                </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   {season.startDate}
                   {season.endDate ? ` — ${season.endDate}` : ''}

@@ -43,7 +43,10 @@
       "create": "Create season",
       "empty": "No seasons yet. Create one to get started.",
       "edit": "Edit season",
-      "schedulingRules": "Division scheduling rules (matches and fields)"
+      "schedulingRules": "Division scheduling rules (matches and fields)",
+      "statusOpen": "Open",
+      "statusClosed": "Closed",
+      "closedWarning": "This season is closed. Setup, fixtures and imports are locked. Results can still be edited."
     },
     "divisions": {
       "noLeague": "No league selected. Choose a league from the selector or open a league from the list.",

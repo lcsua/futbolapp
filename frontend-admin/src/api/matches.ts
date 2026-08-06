@@ -41,6 +41,8 @@ export interface MatchIncidentDto {
 
 export interface MatchDetailResponse {
   id: string
+  seasonId: string
+  seasonIsActive: boolean
   roundNumber: number
   divisionName: string
   homeTeamName: string

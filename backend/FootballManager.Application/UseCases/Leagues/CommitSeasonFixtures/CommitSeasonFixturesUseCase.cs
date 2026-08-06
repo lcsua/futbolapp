@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Application.Services;
 using FootballManager.Domain.Entities;
@@ -54,6 +55,8 @@ public sealed class CommitSeasonFixturesUseCase : ICommitSeasonFixturesUseCase
             throw new KeyNotFoundException($"Season {request.SeasonId} not found.");
         if (season.LeagueId != request.LeagueId)
             throw new ForbiddenAccessException("Season does not belong to this league.");
+
+        SeasonGuard.EnsureOpen(season);
 
         var draft = _draftStore.Get(request.SeasonId);
         if (draft == null || draft.Rounds.Count == 0)

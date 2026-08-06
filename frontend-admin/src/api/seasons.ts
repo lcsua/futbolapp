@@ -42,6 +42,16 @@ export const seasonsService = {
   update: (leagueId: string, seasonId: string, data: SeasonFormData, signal?: AbortSignal) =>
     apiClient.put<void>(`/api/leagues/${leagueId}/seasons/${seasonId}`, data, signal),
 
+  close: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
+    apiClient.post<{ pendingResultsCount: number }>(
+      `/api/leagues/${leagueId}/seasons/${seasonId}/close`,
+      {},
+      signal
+    ),
+
+  reopen: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
+    apiClient.post<void>(`/api/leagues/${leagueId}/seasons/${seasonId}/reopen`, {}, signal),
+
   getAssignedTeamIds: (leagueId: string, seasonId: string, signal?: AbortSignal) =>
     apiClient.get<{ teamIds: string[] }>(`/api/leagues/${leagueId}/seasons/${seasonId}/assigned-team-ids`, signal),
 

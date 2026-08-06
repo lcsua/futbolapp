@@ -51,6 +51,7 @@ export function SeasonSetupPage() {
     queryFn: ({ signal }) => teamsService.getByLeagueId(leagueId!, signal),
     enabled: !!leagueId,
   })
+  const seasonClosed = !!seasons.find((s) => s.id === seasonId && s.isActive === false)
   const { data: assignedData } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons', seasonId, 'assigned-team-ids'],
     queryFn: ({ signal }) => seasonsService.getAssignedTeamIds(leagueId!, seasonId, signal),
@@ -96,7 +97,8 @@ export function SeasonSetupPage() {
     setTeamIds(next.filter((id) => !assignedTeamIds.includes(id)))
   }
 
-  const canSave = !!leagueId && !!seasonId && !!divisionId && teamIds.length > 0 && !assignMutation.isPending
+  const canSave =
+    !!leagueId && !!seasonId && !!divisionId && teamIds.length > 0 && !assignMutation.isPending && !seasonClosed
   const sortedTeams = [...teams].sort((a, b) => {
     const nameCmp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
     if (nameCmp !== 0) return nameCmp
@@ -122,6 +124,11 @@ export function SeasonSetupPage() {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Assign teams to a division for a season. Each team can be in only one division per season. Manage teams under Teams.
       </Typography>
+      {seasonClosed && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          This season is closed. Team assignments are locked.
+        </Alert>
+      )}
       {seasonId ? (
         <Alert severity="info" sx={{ mb: 2 }}>
           Para configurar <strong>duración de partidos, horarios y campos por categoría</strong>, usa{' '}

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Domain.Entities;
 
@@ -43,6 +44,8 @@ namespace FootballManager.Application.UseCases.Leagues.AssignDivisionToSeason
                 throw new KeyNotFoundException($"Season {request.SeasonId} not found.");
             if (season.LeagueId != request.LeagueId)
                 throw new ForbiddenAccessException("Season does not belong to this league.");
+
+            SeasonGuard.EnsureOpen(season);
 
             var fixtureCount = await _fixtureRepository.CountBySeasonIdAsync(request.SeasonId, cancellationToken);
             if (fixtureCount > 0)

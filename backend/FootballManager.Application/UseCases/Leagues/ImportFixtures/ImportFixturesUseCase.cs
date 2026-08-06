@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Domain.Entities;
 
@@ -47,6 +48,8 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
         var season = await _seasonRepository.GetByIdAsync(request.SeasonId, cancellationToken);
         if (season == null || season.LeagueId != request.LeagueId)
             throw new KeyNotFoundException($"Season {request.SeasonId} not found or does not belong to this league.");
+
+        SeasonGuard.EnsureOpen(season);
 
         var divisionSeason = await _divisionSeasonRepository.GetBySeasonAndDivisionWithTeamsAsync(request.SeasonId, request.DivisionId, cancellationToken);
         if (divisionSeason == null)

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Dtos;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Application.Services;
@@ -64,6 +65,8 @@ public sealed class GenerateSeasonFixturesUseCase : IGenerateSeasonFixturesUseCa
             throw new KeyNotFoundException($"Season {request.SeasonId} not found.");
         if (season.LeagueId != request.LeagueId)
             throw new ForbiddenAccessException("Season does not belong to this league.");
+
+        SeasonGuard.EnsureOpen(season);
 
         // Reglas de competencia globales por liga.
         var competitionRule = await _competitionRuleRepository.GetByLeagueAndSeasonAsync(request.LeagueId, null, cancellationToken);

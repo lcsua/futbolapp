@@ -6,6 +6,8 @@ namespace FootballManager.Application.UseCases.Matches.GetMatchById;
 public sealed class GetMatchByIdResponse
 {
     public Guid Id { get; }
+    public Guid SeasonId { get; }
+    public bool SeasonIsActive { get; }
     public int RoundNumber { get; }
     public string DivisionName { get; }
     public string HomeTeamName { get; }
@@ -22,13 +24,15 @@ public sealed class GetMatchByIdResponse
     public string AwayTeamLogoUrl { get; }
     public IReadOnlyList<MatchIncidentDto> Incidents { get; }
 
-    public GetMatchByIdResponse(Guid id, int roundNumber, string divisionName,
+    public GetMatchByIdResponse(Guid id, Guid seasonId, bool seasonIsActive, int roundNumber, string divisionName,
         string homeTeamName, Guid homeTeamId, string awayTeamName, Guid awayTeamId,
         int? homeScore, int? awayScore, string status, string kickoffTime, string matchDate, string fieldName,
         IReadOnlyList<MatchIncidentDto> incidents,
         string homeTeamLogoUrl = null, string awayTeamLogoUrl = null)
     {
         Id = id;
+        SeasonId = seasonId;
+        SeasonIsActive = seasonIsActive;
         RoundNumber = roundNumber;
         DivisionName = divisionName;
         HomeTeamName = homeTeamName;

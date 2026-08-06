@@ -85,6 +85,12 @@ export function MatchDetailPage() {
 
       <MatchHeader match={match} />
 
+      {!match.seasonIsActive && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          This season is closed. You can still edit results or incidents after a ruling that changes the official record.
+        </Alert>
+      )}
+
       <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
         Incident timeline
       </Typography>

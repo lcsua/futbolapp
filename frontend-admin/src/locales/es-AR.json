@@ -43,7 +43,10 @@
       "create": "Crear temporada",
       "empty": "No hay temporadas todavía. Creá una para empezar.",
       "edit": "Editar temporada",
-      "schedulingRules": "Reglas por división (partidos y canchas)"
+      "schedulingRules": "Reglas por división (partidos y canchas)",
+      "statusOpen": "Abierta",
+      "statusClosed": "Cerrada",
+      "closedWarning": "Esta temporada está cerrada. Setup, fixtures e importaciones están bloqueados. Los resultados se pueden seguir editando."
     },
     "divisions": {
       "noLeague": "No hay liga seleccionada. Elegí una liga del menú o abrí una de la lista.",

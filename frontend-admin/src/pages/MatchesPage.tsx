@@ -84,6 +84,8 @@ export function MatchesPage() {
 
   const allRounds = matchesData?.rounds ?? []
   const roundNumbers = [...new Set(allRounds.flatMap((r) => r.matches.map((m) => m.roundNumber)))].sort((a, b) => a - b)
+  const selectedSeason = seasons.find((s) => s.id === seasonId)
+  const seasonClosed = !!selectedSeason && selectedSeason.isActive === false
 
   const teams = React.useMemo(() => {
     const seen = new Map<string, string>()
@@ -122,6 +124,12 @@ export function MatchesPage() {
       <Typography variant="h5" component="h1" sx={{ mb: 2, fontWeight: 600 }}>
         {t('matches.title')}
       </Typography>
+
+      {seasonClosed && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {t('seasons.closedWarning')}
+        </Alert>
+      )}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mb: 3 }}>
         <FormControl size="small" sx={{ minWidth: 200 }} disabled={seasonsLoading}>
@@ -200,7 +208,7 @@ export function MatchesPage() {
           variant="outlined"
           startIcon={<UploadFileIcon />}
           onClick={() => setImportModalOpen(true)}
-          disabled={!seasonId || !divisionId}
+          disabled={seasonClosed || !seasonId || !divisionId}
         >
           {t('matches.importFixture')}
         </Button>
@@ -243,6 +251,7 @@ export function MatchesPage() {
           open
           match={resultModalMatch}
           leagueId={leagueId!}
+          seasonClosed={seasonClosed}
           onClose={() => setResultModalMatch(null)}
           onSaved={() => {
             setResultModalMatch(null)

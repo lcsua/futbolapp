@@ -235,6 +235,7 @@ export function AdvancedSeasonSetupPage() {
     queryFn: ({ signal }) => seasonsService.getByLeagueId(leagueId!, signal),
     enabled: !!leagueId,
   })
+  const seasonClosed = !!seasons.find((s) => s.id === seasonId && s.isActive === false)
 
   const { data: setupData, isLoading: setupLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons', seasonId, 'setup'],
@@ -308,6 +309,7 @@ export function AdvancedSeasonSetupPage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveTeam(null)
+    if (seasonClosed) return
     const { active, over } = event
     if (!over || !board) return
     const teamId = active.id as string
@@ -420,6 +422,11 @@ export function AdvancedSeasonSetupPage() {
         Drag teams between Unassigned and divisions. Save when done. Double-click a division title to create a team
         and assign it to that division.
       </Typography>
+      {seasonClosed && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          This season is closed. Setup changes are locked.
+        </Alert>
+      )}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mb: 3 }}>
         <FormControl size="small" sx={{ minWidth: 200 }} disabled={seasonsLoading}>
@@ -444,7 +451,7 @@ export function AdvancedSeasonSetupPage() {
           variant="outlined"
           startIcon={<ContentCopyIcon />}
           onClick={() => setCopyDialogOpen(true)}
-          disabled={!seasonId || seasons.length < 2}
+          disabled={seasonClosed || !seasonId || seasons.length < 2}
         >
           Copy from another season
         </Button>
@@ -452,7 +459,7 @@ export function AdvancedSeasonSetupPage() {
           variant="contained"
           startIcon={saveMutation.isPending ? <CircularProgress size={18} color="inherit" /> : <SaveIcon />}
           onClick={handleSave}
-          disabled={!board || saveMutation.isPending}
+          disabled={seasonClosed || !board || saveMutation.isPending}
         >
           Save changes
         </Button>

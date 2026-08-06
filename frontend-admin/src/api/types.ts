@@ -24,6 +24,7 @@ export interface Season {
   name: string
   startDate: string
   endDate: string | null
+  isActive: boolean
 }
 
 export interface SeasonFormData {

@@ -42,5 +42,22 @@ namespace FootballManager.Domain.Entities
             IsActive = false;
             UpdateTimestamp();
         }
+
+        public void Activate()
+        {
+            IsActive = true;
+            UpdateTimestamp();
+        }
+
+        /// <summary>
+        /// Closes the season: marks inactive and fills EndDate with today when missing.
+        /// </summary>
+        public void Close(DateOnly closedOn)
+        {
+            IsActive = false;
+            if (EndDate is null || EndDate > closedOn)
+                EndDate = closedOn;
+            UpdateTimestamp();
+        }
     }
 }
