@@ -15,6 +15,7 @@ using FootballManager.Application.UseCases.Leagues.DeleteSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeagueDivisions;
 using FootballManager.Application.UseCases.Leagues.GetLeagueClubs;
 using FootballManager.Application.UseCases.Leagues.CreateDivision;
+using FootballManager.Application.UseCases.Leagues.DeleteDivision;
 using FootballManager.Application.UseCases.Leagues.CreateClub;
 using FootballManager.Application.UseCases.Leagues.UpdateClub;
 using FootballManager.Application.UseCases.Leagues.UpdateDivision;
@@ -75,6 +76,7 @@ namespace FootballManager.Api.Controllers
         private readonly IGetLeagueDivisionsUseCase _getLeagueDivisionsUseCase;
         private readonly IGetLeagueClubsUseCase _getLeagueClubsUseCase;
         private readonly ICreateDivisionUseCase _createDivisionUseCase;
+        private readonly IDeleteDivisionUseCase _deleteDivisionUseCase;
         private readonly ICreateClubUseCase _createClubUseCase;
         private readonly IUpdateClubUseCase _updateClubUseCase;
         private readonly IUpdateDivisionUseCase _updateDivisionUseCase;
@@ -126,6 +128,7 @@ namespace FootballManager.Api.Controllers
             IGetLeagueDivisionsUseCase getLeagueDivisionsUseCase,
             IGetLeagueClubsUseCase getLeagueClubsUseCase,
             ICreateDivisionUseCase createDivisionUseCase,
+            IDeleteDivisionUseCase deleteDivisionUseCase,
             ICreateClubUseCase createClubUseCase,
             IUpdateClubUseCase updateClubUseCase,
             IUpdateDivisionUseCase updateDivisionUseCase,
@@ -176,6 +179,7 @@ namespace FootballManager.Api.Controllers
             _getLeagueDivisionsUseCase = getLeagueDivisionsUseCase ?? throw new ArgumentNullException(nameof(getLeagueDivisionsUseCase));
             _getLeagueClubsUseCase = getLeagueClubsUseCase ?? throw new ArgumentNullException(nameof(getLeagueClubsUseCase));
             _createDivisionUseCase = createDivisionUseCase ?? throw new ArgumentNullException(nameof(createDivisionUseCase));
+            _deleteDivisionUseCase = deleteDivisionUseCase ?? throw new ArgumentNullException(nameof(deleteDivisionUseCase));
             _createClubUseCase = createClubUseCase ?? throw new ArgumentNullException(nameof(createClubUseCase));
             _updateClubUseCase = updateClubUseCase ?? throw new ArgumentNullException(nameof(updateClubUseCase));
             _updateDivisionUseCase = updateDivisionUseCase ?? throw new ArgumentNullException(nameof(updateDivisionUseCase));
@@ -490,6 +494,22 @@ namespace FootballManager.Api.Controllers
             request.DivisionId = divisionId;
             request.UserId = userId;
             await _updateDivisionUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
+        }
+
+        [HttpDelete("{leagueId}/divisions/{divisionId}")]
+        public async Task<IActionResult> DeleteDivision([FromRoute] Guid leagueId, [FromRoute] Guid divisionId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new DeleteDivisionRequest
+            {
+                LeagueId = leagueId,
+                DivisionId = divisionId,
+                UserId = userId,
+            };
+            await _deleteDivisionUseCase.ExecuteAsync(request, cancellationToken);
             return NoContent();
         }
 

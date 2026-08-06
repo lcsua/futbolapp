@@ -13,5 +13,6 @@ namespace FootballManager.Application.Interfaces.Repositories
         Task<List<Guid>> GetTeamIdsAssignedToSeasonAsync(Guid seasonId, CancellationToken cancellationToken = default);
         Task AddAsync(TeamDivisionSeason assignment, CancellationToken cancellationToken = default);
         Task RemoveBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
+        Task RemoveByDivisionIdAsync(Guid divisionId, CancellationToken cancellationToken = default);
     }
 }

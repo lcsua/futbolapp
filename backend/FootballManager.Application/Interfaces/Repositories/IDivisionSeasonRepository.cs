@@ -14,5 +14,7 @@ namespace FootballManager.Application.Interfaces.Repositories
         Task<List<DivisionSeason>> GetBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
         Task AddAsync(DivisionSeason divisionSeason, CancellationToken cancellationToken = default);
         Task RemoveBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
+        Task<List<DivisionSeason>> GetByDivisionIdAsync(Guid divisionId, CancellationToken cancellationToken = default);
+        Task RemoveByDivisionIdAsync(Guid divisionId, CancellationToken cancellationToken = default);
     }
 }

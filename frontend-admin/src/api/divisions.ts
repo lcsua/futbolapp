@@ -10,4 +10,7 @@ export const divisionsService = {
 
   update: (leagueId: string, divisionId: string, data: DivisionFormData, signal?: AbortSignal) =>
     apiClient.put<void>(`/api/leagues/${leagueId}/divisions/${divisionId}`, data, signal),
+
+  delete: (leagueId: string, divisionId: string, signal?: AbortSignal) =>
+    apiClient.delete(`/api/leagues/${leagueId}/divisions/${divisionId}`, signal),
 }

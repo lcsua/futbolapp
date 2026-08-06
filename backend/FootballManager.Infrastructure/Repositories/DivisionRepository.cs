@@ -52,5 +52,12 @@ namespace FootballManager.Infrastructure.Repositories
         {
             _context.Divisions.Update(division);
         }
+
+        public async Task RemoveByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            await _context.Divisions
+                .Where(d => d.Id == id)
+                .ExecuteDeleteAsync(cancellationToken);
+        }
     }
 }

@@ -13,5 +13,6 @@ namespace FootballManager.Application.Interfaces.Repositories
         Task<List<Division>> GetByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken = default);
         Task AddAsync(Division division, CancellationToken cancellationToken = default);
         void Update(Division division);
+        Task RemoveByIdAsync(Guid id, CancellationToken cancellationToken = default);
     }
 }
