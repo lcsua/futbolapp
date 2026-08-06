@@ -56,7 +56,7 @@ namespace FootballManager.Application.UseCases.Leagues.GetLeagueSeasons
             }
 
             var seasons = await _seasonRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
-            var seasonDtos = seasons.ConvertAll(s => new SeasonDto(s.Id, s.Name, s.StartDate, s.EndDate, s.IsActive));
+            var seasonDtos = seasons.ConvertAll(s => new SeasonDto(s.Id, s.Name, s.StartDate, s.EndDate, s.IsActive, s.IsPublic));
             return new GetLeagueSeasonsResponse(seasonDtos);
         }
     }

@@ -13,13 +13,15 @@ namespace FootballManager.Domain.Entities
         public DateOnly StartDate { get; private set; }
         public DateOnly? EndDate { get; private set; }
         public bool IsActive { get; private set; }
+        /// <summary>When false, the season is hidden from public-web season selectors.</summary>
+        public bool IsPublic { get; private set; }
 
         private readonly List<DivisionSeason> _divisionSeasons = new();
         public virtual IReadOnlyCollection<DivisionSeason> DivisionSeasons => _divisionSeasons.AsReadOnly();
 
         protected Season() { }
 
-        public Season(League league, string name, DateOnly startDate, DateOnly? endDate)
+        public Season(League league, string name, DateOnly startDate, DateOnly? endDate, bool isPublic = false)
         {
             League = league ?? throw new ArgumentNullException(nameof(league));
             LeagueId = league.Id;
@@ -27,13 +29,21 @@ namespace FootballManager.Domain.Entities
             StartDate = startDate;
             EndDate = endDate;
             IsActive = true;
+            IsPublic = isPublic;
         }
 
-        public void UpdateDetails(string name, DateOnly startDate, DateOnly? endDate)
+        public void UpdateDetails(string name, DateOnly startDate, DateOnly? endDate, bool isPublic)
         {
             Name = !string.IsNullOrWhiteSpace(name) ? name : throw new ArgumentException("Season name cannot be empty.", nameof(name));
             StartDate = startDate;
             EndDate = endDate;
+            IsPublic = isPublic;
+            UpdateTimestamp();
+        }
+
+        public void SetPublicVisibility(bool isPublic)
+        {
+            IsPublic = isPublic;
             UpdateTimestamp();
         }
 

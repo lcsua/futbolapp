@@ -37,7 +37,7 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateSeason
             if (season.LeagueId != request.LeagueId)
                 throw new ForbiddenAccessException("Season does not belong to this league.");
 
-            season.UpdateDetails(request.Name, request.StartDate, request.EndDate);
+            season.UpdateDetails(request.Name, request.StartDate, request.EndDate, request.IsPublic);
             _seasonRepository.Update(season);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }

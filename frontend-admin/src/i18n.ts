@@ -9,12 +9,15 @@ i18n
   .init({
     resources: {
       en: enTranslation,
-      'es-AR': esARTranslation
+      'es-AR': esARTranslation,
+      es: esARTranslation,
     },
-    lng: 'es-AR', // Set Spanish (Argentina) as the default language
-    fallbackLng: 'en',
+    lng: 'es-AR',
+    fallbackLng: 'es-AR',
+    supportedLngs: ['es-AR', 'es', 'en'],
+    nonExplicitSupportedLngs: true,
     interpolation: {
-      escapeValue: false // react already safes from xss
+      escapeValue: false
     }
   });
 

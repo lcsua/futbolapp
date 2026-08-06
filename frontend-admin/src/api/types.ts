@@ -25,12 +25,14 @@ export interface Season {
   startDate: string
   endDate: string | null
   isActive: boolean
+  isPublic: boolean
 }
 
 export interface SeasonFormData {
   name: string
   startDate: string
   endDate: string
+  isPublic: boolean
 }
 
 export interface Division {

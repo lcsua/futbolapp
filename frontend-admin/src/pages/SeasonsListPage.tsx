@@ -108,6 +108,14 @@ export function SeasonsListPage() {
                       season.isActive === false ? t('seasons.statusClosed') : t('seasons.statusOpen')
                     }
                   />
+                  <Chip
+                    size="small"
+                    color={season.isPublic ? 'info' : 'default'}
+                    variant={season.isPublic ? 'filled' : 'outlined'}
+                    label={
+                      season.isPublic ? t('seasons.publicVisible') : t('seasons.publicHidden')
+                    }
+                  />
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   {season.startDate}

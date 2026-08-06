@@ -1005,6 +1005,12 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
+                    b.Property<bool>("IsPublic")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_public");
+
                     b.Property<Guid>("LeagueId")
                         .HasColumnType("uuid")
                         .HasColumnName("league_id");

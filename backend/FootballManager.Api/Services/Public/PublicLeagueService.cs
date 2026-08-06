@@ -38,7 +38,11 @@ public class PublicLeagueService
     {
         var league = await _leagueRepository.GetByIdAsync(leagueId, cancellationToken);
         if (league == null) return null;
-        var activeSeason = league.Seasons.OrderByDescending(s => s.StartDate).FirstOrDefault();
+        var activeSeason = league.Seasons
+            .Where(s => s.IsPublic)
+            .OrderByDescending(s => s.IsActive)
+            .ThenByDescending(s => s.StartDate)
+            .FirstOrDefault();
         return activeSeason?.Id;
     }
 

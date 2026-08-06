@@ -39,7 +39,7 @@ namespace FootballManager.Application.UseCases.Leagues.CreateSeason
             if (league == null)
                 throw new KeyNotFoundException($"League {request.LeagueId} not found.");
 
-            var season = new Season(league, request.Name, request.StartDate, request.EndDate);
+            var season = new Season(league, request.Name, request.StartDate, request.EndDate, request.IsPublic);
             await _seasonRepository.AddAsync(season, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 

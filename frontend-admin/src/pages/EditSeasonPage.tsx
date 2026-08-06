@@ -82,7 +82,7 @@ export function EditSeasonPage() {
       navigate(seasonsBase, { replace: true })
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : 'Failed to update season')
+      setError(err instanceof Error ? err.message : 'No se pudo actualizar la temporada')
     },
   })
 
@@ -94,7 +94,7 @@ export function EditSeasonPage() {
       setError(null)
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : 'Failed to close season')
+      setError(err instanceof Error ? err.message : 'No se pudo cerrar la temporada')
       setCloseDialogOpen(false)
     },
   })
@@ -106,7 +106,7 @@ export function EditSeasonPage() {
       setError(null)
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : 'Failed to reopen season')
+      setError(err instanceof Error ? err.message : 'No se pudo reabrir la temporada')
     },
   })
 
@@ -130,7 +130,7 @@ export function EditSeasonPage() {
   }
 
   if (!leagueId || !seasonId) {
-    return <Alert severity="error">Missing league or season.</Alert>
+    return <Alert severity="error">Falta la liga o la temporada.</Alert>
   }
 
   if (isLoading || !seasons) {
@@ -144,41 +144,48 @@ export function EditSeasonPage() {
   if (isError) {
     return (
       <Alert severity="error">
-        {queryError instanceof Error ? queryError.message : 'Failed to load season'}
+        {queryError instanceof Error ? queryError.message : 'No se pudo cargar la temporada'}
       </Alert>
     )
   }
 
   if (!season) {
-    return <Alert severity="error">Season not found.</Alert>
+    return <Alert severity="error">Temporada no encontrada.</Alert>
   }
 
   const initialValues: SeasonFormData = {
     name: season.name,
     startDate: season.startDate,
     endDate: season.endDate ?? '',
+    isPublic: season.isPublic === true,
   }
 
   return (
     <Box>
       <Button component={RouterLink} to={seasonsBase} startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
-        Back to seasons
+        Volver a temporadas
       </Button>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, flexWrap: 'wrap' }}>
         <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
-          Edit season
+          Editar temporada
         </Typography>
         <Chip
           size="small"
           color={isClosed ? 'default' : 'success'}
-          label={isClosed ? 'Closed' : 'Open'}
+          label={isClosed ? 'Cerrada' : 'Abierta'}
+        />
+        <Chip
+          size="small"
+          color={season.isPublic ? 'info' : 'default'}
+          variant={season.isPublic ? 'filled' : 'outlined'}
+          label={season.isPublic ? 'Visible en web pública' : 'Oculta en web pública'}
         />
       </Box>
 
       {isClosed && (
         <Alert severity="warning" sx={{ mb: 3 }}>
-          This season is closed. You cannot change setup, divisions, teams or fixtures.
-          Match results can still be edited (e.g. after a disciplinary ruling).
+          Esta temporada está cerrada. No se puede cambiar el setup, divisiones, equipos ni fixtures.
+          Los resultados de partidos se pueden seguir editando (por ejemplo por una resolución).
         </Alert>
       )}
 
@@ -193,8 +200,8 @@ export function EditSeasonPage() {
         onSubmit={handleSubmit}
         loading={updateMutation.isPending}
         error={null}
-        submitLabel="Save"
-        title="Season details"
+        submitLabel="Guardar"
+        title="Datos de la temporada"
       />
 
       <Box sx={{ mt: 3, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -206,7 +213,7 @@ export function EditSeasonPage() {
             onClick={() => void openCloseDialog()}
             disabled={closeMutation.isPending}
           >
-            Close season
+            Cerrar temporada
           </Button>
         ) : (
           <Button
@@ -216,7 +223,7 @@ export function EditSeasonPage() {
             onClick={() => reopenMutation.mutate()}
             disabled={reopenMutation.isPending}
           >
-            {reopenMutation.isPending ? <CircularProgress size={22} /> : 'Reopen season'}
+            {reopenMutation.isPending ? <CircularProgress size={22} /> : 'Reabrir temporada'}
           </Button>
         )}
       </Box>
@@ -224,10 +231,10 @@ export function EditSeasonPage() {
       {divisions && divisions.length > 0 && (
         <Box sx={{ mt: 4 }}>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            Assign divisions to this season
+            Asignar divisiones a esta temporada
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Assign league divisions to this season. Each division can be used in the season once assigned.
+            Asigná divisiones de la liga a esta temporada. Cada división se puede usar una vez asignada.
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {divisions.map((d) => (
@@ -238,7 +245,7 @@ export function EditSeasonPage() {
                 disabled={isClosed || assignDivisionMutation.isPending}
                 onClick={() => assignDivisionMutation.mutate(d.id)}
               >
-                Assign {d.name}
+                Asignar {d.name}
               </Button>
             ))}
           </Box>
@@ -246,7 +253,7 @@ export function EditSeasonPage() {
       )}
 
       <Dialog open={closeDialogOpen} onClose={() => setCloseDialogOpen(false)}>
-        <DialogTitle>Close season?</DialogTitle>
+        <DialogTitle>¿Cerrar temporada?</DialogTitle>
         <DialogContent>
           {pendingLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
@@ -255,17 +262,17 @@ export function EditSeasonPage() {
           ) : (
             <DialogContentText component="div">
               <Typography variant="body1" sx={{ mb: 1 }}>
-                Closing locks setup, divisions, team assignments and fixtures. Match results stay editable.
+                Al cerrarla se bloquean el setup, divisiones, asignaciones de equipos y fixtures.
+                Los resultados de partidos siguen siendo editables.
               </Typography>
               {pendingCount != null && pendingCount > 0 ? (
                 <Alert severity="warning" sx={{ mt: 1 }}>
-                  There {pendingCount === 1 ? 'is' : 'are'}{' '}
-                  <strong>{pendingCount}</strong> match
-                  {pendingCount === 1 ? '' : 'es'} without a final result. You can still close.
+                  Hay <strong>{pendingCount}</strong> partido
+                  {pendingCount === 1 ? '' : 's'} sin resultado final. Igual podés cerrar.
                 </Alert>
               ) : pendingCount === 0 ? (
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                  All matches already have a final result.
+                  Todos los partidos ya tienen resultado final.
                 </Typography>
               ) : null}
             </DialogContentText>
@@ -273,7 +280,7 @@ export function EditSeasonPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCloseDialogOpen(false)} disabled={closeMutation.isPending}>
-            Cancel
+            Cancelar
           </Button>
           <Button
             color="warning"
@@ -281,7 +288,7 @@ export function EditSeasonPage() {
             onClick={() => closeMutation.mutate()}
             disabled={pendingLoading || closeMutation.isPending}
           >
-            {closeMutation.isPending ? <CircularProgress size={22} color="inherit" /> : 'Close anyway'}
+            {closeMutation.isPending ? <CircularProgress size={22} color="inherit" /> : 'Cerrar de todos modos'}
           </Button>
         </DialogActions>
       </Dialog>

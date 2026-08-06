@@ -3,7 +3,7 @@ using System;
 namespace FootballManager.Application.Dtos
 {
     public record LeagueDto(Guid Id, string Name, string Slug, string Country, string Description, string LogoUrl, bool IsPublic, bool IsActive);
-    public record SeasonDto(Guid Id, string Name, DateOnly StartDate, DateOnly? EndDate, bool IsActive);
+    public record SeasonDto(Guid Id, string Name, DateOnly StartDate, DateOnly? EndDate, bool IsActive, bool IsPublic);
     public record ClubDto(Guid Id, string Name, string LogoUrl);
     public record TeamDto(
         Guid Id,

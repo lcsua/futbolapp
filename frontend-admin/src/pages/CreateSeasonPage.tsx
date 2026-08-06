@@ -24,7 +24,7 @@ export function CreateSeasonPage() {
       navigate(seasonsBase, { replace: true })
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : 'Failed to create season')
+      setError(err instanceof Error ? err.message : 'No se pudo crear la temporada')
     },
   })
 
@@ -34,23 +34,23 @@ export function CreateSeasonPage() {
   }
 
   if (!leagueId) {
-    return <Alert severity="error">Missing league.</Alert>
+    return <Alert severity="error">Falta la liga.</Alert>
   }
 
   return (
     <Box>
       <Button component={RouterLink} to={seasonsBase} startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
-        Back to seasons
+        Volver a temporadas
       </Button>
       <Typography variant="h5" component="h1" sx={{ mb: 3, fontWeight: 600 }}>
-        Create season
+        Crear temporada
       </Typography>
       <SeasonForm
         onSubmit={handleSubmit}
         loading={createMutation.isPending}
         error={error}
-        submitLabel="Create"
-        title="Season details"
+        submitLabel="Crear"
+        title="Datos de la temporada"
       />
     </Box>
   )

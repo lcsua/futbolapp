@@ -10,5 +10,7 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateSeason
         public string Name { get; set; } = string.Empty;
         public DateOnly StartDate { get; set; }
         public DateOnly? EndDate { get; set; }
+        /// <summary>Show this season on the public website season selectors.</summary>
+        public bool IsPublic { get; set; }
     }
 }

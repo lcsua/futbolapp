@@ -23,6 +23,7 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.Property(e => e.StartDate).HasColumnName("start_date");
             builder.Property(e => e.EndDate).HasColumnName("end_date");
             builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
+            builder.Property(e => e.IsPublic).HasDefaultValue(true).HasColumnName("is_public");
 
             builder.Property(e => e.CreatedAt).HasColumnName("created_at");
             builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");

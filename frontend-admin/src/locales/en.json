@@ -46,6 +46,8 @@
       "schedulingRules": "Division scheduling rules (matches and fields)",
       "statusOpen": "Open",
       "statusClosed": "Closed",
+      "publicVisible": "On public web",
+      "publicHidden": "Hidden on public web",
       "closedWarning": "This season is closed. Setup, fixtures and imports are locked. Results can still be edited."
     },
     "divisions": {

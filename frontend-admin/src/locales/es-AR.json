@@ -46,6 +46,8 @@
       "schedulingRules": "Reglas por división (partidos y canchas)",
       "statusOpen": "Abierta",
       "statusClosed": "Cerrada",
+      "publicVisible": "En web pública",
+      "publicHidden": "Oculta en web",
       "closedWarning": "Esta temporada está cerrada. Setup, fixtures e importaciones están bloqueados. Los resultados se pueden seguir editando."
     },
     "divisions": {

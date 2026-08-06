@@ -27,7 +27,7 @@ public class PublicStructuredService
     private async Task<Season?> ResolveSeasonAsync(Guid leagueId, string seasonSlug, CancellationToken cancellationToken)
     {
         var seasons = await _db.Set<Season>()
-            .Where(s => s.LeagueId == leagueId)
+            .Where(s => s.LeagueId == leagueId && s.IsPublic)
             .ToListAsync(cancellationToken);
 
         var targetSlug = SlugHelper.NormalizeSlug(seasonSlug);
@@ -258,7 +258,7 @@ public class PublicStructuredService
         var seasons = await _db.Set<Season>()
             .Include(s => s.DivisionSeasons)
             .ThenInclude(ds => ds.Division)
-            .Where(s => s.LeagueId == league.Id)
+            .Where(s => s.LeagueId == league.Id && s.IsPublic)
             .OrderByDescending(s => s.IsActive)
             .ThenByDescending(s => s.EndDate)
             .ToListAsync(cancellationToken);
@@ -282,7 +282,7 @@ public class PublicStructuredService
     private async Task<Season?> GetTargetSeasonAsync(Guid leagueId, string? seasonSlug, CancellationToken cancellationToken)
     {
         var seasons = await _db.Set<Season>()
-            .Where(s => s.LeagueId == leagueId)
+            .Where(s => s.LeagueId == leagueId && s.IsPublic)
             .ToListAsync(cancellationToken);
 
         if (seasons.Count == 0) return null;
