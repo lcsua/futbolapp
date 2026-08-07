@@ -107,6 +107,22 @@
       "import": "Import Fixture",
       "copyFromSeason": "Copy from another season",
       "copySuccess": "Copied {{count}} matchups.",
+      "assignDates": "Assign dates",
+      "assignDatesSuccess": "Updated {{count}} matches across {{rounds}} rounds.",
+      "assignDatesModal": {
+        "title": "Assign dates to rounds",
+        "description": "Set the date of the first round. Remaining rounds follow competition match days (no times or fields).",
+        "firstRoundDate": "1st round date",
+        "matchDaysInfo": "Configured match days: {{days}}",
+        "noMatchDays": "No match days in competition rules. Configure them before assigning dates.",
+        "scope": "Scope",
+        "scopeAll": "Entire season (all divisions)",
+        "scopeDivision": "One division only",
+        "overwriteWarning": "Dates for all affected rounds will be overwritten. Existing times and fields are kept.",
+        "submit": "Assign dates",
+        "cancel": "Cancel",
+        "failed": "Could not assign dates"
+      },
       "copyModal": {
         "title": "Copy fixtures from another season",
         "description": "Only matchups are copied (rounds and teams). Dates, times and fields are not copied. Teams must already be assigned in the target season.",

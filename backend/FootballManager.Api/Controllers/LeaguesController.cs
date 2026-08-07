@@ -45,6 +45,7 @@ using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.ImportFixtures;
 using FootballManager.Application.UseCases.Leagues.CopyFixturesFromSeason;
+using FootballManager.Application.UseCases.Leagues.AssignFixtureDates;
 using FootballManager.Application.UseCases.Leagues.GetSchedulingEffectiveForDivision;
 using FootballManager.Application.UseCases.Leagues.GetDivisionSchedulingExtras;
 using FootballManager.Application.UseCases.Leagues.UpsertDivisionSchedulingExtras;
@@ -108,6 +109,7 @@ namespace FootballManager.Api.Controllers
         private readonly IImportFixturesUseCase _importFixturesUseCase;
         private readonly IPreviewFixtureImportUseCase _previewFixtureImportUseCase;
         private readonly ICopyFixturesFromSeasonUseCase _copyFixturesFromSeasonUseCase;
+        private readonly IAssignFixtureDatesUseCase _assignFixtureDatesUseCase;
         private readonly IGetStandingsUseCase _getStandingsUseCase;
         private readonly IGetSchedulingEffectiveForDivisionUseCase _getSchedulingEffectiveForDivisionUseCase;
         private readonly IGetDivisionSchedulingExtrasUseCase _getDivisionSchedulingExtrasUseCase;
@@ -161,6 +163,7 @@ namespace FootballManager.Api.Controllers
             IImportFixturesUseCase importFixturesUseCase,
             IPreviewFixtureImportUseCase previewFixtureImportUseCase,
             ICopyFixturesFromSeasonUseCase copyFixturesFromSeasonUseCase,
+            IAssignFixtureDatesUseCase assignFixtureDatesUseCase,
             IGetStandingsUseCase getStandingsUseCase,
             IGetSchedulingEffectiveForDivisionUseCase getSchedulingEffectiveForDivisionUseCase,
             IGetDivisionSchedulingExtrasUseCase getDivisionSchedulingExtrasUseCase,
@@ -213,6 +216,7 @@ namespace FootballManager.Api.Controllers
             _importFixturesUseCase = importFixturesUseCase ?? throw new ArgumentNullException(nameof(importFixturesUseCase));
             _previewFixtureImportUseCase = previewFixtureImportUseCase ?? throw new ArgumentNullException(nameof(previewFixtureImportUseCase));
             _copyFixturesFromSeasonUseCase = copyFixturesFromSeasonUseCase ?? throw new ArgumentNullException(nameof(copyFixturesFromSeasonUseCase));
+            _assignFixtureDatesUseCase = assignFixtureDatesUseCase ?? throw new ArgumentNullException(nameof(assignFixtureDatesUseCase));
             _getStandingsUseCase = getStandingsUseCase ?? throw new ArgumentNullException(nameof(getStandingsUseCase));
             _getSchedulingEffectiveForDivisionUseCase = getSchedulingEffectiveForDivisionUseCase ?? throw new ArgumentNullException(nameof(getSchedulingEffectiveForDivisionUseCase));
             _getDivisionSchedulingExtrasUseCase = getDivisionSchedulingExtrasUseCase ?? throw new ArgumentNullException(nameof(getDivisionSchedulingExtrasUseCase));
@@ -963,6 +967,36 @@ namespace FootballManager.Api.Controllers
             return Ok(response);
         }
 
+        [HttpPost("{leagueId}/seasons/{seasonId}/fixtures/assign-dates")]
+        public async Task<IActionResult> AssignFixtureDates(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid seasonId,
+            [FromBody] AssignFixtureDatesBody body,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new AssignFixtureDatesRequest
+            {
+                LeagueId = leagueId,
+                SeasonId = seasonId,
+                FirstRoundDate = body.FirstRoundDate,
+                DivisionId = body.DivisionId,
+                UserId = userId,
+            };
+            var response = await _assignFixtureDatesUseCase.ExecuteAsync(request, cancellationToken);
+            if (response.Errors.Count > 0)
+                return BadRequest(new
+                {
+                    message = string.Join("\n", response.Errors),
+                    errors = response.Errors,
+                    updatedCount = response.UpdatedCount,
+                    roundCount = response.RoundCount,
+                });
+            return Ok(response);
+        }
+
         private Guid GetUserId()
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -998,6 +1032,12 @@ namespace FootballManager.Api.Controllers
         public Guid SourceSeasonId { get; set; }
         public Guid? DivisionId { get; set; }
         public bool InvertHomes { get; set; }
+    }
+
+    public class AssignFixtureDatesBody
+    {
+        public DateOnly FirstRoundDate { get; set; }
+        public Guid? DivisionId { get; set; }
     }
 
     public class UploadLeagueImageRequest

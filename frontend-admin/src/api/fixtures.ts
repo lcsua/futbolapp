@@ -68,6 +68,17 @@ export interface CopyFixturesFromSeasonResponse {
   errors: string[]
 }
 
+export interface AssignFixtureDatesBody {
+  firstRoundDate: string // yyyy-MM-dd
+  divisionId?: string | null
+}
+
+export interface AssignFixtureDatesResponse {
+  updatedCount: number
+  roundCount: number
+  errors: string[]
+}
+
 export interface FixtureImportBody {
   seasonId: string
   divisionId: string
@@ -102,6 +113,18 @@ export const fixturesService = {
   ) =>
     apiClient.post<CopyFixturesFromSeasonResponse>(
       `/api/leagues/${leagueId}/seasons/${targetSeasonId}/fixtures/copy`,
+      body,
+      signal
+    ),
+
+  assignDates: (
+    leagueId: string,
+    seasonId: string,
+    body: AssignFixtureDatesBody,
+    signal?: AbortSignal
+  ) =>
+    apiClient.post<AssignFixtureDatesResponse>(
+      `/api/leagues/${leagueId}/seasons/${seasonId}/fixtures/assign-dates`,
       body,
       signal
     ),

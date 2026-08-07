@@ -25,6 +25,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import SaveIcon from '@mui/icons-material/Save'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import DownloadIcon from '@mui/icons-material/Download'
 import PrintIcon from '@mui/icons-material/Print'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -38,6 +39,7 @@ import { leaguesService } from '../api/leagues'
 import { useActiveLeague, useLeagueId } from '../contexts/LeagueContext'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
 import { CopyFixturesModal } from '../components/CopyFixturesModal'
+import { AssignFixtureDatesModal } from '../components/AssignFixtureDatesModal'
 import { useTranslation } from 'react-i18next'
 
 function formatTime(timeStr: string | null | undefined): string {
@@ -101,6 +103,7 @@ export function FixturesPage() {
   const [teamFilter, setTeamFilter] = useState<string>('')
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [copyModalOpen, setCopyModalOpen] = useState(false)
+  const [assignDatesModalOpen, setAssignDatesModalOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
@@ -537,6 +540,14 @@ export function FixturesPage() {
             >
               {t('fixtures.copyFromSeason')}
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<CalendarMonthIcon />}
+              onClick={() => setAssignDatesModalOpen(true)}
+              disabled={seasonClosed || !hasFixtures || configuredMatchDays.length === 0}
+            >
+              {t('fixtures.assignDates')}
+            </Button>
             {hasFixtures && (
               <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownload}>
                 {t('fixtures.download')}
@@ -642,6 +653,26 @@ export function FixturesPage() {
             void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
             setSnackbar({
               message: t('fixtures.copySuccess', { count: copiedCount }),
+              severity: 'success',
+            })
+          }}
+        />
+      )}
+
+      {leagueId && seasonId && (
+        <AssignFixtureDatesModal
+          open={assignDatesModalOpen}
+          onClose={() => setAssignDatesModalOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          initialDivisionId={divisionId}
+          divisions={divisions}
+          matchDaysText={configuredMatchDaysText}
+          hasMatchDays={configuredMatchDays.length > 0}
+          onSuccess={(updatedCount, roundCount) => {
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
+            setSnackbar({
+              message: t('fixtures.assignDatesSuccess', { count: updatedCount, rounds: roundCount }),
               severity: 'success',
             })
           }}

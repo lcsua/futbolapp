@@ -107,6 +107,22 @@
       "import": "Importar Fixture",
       "copyFromSeason": "Copiar de otra temporada",
       "copySuccess": "Se copiaron {{count}} enfrentamientos.",
+      "assignDates": "Asignar fechas",
+      "assignDatesSuccess": "Se actualizaron {{count}} partidos en {{rounds}} fechas.",
+      "assignDatesModal": {
+        "title": "Asignar fechas a las jornadas",
+        "description": "Indicá la fecha de la primera jornada. El resto se calcula con los días de juego de las reglas de competición (sin horarios ni canchas).",
+        "firstRoundDate": "Fecha de la 1ª jornada",
+        "matchDaysInfo": "Días de juego configurados: {{days}}",
+        "noMatchDays": "No hay días de juego en las reglas de competición. Configuralos antes de asignar fechas.",
+        "scope": "Alcance",
+        "scopeAll": "Toda la temporada (todas las divisiones)",
+        "scopeDivision": "Solo una división",
+        "overwriteWarning": "Se sobrescriben las fechas de todas las jornadas afectadas. Las horas y canchas (si existen) se conservan.",
+        "submit": "Asignar fechas",
+        "cancel": "Cancelar",
+        "failed": "No se pudieron asignar las fechas"
+      },
       "copyModal": {
         "title": "Copiar fixture desde otra temporada",
         "description": "Solo se copian los enfrentamientos (rondas y equipos). No se copian fechas, horarios ni canchas. Los equipos deben estar ya asignados en la temporada destino.",
