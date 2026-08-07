@@ -1,4 +1,4 @@
-// JavaScript for LigApp Public Module
+// JavaScript for MiLiga public site
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('LigApp Public Website Initialized');
+    console.log('MiLiga public website initialized');
 });

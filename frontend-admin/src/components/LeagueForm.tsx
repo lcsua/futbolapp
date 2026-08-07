@@ -42,7 +42,7 @@ export function LeagueForm({
   error = null,
   submitLabel,
   title,
-  publicBaseUrl = 'https://ligapp.com',
+  publicBaseUrl = 'https://miliga.com.ar',
   excludeLeagueId,
 }: LeagueFormProps) {
   const values: LeagueFormData = { ...defaultValues, ...initialValues }
