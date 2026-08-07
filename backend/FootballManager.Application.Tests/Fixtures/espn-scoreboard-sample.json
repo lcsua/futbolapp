@@ -1,0 +1,36 @@
+{
+  "events": [
+    {
+      "id": "1001",
+      "date": "2026-08-08T23:30:00Z",
+      "status": {
+        "type": { "state": "pre", "description": "Scheduled", "name": "STATUS_SCHEDULED" }
+      },
+      "competitions": [
+        {
+          "venue": { "fullName": "Estadio Monumental" },
+          "competitors": [
+            {
+              "homeAway": "home",
+              "score": "0",
+              "team": {
+                "id": "20",
+                "displayName": "River Plate",
+                "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/20.png"
+              }
+            },
+            {
+              "homeAway": "away",
+              "score": "0",
+              "team": {
+                "id": "5",
+                "displayName": "Independiente",
+                "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/5.png"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

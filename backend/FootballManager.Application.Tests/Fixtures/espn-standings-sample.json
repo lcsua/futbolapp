@@ -1,0 +1,74 @@
+{
+  "children": [
+    {
+      "id": "1",
+      "name": "Grupo A",
+      "standings": {
+        "entries": [
+          {
+            "team": {
+              "id": "5",
+              "displayName": "Boca Juniors",
+              "logos": [{ "href": "https://a.espncdn.com/i/teamlogos/soccer/500/5.png" }]
+            },
+            "stats": [
+              { "name": "gamesPlayed", "value": 7 },
+              { "name": "wins", "value": 4 },
+              { "name": "ties", "value": 2 },
+              { "name": "losses", "value": 1 },
+              { "name": "pointsFor", "value": 10 },
+              { "name": "pointsAgainst", "value": 5 },
+              { "name": "pointDifferential", "value": 5 },
+              { "name": "points", "value": 14 },
+              { "name": "rank", "value": 1 }
+            ]
+          },
+          {
+            "team": {
+              "id": "11",
+              "displayName": "Racing Club",
+              "logos": [{ "href": "https://a.espncdn.com/i/teamlogos/soccer/500/11.png" }]
+            },
+            "stats": [
+              { "name": "gamesPlayed", "value": 7 },
+              { "name": "wins", "value": 3 },
+              { "name": "ties", "value": 3 },
+              { "name": "losses", "value": 1 },
+              { "name": "pointsFor", "value": 9 },
+              { "name": "pointsAgainst", "value": 6 },
+              { "name": "pointDifferential", "value": 3 },
+              { "name": "points", "value": 12 },
+              { "name": "rank", "value": 2 }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "2",
+      "name": "Grupo B",
+      "standings": {
+        "entries": [
+          {
+            "team": {
+              "id": "20",
+              "displayName": "River Plate",
+              "logos": [{ "href": "https://a.espncdn.com/i/teamlogos/soccer/500/20.png" }]
+            },
+            "stats": [
+              { "name": "gamesPlayed", "value": 7 },
+              { "name": "wins", "value": 5 },
+              { "name": "ties", "value": 1 },
+              { "name": "losses", "value": 1 },
+              { "name": "pointsFor", "value": 14 },
+              { "name": "pointsAgainst", "value": 5 },
+              { "name": "pointDifferential", "value": 9 },
+              { "name": "points", "value": 16 },
+              { "name": "rank", "value": 1 }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

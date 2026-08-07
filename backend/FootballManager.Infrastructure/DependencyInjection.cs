@@ -1,5 +1,7 @@
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.ProfessionalFootball;
 using FootballManager.Infrastructure.Persistence;
+using FootballManager.Infrastructure.ProfessionalFootball;
 using FootballManager.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -35,6 +37,17 @@ namespace FootballManager.Infrastructure
             services.AddScoped<IMatchIncidentRepository, MatchIncidentRepository>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            services.AddHttpClient<IProfessionalFootballProvider, EspnFootballProvider>(client =>
+            {
+                client.BaseAddress = new Uri("https://site.web.api.espn.com/");
+                client.Timeout = TimeSpan.FromSeconds(20);
+                client.DefaultRequestHeaders.TryAddWithoutValidation(
+                    "User-Agent",
+                    "Mozilla/5.0 (compatible; MiLiga/1.0; +https://miliga.com.ar)");
+                client.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/json");
+                client.DefaultRequestHeaders.TryAddWithoutValidation("Referer", "https://www.espn.com.ar/");
+            });
 
             return services;
         }

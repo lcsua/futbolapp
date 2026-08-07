@@ -1,0 +1,47 @@
+@model PublicWeb.Models.Public.ProfessionalStandingGroupViewModel
+
+<div class="card shadow-sm border-0 mb-3">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0 align-middle pro-standings-table">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" class="text-center" style="width:2.5rem;">#</th>
+                    <th scope="col">Equipo</th>
+                    <th scope="col" class="text-center">PJ</th>
+                    <th scope="col" class="text-center d-none d-sm-table-cell">PG</th>
+                    <th scope="col" class="text-center d-none d-sm-table-cell">PE</th>
+                    <th scope="col" class="text-center d-none d-sm-table-cell">PP</th>
+                    <th scope="col" class="text-center d-none d-md-table-cell">GF</th>
+                    <th scope="col" class="text-center d-none d-md-table-cell">GC</th>
+                    <th scope="col" class="text-center">DG</th>
+                    <th scope="col" class="text-center fw-bold">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var row in Model.Entries)
+            {
+                <tr>
+                    <td class="text-center fw-semibold">@row.Position</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            @if (!string.IsNullOrWhiteSpace(row.TeamLogo))
+                            {
+                                <img src="@row.TeamLogo" alt="" width="24" height="24" class="flex-shrink-0" style="object-fit:contain;" loading="lazy" />
+                            }
+                            <span class="text-truncate">@row.TeamName</span>
+                        </div>
+                    </td>
+                    <td class="text-center">@row.Played</td>
+                    <td class="text-center d-none d-sm-table-cell">@row.Won</td>
+                    <td class="text-center d-none d-sm-table-cell">@row.Drawn</td>
+                    <td class="text-center d-none d-sm-table-cell">@row.Lost</td>
+                    <td class="text-center d-none d-md-table-cell">@row.GoalsFor</td>
+                    <td class="text-center d-none d-md-table-cell">@row.GoalsAgainst</td>
+                    <td class="text-center">@(row.GoalDifference > 0 ? $"+{row.GoalDifference}" : row.GoalDifference.ToString())</td>
+                    <td class="text-center fw-bold">@row.Points</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

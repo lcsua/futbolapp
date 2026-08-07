@@ -1,3 +1,4 @@
+using PublicWeb.Models.Public;
 using PublicWeb.Services.Public;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,17 +8,30 @@ namespace PublicWeb.Controllers.Public;
 public class LeagueController : Controller
 {
     private readonly LeaguePublicService _leagueService;
+    private readonly ProfessionalFootballPublicService _professionalFootballService;
 
-    public LeagueController(LeaguePublicService leagueService)
+    public LeagueController(
+        LeaguePublicService leagueService,
+        ProfessionalFootballPublicService professionalFootballService)
     {
         _leagueService = leagueService;
+        _professionalFootballService = professionalFootballService;
     }
 
     [HttpGet("")]
     public async Task<IActionResult> Index()
     {
         var leagues = await _leagueService.GetPublicLeaguesAsync();
-        return View("~/Views/Public/LeaguesIndex.cshtml", leagues);
+        var (tournaments, failed) = await _professionalFootballService.GetArgentineCompetitionsAsync();
+
+        var model = new LeaguesIndexPageViewModel
+        {
+            AmateurLeagues = leagues,
+            ArgentineTournaments = tournaments,
+            ArgentineTournamentsUnavailable = failed,
+        };
+
+        return View("~/Views/Public/LeaguesIndex.cshtml", model);
     }
 
     [HttpGet("{slug}")]

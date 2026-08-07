@@ -1,4 +1,4 @@
-@model List<PublicWeb.Models.Public.LeagueViewModel>
+@model PublicWeb.Models.Public.LeaguesIndexPageViewModel
 @{
     ViewData["Title"] = "Ligas";
     ViewData["Description"] = "Explorá todas las ligas públicas disponibles en MiLiga.";
@@ -9,16 +9,16 @@
     <p class="text-muted mb-0">Elegí una liga para ver tabla, resultados y próximos partidos.</p>
 </div>
 
-@if (Model == null || !Model.Any())
+@if (Model.AmateurLeagues == null || !Model.AmateurLeagues.Any())
 {
-    <div class="p-5 text-center text-muted bg-white border rounded shadow-sm">
+    <div class="p-5 text-center text-muted bg-white border rounded shadow-sm mb-5">
         No hay ligas públicas disponibles por el momento.
     </div>
 }
 else
 {
-    <div class="list-group shadow-sm">
-        @foreach (var league in Model)
+    <div class="list-group shadow-sm mb-5">
+        @foreach (var league in Model.AmateurLeagues)
         {
             <a href="@Url.Content($"~/ligas/{league.Slug}")" class="list-group-item list-group-item-action p-3">
                 <div class="d-flex justify-content-between align-items-start gap-3">
@@ -39,3 +39,50 @@ else
         }
     </div>
 }
+
+<section class="mb-4" aria-labelledby="torneos-argentinos-heading">
+    <h2 id="torneos-argentinos-heading" class="fw-bold h3 mb-1">Torneos Argentinos</h2>
+    <p class="text-muted mb-3">Competencias profesionales de fútbol argentino.</p>
+
+    @if (Model.ArgentineTournamentsUnavailable && (Model.ArgentineTournaments == null || !Model.ArgentineTournaments.Any()))
+    {
+        <div class="alert alert-warning shadow-sm mb-0">
+            No pudimos obtener la información del torneo en este momento. Intentá nuevamente más tarde.
+        </div>
+    }
+    else if (Model.ArgentineTournaments == null || !Model.ArgentineTournaments.Any())
+    {
+        <div class="p-4 text-center text-muted bg-white border rounded shadow-sm">
+            No hay torneos profesionales disponibles por el momento.
+        </div>
+    }
+    else
+    {
+        <div class="list-group shadow-sm">
+            @foreach (var tournament in Model.ArgentineTournaments)
+            {
+                <a href="@Url.Content($"~/ligas/argentina/{tournament.Slug}")"
+                   class="list-group-item list-group-item-action p-3">
+                    <div class="d-flex justify-content-between align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-3 min-w-0">
+                            @if (!string.IsNullOrWhiteSpace(tournament.LogoUrl))
+                            {
+                                <img src="@tournament.LogoUrl" alt="" width="40" height="40" class="flex-shrink-0" style="object-fit:contain;" loading="lazy" />
+                            }
+                            <div class="min-w-0">
+                                <h3 class="h5 fw-bold mb-1 text-truncate">@tournament.Name</h3>
+                                @if (!string.IsNullOrWhiteSpace(tournament.CurrentTournament))
+                                {
+                                    <p class="text-muted mb-0 small">
+                                        @tournament.CurrentTournament @(tournament.Season > 0 ? tournament.Season.ToString() : "")
+                                    </p>
+                                }
+                            </div>
+                        </div>
+                        <span class="text-primary fw-semibold text-nowrap">Ver →</span>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+</section>

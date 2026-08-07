@@ -1,0 +1,152 @@
+@model PublicWeb.Models.Public.ProfessionalCompetitionDetailViewModel
+@using System.Globalization
+@{
+    var competition = Model.Competition;
+    TimeZoneInfo tz;
+    try { tz = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires"); }
+    catch (TimeZoneNotFoundException) { tz = TimeZoneInfo.FindSystemTimeZoneById("Argentina Standard Time"); }
+    catch (InvalidTimeZoneException) { tz = TimeZoneInfo.FindSystemTimeZoneById("Argentina Standard Time"); }
+    var culture = CultureInfo.GetCultureInfo("es-AR");
+}
+
+<div class="mb-3">
+    <a href="@Url.Content("~/ligas")" class="text-decoration-none small">← Volver a ligas</a>
+</div>
+
+<div class="card shadow-sm border-0 bg-white mb-4">
+    <div class="card-body d-flex align-items-center gap-3">
+        @if (!string.IsNullOrWhiteSpace(competition.LogoUrl))
+        {
+            <img src="@competition.LogoUrl" alt="" width="56" height="56" style="object-fit:contain;" loading="lazy" />
+        }
+        <div>
+            <h1 class="h3 fw-bold mb-1">@competition.Name</h1>
+            @if (!string.IsNullOrWhiteSpace(competition.CurrentTournament))
+            {
+                <p class="text-muted mb-0">
+                    @competition.CurrentTournament @(competition.Season > 0 ? competition.Season.ToString() : "")
+                </p>
+            }
+        </div>
+    </div>
+</div>
+
+@if (Model.LoadFailed)
+{
+    <div class="alert alert-warning shadow-sm">
+        @(Model.ErrorMessage ?? "No pudimos obtener la información del torneo en este momento. Intentá nuevamente más tarde.")
+    </div>
+}
+else
+{
+    <section class="mb-5" aria-labelledby="standings-heading">
+        <h2 id="standings-heading" class="h4 fw-bold mb-3">Tabla de posiciones</h2>
+
+        @if (Model.Standings == null || !Model.Standings.Any())
+        {
+            <div class="p-4 text-center text-muted bg-white border rounded shadow-sm">
+                No hay tabla de posiciones disponible.
+            </div>
+        }
+        else if (Model.Standings.Count == 1)
+        {
+            @await Html.PartialAsync("~/Views/Public/_ProfessionalStandingsTable.cshtml", Model.Standings[0])
+        }
+        else
+        {
+            <ul class="nav nav-pills nav-fill mb-3 d-md-none" id="zonaTabs" role="tablist">
+                @for (var i = 0; i < Model.Standings.Count; i++)
+                {
+                    var g = Model.Standings[i];
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(i == 0 ? "active" : "")"
+                                id="zona-tab-@i"
+                                data-bs-toggle="tab"
+                                data-bs-target="#zona-pane-@i"
+                                type="button"
+                                role="tab">@g.Name</button>
+                    </li>
+                }
+            </ul>
+
+            <div class="tab-content d-md-none">
+                @for (var i = 0; i < Model.Standings.Count; i++)
+                {
+                    <div class="tab-pane fade @(i == 0 ? "show active" : "")" id="zona-pane-@i" role="tabpanel">
+                        @await Html.PartialAsync("~/Views/Public/_ProfessionalStandingsTable.cshtml", Model.Standings[i])
+                    </div>
+                }
+            </div>
+
+            <div class="row g-4 d-none d-md-flex">
+                @foreach (var group in Model.Standings)
+                {
+                    <div class="col-md-6">
+                        <h3 class="h6 fw-bold mb-2">@group.Name</h3>
+                        @await Html.PartialAsync("~/Views/Public/_ProfessionalStandingsTable.cshtml", group)
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <section class="mb-4" aria-labelledby="upcoming-heading">
+        <h2 id="upcoming-heading" class="h4 fw-bold mb-3">Próximos partidos</h2>
+
+        @if (Model.UpcomingMatches == null || !Model.UpcomingMatches.Any())
+        {
+            <div class="p-4 text-center text-muted bg-white border rounded shadow-sm">
+                No hay próximos partidos programados.
+            </div>
+        }
+        else
+        {
+            var byDay = Model.UpcomingMatches
+                .GroupBy(m => TimeZoneInfo.ConvertTime(m.Date, tz).Date)
+                .OrderBy(g => g.Key);
+
+            <div class="list-group shadow-sm">
+                @foreach (var day in byDay)
+                {
+                    var dayLabel = culture.TextInfo.ToTitleCase(day.Key.ToString("dddd d 'de' MMMM", culture));
+                    <div class="list-group-item bg-light fw-semibold">@dayLabel</div>
+                    @foreach (var match in day.OrderBy(m => m.Date))
+                    {
+                        var local = TimeZoneInfo.ConvertTime(match.Date, tz);
+                        var time = local.ToString("HH:mm", culture);
+                        <div class="list-group-item p-3">
+                            <div class="row align-items-center g-2 pro-match-row">
+                                <div class="col-5">
+                                    <div class="d-flex align-items-center gap-2 justify-content-end">
+                                        <span class="text-end fw-semibold small text-truncate">@match.HomeTeamName</span>
+                                        @if (!string.IsNullOrWhiteSpace(match.HomeTeamLogo))
+                                        {
+                                            <img src="@match.HomeTeamLogo" alt="" width="28" height="28" style="object-fit:contain;" loading="lazy" />
+                                        }
+                                    </div>
+                                </div>
+                                <div class="col-2 text-center">
+                                    <div class="fw-bold">@time</div>
+                                    <div class="small text-muted text-truncate">@(string.IsNullOrWhiteSpace(match.StatusDetail) ? match.Status : match.StatusDetail)</div>
+                                </div>
+                                <div class="col-5">
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (!string.IsNullOrWhiteSpace(match.AwayTeamLogo))
+                                        {
+                                            <img src="@match.AwayTeamLogo" alt="" width="28" height="28" style="object-fit:contain;" loading="lazy" />
+                                        }
+                                        <span class="fw-semibold small text-truncate">@match.AwayTeamName</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(match.Venue))
+                            {
+                                <div class="small text-muted text-center mt-2">@match.Venue</div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </section>
+}
