@@ -73,8 +73,7 @@ jobs:
           User=lucas
           Environment=ASPNETCORE_ENVIRONMENT=Production
           Environment=ASPNETCORE_URLS=http://127.0.0.1:5002
-          Environment=BackendApi__BaseUrl=http://127.0.0.1/api/public/
-          Environment=BackendApi__HostHeader=194.163.129.125
+          Environment=BackendApi__BaseUrl=http://127.0.0.1:5001/api/public/
           Environment=PublicWeb__PathBase=/public-web
 
           [Install]
@@ -148,8 +147,10 @@ jobs:
           else
             pkill -x PublicWeb || true
             cd /home/lucas/apps/futbolnet/web
-            setsid env ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:5002 BackendApi__BaseUrl=http://127.0.0.1/api/public/ BackendApi__HostHeader=194.163.129.125 PublicWeb__PathBase=/public-web ./PublicWeb > public-web.log 2>&1 < /dev/null &
+            setsid env ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:5002 BackendApi__BaseUrl=http://127.0.0.1:5001/api/public/ PublicWeb__PathBase=/public-web ./PublicWeb > public-web.log 2>&1 < /dev/null &
           fi
 
           sleep 5
+          curl -fsS http://127.0.0.1:5001/api/public/liga >/dev/null
+          curl -fsS https://miliga.com.ar/ligas | grep -q "Liga"
           curl -fsS http://127.0.0.1:5002/public-web/ >/dev/null

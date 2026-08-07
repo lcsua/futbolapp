@@ -5,8 +5,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient("BackendApi", client =>
 {
-    // Prefer nginx local proxy in production so we don't depend on the API bind port.
-    var baseUrl = builder.Configuration["BackendApi:BaseUrl"] ?? "http://127.0.0.1/api/public/";
+    var baseUrl = builder.Configuration["BackendApi:BaseUrl"] ?? "http://127.0.0.1:5001/api/public/";
     if (!baseUrl.EndsWith('/'))
         baseUrl += "/";
     client.BaseAddress = new Uri(baseUrl);
