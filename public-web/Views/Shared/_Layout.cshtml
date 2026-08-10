@@ -87,25 +87,39 @@
                     </ul>
                     <ul class="navbar-nav align-items-lg-center gap-lg-2">
                         <li class="nav-item dropdown miliga-theme-toggle">
-                            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false" title="Cambiar diseño"
-                                    aria-label="Cambiar diseño">
-                                Diseño
+                            <button class="btn btn-sm btn-outline-light miliga-theme-trigger" type="button"
+                                    data-bs-toggle="dropdown" aria-expanded="false" title="Apariencia"
+                                    aria-label="Elegir apariencia del sitio">
+                                <svg class="miliga-theme-trigger-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M12 3a9 9 0 1 0 0 18 3.5 3.5 0 0 0 0-7 2.5 2.5 0 0 1 0-5A9 9 0 0 0 12 3Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+                                    <circle cx="7.5" cy="10" r="1.1" fill="currentColor"/>
+                                    <circle cx="10.5" cy="7" r="1.1" fill="currentColor"/>
+                                    <circle cx="14.5" cy="7.5" r="1.1" fill="currentColor"/>
+                                </svg>
+                                <span class="miliga-theme-trigger-label">Apariencia</span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow" role="menu" aria-label="Cambiar diseño">
-                                <li><h6 class="dropdown-header">Cambiar diseño</h6></li>
+                            <ul class="dropdown-menu dropdown-menu-end miliga-theme-menu shadow border-0" role="menu" aria-label="Apariencia">
+                                <li><h6 class="dropdown-header">Apariencia</h6></li>
                                 <li>
-                                    <button type="button" class="dropdown-item d-flex align-items-center gap-2"
-                                            role="menuitemradio" data-theme-option="green" aria-checked="false">
-                                        <span class="miliga-theme-swatch miliga-theme-swatch--green" aria-hidden="true"></span>
-                                        Verde + Azul Noche
+                                    <button type="button" class="dropdown-item miliga-theme-option"
+                                            role="menuitemradio" data-theme-option="blue" aria-checked="false">
+                                        <span class="miliga-theme-swatch miliga-theme-swatch--blue" aria-hidden="true"></span>
+                                        <span class="miliga-theme-option-text">
+                                            <span class="miliga-theme-option-title">Clásico</span>
+                                            <span class="miliga-theme-option-desc">Azul</span>
+                                        </span>
+                                        <span class="miliga-theme-check" aria-hidden="true">✓</span>
                                     </button>
                                 </li>
                                 <li>
-                                    <button type="button" class="dropdown-item d-flex align-items-center gap-2"
-                                            role="menuitemradio" data-theme-option="blue" aria-checked="false">
-                                        <span class="miliga-theme-swatch miliga-theme-swatch--blue" aria-hidden="true"></span>
-                                        Azul Eléctrico + Azul Noche
+                                    <button type="button" class="dropdown-item miliga-theme-option"
+                                            role="menuitemradio" data-theme-option="green" aria-checked="false">
+                                        <span class="miliga-theme-swatch miliga-theme-swatch--green" aria-hidden="true"></span>
+                                        <span class="miliga-theme-option-text">
+                                            <span class="miliga-theme-option-title">Césped</span>
+                                            <span class="miliga-theme-option-desc">Verde</span>
+                                        </span>
+                                        <span class="miliga-theme-check" aria-hidden="true">✓</span>
                                     </button>
                                 </li>
                             </ul>

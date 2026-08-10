@@ -128,30 +128,112 @@ a:hover {
   display: block;
 }
 
-.miliga-theme-toggle .dropdown-menu {
-  min-width: 14rem;
+.miliga-theme-toggle .miliga-theme-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+}
+
+.miliga-theme-trigger-icon {
+  flex-shrink: 0;
+}
+
+.miliga-theme-menu {
+  min-width: 11.5rem;
+  padding: 0.4rem;
+  border-radius: 0.75rem;
+}
+
+.miliga-theme-menu .dropdown-header {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 0.35rem 0.65rem 0.5rem;
+}
+
+.miliga-theme-option {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  margin-bottom: 0.15rem;
+}
+
+.miliga-theme-option:last-child {
+  margin-bottom: 0;
+}
+
+.miliga-theme-option-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  flex: 1;
+  min-width: 0;
+}
+
+.miliga-theme-option-title {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.miliga-theme-option-desc {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.miliga-theme-check {
+  opacity: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+  width: 1rem;
+  text-align: center;
 }
 
 .miliga-theme-toggle .dropdown-item.active,
 .miliga-theme-toggle .dropdown-item:active {
-  background-color: var(--primary);
-  color: #fff;
+  background-color: rgba(var(--primary-rgb), 0.1);
+  color: var(--text);
+}
+
+.miliga-theme-option.active .miliga-theme-check {
+  opacity: 1;
+}
+
+.miliga-theme-option.active .miliga-theme-option-desc {
+  color: var(--text-secondary);
 }
 
 .miliga-theme-swatch {
-  width: 1rem;
-  height: 1rem;
+  width: 1.15rem;
+  height: 1.15rem;
   border-radius: 999px;
   display: inline-block;
-  border: 1px solid rgba(15, 23, 42, 0.15);
+  flex-shrink: 0;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
 .miliga-theme-swatch--green {
-  background: linear-gradient(135deg, #16A34A 50%, #0F172A 50%);
+  background: linear-gradient(135deg, #16A34A 52%, #0F172A 52%);
 }
 
 .miliga-theme-swatch--blue {
-  background: linear-gradient(135deg, #2563EB 50%, #0B1220 50%);
+  background: linear-gradient(135deg, #2563EB 52%, #0B1220 52%);
+}
+
+@media (max-width: 575.98px) {
+  .miliga-theme-trigger-label {
+    display: none;
+  }
+
+  .miliga-theme-toggle .miliga-theme-trigger {
+    padding: 0.4rem 0.55rem;
+  }
 }
 
 /* -------------------------------------------------------------------------- */

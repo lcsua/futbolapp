@@ -1,10 +1,10 @@
 // MiLiga public site — theme switcher (no framework SPA)
 (function () {
   const STORAGE_KEY = 'miliga-theme';
-  const DEFAULT_THEME = 'blue'; // Azul Eléctrico + Azul Noche
+  const DEFAULT_THEME = 'blue'; // Clásico
   const THEMES = {
-    green: { id: 'green', label: 'Verde + Azul Noche' },
-    blue: { id: 'blue', label: 'Azul Eléctrico + Azul Noche' },
+    green: { id: 'green', label: 'Césped' },
+    blue: { id: 'blue', label: 'Clásico' },
   };
 
   function normalize(theme) {
