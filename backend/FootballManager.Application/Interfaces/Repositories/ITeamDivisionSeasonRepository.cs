@@ -16,5 +16,7 @@ namespace FootballManager.Application.Interfaces.Repositories
         Task RemoveBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
         Task RemoveByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default);
         Task RemoveByDivisionIdAsync(Guid divisionId, CancellationToken cancellationToken = default);
+        /// <returns>True if an assignment was removed.</returns>
+        Task<bool> RemoveByTeamAndDivisionSeasonAsync(Guid teamId, Guid divisionSeasonId, CancellationToken cancellationToken = default);
     }
 }

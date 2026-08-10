@@ -36,6 +36,9 @@ export const teamsService = {
   assignTeamToDivisionSeason: (leagueId: string, seasonId: string, divisionId: string, teamId: string, signal?: AbortSignal) =>
     apiClient.post<{ teamDivisionSeasonId: string }>(`/api/leagues/${leagueId}/seasons/${seasonId}/divisions/${divisionId}/teams`, { teamId }, signal),
 
+  unassignTeamFromDivisionSeason: (leagueId: string, seasonId: string, divisionId: string, teamId: string, signal?: AbortSignal) =>
+    apiClient.delete(`/api/leagues/${leagueId}/seasons/${seasonId}/divisions/${divisionId}/teams/${teamId}`, signal),
+
   bulkCreate: (leagueId: string, names: string[], signal?: AbortSignal) =>
     apiClient.post<{ createdIds: string[] }>(`/api/leagues/${leagueId}/teams/bulk`, { names }, signal),
 }

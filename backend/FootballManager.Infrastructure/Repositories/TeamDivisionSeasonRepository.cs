@@ -91,5 +91,15 @@ namespace FootballManager.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
             _context.TeamDivisionSeasons.RemoveRange(toRemove);
         }
+
+        public async Task<bool> RemoveByTeamAndDivisionSeasonAsync(Guid teamId, Guid divisionSeasonId, CancellationToken cancellationToken = default)
+        {
+            var assignment = await _context.TeamDivisionSeasons
+                .SingleOrDefaultAsync(tds => tds.TeamId == teamId && tds.DivisionSeasonId == divisionSeasonId, cancellationToken);
+            if (assignment == null)
+                return false;
+            _context.TeamDivisionSeasons.Remove(assignment);
+            return true;
+        }
     }
 }

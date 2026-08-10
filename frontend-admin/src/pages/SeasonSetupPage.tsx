@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import {
   Alert,
@@ -13,9 +13,11 @@ import {
   CircularProgress,
   Chip,
   OutlinedInput,
+  Divider,
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
+import PersonRemoveIcon from '@mui/icons-material/PersonRemove'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -35,6 +37,7 @@ export function SeasonSetupPage() {
   const [seasonId, setSeasonId] = useState<string>('')
   const [divisionId, setDivisionId] = useState<string>('')
   const [teamIds, setTeamIds] = useState<string[]>([])
+  const [unassignTeamIds, setUnassignTeamIds] = useState<string[]>([])
   const [assignError, setAssignError] = useState<string | null>(null)
   const [assignSuccess, setAssignSuccess] = useState<string | null>(null)
   const [importOpen, setImportOpen] = useState(false)
@@ -60,13 +63,32 @@ export function SeasonSetupPage() {
     queryFn: ({ signal }) => seasonsService.getSetup(leagueId!, seasonId, signal),
     enabled: !!leagueId && !!seasonId,
   })
-  const divisionFixturesLocked = !!setupData?.divisions.find((d) => d.divisionId === divisionId)?.fixturesLocked
+  const selectedDivisionSetup = setupData?.divisions.find((d) => d.divisionId === divisionId)
+  const divisionFixturesLocked = !!selectedDivisionSetup?.fixturesLocked
+  const teamsInDivision = useMemo(() => {
+    const list = selectedDivisionSetup?.teams ?? []
+    return [...list].sort((a, b) => {
+      const aName = getTeamDisplayName(a)
+      const bName = getTeamDisplayName(b)
+      const nameCmp = aName.localeCompare(bName, undefined, { sensitivity: 'base' })
+      if (nameCmp !== 0) return nameCmp
+      return (a.suffix ?? '').localeCompare(b.suffix ?? '', undefined, { sensitivity: 'base' })
+    })
+  }, [selectedDivisionSetup])
+
   const { data: assignedData } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons', seasonId, 'assigned-team-ids'],
     queryFn: ({ signal }) => seasonsService.getAssignedTeamIds(leagueId!, seasonId, signal),
     enabled: !!leagueId && !!seasonId,
   })
   const assignedTeamIds = assignedData?.teamIds ?? []
+
+  const invalidateAssignmentQueries = () => {
+    void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons'] })
+    void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'assigned-team-ids'] })
+    void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'setup'] })
+    void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'teams'] })
+  }
 
   const assignMutation = useMutation({
     mutationFn: async () => {
@@ -90,20 +112,60 @@ export function SeasonSetupPage() {
     onSuccess: (count) => {
       setAssignSuccess(`${count} team(s) assigned.`)
       setTeamIds([])
-      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons'] })
-      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'assigned-team-ids'] })
+      invalidateAssignmentQueries()
     },
     onError: (err) => {
       setAssignError(err instanceof Error ? err.message : 'Assignment failed')
     },
   })
 
-  const handleSeasonChange = (e: SelectChangeEvent<string>) => setSeasonId(e.target.value)
-  const handleDivisionChange = (e: SelectChangeEvent<string>) => setDivisionId(e.target.value)
+  const unassignMutation = useMutation({
+    mutationFn: async () => {
+      setAssignError(null)
+      setAssignSuccess(null)
+      const errors: string[] = []
+      let successCount = 0
+      for (const teamId of unassignTeamIds) {
+        try {
+          await teamsService.unassignTeamFromDivisionSeason(leagueId!, seasonId, divisionId, teamId)
+          successCount += 1
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : 'Failed to unassign team'
+          const team = teamsInDivision.find((t) => t.id === teamId)
+          errors.push(team ? `${getTeamDisplayName(team)}: ${msg}` : msg)
+        }
+      }
+      if (errors.length > 0) throw new Error(errors.join('\n'))
+      return successCount
+    },
+    onSuccess: (count) => {
+      setAssignSuccess(`${count} team(s) unassigned.`)
+      setUnassignTeamIds([])
+      invalidateAssignmentQueries()
+    },
+    onError: (err) => {
+      setAssignError(err instanceof Error ? err.message : 'Unassign failed')
+    },
+  })
+
+  const handleSeasonChange = (e: SelectChangeEvent<string>) => {
+    setSeasonId(e.target.value)
+    setTeamIds([])
+    setUnassignTeamIds([])
+  }
+  const handleDivisionChange = (e: SelectChangeEvent<string>) => {
+    setDivisionId(e.target.value)
+    setTeamIds([])
+    setUnassignTeamIds([])
+  }
   const handleTeamsChange = (e: SelectChangeEvent<string[]>) => {
     const value = e.target.value
     const next = typeof value === 'string' ? value.split(',') : value
     setTeamIds(next.filter((id) => !assignedTeamIds.includes(id)))
+  }
+  const handleUnassignTeamsChange = (e: SelectChangeEvent<string[]>) => {
+    const value = e.target.value
+    setUnassignTeamIds(typeof value === 'string' ? value.split(',') : value)
   }
 
   const canSave =
@@ -112,8 +174,20 @@ export function SeasonSetupPage() {
     !!divisionId &&
     teamIds.length > 0 &&
     !assignMutation.isPending &&
+    !unassignMutation.isPending &&
     !seasonClosed &&
     !divisionFixturesLocked
+
+  const canUnassign =
+    !!leagueId &&
+    !!seasonId &&
+    !!divisionId &&
+    unassignTeamIds.length > 0 &&
+    !assignMutation.isPending &&
+    !unassignMutation.isPending &&
+    !seasonClosed &&
+    !divisionFixturesLocked
+
   const sortedTeams = [...teams].sort((a, b) => {
     const nameCmp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
     if (nameCmp !== 0) return nameCmp
@@ -137,7 +211,8 @@ export function SeasonSetupPage() {
         Season setup — assign teams to division
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Assign teams to a division for a season. Each team can be in only one division per season. Manage teams under Teams.
+        Assign or unassign teams for a division in a season. Each team can be in only one division per season.
+        Divisions with committed fixtures stay locked.
       </Typography>
       {seasonClosed && (
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -159,7 +234,7 @@ export function SeasonSetupPage() {
       ) : null}
 
       {assignError && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setAssignError(null)}>
+        <Alert severity="error" sx={{ mb: 2, whiteSpace: 'pre-wrap' }} onClose={() => setAssignError(null)}>
           {assignError}
         </Alert>
       )}
@@ -206,6 +281,10 @@ export function SeasonSetupPage() {
             ))}
           </Select>
         </FormControl>
+
+        <Typography variant="subtitle2" sx={{ mt: 1 }}>
+          Asignar equipos
+        </Typography>
         <Typography variant="body2" sx={{ mb: 0.5 }}>
           Selected {teamIds.length} teams
         </Typography>
@@ -261,6 +340,73 @@ export function SeasonSetupPage() {
             Importar CSV
           </Button>
         </Box>
+
+        <Divider sx={{ my: 1 }} />
+
+        <Typography variant="subtitle2">Desasignar equipos de esta división</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {divisionId
+            ? `${teamsInDivision.length} equipo(s) actualmente en la división.`
+            : 'Elegí una división para ver los equipos asignados.'}
+        </Typography>
+        <FormControl fullWidth disabled={!seasonId || !divisionId || teamsInDivision.length === 0}>
+          <InputLabel id="unassign-teams-label">Equipos en la división</InputLabel>
+          <Select
+            labelId="unassign-teams-label"
+            label="Equipos en la división"
+            multiple
+            value={unassignTeamIds}
+            onChange={handleUnassignTeamsChange}
+            input={<OutlinedInput label="Equipos en la división" />}
+            renderValue={(selected) => (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {selected.map((id) => {
+                  const t = teamsInDivision.find((x) => x.id === id)
+                  return <Chip key={id} label={t ? getTeamDisplayName(t) : id} size="small" />
+                })}
+              </Box>
+            )}
+          >
+            {teamsInDivision.map((t) => (
+              <MenuItem key={t.id} value={t.id}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  <ListItemText primary={getTeamDisplayName(t)} />
+                  {unassignTeamIds.includes(t.id) && <CheckIcon fontSize="small" color="primary" />}
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Button
+            variant="outlined"
+            color="warning"
+            startIcon={
+              unassignMutation.isPending ? <CircularProgress size={18} color="inherit" /> : <PersonRemoveIcon />
+            }
+            disabled={!canUnassign}
+            onClick={() => unassignMutation.mutate()}
+          >
+            Desasignar seleccionados
+          </Button>
+          <Button
+            variant="text"
+            color="warning"
+            disabled={
+              !seasonId ||
+              !divisionId ||
+              teamsInDivision.length === 0 ||
+              seasonClosed ||
+              divisionFixturesLocked ||
+              unassignMutation.isPending ||
+              assignMutation.isPending
+            }
+            onClick={() => setUnassignTeamIds(teamsInDivision.map((t) => t.id))}
+          >
+            Seleccionar todos
+          </Button>
+        </Box>
+
         {seasonId && divisionId && (
           <Button
             component={RouterLink}
@@ -293,6 +439,7 @@ export function SeasonSetupPage() {
             ].filter(Boolean)
             setAssignSuccess(parts.length ? `Import CSV: ${parts.join(', ')}.` : 'Import CSV completed.')
             setAssignError(null)
+            invalidateAssignmentQueries()
           }}
         />
       )}

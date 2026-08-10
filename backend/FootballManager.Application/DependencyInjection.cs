@@ -22,6 +22,7 @@ using FootballManager.Application.UseCases.Leagues.BulkCreateTeams;
 using FootballManager.Application.UseCases.Leagues.UpdateTeam;
 using FootballManager.Application.UseCases.Leagues.AssignDivisionToSeason;
 using FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeason;
+using FootballManager.Application.UseCases.Leagues.UnassignTeamFromDivisionSeason;
 using FootballManager.Application.UseCases.Leagues.GetTeamIdsAssignedToSeason;
 using FootballManager.Application.UseCases.Leagues.GetSeasonSetup;
 using FootballManager.Application.UseCases.Leagues.SaveSeasonSetup;
@@ -90,6 +91,7 @@ namespace FootballManager.Application
             services.AddScoped<IUpdateTeamUseCase, UpdateTeamUseCase>();
             services.AddScoped<IAssignDivisionToSeasonUseCase, AssignDivisionToSeasonUseCase>();
             services.AddScoped<IAssignTeamToDivisionSeasonUseCase, AssignTeamToDivisionSeasonUseCase>();
+            services.AddScoped<IUnassignTeamFromDivisionSeasonUseCase, UnassignTeamFromDivisionSeasonUseCase>();
             services.AddScoped<IGetTeamIdsAssignedToSeasonUseCase, GetTeamIdsAssignedToSeasonUseCase>();
             services.AddScoped<IGetSeasonSetupUseCase, GetSeasonSetupUseCase>();
             services.AddScoped<ISaveSeasonSetupUseCase, SaveSeasonSetupUseCase>();

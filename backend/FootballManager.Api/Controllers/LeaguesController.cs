@@ -24,6 +24,7 @@ using FootballManager.Application.UseCases.Leagues.BulkCreateTeams;
 using FootballManager.Application.UseCases.Leagues.UpdateTeam;
 using FootballManager.Application.UseCases.Leagues.AssignDivisionToSeason;
 using FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeason;
+using FootballManager.Application.UseCases.Leagues.UnassignTeamFromDivisionSeason;
 using FootballManager.Application.UseCases.Leagues.GetTeamIdsAssignedToSeason;
 using FootballManager.Application.UseCases.Leagues.GetSeasonSetup;
 using FootballManager.Application.UseCases.Leagues.SaveSeasonSetup;
@@ -87,6 +88,7 @@ namespace FootballManager.Api.Controllers
         private readonly IUpdateTeamUseCase _updateTeamUseCase;
         private readonly IAssignDivisionToSeasonUseCase _assignDivisionToSeasonUseCase;
         private readonly IAssignTeamToDivisionSeasonUseCase _assignTeamToDivisionSeasonUseCase;
+        private readonly IUnassignTeamFromDivisionSeasonUseCase _unassignTeamFromDivisionSeasonUseCase;
         private readonly IGetTeamIdsAssignedToSeasonUseCase _getTeamIdsAssignedToSeasonUseCase;
         private readonly IGetSeasonSetupUseCase _getSeasonSetupUseCase;
         private readonly ISaveSeasonSetupUseCase _saveSeasonSetupUseCase;
@@ -141,6 +143,7 @@ namespace FootballManager.Api.Controllers
             IUpdateTeamUseCase updateTeamUseCase,
             IAssignDivisionToSeasonUseCase assignDivisionToSeasonUseCase,
             IAssignTeamToDivisionSeasonUseCase assignTeamToDivisionSeasonUseCase,
+            IUnassignTeamFromDivisionSeasonUseCase unassignTeamFromDivisionSeasonUseCase,
             IGetTeamIdsAssignedToSeasonUseCase getTeamIdsAssignedToSeasonUseCase,
             IGetSeasonSetupUseCase getSeasonSetupUseCase,
             ISaveSeasonSetupUseCase saveSeasonSetupUseCase,
@@ -194,6 +197,7 @@ namespace FootballManager.Api.Controllers
             _updateTeamUseCase = updateTeamUseCase ?? throw new ArgumentNullException(nameof(updateTeamUseCase));
             _assignDivisionToSeasonUseCase = assignDivisionToSeasonUseCase ?? throw new ArgumentNullException(nameof(assignDivisionToSeasonUseCase));
             _assignTeamToDivisionSeasonUseCase = assignTeamToDivisionSeasonUseCase ?? throw new ArgumentNullException(nameof(assignTeamToDivisionSeasonUseCase));
+            _unassignTeamFromDivisionSeasonUseCase = unassignTeamFromDivisionSeasonUseCase ?? throw new ArgumentNullException(nameof(unassignTeamFromDivisionSeasonUseCase));
             _getTeamIdsAssignedToSeasonUseCase = getTeamIdsAssignedToSeasonUseCase ?? throw new ArgumentNullException(nameof(getTeamIdsAssignedToSeasonUseCase));
             _getSeasonSetupUseCase = getSeasonSetupUseCase ?? throw new ArgumentNullException(nameof(getSeasonSetupUseCase));
             _saveSeasonSetupUseCase = saveSeasonSetupUseCase ?? throw new ArgumentNullException(nameof(saveSeasonSetupUseCase));
@@ -605,6 +609,29 @@ namespace FootballManager.Api.Controllers
             request.UserId = userId;
             var response = await _assignTeamToDivisionSeasonUseCase.ExecuteAsync(request, cancellationToken);
             return Created(string.Empty, response);
+        }
+
+        [HttpDelete("{leagueId}/seasons/{seasonId}/divisions/{divisionId}/teams/{teamId}")]
+        public async Task<IActionResult> UnassignTeamFromDivisionSeason(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid seasonId,
+            [FromRoute] Guid divisionId,
+            [FromRoute] Guid teamId,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new UnassignTeamFromDivisionSeasonRequest
+            {
+                LeagueId = leagueId,
+                SeasonId = seasonId,
+                DivisionId = divisionId,
+                TeamId = teamId,
+                UserId = userId,
+            };
+            await _unassignTeamFromDivisionSeasonUseCase.ExecuteAsync(request, cancellationToken);
+            return NoContent();
         }
 
         [HttpGet("{leagueId}/seasons/{seasonId}/setup")]
