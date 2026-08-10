@@ -42,6 +42,9 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+// Unknown routes (/admin, typos, etc.) → friendly “seguimos creciendo” page.
+app.UseStatusCodePagesWithReExecute("/error/{0}");
+
 app.MapStaticAssets();
 
 app.MapControllerRoute(
