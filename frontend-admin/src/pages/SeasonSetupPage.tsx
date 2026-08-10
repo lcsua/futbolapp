@@ -15,6 +15,7 @@ import {
   OutlinedInput,
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -22,6 +23,7 @@ import { seasonsService } from '../api/seasons'
 import { divisionsService } from '../api/divisions'
 import { teamsService } from '../api/teams'
 import { useLeagueId } from '../contexts/LeagueContext'
+import { ImportTeamsCsvDialog } from '../components/ImportTeamsCsvDialog'
 
 function getTeamDisplayName(team: { name: string; displayName?: string | null }) {
   return team.displayName ?? team.name
@@ -35,6 +37,7 @@ export function SeasonSetupPage() {
   const [teamIds, setTeamIds] = useState<string[]>([])
   const [assignError, setAssignError] = useState<string | null>(null)
   const [assignSuccess, setAssignSuccess] = useState<string | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons'],
@@ -241,14 +244,23 @@ export function SeasonSetupPage() {
             })}
           </Select>
         </FormControl>
-        <Button
-          variant="contained"
-          disabled={!canSave}
-          onClick={() => assignMutation.mutate()}
-          sx={{ alignSelf: 'flex-start' }}
-        >
-          {assignMutation.isPending ? <CircularProgress size={24} color="inherit" /> : 'Save assignment'}
-        </Button>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+          <Button
+            variant="contained"
+            disabled={!canSave}
+            onClick={() => assignMutation.mutate()}
+          >
+            {assignMutation.isPending ? <CircularProgress size={24} color="inherit" /> : 'Save assignment'}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+            disabled={!seasonId || !divisionId || seasonClosed || divisionFixturesLocked}
+            onClick={() => setImportOpen(true)}
+          >
+            Importar CSV
+          </Button>
+        </Box>
         {seasonId && divisionId && (
           <Button
             component={RouterLink}
@@ -262,6 +274,28 @@ export function SeasonSetupPage() {
           </Button>
         )}
       </Box>
+
+      {leagueId && seasonId && divisionId && (
+        <ImportTeamsCsvDialog
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          divisionId={divisionId}
+          divisionName={divisions.find((d) => d.id === divisionId)?.name ?? 'División'}
+          teams={teams}
+          assignedTeamIds={assignedTeamIds}
+          onImported={({ matched, created, skipped }) => {
+            const parts = [
+              matched ? `${matched} asignado(s)` : null,
+              created ? `${created} creado(s)` : null,
+              skipped ? `${skipped} omitido(s)` : null,
+            ].filter(Boolean)
+            setAssignSuccess(parts.length ? `Import CSV: ${parts.join(', ')}.` : 'Import CSV completed.')
+            setAssignError(null)
+          }}
+        />
+      )}
     </Box>
   )
 }
