@@ -47,6 +47,14 @@ namespace FootballManager.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<List<Guid>> GetTeamIdsByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default)
+        {
+            return await _context.TeamDivisionSeasons
+                .Where(tds => tds.DivisionSeasonId == divisionSeasonId)
+                .Select(tds => tds.TeamId)
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task AddAsync(TeamDivisionSeason assignment, CancellationToken cancellationToken = default)
         {
             await _context.TeamDivisionSeasons.AddAsync(assignment, cancellationToken);
@@ -60,6 +68,14 @@ namespace FootballManager.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
             var toRemove = await _context.TeamDivisionSeasons
                 .Where(tds => divisionSeasonIds.Contains(tds.DivisionSeasonId))
+                .ToListAsync(cancellationToken);
+            _context.TeamDivisionSeasons.RemoveRange(toRemove);
+        }
+
+        public async Task RemoveByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default)
+        {
+            var toRemove = await _context.TeamDivisionSeasons
+                .Where(tds => tds.DivisionSeasonId == divisionSeasonId)
                 .ToListAsync(cancellationToken);
             _context.TeamDivisionSeasons.RemoveRange(toRemove);
         }

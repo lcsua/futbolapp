@@ -5,6 +5,8 @@ export interface SeasonSetupDivision {
   divisionId: string
   divisionName: string
   teams: TeamInSetup[]
+  /** True when this division already has committed fixtures for the season. */
+  fixturesLocked?: boolean
 }
 
 export interface TeamInSetup {

@@ -52,6 +52,12 @@ export function SeasonSetupPage() {
     enabled: !!leagueId,
   })
   const seasonClosed = !!seasons.find((s) => s.id === seasonId && s.isActive === false)
+  const { data: setupData } = useQuery({
+    queryKey: ['leagues', leagueId, 'seasons', seasonId, 'setup'],
+    queryFn: ({ signal }) => seasonsService.getSetup(leagueId!, seasonId, signal),
+    enabled: !!leagueId && !!seasonId,
+  })
+  const divisionFixturesLocked = !!setupData?.divisions.find((d) => d.divisionId === divisionId)?.fixturesLocked
   const { data: assignedData } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons', seasonId, 'assigned-team-ids'],
     queryFn: ({ signal }) => seasonsService.getAssignedTeamIds(leagueId!, seasonId, signal),
@@ -98,7 +104,13 @@ export function SeasonSetupPage() {
   }
 
   const canSave =
-    !!leagueId && !!seasonId && !!divisionId && teamIds.length > 0 && !assignMutation.isPending && !seasonClosed
+    !!leagueId &&
+    !!seasonId &&
+    !!divisionId &&
+    teamIds.length > 0 &&
+    !assignMutation.isPending &&
+    !seasonClosed &&
+    !divisionFixturesLocked
   const sortedTeams = [...teams].sort((a, b) => {
     const nameCmp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
     if (nameCmp !== 0) return nameCmp
@@ -127,6 +139,11 @@ export function SeasonSetupPage() {
       {seasonClosed && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           This season is closed. Team assignments are locked.
+        </Alert>
+      )}
+      {!seasonClosed && divisionFixturesLocked && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          This division already has committed fixtures. Team assignments for it are locked; pick another division to edit.
         </Alert>
       )}
       {seasonId ? (

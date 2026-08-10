@@ -95,7 +95,7 @@
       "goToLeagues": "Ir a Ligas",
       "backToSeasons": "Volver a temporadas",
       "title": "Fixture",
-      "description": "Generá el fixture para una temporada, previsualizalo y guardalo cuando esté listo. Una vez guardado, la temporada queda confirmada (no se pueden cambiar las asignaciones de equipos).",
+      "description": "Generá el fixture para una temporada, previsualizalo y guardalo cuando esté listo. Una vez guardado para una división, las asignaciones de equipos de esa división quedan bloqueadas (otras divisiones sin fixture se pueden seguir editando).",
       "season": "Temporada",
       "selectSeason": "Seleccionar temporada",
       "division": "División",

@@ -14,7 +14,6 @@ namespace FootballManager.Application.UseCases.Leagues.AssignDivisionToSeason
         private readonly IDivisionRepository _divisionRepository;
         private readonly IDivisionSeasonRepository _divisionSeasonRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
-        private readonly IFixtureRepository _fixtureRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public AssignDivisionToSeasonUseCase(
@@ -22,14 +21,12 @@ namespace FootballManager.Application.UseCases.Leagues.AssignDivisionToSeason
             IDivisionRepository divisionRepository,
             IDivisionSeasonRepository divisionSeasonRepository,
             IUserLeagueRepository userLeagueRepository,
-            IFixtureRepository fixtureRepository,
             IUnitOfWork unitOfWork)
         {
             _seasonRepository = seasonRepository ?? throw new ArgumentNullException(nameof(seasonRepository));
             _divisionRepository = divisionRepository ?? throw new ArgumentNullException(nameof(divisionRepository));
             _divisionSeasonRepository = divisionSeasonRepository ?? throw new ArgumentNullException(nameof(divisionSeasonRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
-            _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
@@ -46,10 +43,6 @@ namespace FootballManager.Application.UseCases.Leagues.AssignDivisionToSeason
                 throw new ForbiddenAccessException("Season does not belong to this league.");
 
             SeasonGuard.EnsureOpen(season);
-
-            var fixtureCount = await _fixtureRepository.CountBySeasonIdAsync(request.SeasonId, cancellationToken);
-            if (fixtureCount > 0)
-                throw new BusinessException("Cannot modify divisions: fixtures have been committed. Season is locked.");
 
             var division = await _divisionRepository.GetByIdAsync(request.DivisionId, cancellationToken);
             if (division == null)

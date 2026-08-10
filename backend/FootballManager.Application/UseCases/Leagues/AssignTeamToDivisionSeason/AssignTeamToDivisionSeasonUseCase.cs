@@ -53,10 +53,6 @@ namespace FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeaso
 
             SeasonGuard.EnsureOpen(season);
 
-            var fixtureCount = await _fixtureRepository.CountBySeasonIdAsync(request.SeasonId, cancellationToken);
-            if (fixtureCount > 0)
-                throw new BusinessException("Cannot modify team assignment: fixtures have been committed. Season is locked.");
-
             var division = await _divisionRepository.GetByIdAsync(request.DivisionId, cancellationToken);
             if (division == null)
                 throw new KeyNotFoundException($"Division {request.DivisionId} not found.");
@@ -75,6 +71,13 @@ namespace FootballManager.Application.UseCases.Leagues.AssignTeamToDivisionSeaso
                 divisionSeason = new DivisionSeason(season, division);
                 await _divisionSeasonRepository.AddAsync(divisionSeason, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                var fixtureCount = await _fixtureRepository.CountByDivisionSeasonIdAsync(divisionSeason.Id, cancellationToken);
+                if (fixtureCount > 0)
+                    throw new BusinessException(
+                        $"Cannot modify team assignment for division \"{division.Name}\": fixtures have been committed for that division.");
             }
 
             var teamIdsInSeason = await _teamDivisionSeasonRepository.GetTeamIdsAssignedToSeasonAsync(request.SeasonId, cancellationToken);

@@ -46,7 +46,12 @@ import { QuickCreateTeamForDivisionDialog } from '../components/QuickCreateTeamF
 
 const UNASSIGNED_ID = 'unassigned'
 
-type BoardDivision = { divisionId: string; divisionName: string; teams: TeamInSetup[] }
+type BoardDivision = {
+  divisionId: string
+  divisionName: string
+  teams: TeamInSetup[]
+  fixturesLocked?: boolean
+}
 
 function getTeamDisplayName(team: TeamInSetup): string {
   return team.displayName ?? team.name
@@ -88,10 +93,19 @@ function TeamCardContent({ team, divisionName }: { team: TeamInSetup; divisionNa
   )
 }
 
-function TeamCard({ team, divisionName }: { team: TeamInSetup; divisionName: string }) {
+function TeamCard({
+  team,
+  divisionName,
+  disabled = false,
+}: {
+  team: TeamInSetup
+  divisionName: string
+  disabled?: boolean
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: team.id,
     data: { team },
+    disabled,
   })
   const style = transform
     ? { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.5 : 1 }
@@ -100,13 +114,14 @@ function TeamCard({ team, divisionName }: { team: TeamInSetup; divisionName: str
   return (
     <Card
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
+      {...(disabled ? {} : listeners)}
+      {...(disabled ? {} : attributes)}
       elevation={1}
       sx={{
         mb: 1,
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: disabled ? 'default' : isDragging ? 'grabbing' : 'grab',
         flexShrink: 0,
+        opacity: disabled ? 0.85 : style.opacity,
         ...style,
       }}
       variant="outlined"
@@ -125,6 +140,7 @@ function DroppableColumn({
   colorHint = 'default',
   isSticky = false,
   groupByClub = false,
+  locked = false,
   onHeaderDoubleClick,
 }: {
   id: string
@@ -135,9 +151,10 @@ function DroppableColumn({
   colorHint?: 'default' | 'unassigned'
   isSticky?: boolean
   groupByClub?: boolean
+  locked?: boolean
   onHeaderDoubleClick?: () => void
 }) {
-  const { isOver, setNodeRef } = useDroppable({ id })
+  const { isOver, setNodeRef } = useDroppable({ id, disabled: locked })
   const renderedTeams = sortTeamsByNameAndSuffix(teams)
   const groupedTeams = groupByClub
     ? renderedTeams.reduce<Record<string, TeamInSetup[]>>((acc, team) => {
@@ -158,9 +175,13 @@ function DroppableColumn({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        border: isOver ? 2 : 0,
+        border: isOver && !locked ? 2 : 0,
         borderColor: 'primary.main',
-        bgcolor: colorHint === 'unassigned' ? 'action.hover' : 'background.paper',
+        bgcolor: locked
+          ? 'action.selected'
+          : colorHint === 'unassigned'
+            ? 'action.hover'
+            : 'background.paper',
         ...(isSticky && {
           position: 'sticky',
           left: 0,
@@ -177,15 +198,23 @@ function DroppableColumn({
             alignItems: 'center',
             gap: 1,
             mb: 1,
-            ...(onHeaderDoubleClick && { cursor: 'pointer', userSelect: 'none' }),
+            flexWrap: 'wrap',
+            ...(!locked && onHeaderDoubleClick && { cursor: 'pointer', userSelect: 'none' }),
           }}
-          onDoubleClick={onHeaderDoubleClick}
-          title={onHeaderDoubleClick ? 'Double-click to add a team to this division' : undefined}
+          onDoubleClick={locked ? undefined : onHeaderDoubleClick}
+          title={
+            locked
+              ? 'Fixtures committed — teams locked for this division'
+              : onHeaderDoubleClick
+                ? 'Double-click to add a team to this division'
+                : undefined
+          }
         >
           <Typography variant="subtitle1" fontWeight={600}>
             {title}
           </Typography>
           <Chip label={`${teamIds.length} teams`} size="small" />
+          {locked && <Chip label="Fixtures locked" size="small" color="warning" variant="outlined" />}
         </Box>
         <Box sx={{ flex: 1, overflowY: 'auto', minHeight: 120 }}>
           {teams.length === 0 ? (
@@ -290,6 +319,7 @@ export function AdvancedSeasonSetupPage() {
           divisionId: d.divisionId,
           divisionName: d.divisionName,
           teams: [...d.teams],
+          fixturesLocked: !!d.fixturesLocked,
         })),
       })
     } else if (seasonId && !setupLoading) {
@@ -320,6 +350,20 @@ export function AdvancedSeasonSetupPage() {
     const source = getTeamLocation(teamId)
     if (!source) return
     if (source.droppableId === targetId) return
+
+    const sourceLocked =
+      source.droppableId !== UNASSIGNED_ID &&
+      !!board.divisions.find((d) => d.divisionId === source.droppableId)?.fixturesLocked
+    const targetLocked =
+      targetId !== UNASSIGNED_ID &&
+      !!board.divisions.find((d) => d.divisionId === targetId)?.fixturesLocked
+    if (sourceLocked || targetLocked) {
+      setSnackbar({
+        message: 'Cannot move teams in or out of a division with committed fixtures.',
+        severity: 'error',
+      })
+      return
+    }
 
     setBoard((prev) => {
       if (!prev) return prev
@@ -420,11 +464,16 @@ export function AdvancedSeasonSetupPage() {
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Drag teams between Unassigned and divisions. Save when done. Double-click a division title to create a team
-        and assign it to that division.
+        and assign it to that division. Divisions with committed fixtures stay locked; other divisions can still be edited.
       </Typography>
       {seasonClosed && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           This season is closed. Setup changes are locked.
+        </Alert>
+      )}
+      {!seasonClosed && board?.divisions.some((d) => d.fixturesLocked) && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Some divisions have committed fixtures and their team list is locked. You can still edit the other divisions.
         </Alert>
       )}
 
@@ -573,7 +622,15 @@ export function AdvancedSeasonSetupPage() {
                 colorHint="unassigned"
                 isSticky
                 groupByClub={groupByClub}
-                onRenderCard={(team) => <TeamCard key={team.id} team={team} divisionName="Unassigned" />}
+                locked={seasonClosed}
+                onRenderCard={(team) => (
+                  <TeamCard
+                    key={team.id}
+                    team={team}
+                    divisionName="Unassigned"
+                    disabled={seasonClosed}
+                  />
+                )}
               />
               {board.divisions.map((div) => (
                 <DroppableColumn
@@ -583,10 +640,24 @@ export function AdvancedSeasonSetupPage() {
                   teams={div.teams}
                   teamIds={div.teams.map((t) => t.id)}
                   groupByClub={groupByClub}
-                  onHeaderDoubleClick={() =>
-                    setQuickCreateDivision({ divisionId: div.divisionId, divisionName: div.divisionName })
+                  locked={!!div.fixturesLocked || seasonClosed}
+                  onHeaderDoubleClick={
+                    div.fixturesLocked || seasonClosed
+                      ? undefined
+                      : () =>
+                          setQuickCreateDivision({
+                            divisionId: div.divisionId,
+                            divisionName: div.divisionName,
+                          })
                   }
-                  onRenderCard={(team) => <TeamCard key={team.id} team={team} divisionName={div.divisionName} />}
+                  onRenderCard={(team) => (
+                    <TeamCard
+                      key={team.id}
+                      team={team}
+                      divisionName={div.divisionName}
+                      disabled={!!div.fixturesLocked || seasonClosed}
+                    />
+                  )}
                 />
               ))}
             </Box>

@@ -17,19 +17,22 @@ namespace FootballManager.Application.UseCases.Leagues.GetSeasonSetup
         private readonly IDivisionRepository _divisionRepository;
         private readonly ITeamRepository _teamRepository;
         private readonly IDivisionSeasonRepository _divisionSeasonRepository;
+        private readonly IFixtureRepository _fixtureRepository;
 
         public GetSeasonSetupUseCase(
             IUserLeagueRepository userLeagueRepository,
             ISeasonRepository seasonRepository,
             IDivisionRepository divisionRepository,
             ITeamRepository teamRepository,
-            IDivisionSeasonRepository divisionSeasonRepository)
+            IDivisionSeasonRepository divisionSeasonRepository,
+            IFixtureRepository fixtureRepository)
         {
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
             _seasonRepository = seasonRepository ?? throw new ArgumentNullException(nameof(seasonRepository));
             _divisionRepository = divisionRepository ?? throw new ArgumentNullException(nameof(divisionRepository));
             _teamRepository = teamRepository ?? throw new ArgumentNullException(nameof(teamRepository));
             _divisionSeasonRepository = divisionSeasonRepository ?? throw new ArgumentNullException(nameof(divisionSeasonRepository));
+            _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
         }
 
         public async Task<GetSeasonSetupResponse> ExecuteAsync(GetSeasonSetupRequest request, CancellationToken cancellationToken = default)
@@ -50,6 +53,7 @@ namespace FootballManager.Application.UseCases.Leagues.GetSeasonSetup
 
             var assignedTeamIds = new HashSet<Guid>();
             var divisionMap = new Dictionary<Guid, List<TeamDto>>();
+            var lockedDivisions = new HashSet<Guid>();
             foreach (var div in divisions)
                 divisionMap[div.Id] = new List<TeamDto>();
 
@@ -61,6 +65,10 @@ namespace FootballManager.Application.UseCases.Leagues.GetSeasonSetup
                 foreach (var t in teamDtos)
                     assignedTeamIds.Add(t.Id);
                 divisionMap[ds.DivisionId] = teamDtos;
+
+                var fixtureCount = await _fixtureRepository.CountByDivisionSeasonIdAsync(ds.Id, cancellationToken);
+                if (fixtureCount > 0)
+                    lockedDivisions.Add(ds.DivisionId);
             }
 
             var unassignedTeams = teams
@@ -71,7 +79,11 @@ namespace FootballManager.Application.UseCases.Leagues.GetSeasonSetup
 
             var divisionDtos = divisions
                 .OrderBy(d => d.Name)
-                .Select(d => new SeasonSetupDivisionDto(d.Id, d.Name, divisionMap[d.Id]))
+                .Select(d => new SeasonSetupDivisionDto(
+                    d.Id,
+                    d.Name,
+                    divisionMap[d.Id],
+                    lockedDivisions.Contains(d.Id)))
                 .ToList();
 
             return new GetSeasonSetupResponse(unassignedTeams, divisionDtos);

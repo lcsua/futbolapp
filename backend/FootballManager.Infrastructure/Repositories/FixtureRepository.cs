@@ -38,6 +38,12 @@ namespace FootballManager.Infrastructure.Repositories
                 .CountAsync(f => f.SeasonId == seasonId, cancellationToken);
         }
 
+        public async Task<int> CountByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default)
+        {
+            return await _context.Fixtures
+                .CountAsync(f => f.DivisionSeasonId == divisionSeasonId, cancellationToken);
+        }
+
         public async Task<List<Fixture>> GetBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default)
         {
             return await _context.Fixtures

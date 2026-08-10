@@ -95,7 +95,7 @@
       "goToLeagues": "Go to Leagues",
       "backToSeasons": "Back to seasons",
       "title": "Fixtures",
-      "description": "Generate fixtures for a season, preview them, then save when ready. Once saved, the season is locked (team assignments cannot be changed).",
+      "description": "Generate fixtures for a season, preview them, then save when ready. Once saved for a division, that division's team assignments are locked (other divisions without fixtures can still be edited).",
       "season": "Season",
       "selectSeason": "Select season",
       "division": "Division",
