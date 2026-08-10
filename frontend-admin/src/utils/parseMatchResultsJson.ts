@@ -167,6 +167,31 @@ export function parseMatchResultsJson(text: string): JsonDivisionRoundBlock[] {
   return parseMatchResultsCsv(text)
 }
 
+function divisionAliases(name: string): string[] {
+  const dNorm = normalizeTeamName(name)
+  const stripped = normalizeTeamName(name.replace(/divisi[oó]n/gi, ' ').replace(/categor[ií]a/gi, ' '))
+  return [...new Set([dNorm, stripped].filter(Boolean))]
+}
+
+function isShortDivisionCode(norm: string): boolean {
+  // "A", "B", "C", "D1" — not "45 ZONA B"
+  return /^[A-Z0-9]{1,3}$/.test(norm)
+}
+
+function tokenJaccard(a: string, b: string): number {
+  const sa = new Set(a.split(' ').filter(Boolean))
+  const sb = new Set(b.split(' ').filter(Boolean))
+  if (sa.size === 0 || sb.size === 0) return 0
+  let inter = 0
+  for (const t of sa) if (sb.has(t)) inter++
+  const union = new Set([...sa, ...sb]).size
+  return union === 0 ? 0 : inter / union
+}
+
+/**
+ * Match a CSV division label to a league division.
+ * Short codes ("B") only match exact "B" / "Division B", never "45 Zona B".
+ */
 export function matchDivisionName(
   jsonName: string,
   divisions: Array<{ id: string; name: string }>
@@ -174,34 +199,50 @@ export function matchDivisionName(
   const norm = normalizeTeamName(jsonName)
   if (!norm || divisions.length === 0) return null
 
+  const csvIsShort = isShortDivisionCode(norm)
   let best: { divisionId: string; name: string; score: number } | null = null
-  for (const d of divisions) {
-    const dNorm = normalizeTeamName(d.name)
-    const stripped = normalizeTeamName(d.name.replace(/divisi[oó]n/gi, ' ').replace(/categor[ií]a/gi, ' '))
-    let score = Math.max(nameSimilarity(norm, dNorm), nameSimilarity(norm, stripped))
 
-    if (dNorm === norm || stripped === norm) score = 1
-    else if (norm.length <= 2) {
-      const tokens = new Set([...dNorm.split(' '), ...stripped.split(' ')].filter(Boolean))
-      if (tokens.has(norm)) score = 1
-    } else if (dNorm.includes(norm) || norm.includes(dNorm) || stripped.includes(norm) || norm.includes(stripped)) {
-      score = Math.max(score, 0.92)
-    } else {
-      // Token overlap e.g. "45 ZONA A" vs "45 Zona A"
-      const a = new Set(norm.split(' ').filter(Boolean))
-      const b = new Set(dNorm.split(' ').filter(Boolean))
-      let inter = 0
-      for (const t of a) if (b.has(t)) inter++
-      const union = new Set([...a, ...b]).size
-      if (union > 0) score = Math.max(score, inter / union)
+  for (const d of divisions) {
+    const aliases = divisionAliases(d.name)
+    let score = 0
+
+    for (const alias of aliases) {
+      if (alias === norm) {
+        score = 1
+        break
+      }
+    }
+    if (score === 1) {
+      if (!best || score > best.score) best = { divisionId: d.id, name: d.name, score }
+      continue
     }
 
-    if (!best || score > best.score) best = { divisionId: d.id, name: d.name, score }
+    const dNorm = aliases[0]
+    const dIsShort = aliases.some(isShortDivisionCode)
+
+    // Never pair short code "B" with multi-word "45 ZONA B" (either direction).
+    if (csvIsShort || dIsShort) {
+      // Allow "DIVISION B" / "CATEGORIA B" via stripped alias already checked for equality.
+      // Soft: stripped ends as single token equal to code only if ALL residual tokens are gone.
+      score = 0
+    } else {
+      score = Math.max(
+        nameSimilarity(norm, dNorm),
+        ...aliases.map((a) => nameSimilarity(norm, a)),
+        tokenJaccard(norm, dNorm)
+      )
+      // Prefer strong multi-word agreement only
+      if (score < 0.85) score = 0
+    }
+
+    if (score > 0 && (!best || score > best.score)) {
+      best = { divisionId: d.id, name: d.name, score }
+    }
   }
 
-  // When matching against a single scoped division, accept a lower bar.
-  const threshold = divisions.length === 1 ? 0.45 : 0.65
-  if (best && best.score >= threshold) return best
+  if (best && best.score >= 0.85) return best
+  // Exact short-code matches already scored 1 above.
+  if (best && best.score >= 1) return best
   return null
 }
 
