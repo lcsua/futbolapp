@@ -16,13 +16,13 @@ public class HomeController : Controller
         return View();
     }
 
-    [HttpGet("/error/{statusCode:int}")]
+    [HttpGet("/error/{code:int}")]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult StatusCode(int statusCode)
+    public IActionResult ErrorStatus(int code)
     {
         // Preserve original status (e.g. 404) for SEO / clients.
-        Response.StatusCode = statusCode;
-        if (statusCode == 404)
+        Response.StatusCode = code;
+        if (code == 404)
             return View("NotFound");
 
         return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
