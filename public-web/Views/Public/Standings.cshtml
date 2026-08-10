@@ -108,7 +108,7 @@
                                     <tr>
                                         <td class="text-center fw-semibold standings-pos">@row.Position</td>
                                         <td class="text-start standings-team">
-                                            <a href="@Url.Content($"~/equipo/{row.Team.Slug}")"
+                                            <a href="@Url.Content($"~/ligas/{league?.Slug}/{row.Team.Slug}")"
                                                class="standings-team-link"
                                                title="@fullName">
                                                 <span class="d-none d-md-inline">@fullName</span>

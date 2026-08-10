@@ -560,3 +560,31 @@ a:hover {
     font-size: 0.95rem;
   }
 }
+
+.team-crest {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  background: #f8f9fa;
+  padding: 0.35rem;
+  flex-shrink: 0;
+}
+
+.team-crest-placeholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 0.5rem;
+  background: #e9ecef;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.team-stat-card .display-6 {
+  font-size: 2rem;
+}

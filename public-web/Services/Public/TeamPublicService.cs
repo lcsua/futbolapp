@@ -17,6 +17,34 @@ public class TeamPublicService
         _logger = logger;
     }
 
+    public async Task<TeamDetailViewModel?> GetTeamSummaryAsync(string leagueSlug, string teamSlug, string? season = null)
+    {
+        var cacheKey = $"equipo_{leagueSlug}_{teamSlug}_{season ?? "active"}";
+        if (_cache.TryGetValue(cacheKey, out TeamDetailViewModel? model) && model != null)
+            return model;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            var path = $"liga/{leagueSlug}/equipo/{teamSlug}";
+            if (!string.IsNullOrWhiteSpace(season))
+                path += $"?season={Uri.EscapeDataString(season)}";
+
+            model = await client.GetFromJsonAsync<TeamDetailViewModel>(path);
+            if (model != null)
+            {
+                _cache.Set(cacheKey, model, TimeSpan.FromMinutes(5));
+                return model;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calling backend API for team {League}/{Team}", leagueSlug, teamSlug);
+        }
+
+        return null;
+    }
+
     public async Task<TeamViewModel?> GetTeamBySlugAsync(string slug)
     {
         string cacheKey = $"equipo_{slug}";

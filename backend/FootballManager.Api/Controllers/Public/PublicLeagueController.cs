@@ -27,7 +27,15 @@ public class PublicLeagueController : ControllerBase
     [HttpGet("torneo/{seasonSlug}/equipo/{teamSlug}")]
     public async Task<IActionResult> GetTeamSummary(string leagueSlug, string seasonSlug, string teamSlug)
     {
-        var result = await _service.GetTeamSummaryAsync(leagueSlug, seasonSlug, teamSlug);
+        var result = await _service.GetTeamSummaryAsync(leagueSlug, teamSlug, seasonSlug);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpGet("equipo/{teamSlug}")]
+    public async Task<IActionResult> GetTeamSummaryByLeague(string leagueSlug, string teamSlug, [FromQuery] string? season)
+    {
+        var result = await _service.GetTeamSummaryAsync(leagueSlug, teamSlug, season);
         if (result == null) return NotFound();
         return Ok(result);
     }

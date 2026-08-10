@@ -30,8 +30,21 @@ public class PublicMatchService
                 Status = res.Status,
                 HomeScore = res.HomeScore,
                 AwayScore = res.AwayScore,
-                HomeTeam = new TeamPublicDto { Id = res.HomeTeamId, Name = res.HomeTeamName },
-                AwayTeam = new TeamPublicDto { Id = res.AwayTeamId, Name = res.AwayTeamName },
+                LeagueSlug = res.LeagueSlug,
+                HomeTeam = new TeamPublicDto
+                {
+                    Id = res.HomeTeamId,
+                    Name = res.HomeTeamName,
+                    Slug = res.HomeTeamSlug ?? string.Empty,
+                    LogoUrl = res.HomeTeamLogoUrl
+                },
+                AwayTeam = new TeamPublicDto
+                {
+                    Id = res.AwayTeamId,
+                    Name = res.AwayTeamName,
+                    Slug = res.AwayTeamSlug ?? string.Empty,
+                    LogoUrl = res.AwayTeamLogoUrl
+                },
                 Kickoff = DateTime.TryParse(res.MatchDate + " " + res.KickoffTime, out var dt) ? dt : DateTime.UtcNow
             };
         }

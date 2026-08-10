@@ -45,6 +45,31 @@ public class MatchViewModel
     public int? HomeScore { get; set; }
     public int? AwayScore { get; set; }
     public string? MatchDay { get; set; }
+    public string? LeagueSlug { get; set; }
+}
+
+public class StandingSummaryViewModel
+{
+    public int Position { get; set; }
+    public int Played { get; set; }
+    public int Points { get; set; }
+    public int Wins { get; set; }
+    public int Draws { get; set; }
+    public int Losses { get; set; }
+    public int GoalsFor { get; set; }
+    public int GoalsAgainst { get; set; }
+    public string? DivisionName { get; set; }
+    public int GoalDifference => GoalsFor - GoalsAgainst;
+}
+
+public class TeamDetailViewModel
+{
+    public TeamViewModel Team { get; set; } = new();
+    public LeagueViewModel? League { get; set; }
+    public SeasonViewModel? Season { get; set; }
+    public StandingSummaryViewModel? Standing { get; set; }
+    public List<MatchViewModel> NextMatches { get; set; } = new();
+    public List<MatchViewModel> LastResults { get; set; } = new();
 }
 
 public class DivisionViewModel

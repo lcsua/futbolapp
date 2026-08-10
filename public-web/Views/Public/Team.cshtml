@@ -1,43 +1,199 @@
-@model PublicWeb.Models.Public.TeamViewModel
+@model PublicWeb.Models.Public.TeamDetailViewModel
 @{
-    ViewData["Title"] = Model.Name;
+    var league = Model.League ?? ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
+    var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
+    var leagueSlug = league?.Slug ?? string.Empty;
+    ViewData["Title"] = Model.Team.Name + (league != null ? $" - {league.Name}" : string.Empty);
+    var hasLogo = !string.IsNullOrWhiteSpace(Model.Team.LogoUrl);
+    var standing = Model.Standing;
 }
 
-<div class="row mb-4">
-    <div class="col-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Inicio</a></li>
-                <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
-            </ol>
-        </nav>
-    </div>
+<div class="mb-3">
+    <a href="@Url.Content($"~/ligas/{leagueSlug}")" class="text-decoration-none small text-muted">← @league?.Name</a>
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card shadow-sm mb-4 text-center">
-            <div class="card-body py-5">
-                <div class="display-1 text-primary mb-3">🛡️</div>
-                <h2>@Model.Name</h2>
-                @if(!string.IsNullOrEmpty(Model.ShortName))
+<div class="card mb-3 shadow-sm border-0 bg-white league-page-header">
+    <div class="card-body">
+        <div class="d-flex align-items-center gap-3">
+            @if (hasLogo)
+            {
+                <img src="@Model.Team.LogoUrl" alt="@Model.Team.Name" class="team-crest" width="72" height="72" />
+            }
+            else
+            {
+                <div class="team-crest-placeholder">@GetInitials(Model.Team.Name)</div>
+            }
+            <div>
+                <h1 class="h2 fw-bold mb-1">@Model.Team.Name</h1>
+                @if (!string.IsNullOrWhiteSpace(Model.Team.ShortName))
                 {
-                    <p class="text-muted">(@Model.ShortName)</p>
+                    <p class="text-muted mb-0 small">@Model.Team.ShortName</p>
                 }
-            </div>
-        </div>
-    </div>
-    <div class="col-md-8">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white fw-bold">Plantel e Información</div>
-            <div class="card-body">
-                <p>Información del equipo, lista de jugadores y estadísticas aquí.</p>
-                @if(Model.FoundedYear.HasValue)
+                @if (!string.IsNullOrWhiteSpace(standing?.DivisionName))
                 {
-                    <p><strong>Fundado en:</strong> @Model.FoundedYear</p>
+                    <p class="text-muted mb-0 small">@standing.DivisionName · @(Model.Season?.Name)</p>
+                }
+                else if (Model.Season != null)
+                {
+                    <p class="text-muted mb-0 small">@Model.Season.Name</p>
                 }
             </div>
         </div>
     </div>
 </div>
 
+<ul class="nav nav-pills mb-3 nav-fill bg-white p-2 border rounded shadow-sm">
+    <li class="nav-item">
+        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{leagueSlug}")">Resumen</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{leagueSlug}/tabla")">Tabla de posiciones</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{leagueSlug}/resultados")">Resultados</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{leagueSlug}/partidos")">Próximos partidos</a>
+    </li>
+</ul>
+
+@if (seasons != null && seasons.Count > 1)
+{
+    <form method="get" class="mb-3 d-flex align-items-center bg-white rounded shadow-sm flex-wrap league-filters">
+        <div class="d-flex align-items-center me-3 mb-1 mb-md-0">
+            <label class="me-2 fw-semibold small text-dark mb-0">Temporada:</label>
+            <select name="season" class="form-select w-auto" onchange="this.form.submit()">
+                @foreach (var s in seasons)
+                {
+                    if (Model.Season != null && Model.Season.Slug == s.Slug)
+                    {
+                        <option value="@s.Slug" selected>@s.Name</option>
+                    }
+                    else
+                    {
+                        <option value="@s.Slug">@s.Name</option>
+                    }
+                }
+            </select>
+        </div>
+    </form>
+}
+
+@if (standing != null)
+{
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center h-100 team-stat-card">
+                <div class="card-body py-3">
+                    <div class="text-muted small text-uppercase">Posición</div>
+                    <div class="display-6 fw-bold text-primary mb-0">@standing.Position°</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center h-100 team-stat-card">
+                <div class="card-body py-3">
+                    <div class="text-muted small text-uppercase">Puntos</div>
+                    <div class="display-6 fw-bold mb-0">@standing.Points</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center h-100 team-stat-card">
+                <div class="card-body py-3">
+                    <div class="text-muted small text-uppercase">PJ</div>
+                    <div class="h3 fw-bold mb-0">@standing.Played</div>
+                    <div class="small text-muted">@standing.Wins W · @standing.Draws E · @standing.Losses L</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center h-100 team-stat-card">
+                <div class="card-body py-3">
+                    <div class="text-muted small text-uppercase">DG</div>
+                    <div class="h3 fw-bold mb-0">@(standing.GoalDifference > 0 ? $"+{standing.GoalDifference}" : standing.GoalDifference.ToString())</div>
+                    <div class="small text-muted">@standing.GoalsFor GF · @standing.GoalsAgainst GC</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white fw-bold">Últimos resultados</div>
+            <div class="card-body p-0">
+                @if (Model.LastResults.Any())
+                {
+                    <div class="list-group list-group-flush league-match-list">
+                        @foreach (var match in Model.LastResults)
+                        {
+                            <a href="@Url.Content($"~/partido/{match.Id}")" class="list-group-item list-group-item-action">
+                                <div class="row align-items-center g-2 league-match-row">
+                                    <div class="col-5">
+                                        <div class="text-end text-truncate match-team" title="@match.HomeTeam.Name">@match.HomeTeam.Name</div>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <div class="match-score">@match.HomeScore - @match.AwayScore</div>
+                                        <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
+                                    </div>
+                                    <div class="col-5">
+                                        <div class="text-start text-truncate match-team" title="@match.AwayTeam.Name">@match.AwayTeam.Name</div>
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="p-4 text-center text-muted small">Sin resultados recientes.</div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white fw-bold">Próximos partidos</div>
+            <div class="card-body p-0">
+                @if (Model.NextMatches.Any())
+                {
+                    <div class="list-group list-group-flush league-match-list">
+                        @foreach (var match in Model.NextMatches)
+                        {
+                            <a href="@Url.Content($"~/partido/{match.Id}")" class="list-group-item list-group-item-action">
+                                <div class="row align-items-center g-2 league-match-row">
+                                    <div class="col-5">
+                                        <div class="text-end text-truncate match-team" title="@match.HomeTeam.Name">@match.HomeTeam.Name</div>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <div class="match-time">@(match.Kickoff == default ? "—" : match.Kickoff.ToString("HH:mm"))</div>
+                                        <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
+                                    </div>
+                                    <div class="col-5">
+                                        <div class="text-start text-truncate match-team" title="@match.AwayTeam.Name">@match.AwayTeam.Name</div>
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="p-4 text-center text-muted small">Sin partidos próximos.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private static string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant();
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant();
+    }
+}

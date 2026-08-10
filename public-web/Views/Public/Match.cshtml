@@ -17,9 +17,16 @@
         <div class="row align-items-center text-center">
             <div class="col-5">
                 <h2 class="fw-bold">
-                    <a href="/equipo/@Model.HomeTeam.Slug" class="text-decoration-none text-dark">
+                    @if (!string.IsNullOrWhiteSpace(Model.LeagueSlug) && !string.IsNullOrWhiteSpace(Model.HomeTeam.Slug))
+                    {
+                        <a href="@Url.Content($"~/ligas/{Model.LeagueSlug}/{Model.HomeTeam.Slug}")" class="text-decoration-none text-dark">
+                            @Model.HomeTeam.Name
+                        </a>
+                    }
+                    else
+                    {
                         @Model.HomeTeam.Name
-                    </a>
+                    }
                 </h2>
             </div>
             <div class="col-2">
@@ -38,9 +45,16 @@
             </div>
             <div class="col-5">
                 <h2 class="fw-bold">
-                    <a href="/equipo/@Model.AwayTeam.Slug" class="text-decoration-none text-dark">
+                    @if (!string.IsNullOrWhiteSpace(Model.LeagueSlug) && !string.IsNullOrWhiteSpace(Model.AwayTeam.Slug))
+                    {
+                        <a href="@Url.Content($"~/ligas/{Model.LeagueSlug}/{Model.AwayTeam.Slug}")" class="text-decoration-none text-dark">
+                            @Model.AwayTeam.Name
+                        </a>
+                    }
+                    else
+                    {
                         @Model.AwayTeam.Name
-                    </a>
+                    }
                 </h2>
             </div>
         </div>

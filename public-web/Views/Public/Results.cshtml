@@ -108,20 +108,40 @@
                         <div class="list-group list-group-flush league-match-list">
                         @foreach (var match in activeMatchday.Matches)
                         {
-                            <a href="@Url.Content($"~/partido/{match.Id}")" class="list-group-item list-group-item-action">
+                            <div class="list-group-item">
                                 <div class="row align-items-center g-2 league-match-row">
                                     <div class="col-5">
-                                        <div class="text-end text-truncate match-team" title="@match.HomeTeam.Name">@match.HomeTeam.Name</div>
+                                        <div class="text-end text-truncate match-team" title="@match.HomeTeam.Name">
+                                            @if (!string.IsNullOrWhiteSpace(match.HomeTeam.Slug))
+                                            {
+                                                <a href="@Url.Content($"~/ligas/{league?.Slug}/{match.HomeTeam.Slug}")" class="text-decoration-none text-dark">@match.HomeTeam.Name</a>
+                                            }
+                                            else
+                                            {
+                                                @match.HomeTeam.Name
+                                            }
+                                        </div>
                                     </div>
                                     <div class="col-2 text-center">
-                                        <div class="match-score">@match.HomeScore - @match.AwayScore</div>
-                                        <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
+                                        <a href="@Url.Content($"~/partido/{match.Id}")" class="text-decoration-none">
+                                            <div class="match-score">@match.HomeScore - @match.AwayScore</div>
+                                            <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
+                                        </a>
                                     </div>
                                     <div class="col-5">
-                                        <div class="text-start text-truncate match-team" title="@match.AwayTeam.Name">@match.AwayTeam.Name</div>
+                                        <div class="text-start text-truncate match-team" title="@match.AwayTeam.Name">
+                                            @if (!string.IsNullOrWhiteSpace(match.AwayTeam.Slug))
+                                            {
+                                                <a href="@Url.Content($"~/ligas/{league?.Slug}/{match.AwayTeam.Slug}")" class="text-decoration-none text-dark">@match.AwayTeam.Name</a>
+                                            }
+                                            else
+                                            {
+                                                @match.AwayTeam.Name
+                                            }
+                                        </div>
                                     </div>
                                 </div>
-                            </a>
+                            </div>
                         }
                         </div>
                     }

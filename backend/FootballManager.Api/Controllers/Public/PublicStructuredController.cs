@@ -39,7 +39,15 @@ public class PublicStructuredController : ControllerBase
     [HttpGet("{leagueSlug}/torneo/{season}/equipo/{teamSlug}")]
     public async Task<IActionResult> GetTeamSummary(string leagueSlug, string season, string teamSlug)
     {
-        var result = await _structuredService.GetTeamSummaryAsync(leagueSlug, season, teamSlug, HttpContext.RequestAborted);
+        var result = await _structuredService.GetTeamSummaryAsync(leagueSlug, teamSlug, season, HttpContext.RequestAborted);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpGet("{leagueSlug}/equipo/{teamSlug}")]
+    public async Task<IActionResult> GetTeamSummaryByLeague(string leagueSlug, string teamSlug, [FromQuery] string? season)
+    {
+        var result = await _structuredService.GetTeamSummaryAsync(leagueSlug, teamSlug, season, HttpContext.RequestAborted);
         if (result == null) return NotFound();
         return Ok(result);
     }

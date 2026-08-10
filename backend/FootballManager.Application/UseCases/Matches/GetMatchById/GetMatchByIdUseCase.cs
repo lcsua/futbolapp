@@ -31,8 +31,10 @@ public sealed class GetMatchByIdUseCase : IGetMatchByIdUseCase
         var fixture = await _fixtureRepository.GetByIdAsync(request.MatchId, cancellationToken);
         if (fixture == null)
             throw new KeyNotFoundException($"Match {request.MatchId} not found.");
-        if (fixture.LeagueId != request.LeagueId)
+        if (!request.IsPublic && fixture.LeagueId != request.LeagueId)
             throw new ForbiddenAccessException("Match does not belong to this league.");
+        if (request.IsPublic && fixture.League != null && !fixture.League.IsPublic)
+            throw new ForbiddenAccessException("Match is not publicly available.");
 
         var homeTeam = fixture.HomeTeamDivisionSeason?.Team;
         var awayTeam = fixture.AwayTeamDivisionSeason?.Team;
@@ -54,9 +56,9 @@ public sealed class GetMatchByIdUseCase : IGetMatchByIdUseCase
             fixture.Season?.IsActive ?? true,
             fixture.RoundNumber,
             fixture.DivisionSeason?.Division?.Name ?? "",
-            homeTeam?.Name ?? "",
+            homeTeam?.DisplayName ?? homeTeam?.Name ?? "",
             homeTeam?.Id ?? Guid.Empty,
-            awayTeam?.Name ?? "",
+            awayTeam?.DisplayName ?? awayTeam?.Name ?? "",
             awayTeam?.Id ?? Guid.Empty,
             fixture.Result?.HomeTeamGoals,
             fixture.Result?.AwayTeamGoals,
@@ -66,6 +68,9 @@ public sealed class GetMatchByIdUseCase : IGetMatchByIdUseCase
             fixture.Field?.Name ?? "",
             incidents,
             homeTeam?.LogoUrl,
-            awayTeam?.LogoUrl);
+            awayTeam?.LogoUrl,
+            homeTeam?.Slug,
+            awayTeam?.Slug,
+            fixture.League?.Slug);
     }
 }

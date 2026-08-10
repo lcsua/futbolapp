@@ -43,6 +43,7 @@ public class MatchPublicDto
     public TeamPublicDto AwayTeam { get; set; } = new();
     public int? HomeScore { get; set; }
     public int? AwayScore { get; set; }
+    public string? LeagueSlug { get; set; }
 }
 
 public class SeasonPublicDto
@@ -70,11 +71,16 @@ public class StandingSummaryDto
     public int Wins { get; set; }
     public int Draws { get; set; }
     public int Losses { get; set; }
+    public int GoalsFor { get; set; }
+    public int GoalsAgainst { get; set; }
+    public string? DivisionName { get; set; }
 }
 
 public class TeamSummaryPublicDto
 {
     public TeamPublicDto Team { get; set; } = new();
+    public LeaguePublicDto? League { get; set; }
+    public SeasonPublicDto? Season { get; set; }
     public List<SeasonPublicDto> ActiveSeasons { get; set; } = new();
     public List<MatchPublicDto> NextMatches { get; set; } = new();
     public List<MatchPublicDto> LastResults { get; set; } = new();

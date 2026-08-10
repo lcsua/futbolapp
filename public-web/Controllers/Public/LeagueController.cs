@@ -8,13 +8,16 @@ namespace PublicWeb.Controllers.Public;
 public class LeagueController : Controller
 {
     private readonly LeaguePublicService _leagueService;
+    private readonly TeamPublicService _teamService;
     private readonly ProfessionalFootballPublicService _professionalFootballService;
 
     public LeagueController(
         LeaguePublicService leagueService,
+        TeamPublicService teamService,
         ProfessionalFootballPublicService professionalFootballService)
     {
         _leagueService = leagueService;
+        _teamService = teamService;
         _professionalFootballService = professionalFootballService;
     }
 
@@ -92,4 +95,25 @@ public class LeagueController : Controller
 
         return View("~/Views/Public/Fixture.cshtml", fixture);
     }
+
+    [HttpGet("{slug}/{teamSlug}")]
+    public async Task<IActionResult> Team(string slug, string teamSlug, [FromQuery] string? season)
+    {
+        // Reserved league sub-routes handled by more specific actions; guard just in case.
+        if (IsReservedTeamSlug(teamSlug))
+            return NotFound();
+
+        var model = await _teamService.GetTeamSummaryAsync(slug, teamSlug, season);
+        if (model == null) return NotFound();
+
+        ViewBag.League = model.League ?? await _leagueService.GetLeagueBySlugAsync(slug);
+        ViewBag.Seasons = await _leagueService.GetLeagueMetaAsync(slug);
+
+        return View("~/Views/Public/Team.cshtml", model);
+    }
+
+    private static bool IsReservedTeamSlug(string teamSlug) =>
+        teamSlug.Equals("tabla", StringComparison.OrdinalIgnoreCase) ||
+        teamSlug.Equals("resultados", StringComparison.OrdinalIgnoreCase) ||
+        teamSlug.Equals("partidos", StringComparison.OrdinalIgnoreCase);
 }
