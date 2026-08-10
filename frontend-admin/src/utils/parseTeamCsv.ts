@@ -1,6 +1,6 @@
 /** Parse a teams CSV (header optional). Uses first column, or the column named Equipo/Team/Nombre. */
 
-function splitCsvLine(line: string): string[] {
+export function splitCsvLine(line: string): string[] {
   const cells: string[] = []
   let current = ''
   let inQuotes = false

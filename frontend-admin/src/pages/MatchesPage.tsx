@@ -222,7 +222,7 @@ export function MatchesPage() {
           onClick={() => setImportResultsOpen(true)}
           disabled={seasonClosed || !seasonId}
         >
-          Importar resultados JSON
+          Importar resultados CSV
         </Button>
       </Box>
 

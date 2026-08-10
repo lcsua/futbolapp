@@ -29,7 +29,7 @@ import {
   mapTeamNamesForDivision,
   matchDivisionName,
   mappingsNeedReview,
-  parseMatchResultsJson,
+  parseMatchResultsCsv,
   type JsonDivisionRoundBlock,
 } from '../utils/parseMatchResultsJson'
 import type { TeamCsvRowMapping } from '../utils/teamNameMatch'
@@ -118,19 +118,24 @@ export function ImportMatchResultsModal({
     const setupDivisions = setupData?.divisions ?? []
     const result: DivisionPlan[] = []
     const notes: string[] = []
+    const divisionsForMatch = scopeDivisionId
+      ? divisions.filter((d) => d.id === scopeDivisionId)
+      : divisions
 
     for (const block of blocks) {
       notes.push(...block.skippedByes, ...block.skippedOther)
 
       if (block.matches.length === 0) {
-        notes.push(
-          `"${block.division}": sin partidos importables (solo libres/omitidos).`
-        )
+        notes.push(`"${block.division}": sin partidos importables (solo libres/omitidos).`)
         continue
       }
 
-      const matched = matchDivisionName(block.division, divisions)
+      const matched = matchDivisionName(block.division, divisionsForMatch.length ? divisionsForMatch : divisions)
       if (!matched) {
+        if (scopeDivisionId) {
+          // Block belongs to another division when scoped — skip quietly.
+          continue
+        }
         result.push({
           jsonDivision: block.division,
           divisionId: null,
@@ -251,7 +256,7 @@ export function ImportMatchResultsModal({
         return
       }
       const text = await file.text()
-      const blocks = parseMatchResultsJson(text)
+      const blocks = parseMatchResultsCsv(text)
       const { plans: next, notes } = buildPlans(blocks)
       if (notes.length > 0) {
         setInfoMsg(
@@ -267,8 +272,8 @@ export function ImportMatchResultsModal({
       if (next.length === 0) {
         setLocalError(
           scopeDivisionId
-            ? 'El JSON no tiene partidos importables para la división elegida (o no coincidió el nombre).'
-            : 'El JSON no tiene bloques importables.'
+            ? 'El CSV no tiene partidos importables para la división elegida (o el nombre de división no coincide con el de la liga). Probá “Todas las del CSV” o revisá el nombre en la columna division.'
+            : 'El CSV no tiene bloques importables.'
         )
         setPlans(null)
         return
@@ -281,7 +286,7 @@ export function ImportMatchResultsModal({
         importMutation.mutate(next)
       }
     } catch (e) {
-      setLocalError(e instanceof Error ? e.message : 'JSON inválido')
+      setLocalError(e instanceof Error ? e.message : 'CSV inválido')
       setPlans(null)
     }
   }
@@ -355,12 +360,12 @@ export function ImportMatchResultsModal({
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth={showReview ? 'md' : 'sm'} fullWidth>
-      <DialogTitle>Importar resultados (JSON)</DialogTitle>
+      <DialogTitle>Importar resultados (CSV)</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Subí un JSON con bloques por división. Los enfrentamientos existentes se actualizan; si faltan, se crean
-          en la próxima jornada. Los libres (bye) y partidos sin rival se omiten. Suspendidos se importan sin
-          marcador. Podés limitar a una sola división.
+          Subí un CSV con columnas: <strong>fecha, division, Equipo 1, goles equipo 1, equipo 2, goles equipo 2,
+          estado</strong>. Estados: Finalizado, Partido Suspendido, Libre. Los libres se omiten; suspendidos se
+          importan sin marcador. Si el partido ya existe se actualiza; si no, se crea en la próxima jornada.
         </Typography>
 
         <FormControl fullWidth size="small" sx={{ mb: 2 }} disabled={!!plans || importMutation.isPending}>
@@ -372,7 +377,7 @@ export function ImportMatchResultsModal({
             onChange={(e) => setScopeDivisionId(e.target.value)}
           >
             <MenuItem value={ALL_DIVISIONS}>
-              <em>Todas las del JSON</em>
+              <em>Todas las del CSV</em>
             </MenuItem>
             {divisions.map((d) => (
               <MenuItem key={d.id} value={d.id}>
@@ -385,7 +390,7 @@ export function ImportMatchResultsModal({
         <input
           ref={fileRef}
           type="file"
-          accept=".json,application/json"
+          accept=".csv,text/csv"
           hidden
           onChange={(e) => {
             const file = e.target.files?.[0]
@@ -399,7 +404,7 @@ export function ImportMatchResultsModal({
           disabled={setupLoading || importMutation.isPending || !seasonId}
           onClick={() => fileRef.current?.click()}
         >
-          Elegir JSON
+          Elegir CSV
         </Button>
         {fileName && (
           <Typography variant="caption" sx={{ ml: 1.5 }} color="text.secondary">
@@ -440,7 +445,7 @@ export function ImportMatchResultsModal({
               <Box key={`${plan.jsonDivision}-${planIndex}`} sx={{ mb: 2.5 }}>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 1 }}>
                   <Typography variant="subtitle2">
-                    JSON: {plan.jsonDivision} (fecha {plan.round}, {plan.matches.length} partidos)
+                    CSV: {plan.jsonDivision} (fecha {plan.round}, {plan.matches.length} partidos)
                   </Typography>
                   {plan.error && <Chip size="small" color="error" label="Error" />}
                 </Box>
@@ -470,7 +475,7 @@ export function ImportMatchResultsModal({
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Nombre JSON</TableCell>
+                        <TableCell>Nombre en CSV</TableCell>
                         <TableCell>Equipo en división</TableCell>
                       </TableRow>
                     </TableHead>
