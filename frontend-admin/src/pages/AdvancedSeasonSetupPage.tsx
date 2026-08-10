@@ -108,8 +108,8 @@ function TeamCard({
     disabled,
   })
   const style = transform
-    ? { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.5 : 1 }
-    : { opacity: isDragging ? 0.5 : 1 }
+    ? { transform: CSS.Translate.toString(transform), opacity: disabled ? 0.85 : isDragging ? 0.5 : 1 }
+    : { opacity: disabled ? 0.85 : isDragging ? 0.5 : 1 }
 
   return (
     <Card
@@ -121,7 +121,6 @@ function TeamCard({
         mb: 1,
         cursor: disabled ? 'default' : isDragging ? 'grabbing' : 'grab',
         flexShrink: 0,
-        opacity: disabled ? 0.85 : style.opacity,
         ...style,
       }}
       variant="outlined"
