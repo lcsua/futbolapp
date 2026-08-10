@@ -13,14 +13,14 @@
     <a href="@Url.Content("~/ligas")" class="text-decoration-none small text-muted">← Todas las ligas</a>
 </div>
 
-<div class="card mb-4 shadow-sm border-0 bg-white">
-    <div class="card-body py-4">
+<div class="card mb-3 shadow-sm border-0 bg-white league-page-header">
+    <div class="card-body">
         <h2 class="fw-bold mb-1">@league?.Name</h2>
-        <p class="text-muted mb-0">@league?.Country</p>
+        <p class="text-muted mb-0 small">@league?.Country</p>
     </div>
 </div>
 
-<ul class="nav nav-pills mb-4 nav-fill bg-white p-2 border rounded shadow-sm">
+<ul class="nav nav-pills mb-3 nav-fill bg-white p-2 border rounded shadow-sm">
     <li class="nav-item">
         <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{league?.Slug}")">Resumen</a>
     </li>
@@ -37,9 +37,9 @@
 
 @if (seasons != null && seasons.Any())
 {
-    <form method="get" class="mb-4 d-flex align-items-center bg-white p-3 rounded shadow-sm flex-wrap">
-        <div class="d-flex align-items-center me-4 mb-2 mb-md-0">
-            <label class="me-2 fw-bold text-dark">Temporada:</label>
+    <form method="get" class="mb-3 d-flex align-items-center bg-white rounded shadow-sm flex-wrap league-filters">
+        <div class="d-flex align-items-center me-3 mb-1 mb-md-0">
+            <label class="me-2 fw-semibold small text-dark mb-0">Temporada:</label>
             <select name="season" class="form-select w-auto" onchange="this.form.submit()">
                 @foreach (var s in seasons)
                 {
@@ -55,8 +55,8 @@
             </select>
         </div>
         
-        <div class="d-flex align-items-center mb-2 mb-md-0">
-            <label class="me-2 fw-bold text-dark">División:</label>
+        <div class="d-flex align-items-center mb-1 mb-md-0">
+            <label class="me-2 fw-semibold small text-dark mb-0">División:</label>
             <select name="division" class="form-select w-auto" onchange="this.form.submit()">
                 <option value="all">Todas</option>
                 @foreach (var d in divisions)
@@ -79,7 +79,7 @@
 {
     foreach (var div in Model.Divisions)
     {
-        <h4 class="fw-bold mt-4 mb-3 text-secondary border-bottom pb-2">@div.DivisionName</h4>
+        <h3 class="h6 fw-bold mt-3 mb-2 text-secondary">@div.DivisionName</h3>
         
         @if (div.Data != null && div.Data.Any())
         {
@@ -89,10 +89,10 @@
 
             var currentRoundNav = activeMatchday?.Round;
 
-            <ul class="nav nav-pills mb-3 overflow-auto flex-nowrap pb-2" style="white-space: nowrap;">
+            <ul class="nav nav-pills mb-2 overflow-auto flex-nowrap pb-1 round-pills" style="white-space: nowrap;">
                 @foreach (var matchday in div.Data)
                 {
-                    <li class="nav-item me-2">
+                    <li class="nav-item me-1">
                         <a class="nav-link rounded-pill @(matchday.Round == currentRoundNav ? "active" : "bg-light text-dark border")" 
                            href="?season=@Model.SeasonSlug&division=@(ViewBag.Division)&round=@matchday.Round">
                            Fecha @matchday.Round
@@ -101,22 +101,25 @@
                 }
             </ul>
 
-            <div class="card shadow-sm mb-4 border-0">
+            <div class="card shadow-sm mb-3 border-0">
                 <div class="card-body p-0">
                     @if (activeMatchday != null && activeMatchday.Matches.Any())
                     {
-                        <div class="list-group list-group-flush rounded-3">
+                        <div class="list-group list-group-flush league-match-list">
                         @foreach (var match in activeMatchday.Matches)
                         {
-                            <div class="list-group-item p-3 border-bottom">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <small class="text-muted">@match.Kickoff.ToString("dd/MM/yyyy HH:mm")</small>
-                                    <span class="badge bg-secondary">Programado</span>
-                                </div>
-                                <div class="row text-center align-items-center fw-bold fs-5">
-                                    <div class="col-4 text-end">@match.HomeTeam.Name</div>
-                                    <div class="col-4 text-muted fs-6">vs</div>
-                                    <div class="col-4 text-start">@match.AwayTeam.Name</div>
+                            <div class="list-group-item">
+                                <div class="row align-items-center g-2 league-match-row">
+                                    <div class="col-5">
+                                        <div class="text-end text-truncate match-team" title="@match.HomeTeam.Name">@match.HomeTeam.Name</div>
+                                    </div>
+                                    <div class="col-2 text-center">
+                                        <div class="match-time">@match.Kickoff.ToString("HH:mm")</div>
+                                        <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
+                                    </div>
+                                    <div class="col-5">
+                                        <div class="text-start text-truncate match-team" title="@match.AwayTeam.Name">@match.AwayTeam.Name</div>
+                                    </div>
                                 </div>
                             </div>
                         }
@@ -124,7 +127,7 @@
                     }
                     else
                     {
-                        <div class="p-5 text-center text-muted">
+                        <div class="p-4 text-center text-muted small">
                             No hay partidos programados en esta fecha.
                         </div>
                     }
@@ -133,7 +136,7 @@
         }
         else
         {
-            <div class="p-4 text-center text-muted">
+            <div class="p-3 text-center text-muted small">
                 No hay partidos registrados en esta división.
             </div>
         }
@@ -142,6 +145,6 @@
 else
 {
     <div class="card shadow-sm border-0">
-        <div class="p-5 text-center text-muted">No hay partidos registrados.</div>
+        <div class="p-4 text-center text-muted small">No hay partidos registrados.</div>
     </div>
 }
