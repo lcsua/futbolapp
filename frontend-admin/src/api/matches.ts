@@ -118,6 +118,29 @@ export const matchesService = {
       `/api/leagues/${leagueId}/matches/incidents/${incidentId}`,
       signal
     ),
+
+  importResults: (
+    leagueId: string,
+    body: {
+      seasonId: string
+      divisions: Array<{
+        divisionId: string
+        matches: Array<{
+          homeTeamId: string
+          awayTeamId: string
+          homeScore: number | null
+          awayScore: number | null
+          status: string
+        }>
+      }>
+    },
+    signal?: AbortSignal
+  ) =>
+    apiClient.post<{ updatedCount: number; createdCount: number; warnings: string[] }>(
+      `/api/leagues/${leagueId}/matches/import-results`,
+      body,
+      signal
+    ),
 }
 
 export const INCIDENT_TYPES = [

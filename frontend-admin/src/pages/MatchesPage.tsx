@@ -25,8 +25,10 @@ import { divisionsService } from '../api/divisions'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { MatchResultModal } from '../components/MatchResultModal'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
+import { ImportMatchResultsModal } from '../components/ImportMatchResultsModal'
 import { useQueryClient } from '@tanstack/react-query'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
+import ScoreboardIcon from '@mui/icons-material/Scoreboard'
 
 export function MatchesPage() {
   const { t } = useTranslation()
@@ -38,6 +40,8 @@ export function MatchesPage() {
   const [teamId, setTeamId] = useState<string>('')
   const [resultModalMatch, setResultModalMatch] = useState<MatchListItem | null>(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
+  const [importResultsOpen, setImportResultsOpen] = useState(false)
+  const [importResultsMsg, setImportResultsMsg] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
@@ -212,7 +216,21 @@ export function MatchesPage() {
         >
           {t('matches.importFixture')}
         </Button>
+        <Button
+          variant="contained"
+          startIcon={<ScoreboardIcon />}
+          onClick={() => setImportResultsOpen(true)}
+          disabled={seasonClosed || !seasonId}
+        >
+          Importar resultados JSON
+        </Button>
       </Box>
+
+      {importResultsMsg && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setImportResultsMsg(null)}>
+          {importResultsMsg}
+        </Alert>
+      )}
 
       {matchesLoading && seasonId && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -267,6 +285,27 @@ export function MatchesPage() {
           seasonId={seasonId}
           divisionId={divisionId}
           onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
+          }}
+        />
+      )}
+      {leagueId && seasonId && (
+        <ImportMatchResultsModal
+          open={importResultsOpen}
+          onClose={() => setImportResultsOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          filterDivisionId={divisionId}
+          divisions={divisions}
+          onImported={({ updatedCount, createdCount, warnings }) => {
+            const parts = [
+              updatedCount ? `${updatedCount} actualizado(s)` : null,
+              createdCount ? `${createdCount} creado(s)` : null,
+            ].filter(Boolean)
+            const warn = warnings.length ? ` Advertencias: ${warnings.length}.` : ''
+            setImportResultsMsg(
+              parts.length ? `Resultados: ${parts.join(', ')}.${warn}` : `Import OK.${warn}`
+            )
             void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
           }}
         />

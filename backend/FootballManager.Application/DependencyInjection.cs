@@ -55,6 +55,7 @@ using FootballManager.Application.UseCases.Seasons.GetStandings;
 using FootballManager.Application.UseCases.Matches.GetMatches;
 using FootballManager.Application.UseCases.Matches.GetMatchById;
 using FootballManager.Application.UseCases.Matches.UpdateMatchResult;
+using FootballManager.Application.UseCases.Matches.ImportMatchResults;
 using FootballManager.Application.UseCases.Matches.AddMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatchIncident;
 using FootballManager.Application.Interfaces;
@@ -127,6 +128,7 @@ namespace FootballManager.Application
             services.AddScoped<IGetMatchesUseCase, GetMatchesUseCase>();
             services.AddScoped<IGetMatchByIdUseCase, GetMatchByIdUseCase>();
             services.AddScoped<IUpdateMatchResultUseCase, UpdateMatchResultUseCase>();
+            services.AddScoped<IImportMatchResultsUseCase, ImportMatchResultsUseCase>();
             services.AddScoped<IAddMatchIncidentUseCase, AddMatchIncidentUseCase>();
             services.AddScoped<IDeleteMatchIncidentUseCase, DeleteMatchIncidentUseCase>();
 
