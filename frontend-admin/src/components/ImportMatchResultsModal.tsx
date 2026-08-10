@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Box,
@@ -35,6 +35,7 @@ import {
 import type { TeamCsvRowMapping } from '../utils/teamNameMatch'
 
 const CREATE_VALUE = '__missing__'
+const ALL_DIVISIONS = ''
 
 type DivisionPlan = {
   jsonDivision: string
@@ -52,7 +53,7 @@ export type ImportMatchResultsModalProps = {
   onClose: () => void
   leagueId: string
   seasonId: string
-  /** If set, only import that division from the JSON. Empty = all that match. */
+  /** Preselect division filter from Matches page (optional). */
   filterDivisionId?: string
   divisions: Array<{ id: string; name: string }>
   onImported?: (summary: { updatedCount: number; createdCount: number; warnings: string[] }) => void
@@ -76,6 +77,21 @@ export function ImportMatchResultsModal({
   const [plans, setPlans] = useState<DivisionPlan[] | null>(null)
   const [showReview, setShowReview] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
+  const [infoMsg, setInfoMsg] = useState<string | null>(null)
+  /** Empty = import all divisions found in JSON; otherwise only that division. */
+  const [scopeDivisionId, setScopeDivisionId] = useState(filterDivisionId)
+
+  useEffect(() => {
+    if (open) {
+      setScopeDivisionId(filterDivisionId)
+      setFileName(null)
+      setPlans(null)
+      setShowReview(false)
+      setLocalError(null)
+      setInfoMsg(null)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }, [open, filterDivisionId])
 
   const { data: setupData, isLoading: setupLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons', seasonId, 'setup'],
@@ -88,6 +104,7 @@ export function ImportMatchResultsModal({
     setPlans(null)
     setShowReview(false)
     setLocalError(null)
+    setInfoMsg(null)
     if (fileRef.current) fileRef.current.value = ''
   }
 
@@ -97,11 +114,21 @@ export function ImportMatchResultsModal({
     onClose()
   }
 
-  const buildPlans = (blocks: JsonDivisionRoundBlock[]): DivisionPlan[] => {
+  const buildPlans = (blocks: JsonDivisionRoundBlock[]): { plans: DivisionPlan[]; notes: string[] } => {
     const setupDivisions = setupData?.divisions ?? []
     const result: DivisionPlan[] = []
+    const notes: string[] = []
 
     for (const block of blocks) {
+      notes.push(...block.skippedByes, ...block.skippedOther)
+
+      if (block.matches.length === 0) {
+        notes.push(
+          `"${block.division}": sin partidos importables (solo libres/omitidos).`
+        )
+        continue
+      }
+
       const matched = matchDivisionName(block.division, divisions)
       if (!matched) {
         result.push({
@@ -117,7 +144,7 @@ export function ImportMatchResultsModal({
         continue
       }
 
-      if (filterDivisionId && matched.divisionId !== filterDivisionId) {
+      if (scopeDivisionId && matched.divisionId !== scopeDivisionId) {
         continue
       }
 
@@ -137,9 +164,7 @@ export function ImportMatchResultsModal({
         continue
       }
 
-      const names = [
-        ...new Set(block.matches.flatMap((m) => [m.homeTeam, m.awayTeam])),
-      ]
+      const names = [...new Set(block.matches.flatMap((m) => [m.homeTeam, m.awayTeam]))]
       const teamMappings = mapTeamNamesForDivision(names, teams)
       result.push({
         jsonDivision: block.division,
@@ -152,7 +177,7 @@ export function ImportMatchResultsModal({
       })
     }
 
-    return result
+    return { plans: result, notes }
   }
 
   const nameToTeamId = (plan: DivisionPlan, csvName: string): string | null => {
@@ -167,6 +192,7 @@ export function ImportMatchResultsModal({
       for (const plan of current) {
         if (!plan.divisionId) throw new Error(plan.error || `División no resuelta: ${plan.jsonDivision}`)
         if (plan.error) throw new Error(plan.error)
+        if (plan.matches.length === 0) continue
         if (plan.teamMappings.some((m) => m.action !== 'match' || !m.teamId)) {
           throw new Error(
             `Hay equipos sin mapear en "${plan.divisionName ?? plan.jsonDivision}". Confirmá el matching.`
@@ -192,7 +218,7 @@ export function ImportMatchResultsModal({
       }
 
       if (payloadDivisions.length === 0) {
-        throw new Error('No hay divisiones para importar (revisá el filtro de división).')
+        throw new Error('No hay divisiones/partidos para importar (revisá el filtro de división).')
       }
 
       return matchesService.importResults(leagueId, {
@@ -204,7 +230,7 @@ export function ImportMatchResultsModal({
       onImported?.({
         updatedCount: res.updatedCount,
         createdCount: res.createdCount,
-        warnings: res.warnings ?? [],
+        warnings: [...(res.warnings ?? []), ...(infoMsg ? [infoMsg] : [])],
       })
       reset()
       onClose()
@@ -217,6 +243,7 @@ export function ImportMatchResultsModal({
 
   const handleFile = async (file: File) => {
     setLocalError(null)
+    setInfoMsg(null)
     setFileName(file.name)
     try {
       if (!setupData) {
@@ -225,11 +252,22 @@ export function ImportMatchResultsModal({
       }
       const text = await file.text()
       const blocks = parseMatchResultsJson(text)
-      const next = buildPlans(blocks)
+      const { plans: next, notes } = buildPlans(blocks)
+      if (notes.length > 0) {
+        setInfoMsg(
+          [
+            'Se omitieron libres / filas incompletas (equipos impares o bye):',
+            ...notes.slice(0, 12),
+            notes.length > 12 ? `… y ${notes.length - 12} más.` : null,
+          ]
+            .filter(Boolean)
+            .join('\n')
+        )
+      }
       if (next.length === 0) {
         setLocalError(
-          filterDivisionId
-            ? 'El JSON no contiene la división filtrada, o no coincidió el nombre.'
+          scopeDivisionId
+            ? 'El JSON no tiene partidos importables para la división elegida (o no coincidió el nombre).'
             : 'El JSON no tiene bloques importables.'
         )
         setPlans(null)
@@ -263,7 +301,7 @@ export function ImportMatchResultsModal({
             action: 'match' as const,
             teamId,
             needsReview: false,
-            reason: row.reason === 'none' ? 'fuzzy' as const : row.reason,
+            reason: row.reason === 'none' ? ('fuzzy' as const) : row.reason,
           }
         })
         return {
@@ -291,14 +329,18 @@ export function ImportMatchResultsModal({
           divisionId,
           divisionName: div?.name ?? null,
           teamMappings,
-          needsReview: mappingsNeedReview(teamMappings) || teamMappings.some((m) => m.action === 'create') || teams.length === 0,
+          needsReview:
+            mappingsNeedReview(teamMappings) || teamMappings.some((m) => m.action === 'create') || teams.length === 0,
           error: teams.length === 0 ? `Sin equipos en "${div?.name}".` : undefined,
         }
       })
     })
   }
 
-  const reviewRows = useMemo(() => plans?.flatMap((p) => p.teamMappings.filter((m) => m.needsReview || m.action === 'create')) ?? [], [plans])
+  const reviewRows = useMemo(
+    () => plans?.flatMap((p) => p.teamMappings.filter((m) => m.needsReview || m.action === 'create')) ?? [],
+    [plans]
+  )
 
   const canConfirm =
     !!plans &&
@@ -307,6 +349,7 @@ export function ImportMatchResultsModal({
       (p) =>
         !!p.divisionId &&
         !p.error &&
+        p.matches.length > 0 &&
         p.teamMappings.every((m) => m.action === 'match' && !!m.teamId)
     )
 
@@ -315,11 +358,29 @@ export function ImportMatchResultsModal({
       <DialogTitle>Importar resultados (JSON)</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Subí un JSON con bloques por división (como fecha_1.json). Si el partido ya existe se actualiza el
-          resultado; si la división no tiene ese enfrentamiento, se crea en la próxima jornada (última + 1).
-          Los nombres se matchean solo contra equipos de la temporada + división.
-          {filterDivisionId ? ' Solo se importa la división filtrada en Partidos.' : ''}
+          Subí un JSON con bloques por división. Los enfrentamientos existentes se actualizan; si faltan, se crean
+          en la próxima jornada. Los libres (bye) y partidos sin rival se omiten. Suspendidos se importan sin
+          marcador. Podés limitar a una sola división.
         </Typography>
+
+        <FormControl fullWidth size="small" sx={{ mb: 2 }} disabled={!!plans || importMutation.isPending}>
+          <InputLabel id="import-scope-division">División a importar</InputLabel>
+          <Select
+            labelId="import-scope-division"
+            label="División a importar"
+            value={scopeDivisionId}
+            onChange={(e) => setScopeDivisionId(e.target.value)}
+          >
+            <MenuItem value={ALL_DIVISIONS}>
+              <em>Todas las del JSON</em>
+            </MenuItem>
+            {divisions.map((d) => (
+              <MenuItem key={d.id} value={d.id}>
+                Solo: {d.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         <input
           ref={fileRef}
@@ -353,6 +414,12 @@ export function ImportMatchResultsModal({
               {importMutation.isPending ? 'Importando…' : 'Cargando equipos de la temporada…'}
             </Typography>
           </Box>
+        )}
+
+        {infoMsg && (
+          <Alert severity="info" sx={{ mt: 2, whiteSpace: 'pre-wrap' }} onClose={() => setInfoMsg(null)}>
+            {infoMsg}
+          </Alert>
         )}
 
         {localError && (
@@ -412,7 +479,10 @@ export function ImportMatchResultsModal({
                         const setupTeams =
                           setupData?.divisions.find((d) => d.divisionId === plan.divisionId)?.teams ?? []
                         return (
-                          <TableRow key={`${row.csvName}-${mappingIndex}`} selected={row.needsReview || row.action === 'create'}>
+                          <TableRow
+                            key={`${row.csvName}-${mappingIndex}`}
+                            selected={row.needsReview || row.action === 'create'}
+                          >
                             <TableCell>
                               <Typography variant="body2">{row.csvName}</Typography>
                               {row.score > 0 && (

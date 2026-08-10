@@ -14,6 +14,31 @@ export type JsonDivisionRoundBlock = {
   division: string
   round: number
   matches: JsonMatchResultRow[]
+  /** Informational: byes / libres skipped from the JSON. */
+  skippedByes: string[]
+  /** Informational: rows skipped for other reasons. */
+  skippedOther: string[]
+}
+
+function isByeStatus(status: string): boolean {
+  const s = status.trim().toLowerCase()
+  return s === 'bye' || s === 'libre' || s === 'free' || s === 'rest'
+}
+
+function isSuspendedStatus(status: string): boolean {
+  const s = status.trim().toLowerCase()
+  return s === 'suspended' || s === 'postponed' || s === 'suspended_match'
+}
+
+function teamLabel(value: unknown): string {
+  if (value == null) return ''
+  return String(value).trim()
+}
+
+function parseScore(value: unknown): number | null {
+  if (value == null || value === '') return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
 }
 
 export function parseMatchResultsJson(text: string): JsonDivisionRoundBlock[] {
@@ -34,26 +59,64 @@ export function parseMatchResultsJson(text: string): JsonDivisionRoundBlock[] {
     if (!Array.isArray(matchesRaw) || matchesRaw.length === 0) {
       throw new Error(`Sin partidos en división "${division}".`)
     }
-    const matches: JsonMatchResultRow[] = matchesRaw.map((m, j) => {
-      const row = m as Record<string, unknown>
-      const homeTeam = String(row.homeTeam ?? '').trim()
-      const awayTeam = String(row.awayTeam ?? '').trim()
-      if (!homeTeam || !awayTeam) {
-        throw new Error(`Partido incompleto en ${division} #${j + 1}.`)
+
+    const matches: JsonMatchResultRow[] = []
+    const skippedByes: string[] = []
+    const skippedOther: string[] = []
+
+    matchesRaw.forEach((m, j) => {
+      const row = (m ?? {}) as Record<string, unknown>
+      const status = String(row.status ?? 'finished')
+      const homeTeam = teamLabel(row.homeTeam)
+      const awayTeam = teamLabel(row.awayTeam)
+      const homeScore = parseScore(row.homeScore)
+      const awayScore = parseScore(row.awayScore)
+      const indexLabel = `${division} #${j + 1}`
+
+      // Libre / bye (equipos impares): un solo equipo, sin rival.
+      if (isByeStatus(status) || (!homeTeam && awayTeam) || (homeTeam && !awayTeam)) {
+        const who = homeTeam || awayTeam || '(sin nombre)'
+        skippedByes.push(`${indexLabel}: libre — ${who}`)
+        return
       }
-      return {
+
+      if (!homeTeam || !awayTeam) {
+        skippedOther.push(`${indexLabel}: partido sin local/visitante (omitido).`)
+        return
+      }
+
+      // Suspendidos / sin marcador: se importan igual (backend → POSTPONED).
+      if (isSuspendedStatus(status) || (homeScore == null && awayScore == null && status.toLowerCase() !== 'finished')) {
+        matches.push({
+          homeTeam,
+          awayTeam,
+          homeScore,
+          awayScore,
+          status: isSuspendedStatus(status) ? status : status || 'suspended',
+        })
+        return
+      }
+
+      matches.push({
         homeTeam,
         awayTeam,
-        homeScore: row.homeScore == null || row.homeScore === '' ? null : Number(row.homeScore),
-        awayScore: row.awayScore == null || row.awayScore === '' ? null : Number(row.awayScore),
-        status: String(row.status ?? 'finished'),
-      }
+        homeScore,
+        awayScore,
+        status,
+      })
     })
+
+    if (matches.length === 0 && skippedByes.length === 0 && skippedOther.length === 0) {
+      throw new Error(`Sin partidos en división "${division}".`)
+    }
+
     return {
       competition: o.competition != null ? String(o.competition) : undefined,
       division,
       round: Number.isFinite(round) ? round : 1,
       matches,
+      skippedByes,
+      skippedOther,
     }
   })
 }
