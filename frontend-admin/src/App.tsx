@@ -18,6 +18,7 @@ import { ClubsListPage } from './pages/ClubsListPage'
 import { CreateTeamPage } from './pages/CreateTeamPage'
 import { EditTeamPage } from './pages/EditTeamPage'
 import { BulkTeamImportPage } from './pages/BulkTeamImportPage'
+import { NeverAssignedTeamsPage } from './pages/NeverAssignedTeamsPage'
 import { SeasonSetupPage } from './pages/SeasonSetupPage'
 import { AdvancedSeasonSetupPage } from './pages/AdvancedSeasonSetupPage'
 import { FieldsListPage } from './pages/FieldsListPage'
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="leagues/:leagueId/clubs" element={<ClubsListPage />} />
           <Route path="leagues/:leagueId/teams/new" element={<CreateTeamPage />} />
           <Route path="leagues/:leagueId/teams/bulk" element={<BulkTeamImportPage />} />
+          <Route path="leagues/:leagueId/teams/never-assigned" element={<NeverAssignedTeamsPage />} />
           <Route path="leagues/:leagueId/teams/:teamId/edit" element={<EditTeamPage />} />
           <Route path="leagues/:leagueId/season-setup" element={<SeasonSetupPage />} />
           <Route path="leagues/:leagueId/season-setup/advanced" element={<AdvancedSeasonSetupPage />} />
@@ -93,6 +95,7 @@ export default function App() {
             <Route path="clubs" element={<ClubsListPage />} />
             <Route path="teams/new" element={<CreateTeamPage />} />
             <Route path="teams/bulk" element={<BulkTeamImportPage />} />
+            <Route path="teams/never-assigned" element={<NeverAssignedTeamsPage />} />
             <Route path="teams/:teamId/edit" element={<EditTeamPage />} />
             <Route path="season-setup" element={<SeasonSetupPage />} />
             <Route path="season-setup/advanced" element={<AdvancedSeasonSetupPage />} />

@@ -10,7 +10,10 @@ namespace FootballManager.Application.Interfaces.Repositories
         Task<Team?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
         Task<Team?> GetByLeagueIdAndSlugAsync(Guid leagueId, string slug, CancellationToken cancellationToken = default);
         Task<List<Team>> GetByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken = default);
+        Task<List<Team>> GetNeverAssignedByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken = default);
+        Task<bool> HasAnySeasonAssignmentAsync(Guid teamId, CancellationToken cancellationToken = default);
         Task AddAsync(Team team, CancellationToken cancellationToken = default);
         void Update(Team team);
+        Task RemoveAsync(Team team, CancellationToken cancellationToken = default);
     }
 }

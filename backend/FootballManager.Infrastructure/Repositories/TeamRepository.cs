@@ -47,6 +47,24 @@ namespace FootballManager.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<List<Team>> GetNeverAssignedByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken = default)
+        {
+            var assignedTeamIds = _context.TeamDivisionSeasons.Select(tds => tds.TeamId);
+            return await _context.Teams
+                .AsNoTracking()
+                .Include(t => t.Club)
+                .Where(t => t.LeagueId == leagueId && !assignedTeamIds.Contains(t.Id))
+                .OrderBy(t => t.Name)
+                .ThenBy(t => t.Suffix)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<bool> HasAnySeasonAssignmentAsync(Guid teamId, CancellationToken cancellationToken = default)
+        {
+            return await _context.TeamDivisionSeasons
+                .AnyAsync(tds => tds.TeamId == teamId, cancellationToken);
+        }
+
         public async Task AddAsync(Team team, CancellationToken cancellationToken = default)
         {
             await _context.Teams.AddAsync(team, cancellationToken);
@@ -55,6 +73,15 @@ namespace FootballManager.Infrastructure.Repositories
         public void Update(Team team)
         {
             _context.Teams.Update(team);
+        }
+
+        public async Task RemoveAsync(Team team, CancellationToken cancellationToken = default)
+        {
+            var players = await _context.Players.Where(p => p.TeamId == team.Id).ToListAsync(cancellationToken);
+            if (players.Count > 0)
+                _context.Players.RemoveRange(players);
+
+            _context.Teams.Remove(team);
         }
     }
 }

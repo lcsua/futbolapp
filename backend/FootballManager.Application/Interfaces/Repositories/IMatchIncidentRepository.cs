@@ -12,4 +12,5 @@ public interface IMatchIncidentRepository
     Task<List<MatchIncident>> GetByFixtureIdAsync(Guid fixtureId, CancellationToken cancellationToken = default);
     Task AddAsync(MatchIncident incident, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<bool> ExistsByTeamIdAsync(Guid teamId, CancellationToken cancellationToken = default);
 }

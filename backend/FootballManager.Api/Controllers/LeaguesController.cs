@@ -7,6 +7,8 @@ using FootballManager.Application.UseCases.Leagues.GetLeague;
 using FootballManager.Application.UseCases.Leagues.GetUserLeagues;
 using FootballManager.Application.UseCases.Leagues.GetLeagueSeasons;
 using FootballManager.Application.UseCases.Leagues.GetLeagueTeams;
+using FootballManager.Application.UseCases.Leagues.GetNeverAssignedTeams;
+using FootballManager.Application.UseCases.Leagues.DeleteNeverAssignedTeams;
 using FootballManager.Application.UseCases.Leagues.UpdateLeague;
 using FootballManager.Application.UseCases.Leagues.UpdateSeason;
 using FootballManager.Application.UseCases.Leagues.CloseSeason;
@@ -71,6 +73,8 @@ namespace FootballManager.Api.Controllers
         private readonly IGetUserLeaguesUseCase _getUserLeaguesUseCase;
         private readonly IGetLeagueSeasonsUseCase _getLeagueSeasonsUseCase;
         private readonly IGetLeagueTeamsUseCase _getLeagueTeamsUseCase;
+        private readonly IGetNeverAssignedTeamsUseCase _getNeverAssignedTeamsUseCase;
+        private readonly IDeleteNeverAssignedTeamsUseCase _deleteNeverAssignedTeamsUseCase;
         private readonly IUpdateLeagueUseCase _updateLeagueUseCase;
         private readonly IUpdateSeasonUseCase _updateSeasonUseCase;
         private readonly ICloseSeasonUseCase _closeSeasonUseCase;
@@ -126,6 +130,8 @@ namespace FootballManager.Api.Controllers
             IGetUserLeaguesUseCase getUserLeaguesUseCase,
             IGetLeagueSeasonsUseCase getLeagueSeasonsUseCase,
             IGetLeagueTeamsUseCase getLeagueTeamsUseCase,
+            IGetNeverAssignedTeamsUseCase getNeverAssignedTeamsUseCase,
+            IDeleteNeverAssignedTeamsUseCase deleteNeverAssignedTeamsUseCase,
             IUpdateLeagueUseCase updateLeagueUseCase,
             IUpdateSeasonUseCase updateSeasonUseCase,
             ICloseSeasonUseCase closeSeasonUseCase,
@@ -180,6 +186,8 @@ namespace FootballManager.Api.Controllers
             _getUserLeaguesUseCase = getUserLeaguesUseCase ?? throw new ArgumentNullException(nameof(getUserLeaguesUseCase));
             _getLeagueSeasonsUseCase = getLeagueSeasonsUseCase ?? throw new ArgumentNullException(nameof(getLeagueSeasonsUseCase));
             _getLeagueTeamsUseCase = getLeagueTeamsUseCase ?? throw new ArgumentNullException(nameof(getLeagueTeamsUseCase));
+            _getNeverAssignedTeamsUseCase = getNeverAssignedTeamsUseCase ?? throw new ArgumentNullException(nameof(getNeverAssignedTeamsUseCase));
+            _deleteNeverAssignedTeamsUseCase = deleteNeverAssignedTeamsUseCase ?? throw new ArgumentNullException(nameof(deleteNeverAssignedTeamsUseCase));
             _updateLeagueUseCase = updateLeagueUseCase ?? throw new ArgumentNullException(nameof(updateLeagueUseCase));
             _updateSeasonUseCase = updateSeasonUseCase ?? throw new ArgumentNullException(nameof(updateSeasonUseCase));
             _closeSeasonUseCase = closeSeasonUseCase ?? throw new ArgumentNullException(nameof(closeSeasonUseCase));
@@ -534,6 +542,32 @@ namespace FootballManager.Api.Controllers
             var request = new GetLeagueTeamsRequest(leagueId, userId);
             var response = await _getLeagueTeamsUseCase.ExecuteAsync(request, cancellationToken);
             return Ok(response.Teams);
+        }
+
+        [HttpGet("{leagueId}/teams/never-assigned")]
+        public async Task<IActionResult> GetNeverAssignedTeams([FromRoute] Guid leagueId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new GetNeverAssignedTeamsRequest(leagueId, userId);
+            var response = await _getNeverAssignedTeamsUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response.Teams);
+        }
+
+        [HttpPost("{leagueId}/teams/never-assigned/delete")]
+        public async Task<IActionResult> DeleteNeverAssignedTeams(
+            [FromRoute] Guid leagueId,
+            [FromBody] DeleteNeverAssignedTeamsRequest request,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            request.LeagueId = leagueId;
+            request.UserId = userId;
+            var response = await _deleteNeverAssignedTeamsUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(response);
         }
 
         [HttpPost("{leagueId}/teams")]

@@ -15,6 +15,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DomainAddIcon from '@mui/icons-material/DomainAdd'
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
 import { useQuery } from '@tanstack/react-query'
 import { teamsService } from '../api/teams'
 import { leaguesService } from '../api/leagues'
@@ -112,7 +113,16 @@ export function TeamsListPage() {
         <Typography variant="h5" component="h2" fontWeight={600}>
           {league?.name ?? activeLeague?.name ?? 'League'} — Teams
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Button
+            component={RouterLink}
+            to={`${teamsBase}/never-assigned`}
+            variant="outlined"
+            color="warning"
+            startIcon={<DeleteSweepIcon />}
+          >
+            Nunca asignados
+          </Button>
           <Button variant="outlined" startIcon={<DomainAddIcon />} onClick={() => setClubDialogOpen(true)}>
             Create club
           </Button>

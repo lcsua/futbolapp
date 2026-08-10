@@ -5,6 +5,12 @@ export const teamsService = {
   getByLeagueId: (leagueId: string, signal?: AbortSignal) =>
     apiClient.get<Team[]>(`/api/leagues/${leagueId}/teams`, signal),
 
+  getNeverAssigned: (leagueId: string, signal?: AbortSignal) =>
+    apiClient.get<Team[]>(`/api/leagues/${leagueId}/teams/never-assigned`, signal),
+
+  deleteNeverAssigned: (leagueId: string, teamIds: string[], signal?: AbortSignal) =>
+    apiClient.post<{ deletedCount: number }>(`/api/leagues/${leagueId}/teams/never-assigned/delete`, { teamIds }, signal),
+
   create: (
     leagueId: string,
     data: { name: string; shortName?: string; email?: string; suffix?: string; clubId?: string; seasonId?: string; divisionId?: string },

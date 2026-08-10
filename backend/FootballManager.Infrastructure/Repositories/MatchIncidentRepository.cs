@@ -48,5 +48,10 @@ namespace FootballManager.Infrastructure.Repositories
             if (incident != null)
                 _context.MatchIncidents.Remove(incident);
         }
+
+        public async Task<bool> ExistsByTeamIdAsync(Guid teamId, CancellationToken cancellationToken = default)
+        {
+            return await _context.MatchIncidents.AnyAsync(i => i.TeamId == teamId, cancellationToken);
+        }
     }
 }

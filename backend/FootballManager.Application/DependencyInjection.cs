@@ -5,6 +5,8 @@ using FootballManager.Application.UseCases.Leagues.GetLeague;
 using FootballManager.Application.UseCases.Leagues.GetUserLeagues;
 using FootballManager.Application.UseCases.Leagues.GetLeagueSeasons;
 using FootballManager.Application.UseCases.Leagues.GetLeagueTeams;
+using FootballManager.Application.UseCases.Leagues.GetNeverAssignedTeams;
+using FootballManager.Application.UseCases.Leagues.DeleteNeverAssignedTeams;
 using FootballManager.Application.UseCases.Leagues.UpdateLeague;
 using FootballManager.Application.UseCases.Leagues.CloseSeason;
 using FootballManager.Application.UseCases.Leagues.ReopenSeason;
@@ -74,6 +76,8 @@ namespace FootballManager.Application
             services.AddScoped<IGetUserLeaguesUseCase, GetUserLeaguesUseCase>();
             services.AddScoped<IGetLeagueSeasonsUseCase, GetLeagueSeasonsUseCase>();
             services.AddScoped<IGetLeagueTeamsUseCase, GetLeagueTeamsUseCase>();
+            services.AddScoped<IGetNeverAssignedTeamsUseCase, GetNeverAssignedTeamsUseCase>();
+            services.AddScoped<IDeleteNeverAssignedTeamsUseCase, DeleteNeverAssignedTeamsUseCase>();
             services.AddScoped<IUpdateLeagueUseCase, UpdateLeagueUseCase>();
             services.AddScoped<IUpdateSeasonUseCase, UpdateSeasonUseCase>();
             services.AddScoped<ICloseSeasonUseCase, CloseSeasonUseCase>();
