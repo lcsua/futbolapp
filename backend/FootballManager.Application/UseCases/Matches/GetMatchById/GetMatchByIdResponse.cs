@@ -61,7 +61,7 @@ public sealed class GetMatchByIdResponse
 public sealed class MatchIncidentDto
 {
     public Guid Id { get; }
-    public int Minute { get; }
+    public int? Minute { get; }
     public Guid? TeamId { get; }
     public string TeamName { get; }
     public string PlayerName { get; }
@@ -72,7 +72,7 @@ public sealed class MatchIncidentDto
 
     public MatchIncidentDto(
         Guid id,
-        int minute,
+        int? minute,
         Guid? teamId,
         string teamName,
         string playerName,

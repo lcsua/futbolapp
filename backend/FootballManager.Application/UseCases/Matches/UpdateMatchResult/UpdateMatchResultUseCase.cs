@@ -115,8 +115,8 @@ public sealed class UpdateMatchResultUseCase : IUpdateMatchResultUseCase
                     throw new BusinessException("El arquero debe pertenecer al equipo rival.");
             }
 
-            var minute = goal.Minute ?? 0;
-            if (minute < 0)
+            var minute = goal.Minute;
+            if (minute.HasValue && minute.Value < 0)
                 throw new BusinessException("El minuto del gol no puede ser negativo.");
 
             var incident = MatchIncident.CreateGoal(

@@ -31,10 +31,12 @@ export interface GetMatchesResponse {
 
 export interface MatchIncidentDto {
   id: string
-  minute: number
+  minute: number | null
   teamId: string | null
   teamName: string | null
   playerName: string
+  playerId?: string | null
+  againstPlayerId?: string | null
   incidentType: string
   notes: string
 }
@@ -76,8 +78,9 @@ export interface MatchGoalAttribution {
 }
 
 export interface AddIncidentBody {
-  minute: number
+  minute: number | null
   teamId: string | null
+  playerId?: string | null
   playerName: string
   incidentType: string
   notes: string

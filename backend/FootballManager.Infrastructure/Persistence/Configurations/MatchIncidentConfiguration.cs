@@ -13,7 +13,7 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.HasKey(e => e.Id);
             builder.Property(e => e.Id).HasColumnName("id");
             builder.Property(e => e.FixtureId).HasColumnName("match_id");
-            builder.Property(e => e.Minute).HasColumnName("minute");
+            builder.Property(e => e.Minute).IsRequired(false).HasColumnName("minute");
             builder.Property(e => e.TeamId).HasColumnName("team_id");
             builder.Property(e => e.PlayerId).HasColumnName("player_id");
             builder.Property(e => e.AgainstPlayerId).HasColumnName("against_player_id");

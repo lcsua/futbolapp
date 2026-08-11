@@ -9,7 +9,7 @@ namespace FootballManager.Domain.Entities
         public Guid FixtureId { get; private set; }
         public virtual Fixture Fixture { get; private set; }
 
-        public int Minute { get; private set; }
+        public int? Minute { get; private set; }
         public Guid? TeamId { get; private set; }
         public virtual Team Team { get; private set; }
         public Guid? PlayerId { get; private set; }
@@ -24,7 +24,7 @@ namespace FootballManager.Domain.Entities
 
         public MatchIncident(
             Fixture fixture,
-            int minute,
+            int? minute,
             Guid? teamId,
             string playerName,
             MatchIncidentType incidentType,
@@ -34,7 +34,7 @@ namespace FootballManager.Domain.Entities
         {
             Fixture = fixture ?? throw new ArgumentNullException(nameof(fixture));
             FixtureId = fixture.Id;
-            if (minute < 0)
+            if (minute.HasValue && minute.Value < 0)
                 throw new ArgumentException("Minute must be >= 0.", nameof(minute));
             Minute = minute;
             TeamId = teamId;
@@ -48,7 +48,7 @@ namespace FootballManager.Domain.Entities
         public static MatchIncident CreateGoal(
             Fixture fixture,
             Guid? teamId,
-            int minute,
+            int? minute,
             string playerName,
             Guid? scorerPlayerId = null,
             Guid? againstGoalkeeperPlayerId = null,

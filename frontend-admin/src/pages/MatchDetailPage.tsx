@@ -75,7 +75,9 @@ export function MatchDetailPage() {
     )
   }
 
-  const incidentsSorted = [...(match.incidents ?? [])].sort((a, b) => a.minute - b.minute)
+  const incidentsSorted = [...(match.incidents ?? [])].sort(
+    (a, b) => (a.minute ?? Number.MAX_SAFE_INTEGER) - (b.minute ?? Number.MAX_SAFE_INTEGER)
+  )
 
   return (
     <Box>
@@ -186,8 +188,8 @@ function IncidentRow({
   const color = INCIDENT_CHIP_COLOR[incident.incidentType] ?? 'default'
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-      <Typography variant="body2" sx={{ minWidth: 32 }}>
-        {incident.minute}'
+      <Typography variant="body2" sx={{ minWidth: 40 }}>
+        {incident.minute != null ? `${incident.minute}'` : '—'}
       </Typography>
       <Chip label={incident.incidentType} color={color} size="small" />
       <Typography variant="body2">
