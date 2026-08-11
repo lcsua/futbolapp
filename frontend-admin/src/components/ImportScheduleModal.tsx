@@ -23,6 +23,7 @@ import {
   Typography,
 } from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { fieldsService } from '../api/fields'
 import { matchesService, type MatchListItem } from '../api/matches'
@@ -47,6 +48,14 @@ export type ImportScheduleModalProps = {
   onImported?: (summary: { updatedCount: number; warnings: string[] }) => void
 }
 
+type RowStatus =
+  | 'ready'
+  | 'review_teams'
+  | 'inverted'
+  | 'no_fixture'
+  | 'bad_field'
+  | 'out_of_division'
+
 type PreparedRow = {
   key: string
   csv: ScheduleCsvRow
@@ -56,7 +65,7 @@ type PreparedRow = {
   fixture: MatchListItem | null
   inverted: boolean
   allowInverted: boolean
-  status: 'ready' | 'review_teams' | 'inverted' | 'no_fixture' | 'bad_field' | 'out_of_division'
+  status: RowStatus
 }
 
 function displayName(t: TeamInSetup) {
@@ -71,6 +80,29 @@ function toCandidates(teams: TeamInSetup[]): TeamMatchCandidate[] {
     shortName: t.shortName,
     suffix: t.suffix,
   }))
+}
+
+function isMatchedToDivision(m: TeamCsvRowMapping): boolean {
+  return m.action === 'match' && !!m.teamId && m.score >= 0.72
+}
+
+function statusLabel(s: RowStatus): string {
+  switch (s) {
+    case 'ready':
+      return 'Listo'
+    case 'review_teams':
+      return 'Revisar / duda'
+    case 'inverted':
+      return 'Localía invertida'
+    case 'no_fixture':
+      return 'Sin fixture en fecha'
+    case 'bad_field':
+      return 'Cancha desconocida'
+    case 'out_of_division':
+      return 'Otra división'
+    default:
+      return s
+  }
 }
 
 export function ImportScheduleModal({
@@ -93,14 +125,16 @@ export function ImportScheduleModal({
   const [localError, setLocalError] = useState<string | null>(null)
   const [prepared, setPrepared] = useState<PreparedRow[] | null>(null)
   const [teamOverride, setTeamOverride] = useState<Record<string, string>>({})
+  /** Rows discarded by the user (typically other-division doubts). */
+  const [discardedKeys, setDiscardedKeys] = useState<Set<string>>(() => new Set())
 
-  // Prefill filters when opening; keep CSV in memory until close.
   useEffect(() => {
     if (!open) {
       setFileName(null)
       setCsvRows(null)
       setPrepared(null)
       setTeamOverride({})
+      setDiscardedKeys(new Set())
       setLocalError(null)
       if (fileRef.current) fileRef.current.value = ''
       return
@@ -109,6 +143,12 @@ export function ImportScheduleModal({
     setRound(initialRound)
     setLocalError(null)
   }, [open, initialDivisionId, initialRound])
+
+  // Changing division resets discards/overrides for clean scoping.
+  useEffect(() => {
+    setDiscardedKeys(new Set())
+    setTeamOverride({})
+  }, [divisionId])
 
   const { data: setupData, isLoading: setupLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons', seasonId, 'setup'],
@@ -152,7 +192,6 @@ export function ImportScheduleModal({
     return list
   }, [matchesData, round])
 
-  // Rebuild prepared rows when CSV / division / fixtures / overrides change.
   useEffect(() => {
     if (!csvRows || !divisionId || typeof round !== 'number') {
       setPrepared(null)
@@ -161,47 +200,45 @@ export function ImportScheduleModal({
     if (setupLoading || matchesLoading || fieldsLoading) return
 
     const candidates = toCandidates(divisionTeams)
-    const names = Array.from(new Set(csvRows.flatMap((r) => [r.homeTeam, r.awayTeam])))
-    const mappings = matchCsvNamesToTeams(names, candidates)
-    const byCsv = new Map(mappings.map((m) => [m.csvName, m]))
-
-    const applyOverride = (m: TeamCsvRowMapping): TeamCsvRowMapping => {
-      const ov = teamOverride[m.csvName]
-      if (!ov) return m
-      return {
-        ...m,
-        action: 'match',
-        teamId: ov,
-        needsReview: false,
-        reason: 'exact',
-      }
-    }
 
     const next: PreparedRow[] = csvRows.map((csv, idx) => {
-      const homeMapping = applyOverride(byCsv.get(csv.homeTeam) ?? {
-        csvName: csv.homeTeam,
-        normalizedCsv: csv.homeTeam,
-        action: 'create' as const,
+      // Match only this pair against the selected division (avoids cross-row stealing).
+      const pairMaps = matchCsvNamesToTeams([csv.homeTeam, csv.awayTeam], candidates)
+      const byCsv = new Map(pairMaps.map((m) => [m.csvName, m]))
+
+      const applyOverride = (name: string, fallback: TeamCsvRowMapping): TeamCsvRowMapping => {
+        const base = byCsv.get(name) ?? fallback
+        const ov = teamOverride[name]
+        if (!ov) return base
+        return {
+          ...base,
+          action: 'match',
+          teamId: ov,
+          needsReview: false,
+          reason: 'exact',
+          score: 1,
+        }
+      }
+
+      const emptyMap = (name: string): TeamCsvRowMapping => ({
+        csvName: name,
+        normalizedCsv: name,
+        action: 'create',
         teamId: null,
         score: 0,
         candidates: [],
-        needsReview: true,
-        reason: 'none' as const,
-      })
-      const awayMapping = applyOverride(byCsv.get(csv.awayTeam) ?? {
-        csvName: csv.awayTeam,
-        normalizedCsv: csv.awayTeam,
-        action: 'create' as const,
-        teamId: null,
-        score: 0,
-        candidates: [],
-        needsReview: true,
-        reason: 'none' as const,
+        needsReview: false,
+        reason: 'none',
       })
 
+      const homeMapping = applyOverride(csv.homeTeam, emptyMap(csv.homeTeam))
+      const awayMapping = applyOverride(csv.awayTeam, emptyMap(csv.awayTeam))
+
+      const homeInDiv = isMatchedToDivision(homeMapping)
+      const awayInDiv = isMatchedToDivision(awayMapping)
       const fieldOk = !!csv.fieldName && fieldNames.has(csv.fieldName.trim().toLowerCase())
-      const homeId = homeMapping.action === 'match' ? homeMapping.teamId : null
-      const awayId = awayMapping.action === 'match' ? awayMapping.teamId : null
+      const homeId = homeInDiv ? homeMapping.teamId : null
+      const awayId = awayInDiv ? awayMapping.teamId : null
 
       let fixture: MatchListItem | null = null
       let inverted = false
@@ -215,18 +252,28 @@ export function ImportScheduleModal({
         }
       }
 
-      let status: PreparedRow['status'] = 'ready'
-      if (!homeId || !awayId || homeMapping.needsReview || awayMapping.needsReview || homeMapping.action !== 'match' || awayMapping.action !== 'match') {
+      let status: RowStatus
+      if (!homeInDiv && !awayInDiv) {
+        // Neither side looks like a team in this division → other division (auto-hide).
+        status = 'out_of_division'
+      } else if (
+        !homeInDiv ||
+        !awayInDiv ||
+        homeMapping.needsReview ||
+        awayMapping.needsReview ||
+        !homeId ||
+        !awayId
+      ) {
+        // Partial match or ambiguous names → resolve or discard.
         status = 'review_teams'
       } else if (!fieldOk) {
         status = 'bad_field'
       } else if (!fixture) {
-        // Both teams might be from another division in the CSV batch.
-        const inDiv =
-          divisionTeams.some((t) => t.id === homeId) && divisionTeams.some((t) => t.id === awayId)
-        status = inDiv ? 'no_fixture' : 'out_of_division'
+        status = 'no_fixture'
       } else if (inverted) {
         status = 'inverted'
+      } else {
+        status = 'ready'
       }
 
       return {
@@ -245,12 +292,14 @@ export function ImportScheduleModal({
     setPrepared((prev) => {
       if (!prev) return next
       const allowMap = new Map(prev.map((p) => [p.key, p.allowInverted]))
-      return next.map((row) => ({
-        ...row,
-        allowInverted: allowMap.get(row.key) ?? false,
-        status:
-          row.status === 'inverted' && (allowMap.get(row.key) ?? false) ? 'ready' : row.status,
-      }))
+      return next.map((row) => {
+        const allow = allowMap.get(row.key) ?? false
+        return {
+          ...row,
+          allowInverted: allow,
+          status: row.status === 'inverted' && allow ? 'ready' : row.status,
+        }
+      })
     })
   }, [
     csvRows,
@@ -265,17 +314,23 @@ export function ImportScheduleModal({
     teamOverride,
   ])
 
+  const visibleRows = useMemo(() => {
+    if (!prepared) return []
+    return prepared.filter((p) => p.status !== 'out_of_division' && !discardedKeys.has(p.key))
+  }, [prepared, discardedKeys])
+
+  const hiddenOtherCount = prepared?.filter((p) => p.status === 'out_of_division').length ?? 0
+  const discardedCount = discardedKeys.size
+
   const importMutation = useMutation({
     mutationFn: async () => {
       if (!prepared || !divisionId || typeof round !== 'number') {
         throw new Error('Seleccioná división y fecha.')
       }
       const rows = prepared
-        .filter((p) => {
-          if (p.status === 'ready') return true
-          if (p.status === 'inverted' && p.allowInverted) return true
-          return false
-        })
+        .filter((p) => !discardedKeys.has(p.key))
+        .filter((p) => p.status !== 'out_of_division')
+        .filter((p) => p.status === 'ready' || (p.status === 'inverted' && p.allowInverted))
         .filter((p) => p.homeMapping.teamId && p.awayMapping.teamId && p.fieldOk)
         .map((p) => ({
           homeTeamId: p.homeMapping.teamId!,
@@ -298,7 +353,6 @@ export function ImportScheduleModal({
     },
     onSuccess: (res) => {
       onImported?.(res)
-      // Keep CSV for other divisions/rounds.
       setLocalError(null)
     },
     onError: (err) => {
@@ -315,6 +369,7 @@ export function ImportScheduleModal({
       setCsvRows(rows)
       setFileName(file.name)
       setTeamOverride({})
+      setDiscardedKeys(new Set())
       setPrepared(null)
     } catch (e) {
       setCsvRows(null)
@@ -323,8 +378,37 @@ export function ImportScheduleModal({
     }
   }
 
-  const readyCount = prepared?.filter((p) => p.status === 'ready' || (p.status === 'inverted' && p.allowInverted)).length ?? 0
-  const reviewNeeded = prepared?.some((p) => p.status === 'review_teams' || (p.status === 'inverted' && !p.allowInverted)) ?? false
+  const discardRow = (key: string) => {
+    setDiscardedKeys((prev) => {
+      const next = new Set(prev)
+      next.add(key)
+      return next
+    })
+  }
+
+  const discardAllDoubts = () => {
+    if (!prepared) return
+    setDiscardedKeys((prev) => {
+      const next = new Set(prev)
+      for (const p of prepared) {
+        if (
+          p.status === 'review_teams' ||
+          p.status === 'no_fixture' ||
+          (p.status === 'inverted' && !p.allowInverted)
+        ) {
+          next.add(p.key)
+        }
+      }
+      return next
+    })
+  }
+
+  const readyCount = visibleRows.filter(
+    (p) => p.status === 'ready' || (p.status === 'inverted' && p.allowInverted)
+  ).length
+  const reviewNeeded = visibleRows.some(
+    (p) => p.status === 'review_teams' || (p.status === 'inverted' && !p.allowInverted)
+  )
   const canApply =
     !seasonClosed &&
     !!csvRows &&
@@ -333,34 +417,17 @@ export function ImportScheduleModal({
     readyCount > 0 &&
     !importMutation.isPending
 
-  const statusLabel = (s: PreparedRow['status']) => {
-    switch (s) {
-      case 'ready':
-        return 'Listo'
-      case 'review_teams':
-        return 'Revisar equipos'
-      case 'inverted':
-        return 'Localía invertida'
-      case 'no_fixture':
-        return 'Sin fixture en fecha'
-      case 'bad_field':
-        return 'Cancha desconocida'
-      case 'out_of_division':
-        return 'Otra división'
-      default:
-        return s
-    }
-  }
+  const divisionName = divisions.find((d) => d.id === divisionId)?.name ?? 'la división'
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>Importar horarios y canchas</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Subí el CSV una vez (<strong>cancha, local, horario_tolerancia, horario_real, visitante</strong>).
-          Luego elegí división y fecha, revisá matches dudosos / localía invertida, y aplicá. El CSV queda
-          cargado para repetir en otras fechas/divisiones (hasta cerrar este diálogo). Solo actualiza hora y
-          cancha; no cambia la fecha de calendario ni resultados.
+          El CSV puede traer <strong>todas las divisiones</strong> (sin columna de división). Al elegir una
+          división, se dejan solo partidos cuyos equipos matchean con esa división; el resto se oculta.
+          Las dudas quedan para resolver o <strong>descartar</strong> si son de otra división. El archivo
+          permanece cargado para repetir en otras fechas/divisiones.
         </Typography>
 
         {seasonClosed && (
@@ -382,12 +449,13 @@ export function ImportScheduleModal({
           </Button>
           {fileName && (
             <Chip
-              label={`${fileName} · ${csvRows?.length ?? 0} filas`}
+              label={`${fileName} · ${csvRows?.length ?? 0} filas totales`}
               onDelete={() => {
                 setFileName(null)
                 setCsvRows(null)
                 setPrepared(null)
                 setTeamOverride({})
+                setDiscardedKeys(new Set())
                 if (fileRef.current) fileRef.current.value = ''
               }}
             />
@@ -461,10 +529,21 @@ export function ImportScheduleModal({
 
         {prepared && (
           <>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              Listos: <strong>{readyCount}</strong>
-              {reviewNeeded ? ' · hay filas que requieren revisión' : ''}
-            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2">
+                Mostrando <strong>{visibleRows.length}</strong> de {prepared.length} para{' '}
+                <strong>{divisionName}</strong>
+                {hiddenOtherCount > 0 ? ` · ${hiddenOtherCount} ocultas (otra división)` : ''}
+                {discardedCount > 0 ? ` · ${discardedCount} descartadas` : ''}
+                {' · '}Listos: <strong>{readyCount}</strong>
+                {reviewNeeded ? ' · hay dudas por resolver' : ''}
+              </Typography>
+              {reviewNeeded && (
+                <Button size="small" color="warning" onClick={discardAllDoubts}>
+                  Descartar todas las dudas
+                </Button>
+              )}
+            </Box>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -477,11 +556,20 @@ export function ImportScheduleModal({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {prepared.map((row) => (
+                {visibleRows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6}>
+                      <Typography variant="body2" color="text.secondary">
+                        No hay partidos candidatos para esta división/fecha (o fueron todos descartados).
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {visibleRows.map((row) => (
                   <TableRow key={row.key}>
                     <TableCell>
                       {row.csv.fieldName}
-                      {!row.fieldOk && (
+                      {!row.fieldOk && row.status !== 'review_teams' && (
                         <Typography variant="caption" color="error" display="block">
                           no existe
                         </Typography>
@@ -502,7 +590,7 @@ export function ImportScheduleModal({
                             }
                           >
                             <MenuItem value="">
-                              <em>Elegir equipo</em>
+                              <em>Elegir equipo / vacío = no es de esta división</em>
                             </MenuItem>
                             {divisionTeams.map((t) => (
                               <MenuItem key={t.id} value={t.id}>
@@ -528,7 +616,7 @@ export function ImportScheduleModal({
                             }
                           >
                             <MenuItem value="">
-                              <em>Elegir equipo</em>
+                              <em>Elegir equipo / vacío = no es de esta división</em>
                             </MenuItem>
                             {divisionTeams.map((t) => (
                               <MenuItem key={t.id} value={t.id}>
@@ -543,13 +631,13 @@ export function ImportScheduleModal({
                     <TableCell>
                       <Chip
                         size="small"
-                        label={statusLabel(row.status === 'inverted' && row.allowInverted ? 'ready' : row.status)}
+                        label={statusLabel(
+                          row.status === 'inverted' && row.allowInverted ? 'ready' : row.status
+                        )}
                         color={
                           row.status === 'ready' || (row.status === 'inverted' && row.allowInverted)
                             ? 'success'
-                            : row.status === 'out_of_division'
-                              ? 'default'
-                              : 'warning'
+                            : 'warning'
                         }
                       />
                       {row.fixture && (
@@ -559,29 +647,44 @@ export function ImportScheduleModal({
                       )}
                     </TableCell>
                     <TableCell>
-                      {row.status === 'inverted' && (
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={row.allowInverted}
-                              onChange={(e) =>
-                                setPrepared((prev) =>
-                                  (prev ?? []).map((p) =>
-                                    p.key === row.key
-                                      ? {
-                                          ...p,
-                                          allowInverted: e.target.checked,
-                                          status: e.target.checked ? 'ready' : 'inverted',
-                                        }
-                                      : p
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        {row.status === 'inverted' && (
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={row.allowInverted}
+                                onChange={(e) =>
+                                  setPrepared((prev) =>
+                                    (prev ?? []).map((p) =>
+                                      p.key === row.key
+                                        ? {
+                                            ...p,
+                                            allowInverted: e.target.checked,
+                                            status: e.target.checked ? 'ready' : 'inverted',
+                                          }
+                                        : p
+                                    )
                                   )
-                                )
-                              }
-                            />
-                          }
-                          label="Confirmar (localía invertida)"
-                        />
-                      )}
+                                }
+                              />
+                            }
+                            label="Confirmar localía invertida"
+                          />
+                        )}
+                        {(row.status === 'review_teams' ||
+                          row.status === 'no_fixture' ||
+                          row.status === 'bad_field' ||
+                          (row.status === 'inverted' && !row.allowInverted)) && (
+                          <Button
+                            size="small"
+                            color="inherit"
+                            startIcon={<DeleteOutlineIcon />}
+                            onClick={() => discardRow(row.key)}
+                          >
+                            Descartar (otra división)
+                          </Button>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -592,11 +695,7 @@ export function ImportScheduleModal({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cerrar</Button>
-        <Button
-          variant="contained"
-          onClick={() => importMutation.mutate()}
-          disabled={!canApply}
-        >
+        <Button variant="contained" onClick={() => importMutation.mutate()} disabled={!canApply}>
           {importMutation.isPending ? <CircularProgress size={22} /> : `Aplicar (${readyCount})`}
         </Button>
       </DialogActions>
