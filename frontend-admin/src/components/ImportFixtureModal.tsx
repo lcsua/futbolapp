@@ -1,15 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Typography,
-  Box,
-  CircularProgress,
   Alert,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  MenuItem,
+  Select,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -17,12 +20,28 @@ import {
   TableHead,
   TableRow,
   Paper,
+  TextField,
+  Typography,
 } from '@mui/material'
-import { fixturesService, type PreviewFixtureRow } from '../api/fixtures'
+import UploadFileIcon from '@mui/icons-material/UploadFile'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { fixturesService } from '../api/fixtures'
+import { seasonsService, type TeamInSetup } from '../api/seasons'
+import {
+  parseFixtureCsv,
+  rebuildFixtureCsv,
+  uniqueFixtureTeamNames,
+  type FixtureImportType,
+  type ParsedFixtureCsvRow,
+} from '../utils/parseFixtureCsv'
+import { mappingsNeedReview, matchCsvNamesToTeams, type TeamCsvRowMapping } from '../utils/teamNameMatch'
+
 const CSV_PLACEHOLDER = `round,home_team,away_team
 1,TIGRES,LEONES
 1,PUMAS,HALCONES`
+
+const MISSING = '__missing__'
 
 interface ImportFixtureModalProps {
   open: boolean
@@ -31,6 +50,10 @@ interface ImportFixtureModalProps {
   seasonId: string
   divisionId: string
   onSuccess: () => void
+}
+
+function displayName(t: TeamInSetup) {
+  return t.displayName ?? t.name
 }
 
 export function ImportFixtureModal({
@@ -42,51 +65,217 @@ export function ImportFixtureModal({
   onSuccess,
 }: ImportFixtureModalProps) {
   const { t } = useTranslation()
-  const [csvText, setCsvText] = useState('')
-  const [preview, setPreview] = useState<{
-    importType: string
-    rows: PreviewFixtureRow[]
-    errors: string[]
-  } | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  const handlePreview = async () => {
+  const [csvText, setCsvText] = useState('')
+  const [fileName, setFileName] = useState<string | null>(null)
+  const [importType, setImportType] = useState<FixtureImportType | null>(null)
+  const [parsedRows, setParsedRows] = useState<ParsedFixtureCsvRow[] | null>(null)
+  const [teamMappings, setTeamMappings] = useState<TeamCsvRowMapping[] | null>(null)
+  const [previewRows, setPreviewRows] = useState<ParsedFixtureCsvRow[] | null>(null)
+  const [parseErrors, setParseErrors] = useState<string[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [importing, setImporting] = useState(false)
+
+  const { data: setupData, isLoading: setupLoading } = useQuery({
+    queryKey: ['leagues', leagueId, 'seasons', seasonId, 'setup'],
+    queryFn: ({ signal }) => seasonsService.getSetup(leagueId, seasonId, signal),
+    enabled: open && !!leagueId && !!seasonId,
+  })
+
+  const divisionTeams = useMemo(() => {
+    const div = setupData?.divisions.find((d) => d.divisionId === divisionId)
+    return div?.teams ?? []
+  }, [setupData, divisionId])
+
+  const divisionName = useMemo(() => {
+    return setupData?.divisions.find((d) => d.divisionId === divisionId)?.divisionName ?? ''
+  }, [setupData, divisionId])
+
+  useEffect(() => {
+    if (!open) return
+    setCsvText('')
+    setFileName(null)
+    setImportType(null)
+    setParsedRows(null)
+    setTeamMappings(null)
+    setPreviewRows(null)
+    setParseErrors([])
     setError(null)
-    setPreview(null)
-    setLoading(true)
+    if (fileRef.current) fileRef.current.value = ''
+  }, [open, divisionId, seasonId])
+
+  // After team mappings are complete, build the resolved fixture preview.
+  useEffect(() => {
+    if (!importType || !parsedRows || !teamMappings) {
+      setPreviewRows(null)
+      return
+    }
+    const unresolved =
+      mappingsNeedReview(teamMappings) || teamMappings.some((m) => m.action === 'create' || !m.teamId)
+    if (unresolved) {
+      setPreviewRows(null)
+      return
+    }
+    const rebuilt = rebuildFixtureCsv(importType, parsedRows, (csvName) => {
+      const row = teamMappings.find((m) => m.csvName.toLowerCase() === csvName.toLowerCase())
+      if (!row || row.action !== 'match' || !row.teamId) return null
+      return divisionTeams.find((t) => t.id === row.teamId)?.name ?? null
+    })
+    setPreviewRows(rebuilt.rows)
+  }, [importType, parsedRows, teamMappings, divisionTeams])
+
+  const reset = () => {
+    setCsvText('')
+    setFileName(null)
+    setImportType(null)
+    setParsedRows(null)
+    setTeamMappings(null)
+    setPreviewRows(null)
+    setParseErrors([])
+    setError(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  const handleClose = () => {
+    if (analyzing || importing) return
+    reset()
+    onClose()
+  }
+
+  const resolveCanonicalName = (csvName: string, mappings: TeamCsvRowMapping[]): string | null => {
+    const row = mappings.find((m) => m.csvName.toLowerCase() === csvName.toLowerCase())
+    if (!row || row.action !== 'match' || !row.teamId) return null
+    const team = divisionTeams.find((t) => t.id === row.teamId)
+    return team?.name ?? null
+  }
+
+  const analyzeText = (text: string) => {
+    setError(null)
+    setParseErrors([])
+    setPreviewRows(null)
+    setTeamMappings(null)
+    setParsedRows(null)
+    setImportType(null)
+    setAnalyzing(true)
+
     try {
-      const res = await fixturesService.previewImport(leagueId, {
-        seasonId,
-        divisionId,
-        csvText: csvText.trim(),
-      })
-      setPreview({ importType: res.importType, rows: res.rows, errors: res.errors })
+      if (!setupData) {
+        setError('Cargando equipos de la división… esperá un momento y reintentá.')
+        return
+      }
+      if (divisionTeams.length === 0) {
+        setError(
+          divisionName
+            ? `La división “${divisionName}” no tiene equipos asignados en esta temporada.`
+            : 'La división seleccionada no tiene equipos asignados en esta temporada.',
+        )
+        return
+      }
+
+      const parsed = parseFixtureCsv(text)
+      if (parsed.errors.length > 0 && parsed.rows.length === 0) {
+        setParseErrors(parsed.errors)
+        setError(parsed.errors[0] ?? 'CSV inválido')
+        return
+      }
+
+      const names = uniqueFixtureTeamNames(parsed.rows)
+      const mappings = matchCsvNamesToTeams(names, divisionTeams).map((m) =>
+        m.action === 'create'
+          ? { ...m, needsReview: true }
+          : m,
+      )
+
+      setImportType(parsed.importType)
+      setParsedRows(parsed.rows)
+      setTeamMappings(mappings)
+      setParseErrors(parsed.errors.filter((e) => !e.includes('equipo')))
     } catch (e) {
       setError(e instanceof Error ? e.message : t('fixtures.importModal.errorLoadingPreview'))
     } finally {
-      setLoading(false)
+      setAnalyzing(false)
     }
   }
 
+  const handleAnalyze = () => {
+    if (!csvText.trim()) return
+    analyzeText(csvText.trim())
+  }
+
+  const handleFile = async (file: File) => {
+    setFileName(file.name)
+    try {
+      const text = await file.text()
+      setCsvText(text)
+      analyzeText(text)
+    } catch {
+      setError('No se pudo leer el archivo CSV.')
+    }
+  }
+
+  const updateMapping = (mappingIndex: number, teamId: string | null) => {
+    setTeamMappings((prev) => {
+      if (!prev) return prev
+      return prev.map((row, j) => {
+        if (j !== mappingIndex) return row
+        if (!teamId) {
+          return { ...row, action: 'create' as const, teamId: null, needsReview: true }
+        }
+        return {
+          ...row,
+          action: 'match' as const,
+          teamId,
+          needsReview: false,
+          reason: row.reason === 'none' ? ('fuzzy' as const) : row.reason,
+        }
+      })
+    })
+  }
+
+  const showReview =
+    !!teamMappings &&
+    (mappingsNeedReview(teamMappings) || teamMappings.some((m) => m.action === 'create'))
+
+  const unresolvedCount =
+    teamMappings?.filter((m) => m.needsReview || m.action !== 'match' || !m.teamId).length ?? 0
+
+  const canImport =
+    !!importType &&
+    !!parsedRows &&
+    !!teamMappings &&
+    !!previewRows &&
+    previewRows.length > 0 &&
+    unresolvedCount === 0 &&
+    !analyzing &&
+    !importing
+
   const handleImport = async () => {
-    if (!preview || preview.errors.length > 0) return
+    if (!importType || !parsedRows || !teamMappings) return
     setError(null)
     setImporting(true)
     try {
+      const rebuilt = rebuildFixtureCsv(importType, parsedRows, (csvName) =>
+        resolveCanonicalName(csvName, teamMappings),
+      )
+      if (rebuilt.errors.length > 0 || !rebuilt.csvText.trim()) {
+        setError(rebuilt.errors.join('\n') || 'No hay filas válidas para importar.')
+        return
+      }
+
       const res = await fixturesService.importFixtures(leagueId, {
         seasonId,
         divisionId,
-        csvText: csvText.trim(),
+        csvText: rebuilt.csvText,
       })
       if (res.errors.length > 0) {
         setError(res.errors.join('\n'))
         return
       }
       onSuccess()
-      onClose()
       reset()
+      onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : t('fixtures.importModal.errorImporting'))
     } finally {
@@ -94,115 +283,225 @@ export function ImportFixtureModal({
     }
   }
 
-  const reset = () => {
-    setCsvText('')
-    setPreview(null)
-    setError(null)
-  }
-
-  const handleClose = () => {
-    reset()
-    onClose()
-  }
-
-  const canImport = preview && preview.rows.length > 0 && preview.errors.length === 0
-
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>{t('fixtures.importModal.title')}</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           {t('fixtures.importModal.instructions')}
         </Typography>
+        {divisionName && (
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            División: <strong>{divisionName}</strong>
+            {divisionTeams.length > 0 ? ` · ${divisionTeams.length} equipos` : ''}
+          </Typography>
+        )}
+
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 1.5 }} alignItems={{ sm: 'center' }}>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv,.txt"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) void handleFile(file)
+            }}
+          />
+          <Button
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+            disabled={setupLoading || analyzing || importing}
+            onClick={() => fileRef.current?.click()}
+          >
+            {t('fixtures.importModal.uploadButton')}
+          </Button>
+          {fileName && (
+            <Typography variant="caption" color="text.secondary">
+              {fileName}
+            </Typography>
+          )}
+        </Stack>
+
         <TextField
           fullWidth
           multiline
-          minRows={6}
-          maxRows={12}
+          minRows={5}
+          maxRows={10}
           placeholder={CSV_PLACEHOLDER}
           value={csvText}
-          onChange={(e) => setCsvText(e.target.value)}
+          onChange={(e) => {
+            setCsvText(e.target.value)
+            // Invalidate analysis when text changes manually
+            setParsedRows(null)
+            setTeamMappings(null)
+            setPreviewRows(null)
+            setImportType(null)
+            setParseErrors([])
+          }}
           variant="outlined"
           margin="dense"
           sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+          disabled={analyzing || importing}
         />
+
+        {(setupLoading || analyzing) && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.5 }}>
+            <CircularProgress size={20} />
+            <Typography variant="body2">
+              {analyzing ? t('fixtures.importModal.analyzing') : t('fixtures.importModal.loadingTeams')}
+            </Typography>
+          </Box>
+        )}
+
         {error && (
-          <Alert severity="error" sx={{ mt: 1 }} onClose={() => setError(null)}>
+          <Alert severity="error" sx={{ mt: 1.5, whiteSpace: 'pre-wrap' }} onClose={() => setError(null)}>
             {error}
           </Alert>
         )}
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-            <CircularProgress size={28} />
+
+        {parseErrors.length > 0 && (
+          <Alert severity="warning" sx={{ mt: 1.5 }}>
+            {parseErrors.map((err, i) => (
+              <div key={i}>{err}</div>
+            ))}
+          </Alert>
+        )}
+
+        {showReview && teamMappings && (
+          <Box sx={{ mt: 2 }}>
+            <Alert severity="info" sx={{ mb: 1.5 }}>
+              {t('fixtures.importModal.reviewHint', { count: unresolvedCount })}
+            </Alert>
+            <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 280 }}>
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>{t('fixtures.importModal.csvName')}</TableCell>
+                    <TableCell>{t('fixtures.importModal.mappedTeam')}</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {teamMappings.map((row, mappingIndex) => (
+                    <TableRow key={`${row.csvName}-${mappingIndex}`} selected={row.needsReview || row.action === 'create'}>
+                      <TableCell>
+                        <Typography variant="body2">{row.csvName}</Typography>
+                        {row.score > 0 && (
+                          <Typography variant="caption" color="text.secondary">
+                            {(row.score * 100).toFixed(0)}%
+                          </Typography>
+                        )}
+                        {row.needsReview && <Chip size="small" label="Revisar" sx={{ ml: 1 }} />}
+                      </TableCell>
+                      <TableCell sx={{ minWidth: 240 }}>
+                        <FormControl fullWidth size="small">
+                          <Select
+                            value={row.action === 'match' && row.teamId ? row.teamId : MISSING}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              updateMapping(mappingIndex, v === MISSING ? null : v)
+                            }}
+                          >
+                            <MenuItem value={MISSING}>
+                              <em>{t('fixtures.importModal.chooseTeam')}</em>
+                            </MenuItem>
+                            {(row.candidates.length
+                              ? row.candidates
+                              : divisionTeams.map((tm) => ({
+                                  teamId: tm.id,
+                                  label: displayName(tm),
+                                  score: 0,
+                                }))
+                            ).map((c) => (
+                              <MenuItem key={c.teamId} value={c.teamId}>
+                                {c.label}
+                                {c.score > 0 ? ` (${Math.round(c.score * 100)}%)` : ''}
+                              </MenuItem>
+                            ))}
+                            {/* Always allow picking any division team */}
+                            {row.candidates.length > 0 &&
+                              divisionTeams
+                                .filter((tm) => !row.candidates.some((c) => c.teamId === tm.id))
+                                .map((tm) => (
+                                  <MenuItem key={tm.id} value={tm.id}>
+                                    {displayName(tm)}
+                                  </MenuItem>
+                                ))}
+                          </Select>
+                        </FormControl>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
         )}
-        {preview && !loading && (
+
+        {previewRows && previewRows.length > 0 && importType && !showReview && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" color="text.secondary">
-              {t('fixtures.importModal.formatDetected')} {preview.importType}
+              {t('fixtures.importModal.formatDetected')} {importType} · {previewRows.length}{' '}
+              {t('fixtures.importModal.matches')}
             </Typography>
-            {preview.errors.length > 0 && (
-              <Alert severity="warning" sx={{ mt: 1 }}>
-                {preview.errors.map((err, i) => (
-                  <div key={i}>{err}</div>
-                ))}
-              </Alert>
-            )}
-            {preview.rows.length > 0 && (
-              <TableContainer component={Paper} variant="outlined" sx={{ mt: 1, maxHeight: 280 }}>
-                <Table size="small" stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>{t('fixtures.cols.round')}</TableCell>
-                      {preview.importType !== 'Simple' && <TableCell>{t('fixtures.cols.date')}</TableCell>}
-                      {preview.importType === 'Full' && (
+            <Alert severity="success" sx={{ mt: 1, mb: 1 }}>
+              {t('fixtures.importModal.readyHint')}
+            </Alert>
+            <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 280 }}>
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>{t('fixtures.cols.round')}</TableCell>
+                    {importType !== 'Simple' && <TableCell>{t('fixtures.cols.date')}</TableCell>}
+                    {importType === 'Full' && (
+                      <>
+                        <TableCell>{t('fixtures.cols.time')}</TableCell>
+                        <TableCell>{t('fixtures.cols.field')}</TableCell>
+                      </>
+                    )}
+                    <TableCell>{t('fixtures.cols.home')}</TableCell>
+                    <TableCell>{t('fixtures.cols.away')}</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {previewRows.map((row, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{row.round}</TableCell>
+                      {importType !== 'Simple' && <TableCell>{row.date ?? '—'}</TableCell>}
+                      {importType === 'Full' && (
                         <>
-                          <TableCell>{t('fixtures.cols.time')}</TableCell>
-                          <TableCell>{t('fixtures.cols.field')}</TableCell>
+                          <TableCell>{row.time ?? '—'}</TableCell>
+                          <TableCell>{row.field ?? '—'}</TableCell>
                         </>
                       )}
-                      <TableCell>{t('fixtures.cols.home')}</TableCell>
-                      <TableCell>{t('fixtures.cols.away')}</TableCell>
-                      {preview.rows.some((r) => r.rowError) && <TableCell>{t('fixtures.importModal.errorCol')}</TableCell>}
+                      <TableCell>{row.homeTeam}</TableCell>
+                      <TableCell>{row.awayTeam}</TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {preview.rows.map((row, i) => (
-                      <TableRow key={i} sx={{ bgcolor: row.rowError ? 'error.light' : undefined }}>
-                        <TableCell>{row.round}</TableCell>
-                        {preview.importType !== 'Simple' && (
-                          <TableCell>{row.date ?? '—'}</TableCell>
-                        )}
-                        {preview.importType === 'Full' && (
-                          <>
-                            <TableCell>{row.time ?? '—'}</TableCell>
-                            <TableCell>{row.field ?? '—'}</TableCell>
-                          </>
-                        )}
-                        <TableCell>{row.homeTeam}</TableCell>
-                        <TableCell>{row.awayTeam}</TableCell>
-                        {preview.rows.some((r) => r.rowError) && (
-                          <TableCell sx={{ color: 'error.main' }}>{row.rowError ?? '—'}</TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
+        )}
+
+        {teamMappings && !showReview && previewRows && previewRows.length === 0 && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            No quedaron partidos válidos para importar.
+          </Alert>
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>{t('common.cancel')}</Button>
-        <Button onClick={handlePreview} disabled={!csvText.trim() || loading} variant="outlined">
-          {t('fixtures.importModal.previewButton')}
+        <Button onClick={handleClose} disabled={importing}>
+          {t('common.cancel')}
         </Button>
         <Button
-          onClick={handleImport}
-          disabled={!canImport || importing}
-          variant="contained"
+          onClick={handleAnalyze}
+          disabled={!csvText.trim() || analyzing || importing || setupLoading}
+          variant="outlined"
         >
+          {t('fixtures.importModal.previewButton')}
+        </Button>
+        <Button onClick={() => void handleImport()} disabled={!canImport} variant="contained">
           {importing ? <CircularProgress size={24} /> : t('fixtures.importModal.importButton')}
         </Button>
       </DialogActions>

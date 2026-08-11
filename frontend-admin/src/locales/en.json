@@ -162,13 +162,22 @@
       },
       "importModal": {
         "title": "Import Fixture",
-        "instructions": "Paste CSV with 3 columns (round, home_team, away_team), 4 (round, date, home_team, away_team), or 6 (round, date, time, field, home_team, away_team).",
+        "instructions": "Upload a CSV file or paste the text. Formats: 3 columns (round, home_team, away_team), 4 (round, date, home_team, away_team), or 6 (round, date, time, field, home_team, away_team). Names are matched to teams in the division; resolve conflicts before importing.",
         "errorLoadingPreview": "Error loading preview",
         "errorImporting": "Error importing fixtures",
         "formatDetected": "Format detected:",
-        "previewButton": "Preview",
-        "importButton": "Import",
-        "errorCol": "Error"
+        "previewButton": "Analyze / preview",
+        "importButton": "Import fixture",
+        "errorCol": "Error",
+        "uploadButton": "Upload CSV",
+        "analyzing": "Analyzing and matching teams…",
+        "loadingTeams": "Loading division teams…",
+        "reviewHint": "Review unclear or unmatched names ({{count}}). New teams are not created — pick an existing team in the division.",
+        "csvName": "CSV name",
+        "mappedTeam": "Team in division",
+        "chooseTeam": "Choose team…",
+        "matches": "matches",
+        "readyHint": "Matching complete. Review the preview and confirm import (replaces the current division fixture)."
       },
       "cols": {
         "round": "Round",

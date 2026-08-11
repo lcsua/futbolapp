@@ -162,13 +162,22 @@
       },
       "importModal": {
         "title": "Importar Fixture",
-        "instructions": "Pegá CSV con 3 columnas (round, home_team, away_team), 4 (round, date, home_team, away_team), o 6 (round, date, time, field, home_team, away_team).",
+        "instructions": "Subí un archivo CSV o pegá el texto. Formatos: 3 columnas (round, home_team, away_team), 4 (round, date, home_team, away_team) o 6 (round, date, time, field, home_team, away_team). Los nombres se matchean con los equipos de la división; resolvé los conflictos antes de importar.",
         "errorLoadingPreview": "Error al previsualizar",
         "errorImporting": "Error al importar el fixture",
         "formatDetected": "Formato detectado:",
-        "previewButton": "Previsualizar",
-        "importButton": "Importar",
-        "errorCol": "Error"
+        "previewButton": "Analizar / previsualizar",
+        "importButton": "Importar fixture",
+        "errorCol": "Error",
+        "uploadButton": "Subir CSV",
+        "analyzing": "Analizando y matcheando equipos…",
+        "loadingTeams": "Cargando equipos de la división…",
+        "reviewHint": "Revisá los nombres dudosos o sin match ({{count}}). No se crean equipos nuevos: hay que elegir uno de la división.",
+        "csvName": "Nombre en CSV",
+        "mappedTeam": "Equipo en la división",
+        "chooseTeam": "Elegir equipo…",
+        "matches": "partidos",
+        "readyHint": "Matching completo. Revisá la vista previa y confirmá la importación (reemplaza el fixture actual de la división)."
       },
       "cols": {
         "round": "Fecha",
