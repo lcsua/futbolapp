@@ -2,7 +2,6 @@
     var active = ViewBag.V2ActiveNav as string ?? "";
 }
 <nav id="v2-mobile-nav" class="v2-shell v2-mobile-nav" data-v2-mobile-nav aria-label="Menú móvil">
-    <a class="@(active == "home" ? "is-active" : null)" href="@Url.Content("~/v2")">Inicio</a>
     <a class="@(active == "ligas" ? "is-active" : null)" href="@Url.Content("~/v2/ligas")">Ligas</a>
-    <a href="@Url.Content("~/ligas")">Sitio actual</a>
+    <a class="v2-preview-link-mobile" href="@Url.Content("~/ligas")">Sitio actual (V1)</a>
 </nav>

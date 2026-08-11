@@ -3,7 +3,7 @@
 }
 <header class="v2-header">
     <div class="v2-shell v2-header__inner">
-        <a class="v2-brand" href="@Url.Content("~/v2/ligas")" aria-label="Mi Liga">
+        <a class="v2-brand" href="@Url.Content("~/v2")" aria-label="Mi Liga">
             <img class="v2-brand__full"
                  data-v2-brand="logo-nav"
                  src="~/branding/blue/logo-dark.svg"
@@ -18,13 +18,7 @@
 
         <ul class="v2-nav" role="list">
             <li>
-                <a class="@(active == "home" ? "is-active" : null)" href="@Url.Content("~/v2")">Inicio</a>
-            </li>
-            <li>
                 <a class="@(active == "ligas" ? "is-active" : null)" href="@Url.Content("~/v2/ligas")">Ligas</a>
-            </li>
-            <li>
-                <a href="@Url.Content("~/ligas")" title="Versión actual del sitio">Sitio actual</a>
             </li>
         </ul>
 
@@ -37,6 +31,8 @@
                 <option value="blue">Azul Eléctrico</option>
                 <option value="green">Verde + Azul noche</option>
             </select>
+
+            <a class="v2-preview-link" href="@Url.Content("~/ligas")">Sitio actual</a>
 
             <button type="button"
                     class="v2-menu-btn"

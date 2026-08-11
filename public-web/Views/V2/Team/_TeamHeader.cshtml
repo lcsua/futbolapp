@@ -7,56 +7,49 @@
         : standing.GoalDifference > 0
             ? $"+{standing.GoalDifference}"
             : standing.GoalDifference.ToString();
+    var posClass = standing?.Position == 1 ? "is-champion" : null;
 }
-<header class="v2-team-header">
-    <div class="v2-team-identity">
+<header class="v2-team-hero">
+    <div class="v2-team-hero__identity">
+        @{
+            ViewData["BadgeSize"] = "lg";
+        }
         @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Team)
-        <div>
-            <h1 class="v2-team-title">@Model.Team.Name</h1>
-            <p class="v2-team-meta">
-                @if (league != null)
-                {
-                    <span>@league.Name</span>
+        <div class="v2-team-hero__copy">
+            <h1 class="v2-team-hero__name">@Model.Team.Name</h1>
+            @if (league != null)
+            {
+                <p class="v2-team-hero__league">@league.Name</p>
+            }
+            <p class="v2-team-hero__sub">
+                @{
+                    var bits = new List<string>();
+                    if (Model.Season != null) bits.Add(Model.Season.Name);
+                    if (!string.IsNullOrWhiteSpace(standing?.DivisionName)) bits.Add(standing.DivisionName);
                 }
-                @if (!string.IsNullOrWhiteSpace(standing?.DivisionName))
-                {
-                    <span> · @standing.DivisionName</span>
-                }
-                @if (Model.Season != null)
-                {
-                    <span> · @Model.Season.Name</span>
-                }
+                @string.Join(" · ", bits)
             </p>
         </div>
     </div>
 
     @if (standing != null)
     {
-        <div>
-            <div class="v2-stats" role="list">
-                <div class="v2-stat" role="listitem">
-                    <span class="v2-stat__value is-primary">@standing.Position°</span>
-                    <span class="v2-stat__label">Posición</span>
-                </div>
-                <div class="v2-stat" role="listitem">
-                    <span class="v2-stat__value">@standing.Points</span>
-                    <span class="v2-stat__label">Puntos</span>
-                </div>
-                <div class="v2-stat" role="listitem">
-                    <span class="v2-stat__value">@standing.Played</span>
-                    <span class="v2-stat__label">PJ</span>
-                </div>
-                <div class="v2-stat" role="listitem">
-                    <span class="v2-stat__value">@dg</span>
-                    <span class="v2-stat__label">Dif.</span>
-                </div>
+        <div class="v2-hero-stats" role="list" aria-label="Resumen de temporada">
+            <div class="v2-hero-stat @posClass" role="listitem">
+                <span class="v2-hero-stat__value">@standing.Position°</span>
+                <span class="v2-hero-stat__label"><span class="v2-lbl-full">Posición</span><span class="v2-lbl-short">Pos</span></span>
             </div>
-            <div class="v2-split-stats" style="margin-top:0.75rem">
-                <span><strong>@standing.Wins</strong> G</span>
-                <span><strong>@standing.Draws</strong> E</span>
-                <span><strong>@standing.Losses</strong> P</span>
-                <span><strong>@standing.GoalsFor</strong> GF</span>
-                <span><strong>@standing.GoalsAgainst</strong> GC</span>
+            <div class="v2-hero-stat" role="listitem">
+                <span class="v2-hero-stat__value">@standing.Points</span>
+                <span class="v2-hero-stat__label"><span class="v2-lbl-full">Puntos</span><span class="v2-lbl-short">Pts</span></span>
+            </div>
+            <div class="v2-hero-stat" role="listitem">
+                <span class="v2-hero-stat__value">@standing.Played</span>
+                <span class="v2-hero-stat__label">PJ</span>
+            </div>
+            <div class="v2-hero-stat" role="listitem">
+                <span class="v2-hero-stat__value">@dg</span>
+                <span class="v2-hero-stat__label">DG</span>
             </div>
         </div>
     }

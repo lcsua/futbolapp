@@ -2,8 +2,15 @@
 @{
     var hasLogo = !string.IsNullOrWhiteSpace(Model.LogoUrl);
     var initials = PublicWeb.Helpers.TeamDisplayHelper.GetInitials(Model.Name);
+    var size = (ViewData["BadgeSize"] as string ?? "md").ToLowerInvariant();
+    var sizeClass = size switch
+    {
+        "lg" => "v2-team-badge--lg",
+        "sm" => "v2-team-badge--sm",
+        _ => "v2-team-badge--md"
+    };
 }
-<div class="v2-team-badge" aria-hidden="@(hasLogo ? "false" : "true")">
+<div class="v2-team-badge @sizeClass" aria-hidden="@(hasLogo ? "true" : "false")">
     @if (hasLogo)
     {
         <img src="@Model.LogoUrl" alt="" />

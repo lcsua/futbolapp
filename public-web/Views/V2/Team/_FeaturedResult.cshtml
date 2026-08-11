@@ -1,0 +1,33 @@
+@model PublicWeb.Models.Public.MatchViewModel
+@{
+    var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
+    ViewData["BadgeSize"] = "md";
+}
+<a class="v2-feature v2-feature--result" href="@Url.Content($"~/partido/{Model.Id}")">
+    <div class="v2-feature__eyebrow">@(suspended ? "Suspendido" : "Finalizado")</div>
+    <div class="v2-feature__board">
+        <div class="v2-feature__club is-home">
+            <span class="v2-feature__club-name">@Model.HomeTeam.Name</span>
+            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+        </div>
+        <div class="v2-feature__scorewrap">
+            @if (suspended)
+            {
+                <div class="v2-feature__score is-warn">—</div>
+            }
+            else
+            {
+                <div class="v2-feature__score">@Model.HomeScore — @Model.AwayScore</div>
+            }
+        </div>
+        <div class="v2-feature__club is-away">
+            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+            <span class="v2-feature__club-name">@Model.AwayTeam.Name</span>
+        </div>
+    </div>
+    <div class="v2-feature__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatLongDate(Model.Kickoff)</div>
+    @if (!string.IsNullOrWhiteSpace(Model.FieldName))
+    {
+        <div class="v2-feature__venue">@Model.FieldName</div>
+    }
+</a>
