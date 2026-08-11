@@ -118,9 +118,6 @@ export function ImportMatchResultsModal({
     const setupDivisions = setupData?.divisions ?? []
     const result: DivisionPlan[] = []
     const notes: string[] = []
-    const divisionsForMatch = scopeDivisionId
-      ? divisions.filter((d) => d.id === scopeDivisionId)
-      : divisions
 
     for (const block of blocks) {
       notes.push(...block.skippedByes, ...block.skippedOther)
@@ -130,10 +127,12 @@ export function ImportMatchResultsModal({
         continue
       }
 
-      const matched = matchDivisionName(block.division, divisionsForMatch.length ? divisionsForMatch : divisions)
+      // Always match against ALL league divisions first. Filtering candidates to the scoped
+      // division alone lets "45 Zona A" fuzzily attach to "45 Zona B" (~0.89 similarity).
+      const matched = matchDivisionName(block.division, divisions)
       if (!matched) {
         if (scopeDivisionId) {
-          // Block belongs to another division when scoped — skip quietly.
+          // Other / unknown division while scoped — skip quietly.
           continue
         }
         result.push({
@@ -272,7 +271,7 @@ export function ImportMatchResultsModal({
       if (next.length === 0) {
         setLocalError(
           scopeDivisionId
-            ? 'El CSV no tiene partidos importables para la división elegida (o el nombre de división no coincide con el de la liga). Probá “Todas las del CSV” o revisá el nombre en la columna division.'
+            ? 'El CSV no tiene partidos para la división elegida (o el nombre de división en el CSV no coincide exactamente con esa división). Los bloques de otras divisiones (p. ej. Zona A vs Zona B) se omiten.'
             : 'El CSV no tiene bloques importables.'
         )
         setPlans(null)

@@ -188,9 +188,19 @@ function tokenJaccard(a: string, b: string): number {
   return union === 0 ? 0 : inter / union
 }
 
+function trailingDivisionMarker(norm: string): string | null {
+  const parts = norm.split(' ').filter(Boolean)
+  if (parts.length === 0) return null
+  const last = parts[parts.length - 1]!
+  // Single letter / short code at the end: A, B, C, D1, etc.
+  if (/^[A-Z]$/.test(last) || /^[A-Z]\d{0,2}$/.test(last)) return last
+  return null
+}
+
 /**
  * Match a CSV division label to a league division.
  * Short codes ("B") only match exact "B" / "Division B", never "45 Zona B".
+ * Near-twins like "45 Zona A" vs "45 Zona B" do not fuzzily cross-match.
  */
 export function matchDivisionName(
   jsonName: string,
@@ -200,7 +210,9 @@ export function matchDivisionName(
   if (!norm || divisions.length === 0) return null
 
   const csvIsShort = isShortDivisionCode(norm)
+  const csvMarker = trailingDivisionMarker(norm)
   let best: { divisionId: string; name: string; score: number } | null = null
+  let secondBest = 0
 
   for (const d of divisions) {
     const aliases = divisionAliases(d.name)
@@ -213,17 +225,20 @@ export function matchDivisionName(
       }
     }
     if (score === 1) {
-      if (!best || score > best.score) best = { divisionId: d.id, name: d.name, score }
+      if (!best || score > best.score) {
+        secondBest = best?.score ?? 0
+        best = { divisionId: d.id, name: d.name, score }
+      } else if (score > secondBest) {
+        secondBest = score
+      }
       continue
     }
 
-    const dNorm = aliases[0]
+    const dNorm = aliases[0]!
     const dIsShort = aliases.some(isShortDivisionCode)
 
     // Never pair short code "B" with multi-word "45 ZONA B" (either direction).
     if (csvIsShort || dIsShort) {
-      // Allow "DIVISION B" / "CATEGORIA B" via stripped alias already checked for equality.
-      // Soft: stripped ends as single token equal to code only if ALL residual tokens are gone.
       score = 0
     } else {
       score = Math.max(
@@ -231,18 +246,30 @@ export function matchDivisionName(
         ...aliases.map((a) => nameSimilarity(norm, a)),
         tokenJaccard(norm, dNorm)
       )
-      // Prefer strong multi-word agreement only
-      if (score < 0.85) score = 0
+      const divMarker = trailingDivisionMarker(dNorm)
+      // "45 ZONA A" must not soft-match "45 ZONA B" just because they share most tokens.
+      if (csvMarker && divMarker && csvMarker !== divMarker) {
+        score = 0
+      } else if (score < 0.85) {
+        score = 0
+      }
     }
 
-    if (score > 0 && (!best || score > best.score)) {
-      best = { divisionId: d.id, name: d.name, score }
+    if (score > 0) {
+      if (!best || score > best.score) {
+        secondBest = best?.score ?? 0
+        best = { divisionId: d.id, name: d.name, score }
+      } else if (score > secondBest) {
+        secondBest = score
+      }
     }
   }
 
-  if (best && best.score >= 0.85) return best
-  // Exact short-code matches already scored 1 above.
-  if (best && best.score >= 1) return best
+  if (!best) return null
+  // Exact short-code / full-name equality.
+  if (best.score >= 1) return best
+  // Fuzzy: require clear winner so near-twins don't collide.
+  if (best.score >= 0.85 && best.score - secondBest >= 0.05) return best
   return null
 }
 
