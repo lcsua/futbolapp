@@ -85,6 +85,11 @@ public class TeamSummaryPublicDto
     public List<MatchPublicDto> NextMatches { get; set; } = new();
     public List<MatchPublicDto> LastResults { get; set; } = new();
     public StandingSummaryDto? Standing { get; set; }
+    public int PageSize { get; set; } = 5;
+    public int NextMatchesPage { get; set; } = 1;
+    public int NextMatchesTotal { get; set; }
+    public int LastResultsPage { get; set; } = 1;
+    public int LastResultsTotal { get; set; }
 }
 
 public class DivisionSummaryPublicDto

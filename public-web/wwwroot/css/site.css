@@ -588,3 +588,8 @@ a:hover {
 .team-stat-card .display-6 {
   font-size: 2rem;
 }
+
+.team-pager .btn.disabled {
+  pointer-events: none;
+  opacity: 0.45;
+}

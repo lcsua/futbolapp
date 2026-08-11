@@ -6,6 +6,20 @@
     ViewData["Title"] = Model.Team.Name + (league != null ? $" - {league.Name}" : string.Empty);
     var hasLogo = !string.IsNullOrWhiteSpace(Model.Team.LogoUrl);
     var standing = Model.Standing;
+    var seasonQuery = Model.Season?.Slug ?? string.Empty;
+
+    string BuildTeamUrl(int nextPage, int resultsPage)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(seasonQuery))
+            parts.Add($"season={Uri.EscapeDataString(seasonQuery)}");
+        if (nextPage > 1)
+            parts.Add($"nextPage={nextPage}");
+        if (resultsPage > 1)
+            parts.Add($"resultsPage={resultsPage}");
+        var qs = parts.Count > 0 ? "?" + string.Join("&", parts) : string.Empty;
+        return Url.Content($"~/ligas/{leagueSlug}/{Model.Team.Slug}") + qs;
+    }
 }
 
 <div class="mb-3">
@@ -122,7 +136,13 @@
 <div class="row g-3">
     <div class="col-md-6">
         <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white fw-bold">Últimos resultados</div>
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold">Últimos resultados</span>
+                @if (Model.LastResultsTotal > 0)
+                {
+                    <span class="small text-muted">@Model.LastResultsTotal en total</span>
+                }
+            </div>
             <div class="card-body p-0">
                 @if (Model.LastResults.Any())
                 {
@@ -145,6 +165,28 @@
                             </a>
                         }
                     </div>
+                    @if (Model.LastResultsTotalPages > 1)
+                    {
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top team-pager">
+                            @if (Model.LastResultsPage > 1)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" href="@BuildTeamUrl(Model.NextMatchesPage, Model.LastResultsPage - 1)">← Anteriores</a>
+                            }
+                            else
+                            {
+                                <span class="btn btn-sm btn-outline-secondary disabled">← Anteriores</span>
+                            }
+                            <span class="small text-muted">Pág. @Model.LastResultsPage / @Model.LastResultsTotalPages</span>
+                            @if (Model.LastResultsPage < Model.LastResultsTotalPages)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" href="@BuildTeamUrl(Model.NextMatchesPage, Model.LastResultsPage + 1)">Siguientes →</a>
+                            }
+                            else
+                            {
+                                <span class="btn btn-sm btn-outline-secondary disabled">Siguientes →</span>
+                            }
+                        </div>
+                    }
                 }
                 else
                 {
@@ -155,7 +197,13 @@
     </div>
     <div class="col-md-6">
         <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white fw-bold">Próximos partidos</div>
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold">Próximos partidos</span>
+                @if (Model.NextMatchesTotal > 0)
+                {
+                    <span class="small text-muted">@Model.NextMatchesTotal en total</span>
+                }
+            </div>
             <div class="card-body p-0">
                 @if (Model.NextMatches.Any())
                 {
@@ -178,6 +226,28 @@
                             </a>
                         }
                     </div>
+                    @if (Model.NextMatchesTotalPages > 1)
+                    {
+                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top team-pager">
+                            @if (Model.NextMatchesPage > 1)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" href="@BuildTeamUrl(Model.NextMatchesPage - 1, Model.LastResultsPage)">← Anteriores</a>
+                            }
+                            else
+                            {
+                                <span class="btn btn-sm btn-outline-secondary disabled">← Anteriores</span>
+                            }
+                            <span class="small text-muted">Pág. @Model.NextMatchesPage / @Model.NextMatchesTotalPages</span>
+                            @if (Model.NextMatchesPage < Model.NextMatchesTotalPages)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" href="@BuildTeamUrl(Model.NextMatchesPage + 1, Model.LastResultsPage)">Siguientes →</a>
+                            }
+                            else
+                            {
+                                <span class="btn btn-sm btn-outline-secondary disabled">Siguientes →</span>
+                            }
+                        </div>
+                    }
                 }
                 else
                 {

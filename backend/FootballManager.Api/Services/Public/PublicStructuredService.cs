@@ -131,6 +131,9 @@ public class PublicStructuredService
         string leagueSlug,
         string teamSlug,
         string? seasonSlug = null,
+        int nextPage = 1,
+        int resultsPage = 1,
+        int pageSize = 5,
         CancellationToken cancellationToken = default)
     {
         var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
@@ -141,6 +144,10 @@ public class PublicStructuredService
 
         var team = await ResolveTeamAsync(league.Id, teamSlug, cancellationToken);
         if (team == null) return null;
+
+        pageSize = Math.Clamp(pageSize, 1, 20);
+        nextPage = Math.Max(1, nextPage);
+        resultsPage = Math.Max(1, resultsPage);
 
         var response = new TeamSummaryPublicDto
         {
@@ -160,7 +167,10 @@ public class PublicStructuredService
                 Slug = SlugHelper.NormalizeSlug(season.Name),
                 EndDate = season.EndDate,
                 IsActive = season.IsActive
-            }
+            },
+            PageSize = pageSize,
+            NextMatchesPage = nextPage,
+            LastResultsPage = resultsPage
         };
 
         response.ActiveSeasons.Add(response.Season);
@@ -176,20 +186,36 @@ public class PublicStructuredService
             .ToListAsync(cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var upcoming = fixtures
+        var upcomingAll = fixtures
             .Where(f => f.Status != Domain.Enums.MatchStatus.COMPLETED &&
                         (f.MatchDate == null || f.MatchDate >= today))
-            .Take(5)
             .ToList();
-        var recent = fixtures
+        var recentAll = fixtures
             .Where(f => f.Status == Domain.Enums.MatchStatus.COMPLETED)
             .OrderByDescending(f => f.MatchDate)
             .ThenByDescending(f => f.StartTime)
-            .Take(5)
             .ToList();
 
-        response.NextMatches = upcoming.Select(f => MapToMatchDto(f, league.Slug)).ToList();
-        response.LastResults = recent.Select(f => MapToMatchDto(f, league.Slug)).ToList();
+        response.NextMatchesTotal = upcomingAll.Count;
+        response.LastResultsTotal = recentAll.Count;
+
+        var nextPages = Math.Max(1, (int)Math.Ceiling(response.NextMatchesTotal / (double)pageSize));
+        var resultsPages = Math.Max(1, (int)Math.Ceiling(response.LastResultsTotal / (double)pageSize));
+        response.NextMatchesPage = Math.Min(nextPage, nextPages);
+        response.LastResultsPage = Math.Min(resultsPage, resultsPages);
+
+        var upcoming = upcomingAll
+            .Skip((response.NextMatchesPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+        var recent = recentAll
+            .Skip((response.LastResultsPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
+        // Skip heavy crest payloads on list rows (team header already has LogoUrl).
+        response.NextMatches = upcoming.Select(f => MapToMatchDto(f, league.Slug, includeLogos: false)).ToList();
+        response.LastResults = recent.Select(f => MapToMatchDto(f, league.Slug, includeLogos: false)).ToList();
 
         var standingsReq = new GetStandingsRequest { LeagueId = league.Id, SeasonId = season.Id, IsPublic = true };
         var standingsRes = await _getStandingsUseCase.ExecuteAsync(standingsReq, cancellationToken);
@@ -325,10 +351,23 @@ public class PublicStructuredService
         return fixtures.Select(f => MapToMatchDto(f, league.Slug)).ToList();
     }
 
-    private MatchPublicDto MapToMatchDto(Fixture match, string? leagueSlug = null)
+    private MatchPublicDto MapToMatchDto(Fixture match, string? leagueSlug = null, bool includeLogos = true)
     {
         var homeTeam = match.HomeTeamDivisionSeason?.Team;
         var awayTeam = match.AwayTeamDivisionSeason?.Team;
+
+        var home = homeTeam != null
+            ? MapTeamDto(homeTeam)
+            : new TeamPublicDto { Name = "Local", Slug = "local" };
+        var away = awayTeam != null
+            ? MapTeamDto(awayTeam)
+            : new TeamPublicDto { Name = "Visitante", Slug = "visitante" };
+
+        if (!includeLogos)
+        {
+            home.LogoUrl = null;
+            away.LogoUrl = null;
+        }
 
         return new MatchPublicDto
         {
@@ -337,12 +376,8 @@ public class PublicStructuredService
             HomeScore = match.Result?.HomeTeamGoals,
             AwayScore = match.Result?.AwayTeamGoals,
             LeagueSlug = leagueSlug,
-            HomeTeam = homeTeam != null
-                ? MapTeamDto(homeTeam)
-                : new TeamPublicDto { Name = "Local", Slug = "local" },
-            AwayTeam = awayTeam != null
-                ? MapTeamDto(awayTeam)
-                : new TeamPublicDto { Name = "Visitante", Slug = "visitante" },
+            HomeTeam = home,
+            AwayTeam = away,
             Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : DateTime.UtcNow
         };
     }

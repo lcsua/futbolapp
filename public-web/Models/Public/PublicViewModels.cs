@@ -70,6 +70,14 @@ public class TeamDetailViewModel
     public StandingSummaryViewModel? Standing { get; set; }
     public List<MatchViewModel> NextMatches { get; set; } = new();
     public List<MatchViewModel> LastResults { get; set; } = new();
+    public int PageSize { get; set; } = 5;
+    public int NextMatchesPage { get; set; } = 1;
+    public int NextMatchesTotal { get; set; }
+    public int LastResultsPage { get; set; } = 1;
+    public int LastResultsTotal { get; set; }
+
+    public int NextMatchesTotalPages => Math.Max(1, (int)Math.Ceiling(NextMatchesTotal / (double)Math.Max(1, PageSize)));
+    public int LastResultsTotalPages => Math.Max(1, (int)Math.Ceiling(LastResultsTotal / (double)Math.Max(1, PageSize)));
 }
 
 public class DivisionViewModel

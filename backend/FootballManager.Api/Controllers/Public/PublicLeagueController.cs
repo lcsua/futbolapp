@@ -25,17 +25,29 @@ public class PublicLeagueController : ControllerBase
     }
 
     [HttpGet("torneo/{seasonSlug}/equipo/{teamSlug}")]
-    public async Task<IActionResult> GetTeamSummary(string leagueSlug, string seasonSlug, string teamSlug)
+    public async Task<IActionResult> GetTeamSummary(
+        string leagueSlug,
+        string seasonSlug,
+        string teamSlug,
+        [FromQuery] int nextPage = 1,
+        [FromQuery] int resultsPage = 1,
+        [FromQuery] int pageSize = 5)
     {
-        var result = await _service.GetTeamSummaryAsync(leagueSlug, teamSlug, seasonSlug);
+        var result = await _service.GetTeamSummaryAsync(leagueSlug, teamSlug, seasonSlug, nextPage, resultsPage, pageSize);
         if (result == null) return NotFound();
         return Ok(result);
     }
 
     [HttpGet("equipo/{teamSlug}")]
-    public async Task<IActionResult> GetTeamSummaryByLeague(string leagueSlug, string teamSlug, [FromQuery] string? season)
+    public async Task<IActionResult> GetTeamSummaryByLeague(
+        string leagueSlug,
+        string teamSlug,
+        [FromQuery] string? season,
+        [FromQuery] int nextPage = 1,
+        [FromQuery] int resultsPage = 1,
+        [FromQuery] int pageSize = 5)
     {
-        var result = await _service.GetTeamSummaryAsync(leagueSlug, teamSlug, season);
+        var result = await _service.GetTeamSummaryAsync(leagueSlug, teamSlug, season, nextPage, resultsPage, pageSize);
         if (result == null) return NotFound();
         return Ok(result);
     }

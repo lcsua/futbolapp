@@ -17,23 +17,35 @@ public class TeamPublicService
         _logger = logger;
     }
 
-    public async Task<TeamDetailViewModel?> GetTeamSummaryAsync(string leagueSlug, string teamSlug, string? season = null)
+    public async Task<TeamDetailViewModel?> GetTeamSummaryAsync(
+        string leagueSlug,
+        string teamSlug,
+        string? season = null,
+        int nextPage = 1,
+        int resultsPage = 1,
+        int pageSize = 5)
     {
-        var cacheKey = $"equipo_{leagueSlug}_{teamSlug}_{season ?? "active"}";
+        var cacheKey = $"equipo_{leagueSlug}_{teamSlug}_{season ?? "active"}_n{nextPage}_r{resultsPage}_p{pageSize}";
         if (_cache.TryGetValue(cacheKey, out TeamDetailViewModel? model) && model != null)
             return model;
 
         try
         {
             var client = _httpClientFactory.CreateClient("BackendApi");
-            var path = $"liga/{leagueSlug}/equipo/{teamSlug}";
+            var query = new List<string>
+            {
+                $"nextPage={nextPage}",
+                $"resultsPage={resultsPage}",
+                $"pageSize={pageSize}"
+            };
             if (!string.IsNullOrWhiteSpace(season))
-                path += $"?season={Uri.EscapeDataString(season)}";
+                query.Add($"season={Uri.EscapeDataString(season)}");
 
+            var path = $"liga/{leagueSlug}/equipo/{teamSlug}?{string.Join('&', query)}";
             model = await client.GetFromJsonAsync<TeamDetailViewModel>(path);
             if (model != null)
             {
-                _cache.Set(cacheKey, model, TimeSpan.FromMinutes(5));
+                _cache.Set(cacheKey, model, TimeSpan.FromMinutes(2));
                 return model;
             }
         }

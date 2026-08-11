@@ -97,13 +97,18 @@ public class LeagueController : Controller
     }
 
     [HttpGet("{slug}/{teamSlug}")]
-    public async Task<IActionResult> Team(string slug, string teamSlug, [FromQuery] string? season)
+    public async Task<IActionResult> Team(
+        string slug,
+        string teamSlug,
+        [FromQuery] string? season,
+        [FromQuery] int nextPage = 1,
+        [FromQuery] int resultsPage = 1)
     {
         // Reserved league sub-routes handled by more specific actions; guard just in case.
         if (IsReservedTeamSlug(teamSlug))
             return NotFound();
 
-        var model = await _teamService.GetTeamSummaryAsync(slug, teamSlug, season);
+        var model = await _teamService.GetTeamSummaryAsync(slug, teamSlug, season, nextPage, resultsPage);
         if (model == null) return NotFound();
 
         ViewBag.League = model.League ?? await _leagueService.GetLeagueBySlugAsync(slug);
