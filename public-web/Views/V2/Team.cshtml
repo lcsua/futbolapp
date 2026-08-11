@@ -4,23 +4,48 @@
     var league = Model.League ?? ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
     var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
     var leagueSlug = league?.Slug ?? string.Empty;
+    var teamSlug = Model.Team.Slug;
+    var activeTab = (ViewBag.V2TeamTab as string) ?? "resumen";
+    var seasonSlug = Model.Season?.Slug;
     ViewData["Title"] = Model.Team.Name + (league != null ? $" · {league.Name}" : string.Empty);
     ViewData["Description"] = $"Ficha de {Model.Team.Name} en {league?.Name}.";
 
     var lastMatch = Model.LastResults.FirstOrDefault();
     var nextMatch = Model.NextMatches.FirstOrDefault();
     var standing = Model.Standing;
+
+    string TabUrl(string tab)
+    {
+        var q = new List<string> { $"tab={tab}" };
+        if (!string.IsNullOrWhiteSpace(seasonSlug))
+            q.Add($"season={Uri.EscapeDataString(seasonSlug)}");
+        return Url.Content($"~/v2/ligas/{leagueSlug}/{teamSlug}") + "?" + string.Join("&", q) + "#" + tab;
+    }
 }
 
 <nav class="v2-crumb" aria-label="Migajas">
-    <a href="@Url.Content("~/v2/ligas")">Ligas</a>
+    <div class="v2-crumb__desktop">
+        <a href="@Url.Content("~/v2/ligas")">Ligas</a>
+        @if (league != null)
+        {
+            <span aria-hidden="true">/</span>
+            <a href="@Url.Content($"~/ligas/{leagueSlug}")">@league.Name</a>
+        }
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">@Model.Team.Name</span>
+    </div>
     @if (league != null)
     {
-        <span aria-hidden="true">/</span>
-        <a href="@Url.Content($"~/ligas/{leagueSlug}")">@league.Name</a>
+        <a class="v2-crumb__mobile" href="@Url.Content($"~/ligas/{leagueSlug}")">
+            <span aria-hidden="true">‹</span> @league.Name
+        </a>
     }
-    <span aria-hidden="true">/</span>
-    <span aria-current="page">@Model.Team.Name</span>
+    else
+    {
+        <a class="v2-crumb__mobile" href="@Url.Content("~/v2/ligas")">
+            <span aria-hidden="true">‹</span> Ligas
+        </a>
+    }
 </nav>
 
 @await Html.PartialAsync("~/Views/V2/Team/_TeamHeader.cshtml", Model)
@@ -28,6 +53,7 @@
 @if (seasons != null && seasons.Count > 1)
 {
     <form method="get" class="v2-toolbar">
+        <input type="hidden" name="tab" value="@activeTab" />
         <label for="v2-season" class="visually-hidden">Temporada</label>
         <select id="v2-season" name="season" class="v2-select" onchange="this.form.submit()">
             @foreach (var s in seasons)
@@ -46,93 +72,152 @@
 }
 
 <div class="v2-tabs" role="tablist" aria-label="Secciones del equipo">
-    <button type="button" class="is-active" role="tab" aria-selected="true" data-v2-tab="resumen">Resumen</button>
-    <button type="button" role="tab" aria-selected="false" data-v2-tab="partidos">Partidos</button>
-    <button type="button" role="tab" aria-selected="false" data-v2-tab="estadisticas">Estadísticas</button>
+    <a class="v2-tabs__link @(activeTab == "resumen" ? "is-active" : null)"
+       href="@TabUrl("resumen")"
+       role="tab"
+       aria-selected="@(activeTab == "resumen" ? "true" : "false")">Resumen</a>
+    <a class="v2-tabs__link @(activeTab == "partidos" ? "is-active" : null)"
+       href="@TabUrl("partidos")"
+       role="tab"
+       aria-selected="@(activeTab == "partidos" ? "true" : "false")">Partidos</a>
+    <a class="v2-tabs__link @(activeTab == "estadisticas" ? "is-active" : null)"
+       href="@TabUrl("estadisticas")"
+       role="tab"
+       aria-selected="@(activeTab == "estadisticas" ? "true" : "false")">Estadísticas</a>
 </div>
 
-<section class="v2-panel" data-v2-panel="resumen" role="tabpanel">
-    @if (lastMatch != null)
-    {
-        @await Html.PartialAsync("~/Views/V2/Team/_FeaturedResult.cshtml", lastMatch)
-    }
-    else
-    {
-        <div class="v2-empty">Todavía no hay resultados cargados.</div>
-    }
+@if (activeTab == "resumen")
+{
+    <section id="resumen" class="v2-panel" role="tabpanel">
+        <div class="v2-summary-grid">
+            @if (lastMatch != null)
+            {
+                @await Html.PartialAsync("~/Views/V2/Team/_FeaturedResult.cshtml", lastMatch)
+            }
+            else
+            {
+                <div class="v2-empty">Todavía no hay resultados cargados.</div>
+            }
 
-    @if (nextMatch != null)
-    {
+            @if (nextMatch != null)
+            {
+                @await Html.PartialAsync("~/Views/V2/Team/_FeaturedUpcoming.cshtml", nextMatch)
+            }
+            else
+            {
+                <div class="v2-empty">Sin próximo partido programado.</div>
+            }
+        </div>
+
         <div class="v2-block-gap">
-            @await Html.PartialAsync("~/Views/V2/Team/_FeaturedUpcoming.cshtml", nextMatch)
+            @await Html.PartialAsync("~/Views/V2/Team/_TeamForm.cshtml", Model)
         </div>
-    }
 
-    <div class="v2-block-gap">
-        @await Html.PartialAsync("~/Views/V2/Team/_TeamForm.cshtml", Model)
-    </div>
-
-    @if (standing != null)
-    {
-        <p class="v2-inline-stats" aria-label="Resumen de resultados">
-            <span><strong>@standing.Wins</strong> G</span>
-            <span><strong>@standing.Draws</strong> E</span>
-            <span><strong>@standing.Losses</strong> P</span>
-            <span class="v2-inline-stats__sep" aria-hidden="true"></span>
-            <span><strong>@standing.GoalsFor</strong> GF</span>
-            <span><strong>@standing.GoalsAgainst</strong> GC</span>
-        </p>
-    }
-</section>
-
-<section class="v2-panel" data-v2-panel="partidos" role="tabpanel" hidden>
-    <h2 class="v2-section-title">Últimos resultados</h2>
-    <div class="v2-stack">
-        @if (Model.LastResults.Any())
+        @if (standing != null)
         {
-            foreach (var match in Model.LastResults)
+            <p class="v2-inline-stats" aria-label="Resumen de resultados">
+                <span><strong class="v2-nums">@standing.Wins</strong> G</span>
+                <span><strong class="v2-nums">@standing.Draws</strong> E</span>
+                <span><strong class="v2-nums">@standing.Losses</strong> P</span>
+                <span class="v2-inline-stats__sep" aria-hidden="true"></span>
+                <span><strong class="v2-nums">@standing.GoalsFor</strong> GF</span>
+                <span><strong class="v2-nums">@standing.GoalsAgainst</strong> GC</span>
+            </p>
+        }
+    </section>
+}
+else if (activeTab == "partidos")
+{
+    <section id="partidos" class="v2-panel" role="tabpanel">
+        <h2 class="v2-section-title">Resultados</h2>
+        <div class="v2-match-list">
+            @if (Model.LastResults.Any())
             {
-                @await Html.PartialAsync("~/Views/V2/Team/_MatchCard.cshtml", match)
+                foreach (var match in Model.LastResults)
+                {
+                    @await Html.PartialAsync("~/Views/V2/Team/_MatchRow.cshtml", match)
+                }
             }
+            else
+            {
+                <div class="v2-empty">Sin resultados recientes.</div>
+            }
+        </div>
+        @{
+            ViewData["Page"] = Model.LastResultsPage;
+            ViewData["TotalPages"] = Model.LastResultsTotalPages;
+            ViewData["ParamName"] = "resultadosPage";
+            ViewData["OtherParamName"] = "proximosPage";
+            ViewData["OtherParamValue"] = Model.NextMatchesPage;
+            ViewData["Tab"] = "partidos";
+            ViewData["Season"] = seasonSlug;
+            ViewData["LeagueSlug"] = leagueSlug;
+            ViewData["TeamSlug"] = teamSlug;
+            ViewData["Fragment"] = "partidos";
+        }
+        @await Html.PartialAsync("~/Views/V2/Team/_Pagination.cshtml")
+
+        <h2 class="v2-section-title v2-section-title--spaced">Próximos partidos</h2>
+        <div class="v2-match-list">
+            @if (Model.NextMatches.Any())
+            {
+                foreach (var match in Model.NextMatches)
+                {
+                    @await Html.PartialAsync("~/Views/V2/Team/_MatchRow.cshtml", match)
+                }
+            }
+            else
+            {
+                <div class="v2-empty">Sin partidos próximos.</div>
+            }
+        </div>
+        @{
+            ViewData["Page"] = Model.NextMatchesPage;
+            ViewData["TotalPages"] = Model.NextMatchesTotalPages;
+            ViewData["ParamName"] = "proximosPage";
+            ViewData["OtherParamName"] = "resultadosPage";
+            ViewData["OtherParamValue"] = Model.LastResultsPage;
+            ViewData["Fragment"] = "proximos";
+        }
+        <div id="proximos">
+            @await Html.PartialAsync("~/Views/V2/Team/_Pagination.cshtml")
+        </div>
+    </section>
+}
+else
+{
+    <section id="estadisticas" class="v2-panel" role="tabpanel">
+        @if (standing != null)
+        {
+            <div class="v2-stats-blocks">
+                <div class="v2-stats-block">
+                    <h2 class="v2-section-title">Rendimiento</h2>
+                    <dl class="v2-stats-dl">
+                        <div><dt>Partidos jugados</dt><dd class="v2-nums">@standing.Played</dd></div>
+                        <div><dt>Ganados</dt><dd class="v2-nums">@standing.Wins</dd></div>
+                        <div><dt>Empatados</dt><dd class="v2-nums">@standing.Draws</dd></div>
+                        <div><dt>Perdidos</dt><dd class="v2-nums">@standing.Losses</dd></div>
+                    </dl>
+                </div>
+                <div class="v2-stats-block">
+                    <h2 class="v2-section-title">Goles</h2>
+                    <dl class="v2-stats-dl">
+                        <div><dt>A favor</dt><dd class="v2-nums">@standing.GoalsFor</dd></div>
+                        <div><dt>En contra</dt><dd class="v2-nums">@standing.GoalsAgainst</dd></div>
+                        <div><dt>Diferencia</dt><dd class="v2-nums">@(standing.GoalDifference > 0 ? $"+{standing.GoalDifference}" : standing.GoalDifference.ToString())</dd></div>
+                    </dl>
+                </div>
+                <div class="v2-stats-block">
+                    <h2 class="v2-section-title">Puntos</h2>
+                    <dl class="v2-stats-dl">
+                        <div><dt>Total</dt><dd class="v2-nums v2-stats-dl__accent">@standing.Points</dd></div>
+                    </dl>
+                </div>
+            </div>
         }
         else
         {
-            <div class="v2-empty">Sin resultados recientes.</div>
+            <div class="v2-empty">No hay estadísticas disponibles para esta temporada.</div>
         }
-    </div>
-
-    <h2 class="v2-section-title v2-section-title--spaced">Próximos partidos</h2>
-    <div class="v2-stack">
-        @if (Model.NextMatches.Any())
-        {
-            foreach (var match in Model.NextMatches)
-            {
-                @await Html.PartialAsync("~/Views/V2/Team/_MatchCard.cshtml", match)
-            }
-        }
-        else
-        {
-            <div class="v2-empty">Sin partidos próximos.</div>
-        }
-    </div>
-</section>
-
-<section class="v2-panel" data-v2-panel="estadisticas" role="tabpanel" hidden>
-    @if (standing != null)
-    {
-        <div class="v2-stats-grid" role="list">
-            <div class="v2-stats-grid__item" role="listitem"><span class="v2-stats-grid__value">@standing.Played</span><span class="v2-stats-grid__label">PJ</span></div>
-            <div class="v2-stats-grid__item" role="listitem"><span class="v2-stats-grid__value">@standing.Wins</span><span class="v2-stats-grid__label">G</span></div>
-            <div class="v2-stats-grid__item" role="listitem"><span class="v2-stats-grid__value">@standing.Draws</span><span class="v2-stats-grid__label">E</span></div>
-            <div class="v2-stats-grid__item" role="listitem"><span class="v2-stats-grid__value">@standing.Losses</span><span class="v2-stats-grid__label">P</span></div>
-            <div class="v2-stats-grid__item" role="listitem"><span class="v2-stats-grid__value">@standing.GoalsFor</span><span class="v2-stats-grid__label">GF</span></div>
-            <div class="v2-stats-grid__item" role="listitem"><span class="v2-stats-grid__value">@standing.GoalsAgainst</span><span class="v2-stats-grid__label">GC</span></div>
-            <div class="v2-stats-grid__item" role="listitem"><span class="v2-stats-grid__value">@(standing.GoalDifference > 0 ? $"+{standing.GoalDifference}" : standing.GoalDifference.ToString())</span><span class="v2-stats-grid__label">DG</span></div>
-            <div class="v2-stats-grid__item" role="listitem"><span class="v2-stats-grid__value is-accent">@standing.Points</span><span class="v2-stats-grid__label">PTS</span></div>
-        </div>
-    }
-    else
-    {
-        <div class="v2-empty">No hay estadísticas disponibles para esta temporada.</div>
-    }
-</section>
+    </section>
+}

@@ -3,23 +3,43 @@
     ViewData["BadgeSize"] = "md";
 }
 <a class="v2-feature v2-feature--upcoming" href="@Url.Content($"~/partido/{Model.Id}")">
-    <div class="v2-feature__eyebrow">Próximo partido</div>
-    <div class="v2-feature__board v2-feature__board--upcoming">
-        <div class="v2-feature__club is-home">
-            <span class="v2-feature__club-name">@Model.HomeTeam.Name</span>
-            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+    <div class="v2-feature__desktop">
+        <div class="v2-feature__eyebrow">Próximo partido</div>
+        <div class="v2-feature__teams">
+            <span class="v2-feature__team-name">@Model.HomeTeam.Name</span>
+            <span class="v2-feature__team-name">@Model.AwayTeam.Name</span>
         </div>
+        <div class="v2-feature__vs">VS</div>
         <div class="v2-feature__scorewrap">
             <div class="v2-feature__kick">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</div>
         </div>
-        <div class="v2-feature__club is-away">
-            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
-            <span class="v2-feature__club-name">@Model.AwayTeam.Name</span>
-        </div>
+        <div class="v2-feature__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonthYear(Model.Kickoff)</div>
+        @if (!string.IsNullOrWhiteSpace(Model.FieldName))
+        {
+            <div class="v2-feature__venue">@Model.FieldName</div>
+        }
     </div>
-    <div class="v2-feature__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatLongDate(Model.Kickoff)</div>
-    @if (!string.IsNullOrWhiteSpace(Model.FieldName))
-    {
-        <div class="v2-feature__venue">@Model.FieldName</div>
-    }
+
+    <div class="v2-feature__mobile">
+        <div class="v2-feature__eyebrow">
+            @PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.Kickoff)
+            <span aria-hidden="true">·</span>
+            <span class="v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
+        </div>
+        <div class="v2-stack-match">
+            <div class="v2-stack-match__row">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                <span class="v2-stack-match__name">@Model.HomeTeam.Name</span>
+            </div>
+            <div class="v2-stack-match__vs">VS</div>
+            <div class="v2-stack-match__row">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+                <span class="v2-stack-match__name">@Model.AwayTeam.Name</span>
+            </div>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.FieldName))
+        {
+            <div class="v2-feature__venue">@Model.FieldName</div>
+        }
+    </div>
 </a>

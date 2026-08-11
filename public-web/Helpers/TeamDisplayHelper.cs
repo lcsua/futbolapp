@@ -60,4 +60,26 @@ public static class TeamDisplayHelper
 
     public static string FormatTime(DateTime kickoff) =>
         kickoff == default ? "—" : kickoff.ToString("HH:mm");
+
+    /// <summary>08 AGO 2026</summary>
+    public static string FormatDayMonthYear(DateTime kickoff)
+    {
+        if (kickoff == default) return "—";
+        return kickoff.ToString("dd MMM yyyy", EsAr).ToUpper(EsAr);
+    }
+
+    /// <summary>08 AGO</summary>
+    public static string FormatDayMonth(DateTime kickoff)
+    {
+        if (kickoff == default) return "—";
+        return kickoff.ToString("dd MMM", EsAr).ToUpper(EsAr);
+    }
+
+    /// <summary>Sábado 15 Ago · for compact headers</summary>
+    public static string FormatWeekdayDayMonth(DateTime kickoff)
+    {
+        if (kickoff == default) return "—";
+        var raw = kickoff.ToString("dddd d MMM", EsAr);
+        return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(raw);
+    }
 }

@@ -1,0 +1,82 @@
+@* Server-side pagination for V2 team matches. *@
+@{
+    var current = (int)(ViewData["Page"] ?? 1);
+    var total = (int)(ViewData["TotalPages"] ?? 1);
+    var paramName = ViewData["ParamName"] as string ?? "page";
+    var otherParamName = ViewData["OtherParamName"] as string ?? "";
+    var otherParamValue = (int)(ViewData["OtherParamValue"] ?? 1);
+    var tab = ViewData["Tab"] as string ?? "partidos";
+    var season = ViewData["Season"] as string;
+    var leagueSlug = ViewData["LeagueSlug"] as string ?? "";
+    var teamSlug = ViewData["TeamSlug"] as string ?? "";
+    var fragment = ViewData["Fragment"] as string ?? "partidos";
+
+    if (total <= 1) { return; }
+
+    string BuildUrl(int page)
+    {
+        var q = new List<string> { $"tab={Uri.EscapeDataString(tab)}" };
+        if (!string.IsNullOrWhiteSpace(season))
+            q.Add($"season={Uri.EscapeDataString(season)}");
+        q.Add($"{paramName}={page}");
+        if (!string.IsNullOrWhiteSpace(otherParamName))
+            q.Add($"{otherParamName}={otherParamValue}");
+        return Url.Content($"~/v2/ligas/{leagueSlug}/{teamSlug}") + "?" + string.Join("&", q) + "#" + fragment;
+    }
+
+    var prevDisabled = current <= 1;
+    var nextDisabled = current >= total;
+}
+<nav class="v2-pagination" aria-label="Paginación">
+    <div class="v2-pagination__desktop">
+        @if (prevDisabled)
+        {
+            <span class="v2-pagination__btn is-disabled" aria-disabled="true">‹</span>
+        }
+        else
+        {
+            <a class="v2-pagination__btn" href="@BuildUrl(current - 1)" rel="prev" aria-label="Página anterior">‹</a>
+        }
+
+        @for (var i = 1; i <= total; i++)
+        {
+            if (i == current)
+            {
+                <span class="v2-pagination__btn is-active" aria-current="page">@i</span>
+            }
+            else
+            {
+                <a class="v2-pagination__btn" href="@BuildUrl(i)">@i</a>
+            }
+        }
+
+        @if (nextDisabled)
+        {
+            <span class="v2-pagination__btn is-disabled" aria-disabled="true">›</span>
+        }
+        else
+        {
+            <a class="v2-pagination__btn" href="@BuildUrl(current + 1)" rel="next" aria-label="Página siguiente">›</a>
+        }
+    </div>
+
+    <div class="v2-pagination__mobile">
+        @if (prevDisabled)
+        {
+            <span class="v2-pagination__nav is-disabled" aria-disabled="true">‹ Anterior</span>
+        }
+        else
+        {
+            <a class="v2-pagination__nav" href="@BuildUrl(current - 1)" rel="prev">‹ Anterior</a>
+        }
+        <span class="v2-pagination__status" aria-current="page">@current de @total</span>
+        @if (nextDisabled)
+        {
+            <span class="v2-pagination__nav is-disabled" aria-disabled="true">Siguiente ›</span>
+        }
+        else
+        {
+            <a class="v2-pagination__nav" href="@BuildUrl(current + 1)" rel="next">Siguiente ›</a>
+        }
+    </div>
+</nav>

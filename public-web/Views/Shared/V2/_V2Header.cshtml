@@ -4,16 +4,11 @@
 <header class="v2-header">
     <div class="v2-shell v2-header__inner">
         <a class="v2-brand" href="@Url.Content("~/v2")" aria-label="Mi Liga">
-            <img class="v2-brand__full"
+            <img class="v2-brand__logo"
                  data-v2-brand="logo-nav"
                  src="~/branding/blue/logo-dark.svg"
                  asp-append-version="true"
                  alt="Mi Liga" />
-            <img class="v2-brand__icon-only v2-brand__icon"
-                 data-v2-brand="icon"
-                 src="~/branding/blue/icon.svg"
-                 asp-append-version="true"
-                 alt="" />
         </a>
 
         <ul class="v2-nav" role="list">
@@ -31,6 +26,24 @@
                 <option value="blue">Azul Eléctrico</option>
                 <option value="green">Verde + Azul noche</option>
             </select>
+
+            <div class="v2-theme-menu" data-v2-theme-menu>
+                <button type="button"
+                        class="v2-theme-toggle"
+                        data-v2-theme-toggle
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-label="Elegir diseño">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M12 3a9 9 0 1 0 9 9h-9V3z" />
+                        <path d="M12 3a9 9 0 0 1 9 9h-9V3z" opacity=".45" />
+                    </svg>
+                </button>
+                <div class="v2-theme-popover" data-v2-theme-popover hidden role="listbox" aria-label="Diseños">
+                    <button type="button" role="option" data-v2-theme-option="blue">Azul Eléctrico</button>
+                    <button type="button" role="option" data-v2-theme-option="green">Verde + Azul noche</button>
+                </div>
+            </div>
 
             <a class="v2-preview-link" href="@Url.Content("~/ligas")">Sitio actual</a>
 

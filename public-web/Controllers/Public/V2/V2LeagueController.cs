@@ -9,6 +9,9 @@ namespace PublicWeb.Controllers.Public.V2;
 [Route("v2/ligas")]
 public class V2LeagueController : Controller
 {
+    private const int SummaryPageSize = 5;
+    private const int PartidosPageSize = 10;
+
     private readonly LeaguePublicService _leagueService;
     private readonly TeamPublicService _teamService;
 
@@ -23,19 +26,35 @@ public class V2LeagueController : Controller
         string slug,
         string teamSlug,
         [FromQuery] string? season,
-        [FromQuery] int nextPage = 1,
-        [FromQuery] int resultsPage = 1)
+        [FromQuery] string? tab,
+        [FromQuery] int? resultadosPage,
+        [FromQuery] int? proximosPage,
+        // Compat with existing / original query names
+        [FromQuery] int? resultsPage,
+        [FromQuery] int? nextPage)
     {
         if (IsReservedTeamSlug(teamSlug))
             return NotFound();
 
-        var model = await _teamService.GetTeamSummaryAsync(slug, teamSlug, season, nextPage, resultsPage);
+        var activeTab = NormalizeTab(tab);
+        var rPage = Math.Max(1, resultadosPage ?? resultsPage ?? 1);
+        var nPage = Math.Max(1, proximosPage ?? nextPage ?? 1);
+
+        // Resumen / estadísticas: siempre página 1 (featured + forma). Partidos: paginación real.
+        var pageSize = activeTab == "partidos" ? PartidosPageSize : SummaryPageSize;
+        var requestResultsPage = activeTab == "partidos" ? rPage : 1;
+        var requestNextPage = activeTab == "partidos" ? nPage : 1;
+
+        var model = await _teamService.GetTeamSummaryAsync(
+            slug, teamSlug, season, requestNextPage, requestResultsPage, pageSize);
         if (model == null) return NotFound();
 
         ViewBag.League = model.League ?? await _leagueService.GetLeagueBySlugAsync(slug);
         ViewBag.Seasons = await _leagueService.GetLeagueMetaAsync(slug);
         ViewBag.V2ActiveNav = "ligas";
-        ViewBag.V2TeamTab = "resumen";
+        ViewBag.V2TeamTab = activeTab;
+        ViewBag.V2ResultadosPage = model.LastResultsPage;
+        ViewBag.V2ProximosPage = model.NextMatchesPage;
 
         return View("~/Views/V2/Team.cshtml", model);
     }
@@ -45,13 +64,19 @@ public class V2LeagueController : Controller
         string slug,
         string teamSlug,
         [FromQuery] string? season,
-        [FromQuery] int nextPage = 1,
-        [FromQuery] int resultsPage = 1)
+        [FromQuery] int? resultadosPage,
+        [FromQuery] int? proximosPage,
+        [FromQuery] int? resultsPage,
+        [FromQuery] int? nextPage)
     {
         if (IsReservedTeamSlug(teamSlug))
             return NotFound();
 
-        var model = await _teamService.GetTeamSummaryAsync(slug, teamSlug, season, nextPage, resultsPage);
+        var rPage = Math.Max(1, resultadosPage ?? resultsPage ?? 1);
+        var nPage = Math.Max(1, proximosPage ?? nextPage ?? 1);
+
+        var model = await _teamService.GetTeamSummaryAsync(
+            slug, teamSlug, season, nPage, rPage, PartidosPageSize);
         if (model == null) return NotFound();
 
         return Json(new
@@ -85,6 +110,12 @@ public class V2LeagueController : Controller
             lastResultsTotal = model.LastResultsTotal,
             lastResultsTotalPages = model.LastResultsTotalPages
         });
+    }
+
+    private static string NormalizeTab(string? tab)
+    {
+        var t = (tab ?? "resumen").Trim().ToLowerInvariant();
+        return t is "partidos" or "estadisticas" ? t : "resumen";
     }
 
     private static bool IsReservedTeamSlug(string teamSlug) =>
