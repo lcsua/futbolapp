@@ -82,4 +82,32 @@ public static class TeamDisplayHelper
         var raw = kickoff.ToString("dddd d MMM", EsAr);
         return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(raw);
     }
+
+    /// <summary>
+    /// Normalizes field labels so codes like "A" read as "Cancha A",
+    /// without duplicating the prefix when already present.
+    /// </summary>
+    public static string? FormatFieldLabel(string? fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(fieldName)) return null;
+        var raw = fieldName.Trim();
+
+        if (raw.StartsWith("Cancha ", StringComparison.OrdinalIgnoreCase) ||
+            raw.StartsWith("Campo ", StringComparison.OrdinalIgnoreCase) ||
+            raw.StartsWith("Estadio ", StringComparison.OrdinalIgnoreCase) ||
+            raw.StartsWith("Complejo ", StringComparison.OrdinalIgnoreCase))
+        {
+            return raw;
+        }
+
+        // Single letter/digit codes (A, B, C, 1…) → "Cancha A"
+        if (raw.Length == 1 && char.IsLetterOrDigit(raw[0]))
+            return $"Cancha {char.ToUpperInvariant(raw[0])}";
+
+        // Short bare codes like "A1", "B2"
+        if (raw.Length <= 3 && raw.All(c => char.IsLetterOrDigit(c)))
+            return $"Cancha {raw.ToUpperInvariant()}";
+
+        return raw;
+    }
 }

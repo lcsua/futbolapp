@@ -2,10 +2,11 @@
 @{
     var finished = PublicWeb.Helpers.TeamDisplayHelper.IsFinished(Model.Status);
     var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
-    ViewData["BadgeSize"] = "sm";
+    var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
+    ViewData["BadgeSize"] = "md";
 }
 <a class="v2-match-row @(finished ? "is-result" : "is-upcoming")" href="@Url.Content($"~/partido/{Model.Id}")">
-    @* Desktop compact row *@
+    @* Desktop compact sporting row *@
     <div class="v2-match-row__desktop">
         <span class="v2-match-row__date v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)</span>
         <span class="v2-match-row__home">@Model.HomeTeam.Name</span>
@@ -36,41 +37,61 @@
             <span class="v2-match-row__time" aria-hidden="true"></span>
         }
     </div>
+    @if (!finished && !string.IsNullOrWhiteSpace(venue))
+    {
+        <div class="v2-match-row__field-desktop">@venue</div>
+    }
 
-    @* Mobile compact *@
+    @* Mobile — classic LOCAL | CENTER | VISITANTE MatchCard *@
     <div class="v2-match-row__mobile">
-        <div class="v2-match-row__mobile-meta">
-            <span class="v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)</span>
-            @if (!finished)
-            {
-                <span class="v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
-            }
-        </div>
-        <div class="v2-stack-match v2-stack-match--compact">
-            <div class="v2-stack-match__row">
-                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
-                <span class="v2-stack-match__name">@Model.HomeTeam.Name</span>
+        <div class="v2-match-card v2-match-card--inline @(finished ? "v2-match-card--result" : "v2-match-card--upcoming")">
+            <div class="v2-match-card__meta">
                 @if (finished)
                 {
-                    <span class="v2-stack-match__num">@(suspended ? "—" : Model.HomeScore?.ToString() ?? "—")</span>
-                }
-            </div>
-            <div class="v2-stack-match__row">
-                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
-                <span class="v2-stack-match__name">@Model.AwayTeam.Name</span>
-                @if (finished)
-                {
-                    <span class="v2-stack-match__num">@(suspended ? "—" : Model.AwayScore?.ToString() ?? "—")</span>
+                    <span>
+                        @(suspended ? "Suspendido" : "Finalizado")
+                        <span aria-hidden="true">·</span>
+                        @PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)
+                    </span>
                 }
                 else
                 {
-                    <span class="v2-stack-match__vs-inline">VS</span>
+                    <span>@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.Kickoff)</span>
+                    <span class="v2-match-card__kick v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
+                    @if (!string.IsNullOrWhiteSpace(venue))
+                    {
+                        <span class="v2-match-card__venue">@venue</span>
+                    }
                 }
             </div>
+
+            <div class="v2-match-card__board">
+                <div class="v2-match-card__side is-home">
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                    <span class="v2-match-card__name">@Model.HomeTeam.Name</span>
+                </div>
+                <div class="v2-match-card__center">
+                    @if (finished)
+                    {
+                        if (suspended)
+                        {
+                            <span class="v2-match-card__score is-warn">—</span>
+                        }
+                        else
+                        {
+                            <span class="v2-match-card__score">@Model.HomeScore — @Model.AwayScore</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="v2-match-card__vs">VS</span>
+                    }
+                </div>
+                <div class="v2-match-card__side is-away">
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+                    <span class="v2-match-card__name">@Model.AwayTeam.Name</span>
+                </div>
+            </div>
         </div>
-        @if (!finished && !string.IsNullOrWhiteSpace(Model.FieldName))
-        {
-            <div class="v2-match-row__field">@Model.FieldName</div>
-        }
     </div>
 </a>
