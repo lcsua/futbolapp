@@ -135,6 +135,28 @@ export const matchesService = {
       signal
     ),
 
+  importSchedule: (
+    leagueId: string,
+    body: {
+      seasonId: string
+      divisionId: string
+      round: number
+      rows: Array<{
+        homeTeamId: string
+        awayTeamId: string
+        startTime: string
+        fieldName: string
+        allowInverted: boolean
+      }>
+    },
+    signal?: AbortSignal
+  ) =>
+    apiClient.post<{ updatedCount: number; warnings: string[] }>(
+      `/api/leagues/${leagueId}/matches/import-schedule`,
+      body,
+      signal
+    ),
+
   addIncident: (
     leagueId: string,
     matchId: string,

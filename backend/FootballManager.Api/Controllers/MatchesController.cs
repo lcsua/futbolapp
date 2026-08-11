@@ -6,6 +6,7 @@ using FootballManager.Application.UseCases.Matches.GetMatchById;
 using FootballManager.Application.UseCases.Matches.UpdateMatchResult;
 using FootballManager.Application.UseCases.Matches.ImportMatchResults;
 using FootballManager.Application.UseCases.Matches.ClearRoundResults;
+using FootballManager.Application.UseCases.Matches.ImportMatchSchedule;
 using FootballManager.Application.UseCases.Matches.SwapDivisionHomeAway;
 using FootballManager.Application.UseCases.Matches.AddMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatchIncident;
@@ -23,6 +24,7 @@ namespace FootballManager.Api.Controllers
         private readonly IUpdateMatchResultUseCase _updateMatchResultUseCase;
         private readonly IImportMatchResultsUseCase _importMatchResultsUseCase;
         private readonly IClearRoundResultsUseCase _clearRoundResultsUseCase;
+        private readonly IImportMatchScheduleUseCase _importMatchScheduleUseCase;
         private readonly ISwapDivisionHomeAwayUseCase _swapDivisionHomeAwayUseCase;
         private readonly IAddMatchIncidentUseCase _addMatchIncidentUseCase;
         private readonly IDeleteMatchIncidentUseCase _deleteMatchIncidentUseCase;
@@ -33,6 +35,7 @@ namespace FootballManager.Api.Controllers
             IUpdateMatchResultUseCase updateMatchResultUseCase,
             IImportMatchResultsUseCase importMatchResultsUseCase,
             IClearRoundResultsUseCase clearRoundResultsUseCase,
+            IImportMatchScheduleUseCase importMatchScheduleUseCase,
             ISwapDivisionHomeAwayUseCase swapDivisionHomeAwayUseCase,
             IAddMatchIncidentUseCase addMatchIncidentUseCase,
             IDeleteMatchIncidentUseCase deleteMatchIncidentUseCase)
@@ -42,6 +45,7 @@ namespace FootballManager.Api.Controllers
             _updateMatchResultUseCase = updateMatchResultUseCase ?? throw new ArgumentNullException(nameof(updateMatchResultUseCase));
             _importMatchResultsUseCase = importMatchResultsUseCase ?? throw new ArgumentNullException(nameof(importMatchResultsUseCase));
             _clearRoundResultsUseCase = clearRoundResultsUseCase ?? throw new ArgumentNullException(nameof(clearRoundResultsUseCase));
+            _importMatchScheduleUseCase = importMatchScheduleUseCase ?? throw new ArgumentNullException(nameof(importMatchScheduleUseCase));
             _swapDivisionHomeAwayUseCase = swapDivisionHomeAwayUseCase ?? throw new ArgumentNullException(nameof(swapDivisionHomeAwayUseCase));
             _addMatchIncidentUseCase = addMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(addMatchIncidentUseCase));
             _deleteMatchIncidentUseCase = deleteMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(deleteMatchIncidentUseCase));
@@ -154,6 +158,28 @@ namespace FootballManager.Api.Controllers
             return Ok(response);
         }
 
+        [HttpPost("import-schedule")]
+        public async Task<IActionResult> ImportMatchSchedule(
+            [FromRoute] Guid leagueId,
+            [FromBody] ImportMatchScheduleBody body,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var response = await _importMatchScheduleUseCase.ExecuteAsync(new ImportMatchScheduleRequest
+            {
+                LeagueId = leagueId,
+                UserId = userId,
+                SeasonId = body.SeasonId,
+                DivisionId = body.DivisionId,
+                Round = body.Round,
+                Rows = body.Rows ?? new System.Collections.Generic.List<ImportMatchScheduleRowDto>(),
+            }, cancellationToken);
+
+            return Ok(response);
+        }
+
         [HttpPost("{matchId}/incidents")]
         public async Task<IActionResult> AddMatchIncident(
             [FromRoute] Guid leagueId,
@@ -201,5 +227,13 @@ namespace FootballManager.Api.Controllers
     {
         public Guid SeasonId { get; set; }
         public Guid DivisionId { get; set; }
+    }
+
+    public class ImportMatchScheduleBody
+    {
+        public Guid SeasonId { get; set; }
+        public Guid DivisionId { get; set; }
+        public int Round { get; set; }
+        public System.Collections.Generic.List<ImportMatchScheduleRowDto>? Rows { get; set; }
     }
 }

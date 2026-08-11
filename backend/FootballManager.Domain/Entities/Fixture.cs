@@ -140,6 +140,23 @@ namespace FootballManager.Domain.Entities
             UpdateTimestamp();
         }
 
+        /// <summary>
+        /// Updates kickoff time and/or venue without changing MatchDate.
+        /// </summary>
+        public void AssignKickoffAndField(TimeOnly? startTime, Field? field)
+        {
+            if (startTime.HasValue)
+                StartTime = startTime.Value;
+
+            if (field != null)
+            {
+                Field = field;
+                FieldId = field.Id;
+            }
+
+            UpdateTimestamp();
+        }
+
         public void SetReferee(string refereeName)
         {
             RefereeName = refereeName ?? string.Empty;

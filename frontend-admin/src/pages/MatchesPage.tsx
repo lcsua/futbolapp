@@ -28,8 +28,10 @@ import { useLeagueId } from '../contexts/LeagueContext'
 import { MatchResultModal } from '../components/MatchResultModal'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
 import { ImportMatchResultsModal } from '../components/ImportMatchResultsModal'
+import { ImportScheduleModal } from '../components/ImportScheduleModal'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import ScoreboardIcon from '@mui/icons-material/Scoreboard'
+import ScheduleIcon from '@mui/icons-material/Schedule'
 
 export function MatchesPage() {
   const { t } = useTranslation()
@@ -42,6 +44,7 @@ export function MatchesPage() {
   const [resultModalMatch, setResultModalMatch] = useState<MatchListItem | null>(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importResultsOpen, setImportResultsOpen] = useState(false)
+  const [importScheduleOpen, setImportScheduleOpen] = useState(false)
   const [importResultsMsg, setImportResultsMsg] = useState<string | null>(null)
   const [clearError, setClearError] = useState<string | null>(null)
   const queryClient = useQueryClient()
@@ -283,6 +286,14 @@ export function MatchesPage() {
         </Button>
         <Button
           variant="outlined"
+          startIcon={<ScheduleIcon />}
+          onClick={() => setImportScheduleOpen(true)}
+          disabled={seasonClosed || !seasonId}
+        >
+          Importar horarios/canchas
+        </Button>
+        <Button
+          variant="outlined"
           color="error"
           startIcon={<DeleteSweepIcon />}
           onClick={handleClearRoundResults}
@@ -378,6 +389,24 @@ export function MatchesPage() {
             setImportResultsMsg(
               parts.length ? `Resultados: ${parts.join(', ')}.${warn}` : `Import OK.${warn}`
             )
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
+          }}
+        />
+      )}
+      {leagueId && seasonId && (
+        <ImportScheduleModal
+          open={importScheduleOpen}
+          onClose={() => setImportScheduleOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          initialDivisionId={divisionId}
+          initialRound={round === '' ? '' : parseInt(round, 10)}
+          divisions={divisions}
+          rounds={roundNumbers}
+          seasonClosed={seasonClosed}
+          onImported={({ updatedCount, warnings }) => {
+            const warn = warnings.length ? ` Advertencias: ${warnings.length}.` : ''
+            setImportResultsMsg(`Horarios/canchas: ${updatedCount} actualizado(s).${warn}`)
             void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
           }}
         />
