@@ -214,9 +214,9 @@ public class PublicStructuredService
             .Take(pageSize)
             .ToList();
 
-        // Skip heavy crest payloads on list rows (team header already has LogoUrl).
-        response.NextMatches = upcoming.Select(f => MapToMatchDto(f, league.Slug, includeLogos: false)).ToList();
-        response.LastResults = recent.Select(f => MapToMatchDto(f, league.Slug, includeLogos: false)).ToList();
+        // Include crest URLs so V2 team Resumen/Partidos can render TeamBadge logos.
+        response.NextMatches = upcoming.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true)).ToList();
+        response.LastResults = recent.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true)).ToList();
 
         var standingsReq = new GetStandingsRequest { LeagueId = league.Id, SeasonId = season.Id, IsPublic = true };
         var standingsRes = await _getStandingsUseCase.ExecuteAsync(standingsReq, cancellationToken);

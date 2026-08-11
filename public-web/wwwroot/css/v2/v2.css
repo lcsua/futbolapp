@@ -1103,16 +1103,45 @@ body {
 
 .v2-match-row__home,
 .v2-match-row__away {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.v2-match-row__home {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.v2-match-row__away {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.v2-match-row__name {
   font-size: var(--font-size-secondary-lg);
   font-weight: var(--font-weight-semibold);
   min-width: 0;
   line-height: 1.25;
   overflow-wrap: normal;
   word-break: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
-.v2-match-row__home { text-align: right; }
-.v2-match-row__away { text-align: left; }
+.v2-match-row__home .v2-team-badge,
+.v2-match-row__away .v2-team-badge {
+  flex-shrink: 0;
+}
+
+.v2-match-row .v2-team-badge--md {
+  width: 2.15rem;
+  height: 2.15rem;
+}
 
 .v2-match-row__mid {
   text-align: center;

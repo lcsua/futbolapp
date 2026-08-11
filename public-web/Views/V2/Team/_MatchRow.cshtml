@@ -30,7 +30,10 @@
             </div>
 
             <div class="v2-match-row__board">
-                <span class="v2-match-row__home">@Model.HomeTeam.Name</span>
+                <div class="v2-match-row__home">
+                    <span class="v2-match-row__name">@Model.HomeTeam.Name</span>
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                </div>
                 <span class="v2-match-row__mid v2-nums">
                     @if (finished)
                     {
@@ -48,7 +51,10 @@
                         <span class="v2-match-row__vs">VS</span>
                     }
                 </span>
-                <span class="v2-match-row__away">@Model.AwayTeam.Name</span>
+                <div class="v2-match-row__away">
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+                    <span class="v2-match-row__name">@Model.AwayTeam.Name</span>
+                </div>
             </div>
         </div>
     </div>
