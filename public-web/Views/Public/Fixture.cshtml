@@ -118,19 +118,11 @@
                                         {
                                             <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
                                             <div class="match-time text-warning">Suspendido</div>
-                                            @if (!string.IsNullOrWhiteSpace(match.FieldName))
-                                            {
-                                                <div class="match-time text-truncate" title="@match.FieldName">@match.FieldName</div>
-                                            }
                                         }
                                         else
                                         {
                                             <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
                                             <div class="match-time">@match.Kickoff.ToString("HH:mm")</div>
-                                            @if (!string.IsNullOrWhiteSpace(match.FieldName))
-                                            {
-                                                <div class="match-time text-truncate" title="@match.FieldName">@match.FieldName</div>
-                                            }
                                         }
                                     </div>
                                     <div class="col-5">
@@ -146,6 +138,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @if (!string.IsNullOrWhiteSpace(match.FieldName))
+                                {
+                                    <div class="match-field text-center mt-1">@match.FieldName</div>
+                                }
                             </div>
                         }
                         </div>

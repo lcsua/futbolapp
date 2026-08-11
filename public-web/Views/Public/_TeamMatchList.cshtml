@@ -18,10 +18,6 @@
                         {
                             <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
                             <div class="match-time">@(match.Kickoff == default ? "—" : match.Kickoff.ToString("HH:mm"))</div>
-                            @if (!string.IsNullOrWhiteSpace(match.FieldName))
-                            {
-                                <div class="match-time text-truncate" title="@match.FieldName">@match.FieldName</div>
-                            }
                         }
                         else
                         {
@@ -40,6 +36,10 @@
                         <div class="text-start text-truncate match-team" title="@match.AwayTeam.Name">@match.AwayTeam.Name</div>
                     </div>
                 </div>
+                @if (kind == "next" && !string.IsNullOrWhiteSpace(match.FieldName))
+                {
+                    <div class="match-field text-center mt-1">@match.FieldName</div>
+                }
             </a>
         }
     </div>

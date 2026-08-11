@@ -491,6 +491,13 @@ a:hover {
   font-weight: 400;
 }
 
+.league-match-list .match-field {
+  font-weight: 700;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  padding: 0 0.5rem;
+}
+
 .round-pills .nav-link {
   font-size: 0.8rem;
   padding: 0.3rem 0.7rem;
