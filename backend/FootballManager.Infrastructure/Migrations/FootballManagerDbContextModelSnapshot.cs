@@ -706,7 +706,7 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("incident_type");
 
-                    b.Property<int>("Minute")
+                    b.Property<int?>("Minute")
                         .HasColumnType("integer")
                         .HasColumnName("minute");
 
