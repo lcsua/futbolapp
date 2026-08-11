@@ -640,7 +640,7 @@ public class PublicStructuredService
                     Id = d.Id,
                     Title = d.Title,
                     Description = d.Description,
-                    FileUrl = d.FileUrl,
+                    FileUrl = ResolvePublicUploadUrl(d.RelativePath, d.FileUrl),
                     ContentType = d.ContentType,
                     FileSizeBytes = d.FileSizeBytes,
                     OriginalFileName = d.OriginalFileName,
@@ -653,5 +653,34 @@ public class PublicStructuredService
         }
 
         return result;
+    }
+
+    private static string ResolvePublicUploadUrl(string? relativePath, string? fileUrl)
+    {
+        if (!string.IsNullOrWhiteSpace(relativePath))
+        {
+            var path = relativePath.Trim().Replace('\\', '/');
+            if (!path.StartsWith('/'))
+            {
+                path = "/" + path;
+            }
+
+            if (path.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+            {
+                return path;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(fileUrl) &&
+            Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri))
+        {
+            var path = uri.AbsolutePath;
+            if (path.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+            {
+                return path;
+            }
+        }
+
+        return fileUrl ?? string.Empty;
     }
 }

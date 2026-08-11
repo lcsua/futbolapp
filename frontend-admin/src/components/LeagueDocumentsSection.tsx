@@ -190,7 +190,7 @@ export function LeagueDocumentsSection({ leagueId }: Props) {
           sortOrder: editingDoc.sortOrder,
           ...(upload
             ? {
-                fileUrl: upload.url,
+                fileUrl: upload.relativeUrl,
                 relativePath: upload.relativeUrl,
                 contentType: upload.contentType,
                 fileSizeBytes: upload.fileSizeBytes,
@@ -204,7 +204,7 @@ export function LeagueDocumentsSection({ leagueId }: Props) {
           title,
           description: docForm.description.trim() || null,
           documentDate: docForm.documentDate || null,
-          fileUrl: upload!.url,
+          fileUrl: upload!.relativeUrl,
           relativePath: upload!.relativeUrl,
           contentType: upload!.contentType,
           fileSizeBytes: upload!.fileSizeBytes,
