@@ -124,6 +124,17 @@ export const matchesService = {
       signal
     ),
 
+  swapHomeAway: (
+    leagueId: string,
+    body: { seasonId: string; divisionId: string },
+    signal?: AbortSignal
+  ) =>
+    apiClient.post<{ swappedCount: number }>(
+      `/api/leagues/${leagueId}/matches/swap-home-away`,
+      body,
+      signal
+    ),
+
   addIncident: (
     leagueId: string,
     matchId: string,

@@ -28,10 +28,12 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import DownloadIcon from '@mui/icons-material/Download'
 import PrintIcon from '@mui/icons-material/Print'
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { fixturesService } from '../api/fixtures'
+import { matchesService } from '../api/matches'
 import { seasonsService } from '../api/seasons'
 import { divisionsService } from '../api/divisions'
 import { competitionRulesService } from '../api/competitionRules'
@@ -168,6 +170,28 @@ export function FixturesPage() {
     },
   })
 
+  const swapHomeAwayMutation = useMutation({
+    mutationFn: () =>
+      matchesService.swapHomeAway(leagueId!, {
+        seasonId,
+        divisionId,
+      }),
+    onSuccess: (res) => {
+      setSnackbar({
+        message: t('fixtures.correctHomeAwaySuccess', { count: res.swappedCount }),
+        severity: 'success',
+      })
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
+    },
+    onError: (err) => {
+      setSnackbar({
+        message: err instanceof Error ? err.message : t('fixtures.correctHomeAwayFailed'),
+        severity: 'error',
+      })
+    },
+  })
+
   const handleSeasonChange = (e: SelectChangeEvent<string>) => {
     setSeasonId(e.target.value)
     setDivisionId('')
@@ -184,6 +208,17 @@ export function FixturesPage() {
   const selectedSeason = seasons.find((s) => s.id === seasonId)
   const seasonClosed = !!selectedSeason && selectedSeason.isActive === false
   const selectedDivisionName = divisionId ? (divisions.find((d) => d.id === divisionId)?.name ?? null) : null
+
+  const handleCorrectHomeAway = () => {
+    if (!divisionId) return
+    if (isDraft) {
+      setSnackbar({ message: t('fixtures.correctHomeAwayNeedsCommitted'), severity: 'error' })
+      return
+    }
+    if (!window.confirm(t('fixtures.correctHomeAwayConfirm'))) return
+    swapHomeAwayMutation.mutate()
+  }
+
   const dayNames = [
     t('fixtures.days.sunday'),
     t('fixtures.days.monday'),
@@ -548,6 +583,23 @@ export function FixturesPage() {
             >
               {t('fixtures.assignDates')}
             </Button>
+            {hasFixtures && !isDraft && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={
+                  swapHomeAwayMutation.isPending ? (
+                    <CircularProgress size={18} color="inherit" />
+                  ) : (
+                    <SwapHorizIcon />
+                  )
+                }
+                onClick={handleCorrectHomeAway}
+                disabled={seasonClosed || !divisionId || swapHomeAwayMutation.isPending}
+              >
+                {t('fixtures.correctHomeAway')}
+              </Button>
+            )}
             {hasFixtures && (
               <Button variant="outlined" startIcon={<DownloadIcon />} onClick={handleDownload}>
                 {t('fixtures.download')}

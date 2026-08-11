@@ -157,5 +157,25 @@ namespace FootballManager.Domain.Entities
             Result = result;
             UpdateTimestamp();
         }
+
+        /// <summary>
+        /// Swaps home and away teams. If a result exists, goals are swapped so
+        /// each team's score (and winner) stays the same.
+        /// </summary>
+        public void SwapHomeAway()
+        {
+            (HomeTeamDivisionSeasonId, AwayTeamDivisionSeasonId) =
+                (AwayTeamDivisionSeasonId, HomeTeamDivisionSeasonId);
+
+            (HomeTeamDivisionSeason, AwayTeamDivisionSeason) =
+                (AwayTeamDivisionSeason, HomeTeamDivisionSeason);
+
+            if (Result != null)
+            {
+                Result.UpdateScore(Result.AwayTeamGoals, Result.HomeTeamGoals);
+            }
+
+            UpdateTimestamp();
+        }
     }
 }
