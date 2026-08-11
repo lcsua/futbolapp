@@ -7,43 +7,53 @@
     ViewData["BadgeSize"] = "md";
 }
 <a class="v2-match-row @(finished ? "is-result" : "is-upcoming")" href="@Url.Content($"~/partido/{Model.Id}")">
-    @* Desktop compact sporting row *@
+    @* Desktop: centered unit — meta then LOCAL | MID | VISITANTE *@
     <div class="v2-match-row__desktop">
-        <span class="v2-match-row__date v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)</span>
-        <span class="v2-match-row__home">@Model.HomeTeam.Name</span>
-        <span class="v2-match-row__mid v2-nums">
-            @if (finished)
-            {
-                if (suspended)
+        <div class="v2-upcoming-match-inner">
+            <div class="v2-match-meta">
+                @if (finished)
                 {
-                    <span class="is-warn">Susp.</span>
+                    <span class="v2-match-meta__date v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)</span>
                 }
                 else
                 {
-                    <span>@Model.HomeScore - @Model.AwayScore</span>
+                    <span class="v2-match-meta__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.Kickoff)</span>
+                    @if (time != null)
+                    {
+                        <span class="v2-match-meta__time v2-nums">@time</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(venue))
+                    {
+                        <span class="v2-match-meta__venue">@venue</span>
+                    }
                 }
-            }
-            else
-            {
-                <span class="v2-match-row__vs">VS</span>
-            }
-        </span>
-        <span class="v2-match-row__away">@Model.AwayTeam.Name</span>
-        @if (!finished && time != null)
-        {
-            <span class="v2-match-row__time v2-nums">@time</span>
-        }
-        else
-        {
-            <span class="v2-match-row__time" aria-hidden="true"></span>
-        }
-    </div>
-    @if (!finished && !string.IsNullOrWhiteSpace(venue))
-    {
-        <div class="v2-match-row__field-desktop">@venue</div>
-    }
+            </div>
 
-    @* Mobile — classic LOCAL | CENTER | VISITANTE MatchCard *@
+            <div class="v2-match-row__board">
+                <span class="v2-match-row__home">@Model.HomeTeam.Name</span>
+                <span class="v2-match-row__mid v2-nums">
+                    @if (finished)
+                    {
+                        if (suspended)
+                        {
+                            <span class="is-warn">Susp.</span>
+                        }
+                        else
+                        {
+                            <span class="v2-match-row__score">@Model.HomeScore — @Model.AwayScore</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="v2-match-row__vs">VS</span>
+                    }
+                </span>
+                <span class="v2-match-row__away">@Model.AwayTeam.Name</span>
+            </div>
+        </div>
+    </div>
+
+    @* Mobile — unchanged classic LOCAL | CENTER | VISITANTE MatchCard *@
     <div class="v2-match-row__mobile">
         <div class="v2-match-card v2-match-card--inline @(finished ? "v2-match-card--result" : "v2-match-card--upcoming")">
             <div class="v2-match-card__meta">
