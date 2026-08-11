@@ -4,35 +4,35 @@
     var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
     ViewData["BadgeSize"] = "sm";
 }
-<a class="v2-match-card @(finished ? "is-result" : "is-upcoming")" href="@Url.Content($"~/partido/{Model.Id}")">
-    <div class="v2-match-card__row">
-        <div class="v2-match-card__side is-home">
-            <span class="v2-match-card__name">@Model.HomeTeam.Name</span>
+<a class="v2-match @(finished ? "is-result" : "is-upcoming")" href="@Url.Content($"~/partido/{Model.Id}")">
+    <div class="v2-match__row">
+        <div class="v2-match__side is-home">
+            <span class="v2-match__name">@Model.HomeTeam.Name</span>
             @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
         </div>
-        <div class="v2-match-card__mid">
+        <div class="v2-match__mid">
             @if (finished)
             {
                 if (suspended)
                 {
-                    <span class="v2-match-card__score is-warn">Susp.</span>
+                    <span class="v2-match__score is-warn">Susp.</span>
                 }
                 else
                 {
-                    <span class="v2-match-card__score">@Model.HomeScore — @Model.AwayScore</span>
+                    <span class="v2-match__score">@Model.HomeScore — @Model.AwayScore</span>
                 }
             }
             else
             {
-                <span class="v2-match-card__time">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
+                <span class="v2-match__time">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
             }
         </div>
-        <div class="v2-match-card__side is-away">
+        <div class="v2-match__side is-away">
             @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
-            <span class="v2-match-card__name">@Model.AwayTeam.Name</span>
+            <span class="v2-match__name">@Model.AwayTeam.Name</span>
         </div>
     </div>
-    <div class="v2-match-card__meta">
+    <div class="v2-match__meta">
         <span>@PublicWeb.Helpers.TeamDisplayHelper.FormatShortDate(Model.Kickoff)</span>
         @if (!string.IsNullOrWhiteSpace(Model.FieldName))
         {

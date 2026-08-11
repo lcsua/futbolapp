@@ -9,19 +9,19 @@
             : standing.GoalDifference.ToString();
     var posClass = standing?.Position == 1 ? "is-champion" : null;
 }
-<header class="v2-team-hero">
-    <div class="v2-team-hero__identity">
+<header class="v2-team-header v2-team-hero">
+    <div class="v2-team-header__identity v2-team-hero__identity">
         @{
             ViewData["BadgeSize"] = "lg";
         }
         @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Team)
-        <div class="v2-team-hero__copy">
-            <h1 class="v2-team-hero__name">@Model.Team.Name</h1>
+        <div class="v2-team-header__copy v2-team-hero__copy">
+            <h1 class="v2-team-header__name v2-team-hero__name">@Model.Team.Name</h1>
             @if (league != null)
             {
-                <p class="v2-team-hero__league">@league.Name</p>
+                <p class="v2-team-header__league v2-team-hero__league">@league.Name</p>
             }
-            <p class="v2-team-hero__sub">
+            <p class="v2-team-header__sub v2-team-hero__sub">
                 @{
                     var bits = new List<string>();
                     if (Model.Season != null) bits.Add(Model.Season.Name);
