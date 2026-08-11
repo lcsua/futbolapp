@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es" data-path-base="@(Context.Request.PathBase.HasValue ? Context.Request.PathBase.Value : "")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Mi Liga</title>
+
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('miliga-v2-theme');
+                if (t !== 'green' && t !== 'blue') t = 'blue';
+                document.documentElement.setAttribute('data-v2-theme-boot', t);
+            } catch (e) {
+                document.documentElement.setAttribute('data-v2-theme-boot', 'blue');
+            }
+        })();
+    </script>
+
+    <meta name="description" content="@(ViewData["Description"] ?? "Resultados, posiciones, partidos y estadísticas de tu torneo.")" />
+    <meta id="v2-theme-color" name="theme-color" content="#2563EB" />
+
+    <link rel="icon" href="~/branding/blue/favicon.ico" asp-append-version="true" sizes="any" />
+    <link rel="stylesheet" href="~/css/v2/v2.css" asp-append-version="true" />
+</head>
+<body>
+<div class="v2-app" id="v2-app-root" data-v2-theme="blue">
+    <script>
+        (function () {
+            var root = document.getElementById('v2-app-root');
+            if (!root) return;
+            var t = document.documentElement.getAttribute('data-v2-theme-boot') || 'blue';
+            root.setAttribute('data-v2-theme', t);
+            var pathBase = document.documentElement.getAttribute('data-path-base') || '';
+            var base = (pathBase.replace(/\/$/, '') || '') + '/branding/' + t;
+            root.querySelectorAll('[data-v2-brand="logo-nav"]').forEach(function (img) {
+                img.setAttribute('src', base + '/logo-dark.svg');
+            });
+            root.querySelectorAll('[data-v2-brand="icon"]').forEach(function (img) {
+                img.setAttribute('src', base + '/icon.svg');
+            });
+            var tc = document.getElementById('v2-theme-color');
+            if (tc) tc.setAttribute('content', t === 'green' ? '#16A34A' : '#2563EB');
+        })();
+    </script>
+
+    @await Html.PartialAsync("~/Views/Shared/V2/_V2Header.cshtml")
+
+    <main class="v2-main">
+        <div class="v2-shell">
+            @RenderBody()
+        </div>
+    </main>
+
+    @await Html.PartialAsync("~/Views/Shared/V2/_V2Footer.cshtml")
+</div>
+
+<script src="~/js/v2/theme.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

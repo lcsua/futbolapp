@@ -1,0 +1,55 @@
+@{
+    var active = ViewBag.V2ActiveNav as string ?? "";
+}
+<header class="v2-header">
+    <div class="v2-shell v2-header__inner">
+        <a class="v2-brand" href="@Url.Content("~/v2/ligas")" aria-label="Mi Liga">
+            <img class="v2-brand__full"
+                 data-v2-brand="logo-nav"
+                 src="~/branding/blue/logo-dark.svg"
+                 asp-append-version="true"
+                 alt="Mi Liga" />
+            <img class="v2-brand__icon-only v2-brand__icon"
+                 data-v2-brand="icon"
+                 src="~/branding/blue/icon.svg"
+                 asp-append-version="true"
+                 alt="" />
+        </a>
+
+        <ul class="v2-nav" role="list">
+            <li>
+                <a class="@(active == "home" ? "is-active" : null)" href="@Url.Content("~/v2")">Inicio</a>
+            </li>
+            <li>
+                <a class="@(active == "ligas" ? "is-active" : null)" href="@Url.Content("~/v2/ligas")">Ligas</a>
+            </li>
+            <li>
+                <a href="@Url.Content("~/ligas")" title="Versión actual del sitio">Sitio actual</a>
+            </li>
+        </ul>
+
+        <div class="v2-header__actions">
+            <label class="visually-hidden" for="v2-theme-select">Diseño</label>
+            <select id="v2-theme-select"
+                    class="v2-theme-select"
+                    data-v2-theme-select
+                    aria-label="Selector de diseño">
+                <option value="blue">Azul Eléctrico</option>
+                <option value="green">Verde + Azul noche</option>
+            </select>
+
+            <button type="button"
+                    class="v2-menu-btn"
+                    data-v2-menu-toggle
+                    aria-controls="v2-mobile-nav"
+                    aria-expanded="false"
+                    aria-label="Abrir menú">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    @await Html.PartialAsync("~/Views/Shared/V2/_V2MobileNav.cshtml")
+</header>

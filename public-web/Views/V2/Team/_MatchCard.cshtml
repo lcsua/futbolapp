@@ -1,0 +1,48 @@
+@model PublicWeb.Models.Public.MatchViewModel
+@{
+    var finished = PublicWeb.Helpers.TeamDisplayHelper.IsFinished(Model.Status);
+    var suspended = string.Equals(Model.Status, "SUSPENDED", StringComparison.OrdinalIgnoreCase);
+    var dateLabel = Model.Kickoff == default ? "—" : Model.Kickoff.ToString("dd/MM/yyyy");
+    var timeLabel = Model.Kickoff == default ? "—" : Model.Kickoff.ToString("HH:mm");
+    var statusLabel = suspended
+        ? "Suspendido"
+        : finished
+            ? "Finalizado"
+            : "Próximo";
+}
+<a class="v2-match-card @(finished ? null : "is-upcoming")" href="@Url.Content($"~/partido/{Model.Id}")">
+    <div class="v2-match-card__teams">
+        <div class="v2-match-card__team is-home">@Model.HomeTeam.Name</div>
+        <div class="v2-match-card__center">
+            @if (finished)
+            {
+                if (suspended)
+                {
+                    <div class="v2-match-card__score" style="font-size:1rem;color:var(--v2-warning)">Susp.</div>
+                }
+                else
+                {
+                    <div class="v2-match-card__score">@Model.HomeScore - @Model.AwayScore</div>
+                }
+            }
+            else
+            {
+                <div class="v2-match-card__kickoff">@timeLabel</div>
+                <div class="v2-match-card__vs">VS</div>
+            }
+        </div>
+        <div class="v2-match-card__team is-away">@Model.AwayTeam.Name</div>
+    </div>
+    <div class="v2-match-card__meta">
+        <span>@dateLabel</span>
+        @if (!finished)
+        {
+            <span>@timeLabel</span>
+        }
+        <span>@statusLabel</span>
+        @if (!string.IsNullOrWhiteSpace(Model.FieldName))
+        {
+            <span>@Model.FieldName</span>
+        }
+    </div>
+</a>

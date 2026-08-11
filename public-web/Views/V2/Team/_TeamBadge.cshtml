@@ -1,0 +1,15 @@
+@model PublicWeb.Models.Public.TeamViewModel
+@{
+    var hasLogo = !string.IsNullOrWhiteSpace(Model.LogoUrl);
+    var initials = PublicWeb.Helpers.TeamDisplayHelper.GetInitials(Model.Name);
+}
+<div class="v2-team-badge" aria-hidden="@(hasLogo ? "false" : "true")">
+    @if (hasLogo)
+    {
+        <img src="@Model.LogoUrl" alt="" />
+    }
+    else
+    {
+        <span class="v2-team-badge__initials">@initials</span>
+    }
+</div>

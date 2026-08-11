@@ -1,0 +1,63 @@
+@model PublicWeb.Models.Public.TeamDetailViewModel
+@{
+    var league = Model.League ?? ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
+    var standing = Model.Standing;
+    var dg = standing == null
+        ? "—"
+        : standing.GoalDifference > 0
+            ? $"+{standing.GoalDifference}"
+            : standing.GoalDifference.ToString();
+}
+<header class="v2-team-header">
+    <div class="v2-team-identity">
+        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Team)
+        <div>
+            <h1 class="v2-team-title">@Model.Team.Name</h1>
+            <p class="v2-team-meta">
+                @if (league != null)
+                {
+                    <span>@league.Name</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(standing?.DivisionName))
+                {
+                    <span> · @standing.DivisionName</span>
+                }
+                @if (Model.Season != null)
+                {
+                    <span> · @Model.Season.Name</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    @if (standing != null)
+    {
+        <div>
+            <div class="v2-stats" role="list">
+                <div class="v2-stat" role="listitem">
+                    <span class="v2-stat__value is-primary">@standing.Position°</span>
+                    <span class="v2-stat__label">Posición</span>
+                </div>
+                <div class="v2-stat" role="listitem">
+                    <span class="v2-stat__value">@standing.Points</span>
+                    <span class="v2-stat__label">Puntos</span>
+                </div>
+                <div class="v2-stat" role="listitem">
+                    <span class="v2-stat__value">@standing.Played</span>
+                    <span class="v2-stat__label">PJ</span>
+                </div>
+                <div class="v2-stat" role="listitem">
+                    <span class="v2-stat__value">@dg</span>
+                    <span class="v2-stat__label">Dif.</span>
+                </div>
+            </div>
+            <div class="v2-split-stats" style="margin-top:0.75rem">
+                <span><strong>@standing.Wins</strong> G</span>
+                <span><strong>@standing.Draws</strong> E</span>
+                <span><strong>@standing.Losses</strong> P</span>
+                <span><strong>@standing.GoalsFor</strong> GF</span>
+                <span><strong>@standing.GoalsAgainst</strong> GC</span>
+            </div>
+        </div>
+    }
+</header>
