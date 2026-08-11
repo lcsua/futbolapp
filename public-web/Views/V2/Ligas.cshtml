@@ -1,4 +1,4 @@
-@model List<PublicWeb.Models.Public.LeagueViewModel>
+@model PublicWeb.Models.Public.LeaguesIndexPageViewModel
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
     ViewData["Title"] = "Ligas";
@@ -9,20 +9,51 @@
         Elegí una competición para ver su portada V2.
     </p>
 
-    @if (Model == null || !Model.Any())
+    @if (Model.AmateurLeagues == null || !Model.AmateurLeagues.Any())
     {
         <div class="v2-empty">No hay ligas públicas disponibles.</div>
     }
     else
     {
         <div class="v2-stack">
-            @foreach (var league in Model)
+            @foreach (var league in Model.AmateurLeagues)
             {
                 <a class="v2-match" href="@Url.Content($"~/v2/ligas/{league.Slug}")">
                     <strong style="display:block;font-size:1.05rem;font-weight:650">@league.Name</strong>
                     @if (!string.IsNullOrWhiteSpace(league.Country))
                     {
                         <span class="v2-match__meta" style="justify-content:flex-start;margin-top:0.45rem">@league.Country</span>
+                    }
+                </a>
+            }
+        </div>
+    }
+</section>
+
+<section class="v2-home-section" aria-labelledby="torneos-argentinos-heading" style="margin-top: var(--space-8, 2.5rem)">
+    <h2 id="torneos-argentinos-heading" class="v2-section-title">Torneos Argentinos</h2>
+    <p class="v2-page-lead" style="margin: 0.35rem 0 1rem">Competencias profesionales de fútbol argentino.</p>
+
+    @if (Model.ArgentineTournamentsUnavailable && (Model.ArgentineTournaments == null || !Model.ArgentineTournaments.Any()))
+    {
+        <div class="v2-empty">No pudimos obtener la información del torneo en este momento. Intentá nuevamente más tarde.</div>
+    }
+    else if (Model.ArgentineTournaments == null || !Model.ArgentineTournaments.Any())
+    {
+        <div class="v2-empty">No hay torneos profesionales disponibles por el momento.</div>
+    }
+    else
+    {
+        <div class="v2-stack">
+            @foreach (var tournament in Model.ArgentineTournaments)
+            {
+                <a class="v2-match" href="@Url.Content($"~/ligas/argentina/{tournament.Slug}")">
+                    <strong style="display:block;font-size:1.05rem;font-weight:650">@tournament.Name</strong>
+                    @if (!string.IsNullOrWhiteSpace(tournament.CurrentTournament))
+                    {
+                        <span class="v2-match__meta" style="justify-content:flex-start;margin-top:0.45rem">
+                            @tournament.CurrentTournament @(tournament.Season > 0 ? tournament.Season.ToString() : "")
+                        </span>
                     }
                 </a>
             }
