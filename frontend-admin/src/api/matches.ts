@@ -203,7 +203,23 @@ export const MATCH_STATUSES = [
   'SCHEDULED',
   'IN_PROGRESS',
   'COMPLETED',
+  'SUSPENDED',
   'CANCELLED',
   'POSTPONED',
   'PLAYED',
 ] as const
+
+export const MATCH_STATUS_LABELS: Record<string, string> = {
+  SCHEDULED: 'Programado',
+  IN_PROGRESS: 'En juego',
+  COMPLETED: 'Finalizado',
+  SUSPENDED: 'Suspendido',
+  CANCELLED: 'Cancelado',
+  POSTPONED: 'Aplazado',
+  PLAYED: 'Jugado',
+}
+
+export function matchStatusLabel(status: string): string {
+  const key = (status || '').toUpperCase()
+  return MATCH_STATUS_LABELS[key] ?? status
+}

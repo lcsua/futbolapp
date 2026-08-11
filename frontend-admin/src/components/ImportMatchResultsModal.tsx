@@ -363,8 +363,9 @@ export function ImportMatchResultsModal({
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Subí un CSV con columnas: <strong>fecha, division, Equipo 1, goles equipo 1, equipo 2, goles equipo 2,
-          estado</strong>. Estados: Finalizado, Partido Suspendido, Libre. Los libres se omiten; suspendidos se
-          importan sin marcador. Si el partido ya existe se actualiza; si no, se crea en la próxima jornada.
+          estado</strong>. Estados: Finalizado, Partido Suspendido, Libre. Los libres se omiten; los suspendidos se
+          guardan como Suspendido (no suman en la tabla) hasta que se resuelvan a mano. Si el partido ya existe se
+          actualiza; si no, se crea en la próxima jornada.
         </Typography>
 
         <FormControl fullWidth size="small" sx={{ mb: 2 }} disabled={!!plans || importMutation.isPending}>

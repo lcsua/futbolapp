@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   FormControl,
   InputLabel,
   MenuItem,
@@ -20,7 +21,7 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import { matchesService, type MatchListItem } from '../api/matches'
+import { matchesService, matchStatusLabel, type MatchListItem } from '../api/matches'
 import { seasonsService } from '../api/seasons'
 import { divisionsService } from '../api/divisions'
 import { useLeagueId } from '../contexts/LeagueContext'
@@ -425,13 +426,19 @@ function MatchCard({
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-            <Typography variant="h6" component="span" sx={{ minWidth: 24, textAlign: 'center' }}>
-              {match.homeScore ?? '-'}
-            </Typography>
-            <Typography color="text.secondary">—</Typography>
-            <Typography variant="h6" component="span" sx={{ minWidth: 24, textAlign: 'center' }}>
-              {match.awayScore ?? '-'}
-            </Typography>
+            {String(match.status || '').toUpperCase() === 'SUSPENDED' ? (
+              <Chip label={matchStatusLabel('SUSPENDED')} size="small" color="warning" />
+            ) : (
+              <>
+                <Typography variant="h6" component="span" sx={{ minWidth: 24, textAlign: 'center' }}>
+                  {match.homeScore ?? '-'}
+                </Typography>
+                <Typography color="text.secondary">—</Typography>
+                <Typography variant="h6" component="span" sx={{ minWidth: 24, textAlign: 'center' }}>
+                  {match.awayScore ?? '-'}
+                </Typography>
+              </>
+            )}
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, justifyContent: 'flex-end' }}>
             <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

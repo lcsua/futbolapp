@@ -15,7 +15,8 @@ namespace FootballManager.Domain.Enums
         COMPLETED,
         CANCELLED,
         POSTPONED,
-        PLAYED
+        PLAYED,
+        SUSPENDED
     }
 
     public enum MatchEventType

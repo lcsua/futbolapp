@@ -67,7 +67,7 @@ function isByeStatus(status: string): boolean {
 
 function isSuspendedStatus(status: string): boolean {
   const s = status.trim().toLowerCase()
-  return s === 'suspended' || s === 'postponed' || s.includes('suspend')
+  return s === 'suspended' || s.includes('suspend')
 }
 
 /**

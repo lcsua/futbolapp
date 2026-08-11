@@ -196,7 +196,9 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
         private static MatchStatus ResolveStatus(string? jsonStatus, int? homeScore, int? awayScore)
         {
             var raw = (jsonStatus ?? string.Empty).Trim().ToLowerInvariant();
-            if (raw is "suspended" or "postponed")
+            if (raw is "suspended")
+                return MatchStatus.SUSPENDED;
+            if (raw is "postponed")
                 return MatchStatus.POSTPONED;
             if (raw is "cancelled" or "canceled")
                 return MatchStatus.CANCELLED;

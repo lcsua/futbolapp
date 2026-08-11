@@ -21,7 +21,7 @@ import {
   Stack,
 } from '@mui/material'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { matchesService, MATCH_STATUSES, type MatchGoalAttribution } from '../api/matches'
+import { matchesService, MATCH_STATUSES, matchStatusLabel, type MatchGoalAttribution } from '../api/matches'
 import type { MatchListItem } from '../api/matches'
 import { playersService, type Player } from '../api/players'
 
@@ -59,11 +59,13 @@ function buildGoalSlots(homeTeamId: string, awayTeamId: string, home: number, aw
   return next.slice(0, total)
 }
 
+const NON_SCORING_STATUSES = new Set(['SUSPENDED', 'POSTPONED', 'CANCELLED', 'SCHEDULED'])
+
 export function MatchResultModal({ open, match, leagueId, seasonClosed = false, onClose, onSaved }: MatchResultModalProps) {
   const queryClient = useQueryClient()
   const [homeScore, setHomeScore] = useState<string>(String(match.homeScore ?? ''))
   const [awayScore, setAwayScore] = useState<string>(String(match.awayScore ?? ''))
-  const [status, setStatus] = useState<string>('COMPLETED')
+  const [status, setStatus] = useState<string>(match.status?.toUpperCase() || 'COMPLETED')
   const [trackGoals, setTrackGoals] = useState(false)
   const [goals, setGoals] = useState<GoalDraft[]>([])
 
@@ -71,7 +73,7 @@ export function MatchResultModal({ open, match, leagueId, seasonClosed = false, 
     if (open && match) {
       setHomeScore(String(match.homeScore ?? ''))
       setAwayScore(String(match.awayScore ?? ''))
-      setStatus('COMPLETED')
+      setStatus((match.status || 'COMPLETED').toUpperCase())
       setTrackGoals(false)
       setGoals([])
     }
@@ -80,16 +82,18 @@ export function MatchResultModal({ open, match, leagueId, seasonClosed = false, 
   const homeNum = parseInt(homeScore, 10)
   const awayNum = parseInt(awayScore, 10)
   const scoresValid = !Number.isNaN(homeNum) && !Number.isNaN(awayNum) && homeNum >= 0 && awayNum >= 0
+  const isNonScoringStatus = NON_SCORING_STATUSES.has(status)
+  const canSave = isNonScoringStatus || scoresValid
 
   useEffect(() => {
-    if (!trackGoals || !scoresValid) return
+    if (!trackGoals || !scoresValid || isNonScoringStatus) return
     setGoals((prev) => buildGoalSlots(match.homeTeamId, match.awayTeamId, homeNum, awayNum, prev))
-  }, [trackGoals, scoresValid, homeNum, awayNum, match.homeTeamId, match.awayTeamId])
+  }, [trackGoals, scoresValid, isNonScoringStatus, homeNum, awayNum, match.homeTeamId, match.awayTeamId])
 
   const { data: roster = [], isLoading: rosterLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'teams', 'players', match.homeTeamId, match.awayTeamId],
     queryFn: ({ signal }) => playersService.listByTeamIds(leagueId, [match.homeTeamId, match.awayTeamId], signal),
-    enabled: open && trackGoals && !!leagueId,
+    enabled: open && trackGoals && !isNonScoringStatus && !!leagueId,
   })
 
   const playersByTeam = useMemo(() => {
@@ -111,19 +115,20 @@ export function MatchResultModal({ open, match, leagueId, seasonClosed = false, 
 
   const mutation = useMutation({
     mutationFn: () => {
-      if (!scoresValid) throw new Error('Los marcadores deben ser números válidos')
-      const goalsPayload: MatchGoalAttribution[] | undefined = trackGoals
-        ? goals.map((g) => ({
-            teamId: g.teamId,
-            scorerPlayerId: g.scorerPlayerId || null,
-            againstGoalkeeperPlayerId: g.againstGoalkeeperPlayerId || null,
-            minute: g.minute.trim() ? Number.parseInt(g.minute, 10) : null,
-          }))
-        : undefined
+      if (!isNonScoringStatus && !scoresValid) throw new Error('Los marcadores deben ser números válidos')
+      const goalsPayload: MatchGoalAttribution[] | undefined =
+        !isNonScoringStatus && trackGoals
+          ? goals.map((g) => ({
+              teamId: g.teamId,
+              scorerPlayerId: g.scorerPlayerId || null,
+              againstGoalkeeperPlayerId: g.againstGoalkeeperPlayerId || null,
+              minute: g.minute.trim() ? Number.parseInt(g.minute, 10) : null,
+            }))
+          : undefined
 
       return matchesService.updateResult(leagueId, match.id, {
-        homeScore: homeNum,
-        awayScore: awayNum,
+        homeScore: scoresValid ? homeNum : 0,
+        awayScore: scoresValid ? awayNum : 0,
         status,
         goals: goalsPayload,
       })
@@ -157,6 +162,12 @@ export function MatchResultModal({ open, match, leagueId, seasonClosed = false, 
               Esta temporada está cerrada. Editá el resultado solo si un fallo lo requiere.
             </Alert>
           )}
+          {status === 'SUSPENDED' && (
+            <Alert severity="info">
+              Partido suspendido: no suma puntos, goles ni partidos jugados hasta que lo resuelvan manualmente
+              (por ejemplo marcándolo como Finalizado).
+            </Alert>
+          )}
           <Box
             sx={{
               display: 'grid',
@@ -176,6 +187,7 @@ export function MatchResultModal({ open, match, leagueId, seasonClosed = false, 
               onChange={(e) => setHomeScore(e.target.value)}
               size="small"
               sx={{ width: 70 }}
+              disabled={isNonScoringStatus}
             />
             <Typography variant="h6" color="text.secondary">—</Typography>
             <TextField
@@ -185,6 +197,7 @@ export function MatchResultModal({ open, match, leagueId, seasonClosed = false, 
               onChange={(e) => setAwayScore(e.target.value)}
               size="small"
               sx={{ width: 70 }}
+              disabled={isNonScoringStatus}
             />
             <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left' }}>
               {match.awayTeamName}
@@ -200,115 +213,119 @@ export function MatchResultModal({ open, match, leagueId, seasonClosed = false, 
             >
               {MATCH_STATUSES.map((s) => (
                 <MenuItem key={s} value={s}>
-                  {s.replace('_', ' ')}
+                  {matchStatusLabel(s)}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          <Divider />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={trackGoals}
-                onChange={(e) => setTrackGoals(e.target.checked)}
-                disabled={!scoresValid || homeNum + awayNum === 0}
+          {!isNonScoringStatus && (
+            <>
+              <Divider />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={trackGoals}
+                    onChange={(e) => setTrackGoals(e.target.checked)}
+                    disabled={!scoresValid || homeNum + awayNum === 0}
+                  />
+                }
+                label="Registrar goleadores y arqueros (opcional)"
               />
-            }
-            label="Registrar goleadores y arqueros (opcional)"
-          />
 
-          {trackGoals && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {rosterLoading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
-                  <CircularProgress size={22} />
+              {trackGoals && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {rosterLoading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+                      <CircularProgress size={22} />
+                    </Box>
+                  )}
+                  {!rosterLoading && (playersByTeam.get(match.homeTeamId)?.length ?? 0) === 0 && (playersByTeam.get(match.awayTeamId)?.length ?? 0) === 0 && (
+                    <Alert severity="info">
+                      Estos equipos todavía no tienen plantel cargado. Podés guardar el marcador igual y completar goleadores después.
+                    </Alert>
+                  )}
+                  {goals.map((goal, index) => {
+                    const scorers = playersByTeam.get(goal.teamId) ?? []
+                    const keepers = goalkeepers(opposingTeamId(goal.teamId))
+                    return (
+                      <Box
+                        key={`goal-${index}`}
+                        sx={{
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          borderRadius: 1,
+                          p: 1.5,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 1.25,
+                        }}
+                      >
+                        <Typography variant="subtitle2">Gol {index + 1}</Typography>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                          <FormControl fullWidth size="small">
+                            <InputLabel id={`goal-team-${index}`}>Equipo</InputLabel>
+                            <Select
+                              labelId={`goal-team-${index}`}
+                              label="Equipo"
+                              value={goal.teamId}
+                              onChange={(e) => {
+                                const teamId = e.target.value
+                                setGoals((prev) => prev.map((g, i) => i === index
+                                  ? { teamId, scorerPlayerId: '', againstGoalkeeperPlayerId: '', minute: g.minute }
+                                  : g))
+                              }}
+                            >
+                              <MenuItem value={match.homeTeamId}>{match.homeTeamName}</MenuItem>
+                              <MenuItem value={match.awayTeamId}>{match.awayTeamName}</MenuItem>
+                            </Select>
+                          </FormControl>
+                          <TextField
+                            label="Minuto"
+                            size="small"
+                            type="number"
+                            value={goal.minute}
+                            onChange={(e) => setGoals((prev) => prev.map((g, i) => i === index ? { ...g, minute: e.target.value } : g))}
+                            sx={{ width: { sm: 110 } }}
+                            inputProps={{ min: 0 }}
+                          />
+                        </Stack>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                          <FormControl fullWidth size="small">
+                            <InputLabel id={`goal-scorer-${index}`}>Goleador ({teamName(goal.teamId)})</InputLabel>
+                            <Select
+                              labelId={`goal-scorer-${index}`}
+                              label={`Goleador (${teamName(goal.teamId)})`}
+                              value={goal.scorerPlayerId}
+                              onChange={(e) => setGoals((prev) => prev.map((g, i) => i === index ? { ...g, scorerPlayerId: e.target.value } : g))}
+                            >
+                              <MenuItem value="">Sin especificar</MenuItem>
+                              {scorers.map((p) => (
+                                <MenuItem key={p.id} value={p.id}>{p.displayName}</MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          <FormControl fullWidth size="small">
+                            <InputLabel id={`goal-gk-${index}`}>Arquero rival</InputLabel>
+                            <Select
+                              labelId={`goal-gk-${index}`}
+                              label="Arquero rival"
+                              value={goal.againstGoalkeeperPlayerId}
+                              onChange={(e) => setGoals((prev) => prev.map((g, i) => i === index ? { ...g, againstGoalkeeperPlayerId: e.target.value } : g))}
+                            >
+                              <MenuItem value="">Sin especificar</MenuItem>
+                              {keepers.map((p) => (
+                                <MenuItem key={p.id} value={p.id}>{p.displayName}</MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Stack>
+                      </Box>
+                    )
+                  })}
                 </Box>
               )}
-              {!rosterLoading && (playersByTeam.get(match.homeTeamId)?.length ?? 0) === 0 && (playersByTeam.get(match.awayTeamId)?.length ?? 0) === 0 && (
-                <Alert severity="info">
-                  Estos equipos todavía no tienen plantel cargado. Podés guardar el marcador igual y completar goleadores después.
-                </Alert>
-              )}
-              {goals.map((goal, index) => {
-                const scorers = playersByTeam.get(goal.teamId) ?? []
-                const keepers = goalkeepers(opposingTeamId(goal.teamId))
-                return (
-                  <Box
-                    key={`goal-${index}`}
-                    sx={{
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 1,
-                      p: 1.5,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 1.25,
-                    }}
-                  >
-                    <Typography variant="subtitle2">Gol {index + 1}</Typography>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel id={`goal-team-${index}`}>Equipo</InputLabel>
-                        <Select
-                          labelId={`goal-team-${index}`}
-                          label="Equipo"
-                          value={goal.teamId}
-                          onChange={(e) => {
-                            const teamId = e.target.value
-                            setGoals((prev) => prev.map((g, i) => i === index
-                              ? { teamId, scorerPlayerId: '', againstGoalkeeperPlayerId: '', minute: g.minute }
-                              : g))
-                          }}
-                        >
-                          <MenuItem value={match.homeTeamId}>{match.homeTeamName}</MenuItem>
-                          <MenuItem value={match.awayTeamId}>{match.awayTeamName}</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <TextField
-                        label="Minuto"
-                        size="small"
-                        type="number"
-                        value={goal.minute}
-                        onChange={(e) => setGoals((prev) => prev.map((g, i) => i === index ? { ...g, minute: e.target.value } : g))}
-                        sx={{ width: { sm: 110 } }}
-                        inputProps={{ min: 0 }}
-                      />
-                    </Stack>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel id={`goal-scorer-${index}`}>Goleador ({teamName(goal.teamId)})</InputLabel>
-                        <Select
-                          labelId={`goal-scorer-${index}`}
-                          label={`Goleador (${teamName(goal.teamId)})`}
-                          value={goal.scorerPlayerId}
-                          onChange={(e) => setGoals((prev) => prev.map((g, i) => i === index ? { ...g, scorerPlayerId: e.target.value } : g))}
-                        >
-                          <MenuItem value="">Sin especificar</MenuItem>
-                          {scorers.map((p) => (
-                            <MenuItem key={p.id} value={p.id}>{p.displayName}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <FormControl fullWidth size="small">
-                        <InputLabel id={`goal-gk-${index}`}>Arquero rival</InputLabel>
-                        <Select
-                          labelId={`goal-gk-${index}`}
-                          label="Arquero rival"
-                          value={goal.againstGoalkeeperPlayerId}
-                          onChange={(e) => setGoals((prev) => prev.map((g, i) => i === index ? { ...g, againstGoalkeeperPlayerId: e.target.value } : g))}
-                        >
-                          <MenuItem value="">Sin especificar</MenuItem>
-                          {keepers.map((p) => (
-                            <MenuItem key={p.id} value={p.id}>{p.displayName}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Stack>
-                  </Box>
-                )
-              })}
-            </Box>
+            </>
           )}
 
           {mutation.isError && (
@@ -320,7 +337,7 @@ export function MatchResultModal({ open, match, leagueId, seasonClosed = false, 
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
-        <Button variant="contained" onClick={() => mutation.mutate()} disabled={mutation.isPending || !scoresValid}>
+        <Button variant="contained" onClick={() => mutation.mutate()} disabled={mutation.isPending || !canSave}>
           {mutation.isPending ? <CircularProgress size={24} /> : 'Guardar'}
         </Button>
       </DialogActions>

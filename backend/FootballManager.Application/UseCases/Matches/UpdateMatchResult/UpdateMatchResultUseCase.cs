@@ -47,14 +47,14 @@ public sealed class UpdateMatchResultUseCase : IUpdateMatchResultUseCase
         if (fixture.LeagueId != leagueId)
             throw new ForbiddenAccessException("Match does not belong to this league.");
 
-        if (request.HomeScore < 0 || request.AwayScore < 0)
-            throw new BusinessException("Scores cannot be negative.");
+        var status = ParseStatus(request.Status);
+        var countsForStandings = status is MatchStatus.COMPLETED or MatchStatus.PLAYED;
 
-        var status = request.HomeScore >= 0 && request.AwayScore >= 0
-            ? MatchStatus.COMPLETED
-            : ParseStatus(request.Status);
-        if (status == MatchStatus.COMPLETED || status == MatchStatus.PLAYED)
+        if (countsForStandings)
         {
+            if (request.HomeScore < 0 || request.AwayScore < 0)
+                throw new BusinessException("Scores cannot be negative.");
+
             var existingResult = await _resultRepository.GetByFixtureIdAsync(matchId, cancellationToken);
             if (existingResult != null)
             {
@@ -67,10 +67,19 @@ public sealed class UpdateMatchResultUseCase : IUpdateMatchResultUseCase
                 await _resultRepository.AddAsync(result, cancellationToken);
             }
         }
+        else if (status is MatchStatus.SUSPENDED or MatchStatus.POSTPONED or MatchStatus.CANCELLED or MatchStatus.SCHEDULED)
+        {
+            // Suspended / non-played: wipe score so it never affects standings or public results.
+            var existingResult = await _resultRepository.GetByFixtureIdAsync(matchId, cancellationToken);
+            if (existingResult != null)
+                _resultRepository.Remove(existingResult);
+
+            await _matchIncidentRepository.DeleteByFixtureAndTypeAsync(fixture.Id, MatchIncidentType.Goal, cancellationToken);
+        }
 
         fixture.ChangeStatus(status);
 
-        if (request.Goals != null)
+        if (countsForStandings && request.Goals != null)
             await SyncGoalIncidentsAsync(fixture, request.Goals, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
