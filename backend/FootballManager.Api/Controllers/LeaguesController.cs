@@ -994,7 +994,12 @@ namespace FootballManager.Api.Controllers
             };
             var response = await _importFixturesUseCase.ExecuteAsync(request, cancellationToken);
             if (response.Errors.Count > 0)
-                return BadRequest(response);
+                return BadRequest(new
+                {
+                    message = string.Join("\n", response.Errors),
+                    errors = response.Errors,
+                    importedCount = response.ImportedCount,
+                });
             return Ok(response);
         }
 

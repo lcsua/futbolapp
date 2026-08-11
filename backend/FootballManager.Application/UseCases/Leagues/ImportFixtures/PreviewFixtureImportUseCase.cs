@@ -150,9 +150,33 @@ public sealed class PreviewFixtureImportUseCase : IPreviewFixtureImportUseCase
                 homeTeam = cells[4];
                 awayTeam = cells[5];
             }
+
+            if (IsByeMarker(homeTeam) || IsByeMarker(awayTeam))
+            {
+                if (IsByeMarker(homeTeam) && IsByeMarker(awayTeam))
+                    errors.Add($"Row {i + 1}: invalid bye row (missing team).");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(homeTeam) || string.IsNullOrWhiteSpace(awayTeam))
+            {
+                errors.Add($"Row {i + 1}: home team and away team are required.");
+                continue;
+            }
             rows.Add(new ParsedFixtureRow(round, dateStr, timeStr, fieldStr, homeTeam, awayTeam));
         }
         return (rows, errors, importType);
+    }
+
+    private static bool IsByeMarker(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return true;
+        var t = name.Trim();
+        return t.Equals("Libre", StringComparison.OrdinalIgnoreCase)
+            || t.Equals("Bye", StringComparison.OrdinalIgnoreCase)
+            || t.Equals("Free", StringComparison.OrdinalIgnoreCase)
+            || t.Equals("Descanso", StringComparison.OrdinalIgnoreCase)
+            || t == "-";
     }
 
     private static IEnumerable<string> SplitCsvLine(string line)

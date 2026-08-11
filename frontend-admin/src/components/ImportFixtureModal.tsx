@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next'
 import { fixturesService } from '../api/fixtures'
 import { seasonsService, type TeamInSetup } from '../api/seasons'
 import {
+  inferRoundByes,
   parseFixtureCsv,
   rebuildFixtureCsv,
   uniqueFixtureTeamNames,
@@ -251,12 +252,24 @@ export function ImportFixtureModal({
     !!teamMappings &&
     (mappingsNeedReview(teamMappings) || teamMappings.some((m) => m.action === 'create' || !m.teamId))
 
+  const inferredByes = useMemo(() => {
+    if (!previewRows || divisionTeams.length === 0) return []
+    return inferRoundByes(
+      previewRows,
+      divisionTeams.map((t) => t.name),
+    )
+  }, [previewRows, divisionTeams])
+
+  const matchPreviewRows = useMemo(
+    () => (previewRows ?? []).filter((r) => !r.isBye),
+    [previewRows],
+  )
+
   const canImport =
     !!importType &&
     !!parsedRows &&
     !!teamMappings &&
-    !!previewRows &&
-    previewRows.length > 0 &&
+    matchPreviewRows.length > 0 &&
     missingTeamCount === 0 &&
     !analyzing &&
     !importing
@@ -452,15 +465,29 @@ export function ImportFixtureModal({
           </Box>
         )}
 
-        {previewRows && previewRows.length > 0 && importType && (
+        {previewRows && matchPreviewRows.length > 0 && importType && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" color="text.secondary">
-              {t('fixtures.importModal.formatDetected')} {importType} · {previewRows.length}{' '}
+              {t('fixtures.importModal.formatDetected')} {importType} · {matchPreviewRows.length}{' '}
               {t('fixtures.importModal.matches')}
+              {inferredByes.length > 0
+                ? ` · ${inferredByes.length} ${t('fixtures.importModal.byes')}`
+                : ''}
             </Typography>
             <Alert severity="success" sx={{ mt: 1, mb: 1 }}>
               {t('fixtures.importModal.readyHint')}
             </Alert>
+            {inferredByes.length > 0 && (
+              <Alert severity="info" sx={{ mb: 1, whiteSpace: 'pre-wrap' }}>
+                {t('fixtures.importModal.byesHint')}
+                {'\n'}
+                {inferredByes
+                  .slice(0, 30)
+                  .map((b) => `Fecha ${b.round}: ${b.teamName}`)
+                  .join('\n')}
+                {inferredByes.length > 30 ? `\n… y ${inferredByes.length - 30} más.` : ''}
+              </Alert>
+            )}
             <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 280 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
@@ -478,7 +505,7 @@ export function ImportFixtureModal({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {previewRows.map((row, i) => (
+                  {matchPreviewRows.map((row, i) => (
                     <TableRow key={i}>
                       <TableCell>{row.round}</TableCell>
                       {importType !== 'Simple' && <TableCell>{row.date ?? '—'}</TableCell>}
@@ -498,7 +525,7 @@ export function ImportFixtureModal({
           </Box>
         )}
 
-        {teamMappings && !showReview && previewRows && previewRows.length === 0 && (
+        {teamMappings && !showReview && matchPreviewRows.length === 0 && (
           <Alert severity="warning" sx={{ mt: 2 }}>
             No quedaron partidos válidos para importar.
           </Alert>

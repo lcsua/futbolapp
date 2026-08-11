@@ -177,6 +177,8 @@
         "mappedTeam": "Equipo en la división",
         "chooseTeam": "Elegir equipo…",
         "matches": "partidos",
+        "byes": "libres",
+        "byesHint": "Libres detectados (equipos que no juegan en esa fecha):",
         "readyHint": "Matching completo. Revisá la vista previa y confirmá la importación (reemplaza el fixture actual de la división).",
         "confirmSuggestions": "Confirmar sugerencias y continuar"
       },

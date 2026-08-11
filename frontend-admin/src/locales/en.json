@@ -177,6 +177,8 @@
         "mappedTeam": "Team in division",
         "chooseTeam": "Choose team…",
         "matches": "matches",
+        "byes": "byes",
+        "byesHint": "Byes detected (teams not playing that round):",
         "readyHint": "Matching complete. Review the preview and confirm import (replaces the current division fixture).",
         "confirmSuggestions": "Confirm suggestions and continue"
       },

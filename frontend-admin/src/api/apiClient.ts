@@ -18,8 +18,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let message = response.statusText
     try {
-      const json = JSON.parse(text) as ApiError & { message?: string }
-      message = json.message ?? json.error ?? message
+      const json = JSON.parse(text) as ApiError & {
+        message?: string
+        errors?: string[] | unknown
+      }
+      if (Array.isArray(json.errors) && json.errors.length > 0) {
+        message = json.errors.map(String).join('\n')
+      } else {
+        message = json.message ?? json.error ?? message
+      }
     } catch {
       if (text) message = text
     }

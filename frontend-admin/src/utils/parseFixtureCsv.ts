@@ -12,12 +12,29 @@ export type ParsedFixtureCsvRow = {
   /** 1-based data row index for messages */
   rowNumber: number
   rowError?: string
+  /** True when this row marks a bye (Libre) rather than a match. */
+  isBye?: boolean
+  /** Team on bye when isBye (the non-Libre side). */
+  byeTeam?: string | null
 }
 
 export type ParseFixtureCsvResult = {
   importType: FixtureImportType
   rows: ParsedFixtureCsvRow[]
   errors: string[]
+}
+
+export type InferredRoundBye = {
+  round: number
+  teamName: string
+}
+
+const BYE_MARKERS = new Set(['LIBRE', 'BYE', 'FREE', 'DESCANSO', '-'])
+
+export function isByeMarker(name: string): boolean {
+  const t = name.trim()
+  if (!t) return true
+  return BYE_MARKERS.has(t.toUpperCase())
 }
 
 function splitCsvLine(line: string): string[] {
@@ -120,11 +137,29 @@ export function parseFixtureCsv(csvText: string): ParseFixtureCsvResult {
       awayTeam = cells[5] ?? ''
     }
 
+    const home = homeTeam.trim()
+    const away = awayTeam.trim()
+    const homeBye = isByeMarker(home)
+    const awayBye = isByeMarker(away)
+
     let rowError: string | undefined
-    if (!homeTeam.trim() || !awayTeam.trim()) {
+    let isBye = false
+    let byeTeam: string | null = null
+
+    if (homeBye && awayBye) {
+      rowError = 'Fila de libre inválida: faltan ambos equipos.'
+      errors.push(`Fila ${rowNumber}: ${rowError}`)
+    } else if (homeBye || awayBye) {
+      isBye = true
+      byeTeam = homeBye ? away : home
+      if (!byeTeam) {
+        rowError = 'Fila de libre sin equipo.'
+        errors.push(`Fila ${rowNumber}: ${rowError}`)
+      }
+    } else if (!home || !away) {
       rowError = 'Local y visitante son obligatorios.'
       errors.push(`Fila ${rowNumber}: ${rowError}`)
-    } else if (homeTeam.trim().toLowerCase() === awayTeam.trim().toLowerCase()) {
+    } else if (home.toLowerCase() === away.toLowerCase()) {
       rowError = 'Local y visitante no pueden ser el mismo equipo.'
       errors.push(`Fila ${rowNumber}: ${rowError}`)
     }
@@ -134,23 +169,34 @@ export function parseFixtureCsv(csvText: string): ParseFixtureCsvResult {
       date,
       time,
       field,
-      homeTeam: homeTeam.trim(),
-      awayTeam: awayTeam.trim(),
+      homeTeam: home,
+      awayTeam: away,
       rowNumber,
       rowError,
+      isBye,
+      byeTeam,
     })
   }
 
   return { importType, rows, errors }
 }
 
-/** Unique team names appearing in valid rows (preserves first-seen order). */
+/** Unique team names appearing in valid match/bye rows (preserves first-seen order). */
 export function uniqueFixtureTeamNames(rows: ParsedFixtureCsvRow[]): string[] {
   const seen = new Set<string>()
   const names: string[] = []
   for (const row of rows) {
     if (row.rowError) continue
+    if (row.isBye && row.byeTeam) {
+      const key = row.byeTeam.toLowerCase()
+      if (!seen.has(key)) {
+        seen.add(key)
+        names.push(row.byeTeam)
+      }
+      continue
+    }
     for (const name of [row.homeTeam, row.awayTeam]) {
+      if (isByeMarker(name)) continue
       const key = name.toLowerCase()
       if (seen.has(key)) continue
       seen.add(key)
@@ -158,6 +204,50 @@ export function uniqueFixtureTeamNames(rows: ParsedFixtureCsvRow[]): string[] {
     }
   }
   return names
+}
+
+/**
+ * Infer byes for odd-sized divisions: for each round, teams in the division
+ * that do not appear in any match that round (also honors explicit Libre rows).
+ */
+export function inferRoundByes(
+  rows: ParsedFixtureCsvRow[],
+  divisionTeamNames: string[],
+): InferredRoundBye[] {
+  if (divisionTeamNames.length === 0) return []
+
+  const byRound = new Map<number, { playing: Set<string>; explicit: string[] }>()
+  for (const row of rows) {
+    if (row.rowError) continue
+    let slot = byRound.get(row.round)
+    if (!slot) {
+      slot = { playing: new Set(), explicit: [] }
+      byRound.set(row.round, slot)
+    }
+    if (row.isBye && row.byeTeam) {
+      slot.explicit.push(row.byeTeam)
+      continue
+    }
+    if (!isByeMarker(row.homeTeam)) slot.playing.add(row.homeTeam.toLowerCase())
+    if (!isByeMarker(row.awayTeam)) slot.playing.add(row.awayTeam.toLowerCase())
+  }
+
+  const result: InferredRoundBye[] = []
+  const odd = divisionTeamNames.length % 2 === 1
+  const nameByKey = new Map(divisionTeamNames.map((n) => [n.toLowerCase(), n]))
+
+  for (const [round, slot] of [...byRound.entries()].sort((a, b) => a[0] - b[0])) {
+    if (slot.explicit.length > 0) {
+      for (const team of slot.explicit) result.push({ round, teamName: team })
+      continue
+    }
+    if (!odd) continue
+    for (const [key, name] of nameByKey) {
+      if (!slot.playing.has(key)) result.push({ round, teamName: name })
+    }
+  }
+
+  return result
 }
 
 /**
@@ -178,6 +268,19 @@ export function rebuildFixtureCsv(
       errors.push(`Fila ${row.rowNumber}: ${row.rowError}`)
       continue
     }
+
+    // Bye rows are not sent to the API; byes are inferred when reading the fixture.
+    if (row.isBye) {
+      const raw = row.byeTeam ?? ''
+      const resolvedBye = resolveTeamName(raw)
+      if (!resolvedBye) {
+        errors.push(`Fila ${row.rowNumber}: equipo libre sin mapear (${raw}).`)
+        continue
+      }
+      outRows.push({ ...row, byeTeam: resolvedBye, homeTeam: resolvedBye, awayTeam: 'Libre' })
+      continue
+    }
+
     const home = resolveTeamName(row.homeTeam)
     const away = resolveTeamName(row.awayTeam)
     if (!home || !away) {
