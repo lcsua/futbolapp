@@ -46,6 +46,7 @@ public class MatchViewModel
     public int? AwayScore { get; set; }
     public string? MatchDay { get; set; }
     public string? LeagueSlug { get; set; }
+    public string? FieldName { get; set; }
 }
 
 public class StandingSummaryViewModel

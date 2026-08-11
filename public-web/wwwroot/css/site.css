@@ -483,10 +483,12 @@ a:hover {
 .league-match-row .match-score {
   font-weight: 700;
   font-size: 0.9rem;
+  line-height: 1.2;
 }
 
 .league-match-meta {
   font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .round-pills .nav-link {

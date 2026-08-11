@@ -45,7 +45,8 @@ public class PublicMatchService
                     Slug = res.AwayTeamSlug ?? string.Empty,
                     LogoUrl = res.AwayTeamLogoUrl
                 },
-                Kickoff = DateTime.TryParse(res.MatchDate + " " + res.KickoffTime, out var dt) ? dt : DateTime.UtcNow
+                Kickoff = DateTime.TryParse(res.MatchDate + " " + res.KickoffTime, out var dt) ? dt : DateTime.UtcNow,
+                FieldName = string.IsNullOrWhiteSpace(res.FieldName) ? null : res.FieldName.Trim()
             };
         }
         catch { return null; }

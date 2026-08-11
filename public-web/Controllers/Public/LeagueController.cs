@@ -169,7 +169,8 @@ public class LeagueController : Controller
                 homeScore = m.HomeScore,
                 awayScore = m.AwayScore,
                 homeTeam = m.HomeTeam.Name,
-                awayTeam = m.AwayTeam.Name
+                awayTeam = m.AwayTeam.Name,
+                fieldName = m.FieldName
             }),
             lastResults = model.LastResults.Select(m => new
             {
@@ -179,7 +180,8 @@ public class LeagueController : Controller
                 homeScore = m.HomeScore,
                 awayScore = m.AwayScore,
                 homeTeam = m.HomeTeam.Name,
-                awayTeam = m.AwayTeam.Name
+                awayTeam = m.AwayTeam.Name,
+                fieldName = m.FieldName
             }),
             nextMatchesPage = model.NextMatchesPage,
             nextMatchesTotal = model.NextMatchesTotal,

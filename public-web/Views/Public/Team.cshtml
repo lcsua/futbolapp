@@ -207,11 +207,17 @@
     }
 
     const rows = matches.map((m) => {
+      const field = m.fieldName
+        ? `<div class="match-time text-truncate" title="${escapeHtml(m.fieldName)}">${escapeHtml(m.fieldName)}</div>`
+        : '';
       const center = mode === 'next'
-        ? `<div class="match-time">${escapeHtml(formatTime(m.kickoff))}</div>`
-        : (String(m.status || '').toUpperCase() === 'SUSPENDED'
-          ? `<div class="match-score text-warning">Suspendido</div>`
-          : `<div class="match-score">${escapeHtml(m.homeScore ?? '')} - ${escapeHtml(m.awayScore ?? '')}</div>`);
+        ? `<div class="league-match-meta text-muted">${escapeHtml(formatDate(m.kickoff))}</div>
+           <div class="match-time">${escapeHtml(formatTime(m.kickoff))}</div>
+           ${field}`
+        : `<div class="league-match-meta text-muted">${escapeHtml(formatDate(m.kickoff))}</div>` +
+          (String(m.status || '').toUpperCase() === 'SUSPENDED'
+            ? `<div class="match-score text-warning">Suspendido</div>`
+            : `<div class="match-score">${escapeHtml(m.homeScore ?? '')} - ${escapeHtml(m.awayScore ?? '')}</div>`);
       return `
         <a href="${escapeHtml(matchBase)}${escapeHtml(m.id)}" class="list-group-item list-group-item-action">
           <div class="row align-items-center g-2 league-match-row">
@@ -220,7 +226,6 @@
             </div>
             <div class="col-2 text-center">
               ${center}
-              <div class="league-match-meta text-muted">${escapeHtml(formatDate(m.kickoff))}</div>
             </div>
             <div class="col-5">
               <div class="text-start text-truncate match-team" title="${escapeHtml(m.awayTeam)}">${escapeHtml(m.awayTeam)}</div>

@@ -16,10 +16,16 @@
                     <div class="col-2 text-center">
                         @if (kind == "next")
                         {
+                            <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
                             <div class="match-time">@(match.Kickoff == default ? "—" : match.Kickoff.ToString("HH:mm"))</div>
+                            @if (!string.IsNullOrWhiteSpace(match.FieldName))
+                            {
+                                <div class="match-time text-truncate" title="@match.FieldName">@match.FieldName</div>
+                            }
                         }
                         else
                         {
+                            <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
                             @if (string.Equals(match.Status, "SUSPENDED", StringComparison.OrdinalIgnoreCase))
                             {
                                 <div class="match-score text-warning">Suspendido</div>
@@ -29,7 +35,6 @@
                                 <div class="match-score">@match.HomeScore - @match.AwayScore</div>
                             }
                         }
-                        <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
                     </div>
                     <div class="col-5">
                         <div class="text-start text-truncate match-team" title="@match.AwayTeam.Name">@match.AwayTeam.Name</div>

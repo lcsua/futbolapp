@@ -44,6 +44,7 @@ public class MatchPublicDto
     public int? HomeScore { get; set; }
     public int? AwayScore { get; set; }
     public string? LeagueSlug { get; set; }
+    public string? FieldName { get; set; }
 }
 
 public class SeasonPublicDto

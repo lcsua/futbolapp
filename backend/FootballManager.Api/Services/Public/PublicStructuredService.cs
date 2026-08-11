@@ -180,6 +180,7 @@ public class PublicStructuredService
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.Result)
             .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
+            .Include(f => f.Field)
             .Where(f => f.DivisionSeason!.SeasonId == season.Id &&
                        (f.HomeTeamDivisionSeason.TeamId == team.Id || f.AwayTeamDivisionSeason.TeamId == team.Id))
             .OrderBy(f => f.MatchDate).ThenBy(f => f.StartTime)
@@ -318,6 +319,7 @@ public class PublicStructuredService
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.Result)
+            .Include(f => f.Field)
             .Where(f => f.DivisionSeasonId == divSeason.Id &&
                         (f.Status == Domain.Enums.MatchStatus.COMPLETED ||
                          f.Status == Domain.Enums.MatchStatus.PLAYED ||
@@ -346,6 +348,7 @@ public class PublicStructuredService
         var fixtures = await _db.Set<Fixture>()
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.Field)
             .Where(f => f.DivisionSeasonId == divSeason.Id &&
                         f.Status != Domain.Enums.MatchStatus.COMPLETED &&
                         f.Status != Domain.Enums.MatchStatus.PLAYED &&
@@ -385,7 +388,8 @@ public class PublicStructuredService
             LeagueSlug = leagueSlug,
             HomeTeam = home,
             AwayTeam = away,
-            Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : DateTime.UtcNow
+            Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : DateTime.UtcNow,
+            FieldName = string.IsNullOrWhiteSpace(match.Field?.Name) ? null : match.Field.Name.Trim()
         };
     }
 
@@ -545,6 +549,7 @@ public class PublicStructuredService
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.Result)
+            .Include(f => f.Field)
             .Where(f => f.SeasonId == season.Id &&
                         (f.Status == Domain.Enums.MatchStatus.COMPLETED ||
                          f.Status == Domain.Enums.MatchStatus.PLAYED ||
@@ -603,6 +608,7 @@ public class PublicStructuredService
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.Result)
+            .Include(f => f.Field)
             .Where(f => f.SeasonId == season.Id)
             .OrderBy(f => f.MatchDate).ThenBy(f => f.StartTime)
             .ToListAsync(cancellationToken);

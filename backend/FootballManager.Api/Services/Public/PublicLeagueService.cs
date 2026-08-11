@@ -131,7 +131,8 @@ public class PublicLeagueService
                         AwayScore = match.AwayScore,
                         HomeTeam = new TeamPublicDto { Id = match.HomeTeamId, Name = match.HomeTeamName ?? "Local", Slug = match.HomeTeamId.ToString() },
                         AwayTeam = new TeamPublicDto { Id = match.AwayTeamId, Name = match.AwayTeamName ?? "Visitante", Slug = match.AwayTeamId.ToString() },
-                        Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : DateTime.UtcNow // Approximate Kickoff parse
+                        Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : DateTime.UtcNow,
+                        FieldName = string.IsNullOrWhiteSpace(match.FieldName) ? null : match.FieldName.Trim()
                     });
                 }
             }
@@ -168,7 +169,8 @@ public class PublicLeagueService
                         Status = match.Status,
                         HomeTeam = new TeamPublicDto { Id = match.HomeTeamId, Name = match.HomeTeamName ?? "Local", Slug = match.HomeTeamId.ToString() },
                         AwayTeam = new TeamPublicDto { Id = match.AwayTeamId, Name = match.AwayTeamName ?? "Visitante", Slug = match.AwayTeamId.ToString() },
-                        Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : DateTime.UtcNow
+                        Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : DateTime.UtcNow,
+                        FieldName = string.IsNullOrWhiteSpace(match.FieldName) ? null : match.FieldName.Trim()
                     });
                 }
             }
