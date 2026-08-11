@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using PublicWeb.Models.Public;
 
 namespace PublicWeb.Helpers;
@@ -37,6 +38,48 @@ public static class TeamDisplayHelper
             return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant();
 
         return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}";
+    }
+
+    /// <summary>
+    /// Short label for a division badge (e.g. "45", "+35", "U17", "PR").
+    /// Returns null when no compact abbreviation is sensible (caller shows icon).
+    /// </summary>
+    public static string? GetDivisionAbbrev(string? divisionName)
+    {
+        if (string.IsNullOrWhiteSpace(divisionName)) return null;
+        var raw = divisionName.Trim();
+
+        // "45", "+35", "45 - ZONA A"
+        var age = Regex.Match(raw, @"^(\+?\d+)\b");
+        if (age.Success) return age.Groups[1].Value;
+
+        // "Sub 17", "Sub-17", "U17", "U-17"
+        var sub = Regex.Match(raw, @"^(?:Sub|U)[\s\-–—]?(\d+)\b", RegexOptions.IgnoreCase);
+        if (sub.Success) return "U" + sub.Groups[1].Value;
+
+        var firstSegment = Regex.Split(raw, @"\s*[-–—]\s*")[0].Trim();
+        var key = firstSegment.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? firstSegment;
+        var keyLower = key.ToLowerInvariant();
+
+        if (keyLower.StartsWith("primera", StringComparison.Ordinal)) return "PR";
+        if (keyLower.StartsWith("femenin", StringComparison.Ordinal)) return "FE";
+        if (keyLower.StartsWith("masculin", StringComparison.Ordinal)) return "MA";
+        if (keyLower.StartsWith("reserva", StringComparison.Ordinal)) return "RE";
+        if (keyLower.StartsWith("juvenil", StringComparison.Ordinal)) return "JU";
+        if (keyLower.StartsWith("senior", StringComparison.Ordinal) || keyLower.StartsWith("sénior", StringComparison.Ordinal)) return "SR";
+        if (keyLower.StartsWith("veteran", StringComparison.Ordinal)) return "VT";
+        if (keyLower.StartsWith("libre", StringComparison.Ordinal)) return "LI";
+
+        // Compact first token (≤4 alphanumeric / +)
+        if (key.Length is > 0 and <= 4 && key.All(c => char.IsLetterOrDigit(c) || c == '+'))
+            return key.ToUpperInvariant();
+
+        // Two letters from a longer first word
+        var chars = key.Where(char.IsLetterOrDigit).Take(2).ToArray();
+        if (chars.Length >= 2)
+            return $"{char.ToUpperInvariant(chars[0])}{char.ToUpperInvariant(chars[1])}";
+
+        return null;
     }
 
     public static bool IsFinished(string? status)

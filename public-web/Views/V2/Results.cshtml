@@ -108,27 +108,32 @@
                 var showRoundNav = div.Data.Count > 1;
 
                 <div class="v2-result-group__head">
-                    <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">@div.DivisionName</h2>
+                    <div class="v2-result-group__title-row">
+                        @await Html.PartialAsync("~/Views/V2/League/_DivisionBadge.cshtml", div.DivisionName)
+                        <div class="v2-result-group__title-text">
+                            <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">@div.DivisionName</h2>
 
-                    @if (activeMatchday != null)
-                    {
-                        var groupDate = activeMatchday.Matches
-                            .Select(m => m.Kickoff.Date)
-                            .Where(d => d != default)
-                            .GroupBy(d => d)
-                            .OrderByDescending(g => g.Count())
-                            .Select(g => g.Key)
-                            .FirstOrDefault();
-
-                        <div class="v2-result-group__meta">
-                            <span class="v2-result-group__round">Fecha @activeMatchday.Round</span>
-                            @if (groupDate != default)
+                            @if (activeMatchday != null)
                             {
-                                <span class="v2-result-group__sep" aria-hidden="true">·</span>
-                                <span class="v2-result-group__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(groupDate)</span>
+                                var groupDate = activeMatchday.Matches
+                                    .Select(m => m.Kickoff.Date)
+                                    .Where(d => d != default)
+                                    .GroupBy(d => d)
+                                    .OrderByDescending(g => g.Count())
+                                    .Select(g => g.Key)
+                                    .FirstOrDefault();
+
+                                <div class="v2-result-group__meta">
+                                    <span class="v2-result-group__round">Fecha @activeMatchday.Round</span>
+                                    @if (groupDate != default)
+                                    {
+                                        <span class="v2-result-group__sep" aria-hidden="true">·</span>
+                                        <span class="v2-result-group__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(groupDate)</span>
+                                    }
+                                </div>
                             }
                         </div>
-                    }
+                    </div>
                 </div>
 
                 @if (showRoundNav)
@@ -165,7 +170,14 @@
             }
             else
             {
-                <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">@div.DivisionName</h2>
+                <div class="v2-result-group__head">
+                    <div class="v2-result-group__title-row">
+                        @await Html.PartialAsync("~/Views/V2/League/_DivisionBadge.cshtml", div.DivisionName)
+                        <div class="v2-result-group__title-text">
+                            <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">@div.DivisionName</h2>
+                        </div>
+                    </div>
+                </div>
                 <div class="v2-empty">No hay resultados registrados en esta división.</div>
             }
         </section>

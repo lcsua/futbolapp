@@ -1,0 +1,20 @@
+@model string
+@{
+    var name = Model ?? string.Empty;
+    var abbrev = PublicWeb.Helpers.TeamDisplayHelper.GetDivisionAbbrev(name);
+}
+<div class="v2-division-badge" aria-hidden="true" title="@name">
+    @if (!string.IsNullOrWhiteSpace(abbrev))
+    {
+        <span class="v2-division-badge__text">@abbrev</span>
+    }
+    else
+    {
+        <svg class="v2-division-badge__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3l7 3v5.2c0 4.4-2.9 8.4-7 9.8-4.1-1.4-7-5.4-7-9.8V6l7-3z"
+                  stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            <path d="M9.2 12.1l1.9 1.9 4-4"
+                  stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    }
+</div>
