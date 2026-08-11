@@ -24,13 +24,15 @@ import {
 } from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fieldsService } from '../api/fields'
 import { matchesService, type MatchListItem } from '../api/matches'
 import { seasonsService, type TeamInSetup } from '../api/seasons'
+import { teamNameAliasesService } from '../api/teamNameAliases'
 import { parseScheduleCsv, type ScheduleCsvRow } from '../utils/parseScheduleCsv'
 import {
   matchCsvNamesToTeams,
+  normalizeTeamName,
   type TeamCsvRowMapping,
   type TeamMatchCandidate,
 } from '../utils/teamNameMatch'
@@ -82,10 +84,6 @@ function toCandidates(teams: TeamInSetup[]): TeamMatchCandidate[] {
   }))
 }
 
-function isMatchedToDivision(m: TeamCsvRowMapping): boolean {
-  return m.action === 'match' && !!m.teamId && m.score >= 0.72
-}
-
 function statusLabel(s: RowStatus): string {
   switch (s) {
     case 'ready':
@@ -117,6 +115,7 @@ export function ImportScheduleModal({
   seasonClosed = false,
   onImported,
 }: ImportScheduleModalProps) {
+  const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [csvRows, setCsvRows] = useState<ScheduleCsvRow[] | null>(null)
@@ -127,6 +126,15 @@ export function ImportScheduleModal({
   const [teamOverride, setTeamOverride] = useState<Record<string, string>>({})
   /** Rows discarded by the user (typically other-division doubts). */
   const [discardedKeys, setDiscardedKeys] = useState<Set<string>>(() => new Set())
+
+  const setOverrideForCsvName = (csvName: string, teamId: string) => {
+    setTeamOverride((prev) => {
+      const next = { ...prev }
+      if (!teamId) delete next[csvName]
+      else next[csvName] = teamId
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!open) {
@@ -161,6 +169,20 @@ export function ImportScheduleModal({
     queryFn: ({ signal }) => fieldsService.getByLeagueId(leagueId, signal),
     enabled: open && !!leagueId,
   })
+
+  const { data: aliasesData } = useQuery({
+    queryKey: ['leagues', leagueId, 'team-name-aliases'],
+    queryFn: ({ signal }) => teamNameAliasesService.list(leagueId, signal),
+    enabled: open && !!leagueId,
+  })
+
+  const aliasByNormalized = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const a of aliasesData?.items ?? []) {
+      map.set(a.normalizedAlias, a.teamId)
+    }
+    return map
+  }, [aliasesData])
 
   const { data: matchesData, isLoading: matchesLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'matches', seasonId, divisionId, round, 'schedule-import'],
@@ -205,9 +227,23 @@ export function ImportScheduleModal({
       // Match only this pair against the selected division (avoids cross-row stealing).
       const pairMaps = matchCsvNamesToTeams([csv.homeTeam, csv.awayTeam], candidates)
       const byCsv = new Map(pairMaps.map((m) => [m.csvName, m]))
+      const divisionTeamIds = new Set(candidates.map((c) => c.id))
+
+      const applyAlias = (name: string, base: TeamCsvRowMapping): TeamCsvRowMapping => {
+        const aliasedTeamId = aliasByNormalized.get(normalizeTeamName(name))
+        if (!aliasedTeamId || !divisionTeamIds.has(aliasedTeamId)) return base
+        return {
+          ...base,
+          action: 'match',
+          teamId: aliasedTeamId,
+          needsReview: false,
+          reason: 'exact',
+          score: 1,
+        }
+      }
 
       const applyOverride = (name: string, fallback: TeamCsvRowMapping): TeamCsvRowMapping => {
-        const base = byCsv.get(name) ?? fallback
+        const base = applyAlias(name, byCsv.get(name) ?? fallback)
         const ov = teamOverride[name]
         if (!ov) return base
         return {
@@ -234,11 +270,16 @@ export function ImportScheduleModal({
       const homeMapping = applyOverride(csv.homeTeam, emptyMap(csv.homeTeam))
       const awayMapping = applyOverride(csv.awayTeam, emptyMap(csv.awayTeam))
 
-      const homeInDiv = isMatchedToDivision(homeMapping)
-      const awayInDiv = isMatchedToDivision(awayMapping)
+      const homeMatched = homeMapping.action === 'match' && !!homeMapping.teamId && homeMapping.score >= 0.72
+      const awayMatched = awayMapping.action === 'match' && !!awayMapping.teamId && awayMapping.score >= 0.72
+      // Confirmación explícita: override del usuario, o match sin duda (exact/high).
+      const homeResolved =
+        homeMatched && (!!teamOverride[csv.homeTeam] || !homeMapping.needsReview)
+      const awayResolved =
+        awayMatched && (!!teamOverride[csv.awayTeam] || !awayMapping.needsReview)
       const fieldOk = !!csv.fieldName && fieldNames.has(csv.fieldName.trim().toLowerCase())
-      const homeId = homeInDiv ? homeMapping.teamId : null
-      const awayId = awayInDiv ? awayMapping.teamId : null
+      const homeId = homeMatched ? homeMapping.teamId : null
+      const awayId = awayMatched ? awayMapping.teamId : null
 
       let fixture: MatchListItem | null = null
       let inverted = false
@@ -253,18 +294,9 @@ export function ImportScheduleModal({
       }
 
       let status: RowStatus
-      if (!homeInDiv && !awayInDiv) {
-        // Neither side looks like a team in this division → other division (auto-hide).
+      if (!homeMatched && !awayMatched) {
         status = 'out_of_division'
-      } else if (
-        !homeInDiv ||
-        !awayInDiv ||
-        homeMapping.needsReview ||
-        awayMapping.needsReview ||
-        !homeId ||
-        !awayId
-      ) {
-        // Partial match or ambiguous names → resolve or discard.
+      } else if (!homeResolved || !awayResolved || !homeId || !awayId) {
         status = 'review_teams'
       } else if (!fieldOk) {
         status = 'bad_field'
@@ -312,6 +344,7 @@ export function ImportScheduleModal({
     matchesLoading,
     fieldsLoading,
     teamOverride,
+    aliasByNormalized,
   ])
 
   const visibleRows = useMemo(() => {
@@ -338,6 +371,8 @@ export function ImportScheduleModal({
           startTime: p.csv.startTime,
           fieldName: p.csv.fieldName.trim(),
           allowInverted: p.inverted && p.allowInverted,
+          homeCsvName: p.csv.homeTeam,
+          awayCsvName: p.csv.awayTeam,
         }))
 
       if (rows.length === 0) {
@@ -352,6 +387,7 @@ export function ImportScheduleModal({
       })
     },
     onSuccess: (res) => {
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'team-name-aliases'] })
       onImported?.(res)
       setLocalError(null)
     },
@@ -579,15 +615,19 @@ export function ImportScheduleModal({
                       <Typography variant="body2">{row.csv.homeTeam}</Typography>
                       {row.status === 'review_teams' && (
                         <FormControl size="small" fullWidth sx={{ mt: 0.5, minWidth: 140 }}>
+                          {!teamOverride[row.csv.homeTeam] && row.homeMapping.teamId && (
+                            <Typography variant="caption" color="warning.main" display="block" sx={{ mb: 0.5 }}>
+                              Sugerido:{' '}
+                              {divisionTeams.find((t) => t.id === row.homeMapping.teamId)?.displayName
+                                ?? divisionTeams.find((t) => t.id === row.homeMapping.teamId)?.name
+                                ?? 'equipo'}
+                              {' '}(confirmá o elegí otro)
+                            </Typography>
+                          )}
                           <Select
                             displayEmpty
-                            value={row.homeMapping.teamId ?? ''}
-                            onChange={(e) =>
-                              setTeamOverride((prev) => ({
-                                ...prev,
-                                [row.csv.homeTeam]: e.target.value,
-                              }))
-                            }
+                            value={teamOverride[row.csv.homeTeam] ?? ''}
+                            onChange={(e) => setOverrideForCsvName(row.csv.homeTeam, String(e.target.value))}
                           >
                             <MenuItem value="">
                               <em>Elegir equipo / vacío = no es de esta división</em>
@@ -600,20 +640,31 @@ export function ImportScheduleModal({
                           </Select>
                         </FormControl>
                       )}
+                      {row.status !== 'review_teams' && row.homeMapping.teamId && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          → {divisionTeams.find((t) => t.id === row.homeMapping.teamId)?.displayName
+                            ?? divisionTeams.find((t) => t.id === row.homeMapping.teamId)?.name
+                            ?? 'equipo'}
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">{row.csv.awayTeam}</Typography>
                       {row.status === 'review_teams' && (
                         <FormControl size="small" fullWidth sx={{ mt: 0.5, minWidth: 140 }}>
+                          {!teamOverride[row.csv.awayTeam] && row.awayMapping.teamId && (
+                            <Typography variant="caption" color="warning.main" display="block" sx={{ mb: 0.5 }}>
+                              Sugerido:{' '}
+                              {divisionTeams.find((t) => t.id === row.awayMapping.teamId)?.displayName
+                                ?? divisionTeams.find((t) => t.id === row.awayMapping.teamId)?.name
+                                ?? 'equipo'}
+                              {' '}(confirmá o elegí otro)
+                            </Typography>
+                          )}
                           <Select
                             displayEmpty
-                            value={row.awayMapping.teamId ?? ''}
-                            onChange={(e) =>
-                              setTeamOverride((prev) => ({
-                                ...prev,
-                                [row.csv.awayTeam]: e.target.value,
-                              }))
-                            }
+                            value={teamOverride[row.csv.awayTeam] ?? ''}
+                            onChange={(e) => setOverrideForCsvName(row.csv.awayTeam, String(e.target.value))}
                           >
                             <MenuItem value="">
                               <em>Elegir equipo / vacío = no es de esta división</em>
@@ -625,6 +676,13 @@ export function ImportScheduleModal({
                             ))}
                           </Select>
                         </FormControl>
+                      )}
+                      {row.status !== 'review_teams' && row.awayMapping.teamId && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          → {divisionTeams.find((t) => t.id === row.awayMapping.teamId)?.displayName
+                            ?? divisionTeams.find((t) => t.id === row.awayMapping.teamId)?.name
+                            ?? 'equipo'}
+                        </Typography>
                       )}
                     </TableCell>
                     <TableCell>{row.csv.startTime}</TableCell>
@@ -647,7 +705,24 @@ export function ImportScheduleModal({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'flex-start' }}>
+                        {row.status === 'review_teams' &&
+                          row.homeMapping.teamId &&
+                          row.awayMapping.teamId && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() =>
+                                setTeamOverride((prev) => ({
+                                  ...prev,
+                                  [row.csv.homeTeam]: row.homeMapping.teamId!,
+                                  [row.csv.awayTeam]: row.awayMapping.teamId!,
+                                }))
+                              }
+                            >
+                              Confirmar sugerencia
+                            </Button>
+                          )}
                         {row.status === 'inverted' && (
                           <FormControlLabel
                             control={

@@ -147,6 +147,8 @@ export const matchesService = {
         startTime: string
         fieldName: string
         allowInverted: boolean
+        homeCsvName?: string
+        awayCsvName?: string
       }>
     },
     signal?: AbortSignal

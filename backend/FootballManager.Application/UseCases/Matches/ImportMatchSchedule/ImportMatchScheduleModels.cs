@@ -34,6 +34,10 @@ public class ImportMatchScheduleRowDto
     /// If true, allow applying when fixture has home/away inverted vs CSV.
     /// </summary>
     public bool AllowInverted { get; set; }
+    /// <summary>Original CSV home name (learned as alias on apply).</summary>
+    public string? HomeCsvName { get; set; }
+    /// <summary>Original CSV away name (learned as alias on apply).</summary>
+    public string? AwayCsvName { get; set; }
 }
 
 public class ImportMatchScheduleResponse

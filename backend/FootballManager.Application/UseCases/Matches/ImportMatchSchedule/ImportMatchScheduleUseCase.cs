@@ -14,28 +14,37 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchSchedule;
 public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
 {
     private readonly IUserLeagueRepository _userLeagueRepository;
+    private readonly ILeagueRepository _leagueRepository;
     private readonly ISeasonRepository _seasonRepository;
     private readonly IDivisionRepository _divisionRepository;
     private readonly IDivisionSeasonRepository _divisionSeasonRepository;
     private readonly IFixtureRepository _fixtureRepository;
     private readonly IFieldRepository _fieldRepository;
+    private readonly ITeamRepository _teamRepository;
+    private readonly ITeamNameAliasRepository _aliasRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public ImportMatchScheduleUseCase(
         IUserLeagueRepository userLeagueRepository,
+        ILeagueRepository leagueRepository,
         ISeasonRepository seasonRepository,
         IDivisionRepository divisionRepository,
         IDivisionSeasonRepository divisionSeasonRepository,
         IFixtureRepository fixtureRepository,
         IFieldRepository fieldRepository,
+        ITeamRepository teamRepository,
+        ITeamNameAliasRepository aliasRepository,
         IUnitOfWork unitOfWork)
     {
         _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
+        _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
         _seasonRepository = seasonRepository ?? throw new ArgumentNullException(nameof(seasonRepository));
         _divisionRepository = divisionRepository ?? throw new ArgumentNullException(nameof(divisionRepository));
         _divisionSeasonRepository = divisionSeasonRepository ?? throw new ArgumentNullException(nameof(divisionSeasonRepository));
         _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
         _fieldRepository = fieldRepository ?? throw new ArgumentNullException(nameof(fieldRepository));
+        _teamRepository = teamRepository ?? throw new ArgumentNullException(nameof(teamRepository));
+        _aliasRepository = aliasRepository ?? throw new ArgumentNullException(nameof(aliasRepository));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     }
 
@@ -48,6 +57,9 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
 
         if (request.Round < 1)
             throw new BusinessException("La fecha (round) debe ser mayor o igual a 1.");
+
+        var league = await _leagueRepository.GetByIdAsync(request.LeagueId, cancellationToken)
+            ?? throw new KeyNotFoundException($"League {request.LeagueId} not found.");
 
         var season = await _seasonRepository.GetByIdAsync(request.SeasonId, cancellationToken)
             ?? throw new KeyNotFoundException($"Season {request.SeasonId} not found.");
@@ -91,6 +103,7 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
         var updated = 0;
         var warnings = new List<string>();
         var seenFixtureIds = new HashSet<Guid>();
+        var learned = new HashSet<(Guid TeamId, string Normalized)>();
 
         foreach (var row in request.Rows ?? new List<ImportMatchScheduleRowDto>())
         {
@@ -151,10 +164,52 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
             {
                 updated++;
             }
+
+            await LearnAliasAsync(league, row.HomeTeamId, row.HomeCsvName, learned, cancellationToken);
+            await LearnAliasAsync(league, row.AwayTeamId, row.AwayCsvName, learned, cancellationToken);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return new ImportMatchScheduleResponse(updated, warnings);
+    }
+
+    private async Task LearnAliasAsync(
+        League league,
+        Guid teamId,
+        string? csvName,
+        HashSet<(Guid TeamId, string Normalized)> learned,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(csvName))
+            return;
+
+        var normalized = TeamNameNormalizer.Normalize(csvName);
+        if (string.IsNullOrEmpty(normalized))
+            return;
+
+        if (!learned.Add((teamId, normalized)))
+            return;
+
+        var team = await _teamRepository.GetByIdAsync(teamId, cancellationToken);
+        if (team == null || team.LeagueId != league.Id)
+            return;
+
+        if (TeamNameNormalizer.EqualsNormalized(csvName, team.DisplayName) ||
+            TeamNameNormalizer.EqualsNormalized(csvName, team.Name))
+            return;
+
+        var existing = await _aliasRepository.GetByLeagueAndNormalizedAsync(league.Id, normalized, cancellationToken);
+        if (existing != null)
+        {
+            if (existing.TeamId != team.Id)
+                existing.ReassignTeam(team);
+            existing.SetAlias(csvName.Trim(), normalized);
+            _aliasRepository.Update(existing);
+            return;
+        }
+
+        var alias = new TeamNameAlias(league, team, csvName.Trim(), normalized, "schedule-import");
+        await _aliasRepository.AddAsync(alias, cancellationToken);
     }
 
     private static bool TryParseTime(string? raw, out TimeOnly time)
