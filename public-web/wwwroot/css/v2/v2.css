@@ -234,9 +234,10 @@ body {
 }
 
 .v2-brand__logo {
-  height: 1.55rem;
-  width: auto;
-  max-width: min(148px, 42vw);
+  width: clamp(145px, 44vw, 160px);
+  height: auto;
+  max-height: 2.75rem;
+  max-width: calc(100vw - 7.75rem);
   display: block;
   object-fit: contain;
 }
@@ -408,8 +409,9 @@ body {
 
 @media (min-width: 768px) {
   .v2-brand__logo {
-    height: 1.85rem;
-    max-width: none;
+    width: 180px;
+    max-width: 190px;
+    max-height: 2.9rem;
   }
   .v2-nav {
     display: flex;
