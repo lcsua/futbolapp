@@ -187,11 +187,11 @@ public class PublicStructuredService
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var upcomingAll = fixtures
-            .Where(f => f.Status != Domain.Enums.MatchStatus.COMPLETED &&
+            .Where(f => !IsClosedForUpcoming(f.Status) &&
                         (f.MatchDate == null || f.MatchDate >= today))
             .ToList();
         var recentAll = fixtures
-            .Where(f => f.Status == Domain.Enums.MatchStatus.COMPLETED)
+            .Where(f => CountsAsPublishedResult(f.Status))
             .OrderByDescending(f => f.MatchDate)
             .ThenByDescending(f => f.StartTime)
             .ToList();
@@ -318,7 +318,10 @@ public class PublicStructuredService
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.Result)
-            .Where(f => f.DivisionSeasonId == divSeason.Id && f.Status == Domain.Enums.MatchStatus.COMPLETED)
+            .Where(f => f.DivisionSeasonId == divSeason.Id &&
+                        (f.Status == Domain.Enums.MatchStatus.COMPLETED ||
+                         f.Status == Domain.Enums.MatchStatus.PLAYED ||
+                         f.Status == Domain.Enums.MatchStatus.SUSPENDED))
             .OrderByDescending(f => f.MatchDate).ThenByDescending(f => f.StartTime)
             .Take(50)
             .ToListAsync(cancellationToken);
@@ -343,7 +346,11 @@ public class PublicStructuredService
         var fixtures = await _db.Set<Fixture>()
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Where(f => f.DivisionSeasonId == divSeason.Id && f.Status != Domain.Enums.MatchStatus.COMPLETED)
+            .Where(f => f.DivisionSeasonId == divSeason.Id &&
+                        f.Status != Domain.Enums.MatchStatus.COMPLETED &&
+                        f.Status != Domain.Enums.MatchStatus.PLAYED &&
+                        f.Status != Domain.Enums.MatchStatus.SUSPENDED &&
+                        f.Status != Domain.Enums.MatchStatus.CANCELLED)
             .OrderBy(f => f.MatchDate).ThenBy(f => f.StartTime)
             .Take(50)
             .ToListAsync(cancellationToken);
@@ -380,6 +387,31 @@ public class PublicStructuredService
             AwayTeam = away,
             Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : DateTime.UtcNow
         };
+    }
+
+    /// <summary>Shown in Resultados (and team last results): finished or suspended.</summary>
+    private static bool CountsAsPublishedResult(Domain.Enums.MatchStatus status) =>
+        status is Domain.Enums.MatchStatus.COMPLETED
+            or Domain.Enums.MatchStatus.PLAYED
+            or Domain.Enums.MatchStatus.SUSPENDED;
+
+    /// <summary>No longer listed under Próximos / Fixture open rounds.</summary>
+    private static bool IsClosedForUpcoming(Domain.Enums.MatchStatus status) =>
+        status is Domain.Enums.MatchStatus.COMPLETED
+            or Domain.Enums.MatchStatus.PLAYED
+            or Domain.Enums.MatchStatus.SUSPENDED
+            or Domain.Enums.MatchStatus.CANCELLED;
+
+    private static int? ResolveDefaultOpenRound(IReadOnlyList<int> openRoundsAscending, int lastSettledRound)
+    {
+        if (openRoundsAscending.Count == 0)
+            return null;
+
+        if (lastSettledRound <= 0)
+            return openRoundsAscending[0];
+
+        var next = openRoundsAscending.FirstOrDefault(r => r > lastSettledRound);
+        return next > 0 ? next : openRoundsAscending[0];
     }
 
     public async Task<List<SeasonPublicDto>> GetLeagueMetaAsync(string leagueSlug, CancellationToken cancellationToken = default)
@@ -513,7 +545,10 @@ public class PublicStructuredService
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.Result)
-            .Where(f => f.SeasonId == season.Id && f.Status == Domain.Enums.MatchStatus.COMPLETED);
+            .Where(f => f.SeasonId == season.Id &&
+                        (f.Status == Domain.Enums.MatchStatus.COMPLETED ||
+                         f.Status == Domain.Enums.MatchStatus.PLAYED ||
+                         f.Status == Domain.Enums.MatchStatus.SUSPENDED));
 
         if (round.HasValue)
         {
@@ -564,38 +599,50 @@ public class PublicStructuredService
             divSeasons = divSeasons.Where(ds => SlugHelper.NormalizeSlug(ds.Division.Name) == targetDivSlug).ToList();
         }
 
-        var allFixturesQuery = _db.Set<Fixture>()
+        var seasonFixtures = await _db.Set<Fixture>()
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
             .Include(f => f.Result)
-            .Where(f => f.SeasonId == season.Id && f.Status != Domain.Enums.MatchStatus.COMPLETED);
-
-        if (round.HasValue)
-        {
-            allFixturesQuery = allFixturesQuery.Where(f => f.RoundNumber == round.Value);
-        }
-
-        var allFixtures = await allFixturesQuery
+            .Where(f => f.SeasonId == season.Id)
             .OrderBy(f => f.MatchDate).ThenBy(f => f.StartTime)
             .ToListAsync(cancellationToken);
 
         foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
         {
-            var matchesForDiv = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(f => MapToMatchDto(f, league.Slug)).ToList();
-            if (matchesForDiv.Any())
-            {
-                var matchdays = matchesForDiv.GroupBy(m => allFixtures.First(f => f.Id == m.Id).RoundNumber)
-                    .Select(g => new MatchdayGroupDto { Round = g.Key, Matches = g.ToList() })
-                    .OrderBy(md => md.Round)
-                    .ToList();
+            var divFixtures = seasonFixtures.Where(f => f.DivisionSeasonId == ds.Id).ToList();
+            var lastSettledRound = divFixtures
+                .Where(f => CountsAsPublishedResult(f.Status))
+                .Select(f => f.RoundNumber)
+                .DefaultIfEmpty(0)
+                .Max();
 
-                result.Divisions.Add(new DivisionGroupDto<MatchdayGroupDto>
-                {
-                    DivisionName = ds.Division.Name,
-                    DivisionSlug = SlugHelper.NormalizeSlug(ds.Division.Name),
-                    Data = matchdays
-                });
-            }
+            var openFixtures = divFixtures
+                .Where(f => !IsClosedForUpcoming(f.Status))
+                .ToList();
+
+            if (round.HasValue)
+                openFixtures = openFixtures.Where(f => f.RoundNumber == round.Value).ToList();
+
+            var matchesForDiv = openFixtures.Select(f => MapToMatchDto(f, league.Slug)).ToList();
+            if (matchesForDiv.Count == 0 && !round.HasValue)
+                continue;
+
+            var matchdays = matchesForDiv
+                .GroupBy(m => openFixtures.First(f => f.Id == m.Id).RoundNumber)
+                .Select(g => new MatchdayGroupDto { Round = g.Key, Matches = g.ToList() })
+                .OrderBy(md => md.Round)
+                .ToList();
+
+            var openRoundNumbers = matchdays.Select(md => md.Round).ToList();
+            var defaultRound = ResolveDefaultOpenRound(openRoundNumbers, lastSettledRound);
+
+            result.Divisions.Add(new DivisionGroupDto<MatchdayGroupDto>
+            {
+                DivisionName = ds.Division.Name,
+                DivisionSlug = SlugHelper.NormalizeSlug(ds.Division.Name),
+                DefaultRound = defaultRound,
+                Data = matchdays
+            });
         }
         return result;
     }

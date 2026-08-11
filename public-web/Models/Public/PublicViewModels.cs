@@ -110,6 +110,7 @@ public class DivisionGroupViewModel<T>
 {
     public string DivisionName { get; set; } = string.Empty;
     public string DivisionSlug { get; set; } = string.Empty;
+    public int? DefaultRound { get; set; }
     public List<T> Data { get; set; } = new();
 }
 

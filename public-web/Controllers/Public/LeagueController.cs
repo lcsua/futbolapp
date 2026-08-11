@@ -165,6 +165,7 @@ public class LeagueController : Controller
             {
                 id = m.Id,
                 kickoff = m.Kickoff,
+                status = m.Status,
                 homeScore = m.HomeScore,
                 awayScore = m.AwayScore,
                 homeTeam = m.HomeTeam.Name,
@@ -174,6 +175,7 @@ public class LeagueController : Controller
             {
                 id = m.Id,
                 kickoff = m.Kickoff,
+                status = m.Status,
                 homeScore = m.HomeScore,
                 awayScore = m.AwayScore,
                 homeTeam = m.HomeTeam.Name,

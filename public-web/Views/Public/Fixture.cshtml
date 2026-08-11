@@ -71,7 +71,11 @@
         @if (div.Data != null && div.Data.Any())
         {
             var requestingRound = ViewBag.Round as int?;
-            var activeMatchday = requestingRound.HasValue ? div.Data.FirstOrDefault(m => m.Round == requestingRound) : div.Data.FirstOrDefault();
+            var activeMatchday = requestingRound.HasValue
+                ? div.Data.FirstOrDefault(m => m.Round == requestingRound)
+                : (div.DefaultRound.HasValue
+                    ? div.Data.FirstOrDefault(m => m.Round == div.DefaultRound.Value)
+                    : null);
             if (activeMatchday == null) activeMatchday = div.Data.FirstOrDefault();
 
             var currentRoundNav = activeMatchday?.Round;

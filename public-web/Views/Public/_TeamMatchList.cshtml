@@ -20,7 +20,14 @@
                         }
                         else
                         {
-                            <div class="match-score">@match.HomeScore - @match.AwayScore</div>
+                            @if (string.Equals(match.Status, "SUSPENDED", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <div class="match-score text-warning">Suspendido</div>
+                            }
+                            else
+                            {
+                                <div class="match-score">@match.HomeScore - @match.AwayScore</div>
+                            }
                         }
                         <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
                     </div>

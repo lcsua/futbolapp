@@ -209,7 +209,9 @@
     const rows = matches.map((m) => {
       const center = mode === 'next'
         ? `<div class="match-time">${escapeHtml(formatTime(m.kickoff))}</div>`
-        : `<div class="match-score">${escapeHtml(m.homeScore ?? '')} - ${escapeHtml(m.awayScore ?? '')}</div>`;
+        : (String(m.status || '').toUpperCase() === 'SUSPENDED'
+          ? `<div class="match-score text-warning">Suspendido</div>`
+          : `<div class="match-score">${escapeHtml(m.homeScore ?? '')} - ${escapeHtml(m.awayScore ?? '')}</div>`);
       return `
         <a href="${escapeHtml(matchBase)}${escapeHtml(m.id)}" class="list-group-item list-group-item-action">
           <div class="row align-items-center g-2 league-match-row">
