@@ -2,6 +2,7 @@
 @{
     ViewData["BadgeSize"] = "md";
     var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
+    var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(Model.Kickoff);
 }
 <a class="v2-match-card v2-match-card--upcoming" href="@Url.Content($"~/partido/{Model.Id}")">
     <div class="v2-match-card__meta v2-match-card__meta--upcoming">
@@ -9,7 +10,10 @@
         <span class="v2-match-card__meta-mobile">
             @PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.Kickoff)
         </span>
-        <span class="v2-match-card__kick v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
+        @if (time != null)
+        {
+            <span class="v2-match-card__kick v2-nums">@time</span>
+        }
         @if (!string.IsNullOrWhiteSpace(venue))
         {
             <span class="v2-match-card__venue">@venue</span>
@@ -18,8 +22,11 @@
 
     <div class="v2-match-card__meta-line v2-match-card__meta-line--desktop">
         <span class="v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)</span>
-        <span aria-hidden="true">·</span>
-        <span class="v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
+        @if (time != null)
+        {
+            <span aria-hidden="true">·</span>
+            <span class="v2-nums">@time</span>
+        }
         @if (!string.IsNullOrWhiteSpace(venue))
         {
             <span aria-hidden="true">·</span>

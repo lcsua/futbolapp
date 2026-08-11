@@ -3,6 +3,7 @@
     var finished = PublicWeb.Helpers.TeamDisplayHelper.IsFinished(Model.Status);
     var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
     var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
+    var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(Model.Kickoff);
     ViewData["BadgeSize"] = "md";
 }
 <a class="v2-match-row @(finished ? "is-result" : "is-upcoming")" href="@Url.Content($"~/partido/{Model.Id}")">
@@ -28,9 +29,9 @@
             }
         </span>
         <span class="v2-match-row__away">@Model.AwayTeam.Name</span>
-        @if (!finished)
+        @if (!finished && time != null)
         {
-            <span class="v2-match-row__time v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
+            <span class="v2-match-row__time v2-nums">@time</span>
         }
         else
         {
@@ -57,7 +58,10 @@
                 else
                 {
                     <span>@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.Kickoff)</span>
-                    <span class="v2-match-card__kick v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
+                    @if (time != null)
+                    {
+                        <span class="v2-match-card__kick v2-nums">@time</span>
+                    }
                     @if (!string.IsNullOrWhiteSpace(venue))
                     {
                         <span class="v2-match-card__venue">@venue</span>

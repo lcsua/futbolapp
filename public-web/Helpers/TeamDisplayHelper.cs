@@ -58,8 +58,22 @@ public static class TeamDisplayHelper
         return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(raw);
     }
 
+    /// <summary>
+    /// Whether <paramref name="kickoff"/> includes a defined clock time.
+    /// Domain stores optional <c>Fixture.StartTime</c> (<c>TimeOnly?</c>);
+    /// public DTO maps null StartTime by parsing the match date alone,
+    /// which yields 00:00:00. At the public layer we treat midnight as "no time set".
+    /// </summary>
+    public static bool HasDefinedTime(DateTime kickoff) =>
+        kickoff != default && kickoff.TimeOfDay != TimeSpan.Zero;
+
+    /// <summary>HH:mm when defined; empty string when not (never "00:00" for unset).</summary>
     public static string FormatTime(DateTime kickoff) =>
-        kickoff == default ? "—" : kickoff.ToString("HH:mm");
+        HasDefinedTime(kickoff) ? kickoff.ToString("HH:mm") : string.Empty;
+
+    /// <summary>HH:mm or null when the kickoff has no defined clock time.</summary>
+    public static string? FormatTimeOrNull(DateTime kickoff) =>
+        HasDefinedTime(kickoff) ? kickoff.ToString("HH:mm") : null;
 
     /// <summary>08 AGO 2026</summary>
     public static string FormatDayMonthYear(DateTime kickoff)

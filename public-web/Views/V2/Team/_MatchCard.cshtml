@@ -22,9 +22,13 @@
                     <span class="v2-match__score">@Model.HomeScore — @Model.AwayScore</span>
                 }
             }
-            else
+            else if (PublicWeb.Helpers.TeamDisplayHelper.HasDefinedTime(Model.Kickoff))
             {
                 <span class="v2-match__time">@PublicWeb.Helpers.TeamDisplayHelper.FormatTime(Model.Kickoff)</span>
+            }
+            else
+            {
+                <span class="v2-match__vs">VS</span>
             }
         </div>
         <div class="v2-match__side is-away">
