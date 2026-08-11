@@ -1,0 +1,24 @@
+@model PublicWeb.Models.Public.LeagueViewModel?
+@{
+    var league = Model ?? ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
+    var seasonName = ViewBag.SeasonName as string;
+    var pageLabel = ViewBag.PageLabel as string ?? "Resultados";
+}
+<header class="v2-league-header">
+    <div class="v2-league-header__identity">
+        @if (league != null && !string.IsNullOrWhiteSpace(league.LogoUrl))
+        {
+            <div class="v2-league-header__logo">
+                <img src="@league.LogoUrl" alt="" />
+            </div>
+        }
+        <div class="v2-league-header__copy">
+            <p class="v2-league-header__eyebrow">@pageLabel</p>
+            <h1 class="v2-league-header__name">@(league?.Name ?? "Liga")</h1>
+            @if (!string.IsNullOrWhiteSpace(seasonName))
+            {
+                <p class="v2-league-header__sub">@seasonName</p>
+            }
+        </div>
+    </div>
+</header>

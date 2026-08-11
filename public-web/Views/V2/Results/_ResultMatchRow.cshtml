@@ -1,0 +1,60 @@
+@model PublicWeb.Models.Public.MatchViewModel
+@{
+    var leagueSlug = ViewData["LeagueSlug"] as string ?? Model.LeagueSlug ?? "";
+    var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
+    var hasScores = Model.HomeScore.HasValue && Model.AwayScore.HasValue;
+    ViewData["BadgeSize"] = "sm";
+
+    string? TeamUrl(PublicWeb.Models.Public.TeamViewModel team) =>
+        !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(team.Slug)
+            ? Url.Content($"~/v2/ligas/{leagueSlug}/{team.Slug}")
+            : null;
+    var homeUrl = TeamUrl(Model.HomeTeam);
+    var awayUrl = TeamUrl(Model.AwayTeam);
+}
+<article class="v2-result-row">
+    <div class="v2-result-row__inner">
+        <div class="v2-result-row__board">
+            <div class="v2-result-row__side is-home">
+                @if (homeUrl != null)
+                {
+                    <a class="v2-result-row__name" href="@homeUrl">@Model.HomeTeam.Name</a>
+                }
+                else
+                {
+                    <span class="v2-result-row__name">@Model.HomeTeam.Name</span>
+                }
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+            </div>
+
+            <div class="v2-result-row__mid">
+                <a class="v2-result-row__scorewrap" href="@Url.Content($"~/partido/{Model.Id}")">
+                    @if (suspended)
+                    {
+                        <span class="v2-result-row__status is-warn">Suspendido</span>
+                    }
+                    else if (hasScores)
+                    {
+                        <span class="v2-result-row__score v2-nums">@Model.HomeScore — @Model.AwayScore</span>
+                    }
+                    else
+                    {
+                        <span class="v2-result-row__status">Sin resultado</span>
+                    }
+                </a>
+            </div>
+
+            <div class="v2-result-row__side is-away">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+                @if (awayUrl != null)
+                {
+                    <a class="v2-result-row__name" href="@awayUrl">@Model.AwayTeam.Name</a>
+                }
+                else
+                {
+                    <span class="v2-result-row__name">@Model.AwayTeam.Name</span>
+                }
+            </div>
+        </div>
+    </div>
+</article>

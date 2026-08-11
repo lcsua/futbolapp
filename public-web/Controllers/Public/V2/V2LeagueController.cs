@@ -22,6 +22,31 @@ public class V2LeagueController : Controller
         _teamService = teamService;
     }
 
+    /// <summary>League results — must be registered before Team ({slug}/{teamSlug}).</summary>
+    [HttpGet("{slug}/resultados")]
+    public async Task<IActionResult> Results(
+        string slug,
+        [FromQuery] string? season,
+        [FromQuery] string? division,
+        [FromQuery] int? round)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        // Same as V1: load all rounds for pills; round filter applied in the view.
+        var results = await _leagueService.GetResultsAsync(slug, season, division, null);
+
+        ViewBag.League = league;
+        ViewBag.Seasons = meta;
+        ViewBag.Division = string.IsNullOrWhiteSpace(division) ? "all" : division;
+        ViewBag.Round = round;
+        ViewBag.V2ActiveNav = "ligas";
+        ViewBag.V2LeagueTab = "resultados";
+
+        return View("~/Views/V2/Results.cshtml", results);
+    }
+
     [HttpGet("{slug}/{teamSlug}")]
     public async Task<IActionResult> Team(
         string slug,
