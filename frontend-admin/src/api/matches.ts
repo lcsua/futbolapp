@@ -164,6 +164,19 @@ export const INCIDENT_TYPES = [
   'Other',
 ] as const
 
+export const INCIDENT_TYPE_LABELS: Record<string, string> = {
+  Goal: 'Gol',
+  YellowCard: 'Amarilla',
+  RedCard: 'Roja',
+  Injury: 'Lesión',
+  Substitution: 'Cambio',
+  Other: 'Otro',
+}
+
+export function incidentTypeLabel(type: string): string {
+  return INCIDENT_TYPE_LABELS[type] ?? type
+}
+
 export const MATCH_STATUSES = [
   'SCHEDULED',
   'IN_PROGRESS',

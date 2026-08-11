@@ -18,7 +18,7 @@ import {
   Alert,
 } from '@mui/material'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { matchesService, INCIDENT_TYPES } from '../api/matches'
+import { matchesService, INCIDENT_TYPES, INCIDENT_TYPE_LABELS } from '../api/matches'
 import type { MatchDetailResponse } from '../api/matches'
 import { playersService, type Player } from '../api/players'
 
@@ -28,15 +28,6 @@ interface IncidentModalProps {
   leagueId: string
   onClose: () => void
   onSaved?: () => void
-}
-
-const INCIDENT_TYPE_LABELS: Record<string, string> = {
-  Goal: 'Gol',
-  YellowCard: 'Amarilla',
-  RedCard: 'Roja',
-  Injury: 'Lesión',
-  Substitution: 'Cambio',
-  Other: 'Otro',
 }
 
 export function IncidentModal({ open, match, leagueId, onClose, onSaved }: IncidentModalProps) {

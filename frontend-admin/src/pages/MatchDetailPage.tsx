@@ -15,7 +15,12 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { matchesService, type MatchDetailResponse, type MatchIncidentDto } from '../api/matches'
+import {
+  matchesService,
+  incidentTypeLabel,
+  type MatchDetailResponse,
+  type MatchIncidentDto,
+} from '../api/matches'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { IncidentModal } from '../components/IncidentModal'
 
@@ -53,8 +58,8 @@ export function MatchDetailPage() {
 
   if (!leagueId || !matchId) {
     return (
-      <Alert severity="error" action={<Button component={RouterLink} to="/">Go to Leagues</Button>}>
-        Missing league or match.
+      <Alert severity="error" action={<Button component={RouterLink} to="/">Ir a ligas</Button>}>
+        Falta la liga o el partido.
       </Alert>
     )
   }
@@ -69,8 +74,8 @@ export function MatchDetailPage() {
 
   if (error || !match) {
     return (
-      <Alert severity="error" action={<Button component={RouterLink} to={backPath}>Back to matches</Button>}>
-        Failed to load match.
+      <Alert severity="error" action={<Button component={RouterLink} to={backPath}>Volver a partidos</Button>}>
+        No se pudo cargar el partido.
       </Alert>
     )
   }
@@ -82,23 +87,23 @@ export function MatchDetailPage() {
   return (
     <Box>
       <Button component={RouterLink} to={backPath} startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
-        Back to matches
+        Volver a partidos
       </Button>
 
       <MatchHeader match={match} />
 
       {!match.seasonIsActive && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          This season is closed. You can still edit results or incidents after a ruling that changes the official record.
+          Esta temporada está cerrada. Igual podés editar el resultado o las incidencias si un fallo lo requiere.
         </Alert>
       )}
 
       <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
-        Incident timeline
+        Incidencias
       </Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {incidentsSorted.length === 0 ? (
-          <Typography color="text.secondary">No incidents recorded.</Typography>
+          <Typography color="text.secondary">No hay incidencias registradas.</Typography>
         ) : (
           incidentsSorted.map((inc) => (
             <IncidentRow
@@ -117,7 +122,7 @@ export function MatchDetailPage() {
         onClick={() => setIncidentModalOpen(true)}
         sx={{ mt: 2 }}
       >
-        Add incident
+        Agregar incidencia
       </Button>
 
       <IncidentModal
@@ -169,7 +174,7 @@ function MatchHeader({ match }: { match: MatchDetailResponse }) {
           {match.fieldName} · {match.matchDate} · {match.kickoffTime}
         </Typography>
         <Typography variant="caption" color="text.secondary" display="block">
-          Round {match.roundNumber} — {match.divisionName}
+          Fecha {match.roundNumber} — {match.divisionName}
         </Typography>
       </CardContent>
     </Card>
@@ -191,16 +196,16 @@ function IncidentRow({
       <Typography variant="body2" sx={{ minWidth: 40 }}>
         {incident.minute != null ? `${incident.minute}'` : '—'}
       </Typography>
-      <Chip label={incident.incidentType} color={color} size="small" />
+      <Chip label={incidentTypeLabel(incident.incidentType)} color={color} size="small" />
       <Typography variant="body2">
-        — {incident.teamName ?? 'N/A'} — {incident.playerName}
+        — {incident.teamName ?? 'Sin equipo'} — {incident.playerName || 'Sin jugador'}
       </Typography>
       {incident.notes && (
         <Typography variant="caption" color="text.secondary">
           {incident.notes}
         </Typography>
       )}
-      <IconButton size="small" onClick={onDelete} disabled={isDeleting} aria-label="Delete incident">
+      <IconButton size="small" onClick={onDelete} disabled={isDeleting} aria-label="Eliminar incidencia">
         <DeleteIcon fontSize="small" />
       </IconButton>
     </Box>
