@@ -21,9 +21,10 @@ import {
   Typography,
 } from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { seasonsService } from '../api/seasons'
 import { matchesService } from '../api/matches'
+import { teamNameAliasesService } from '../api/teamNameAliases'
 import type { TeamInSetup } from '../api/seasons'
 import {
   mapTeamNamesForDivision,
@@ -32,7 +33,7 @@ import {
   parseMatchResultsCsv,
   type JsonDivisionRoundBlock,
 } from '../utils/parseMatchResultsJson'
-import type { TeamCsvRowMapping } from '../utils/teamNameMatch'
+import { aliasUpsertsFromMappings, type TeamCsvRowMapping } from '../utils/teamNameMatch'
 
 const CREATE_VALUE = '__missing__'
 const ALL_DIVISIONS = ''
@@ -72,6 +73,7 @@ export function ImportMatchResultsModal({
   divisions,
   onImported,
 }: ImportMatchResultsModalProps) {
+  const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [plans, setPlans] = useState<DivisionPlan[] | null>(null)
@@ -98,6 +100,20 @@ export function ImportMatchResultsModal({
     queryFn: ({ signal }) => seasonsService.getSetup(leagueId, seasonId, signal),
     enabled: open && !!leagueId && !!seasonId,
   })
+
+  const { data: aliasesData } = useQuery({
+    queryKey: ['leagues', leagueId, 'team-name-aliases'],
+    queryFn: ({ signal }) => teamNameAliasesService.list(leagueId, signal),
+    enabled: open && !!leagueId,
+  })
+
+  const aliasByNormalized = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const a of aliasesData?.items ?? []) {
+      map.set(a.normalizedAlias, a.teamId)
+    }
+    return map
+  }, [aliasesData])
 
   const reset = () => {
     setFileName(null)
@@ -169,7 +185,7 @@ export function ImportMatchResultsModal({
       }
 
       const names = [...new Set(block.matches.flatMap((m) => [m.homeTeam, m.awayTeam]))]
-      const teamMappings = mapTeamNamesForDivision(names, teams)
+      const teamMappings = mapTeamNamesForDivision(names, teams, aliasByNormalized)
       result.push({
         jsonDivision: block.division,
         divisionId: matched.divisionId,
@@ -216,6 +232,8 @@ export function ImportMatchResultsModal({
             homeScore: m.homeScore,
             awayScore: m.awayScore,
             status: m.status,
+            homeCsvName: m.homeTeam,
+            awayCsvName: m.awayTeam,
           })
         }
         payloadDivisions.push({ divisionId: plan.divisionId, matches })
@@ -225,12 +243,20 @@ export function ImportMatchResultsModal({
         throw new Error('No hay divisiones/partidos para importar (revisá el filtro de división).')
       }
 
+      const aliasItems = aliasUpsertsFromMappings(
+        current.flatMap((p) => p.teamMappings)
+      )
+      if (aliasItems.length > 0) {
+        await teamNameAliasesService.upsert(leagueId, aliasItems)
+      }
+
       return matchesService.importResults(leagueId, {
         seasonId,
         divisions: payloadDivisions,
       })
     },
     onSuccess: (res) => {
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'team-name-aliases'] })
       onImported?.({
         updatedCount: res.updatedCount,
         createdCount: res.createdCount,

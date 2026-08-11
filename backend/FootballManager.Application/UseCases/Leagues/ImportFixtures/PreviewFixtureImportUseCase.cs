@@ -3,6 +3,7 @@ using System.Text;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.Services;
 using FootballManager.Domain.Entities;
 
 namespace FootballManager.Application.UseCases.Leagues.ImportFixtures;
@@ -12,15 +13,18 @@ public sealed class PreviewFixtureImportUseCase : IPreviewFixtureImportUseCase
     private readonly IUserLeagueRepository _userLeagueRepository;
     private readonly IDivisionSeasonRepository _divisionSeasonRepository;
     private readonly IFieldRepository _fieldRepository;
+    private readonly ITeamNameAliasService _aliasService;
 
     public PreviewFixtureImportUseCase(
         IUserLeagueRepository userLeagueRepository,
         IDivisionSeasonRepository divisionSeasonRepository,
-        IFieldRepository fieldRepository)
+        IFieldRepository fieldRepository,
+        ITeamNameAliasService aliasService)
     {
         _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
         _divisionSeasonRepository = divisionSeasonRepository ?? throw new ArgumentNullException(nameof(divisionSeasonRepository));
         _fieldRepository = fieldRepository ?? throw new ArgumentNullException(nameof(fieldRepository));
+        _aliasService = aliasService ?? throw new ArgumentNullException(nameof(aliasService));
     }
 
     public async Task<PreviewFixtureImportResponse> ExecuteAsync(PreviewFixtureImportRequest request, CancellationToken cancellationToken = default)
@@ -38,6 +42,7 @@ public sealed class PreviewFixtureImportUseCase : IPreviewFixtureImportUseCase
             return new PreviewFixtureImportResponse("", new List<PreviewFixtureRowDto>(), parseErrors);
 
         var fields = await _fieldRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
+        var aliasLookup = await _aliasService.GetNormalizedLookupAsync(request.LeagueId, cancellationToken);
         var divisionName = divisionSeason.Division.Name;
         var teamAssignments = divisionSeason.TeamAssignments.ToList();
         var previewRows = new List<PreviewFixtureRowDto>();
@@ -53,8 +58,8 @@ public sealed class PreviewFixtureImportUseCase : IPreviewFixtureImportUseCase
                 rowError = "Home and away team cannot be the same.";
             else
             {
-                var homeTds = FindTeamAssignment(teamAssignments, row.HomeTeam);
-                var awayTds = FindTeamAssignment(teamAssignments, row.AwayTeam);
+                var homeTds = TeamDivisionSeasonMatcher.Find(teamAssignments, row.HomeTeam, aliasLookup);
+                var awayTds = TeamDivisionSeasonMatcher.Find(teamAssignments, row.AwayTeam, aliasLookup);
                 if (homeTds == null) rowError = $"Team '{row.HomeTeam.Trim()}' does not belong to division {divisionName}.";
                 else if (awayTds == null) rowError = $"Team '{row.AwayTeam.Trim()}' does not belong to division {divisionName}.";
             }
@@ -167,31 +172,6 @@ public sealed class PreviewFixtureImportUseCase : IPreviewFixtureImportUseCase
             rows.Add(new ParsedFixtureRow(round, dateStr, timeStr, fieldStr, homeTeam, awayTeam));
         }
         return (rows, errors, importType);
-    }
-
-    private static TeamDivisionSeason? FindTeamAssignment(List<TeamDivisionSeason> teamAssignments, string csvName)
-    {
-        var trimmed = csvName.Trim();
-        if (string.IsNullOrWhiteSpace(trimmed))
-            return null;
-
-        var exactName = teamAssignments.FirstOrDefault(ta =>
-            string.Equals(ta.Team.Name.Trim(), trimmed, StringComparison.OrdinalIgnoreCase));
-        if (exactName != null)
-            return exactName;
-
-        var exactDisplay = teamAssignments.FirstOrDefault(ta =>
-            string.Equals(ta.Team.DisplayName.Trim(), trimmed, StringComparison.OrdinalIgnoreCase));
-        if (exactDisplay != null)
-            return exactDisplay;
-
-        var norm = TeamNameNormalizer.Normalize(trimmed);
-        if (string.IsNullOrEmpty(norm))
-            return null;
-
-        return teamAssignments.FirstOrDefault(ta =>
-            TeamNameNormalizer.Normalize(ta.Team.Name) == norm
-            || TeamNameNormalizer.Normalize(ta.Team.DisplayName) == norm);
     }
 
     private static bool IsByeMarker(string? name)

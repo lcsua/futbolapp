@@ -48,6 +48,7 @@ using FootballManager.Application.UseCases.Leagues.ImportFixtures;
 using FootballManager.Application.UseCases.Leagues.CopyFixturesFromSeason;
 using FootballManager.Application.UseCases.Leagues.AssignFixtureDates;
 using FootballManager.Application.ProfessionalFootball;
+using FootballManager.Application.Services;
 using FootballManager.Application.UseCases.Leagues.GetSchedulingEffectiveForDivision;
 using FootballManager.Application.UseCases.Leagues.GetDivisionSchedulingExtras;
 using FootballManager.Application.UseCases.Leagues.UpsertDivisionSchedulingExtras;
@@ -141,6 +142,7 @@ namespace FootballManager.Application
             services.AddScoped<ICopyFixturesFromSeasonUseCase, CopyFixturesFromSeasonUseCase>();
             services.AddScoped<IAssignFixtureDatesUseCase, AssignFixtureDatesUseCase>();
             services.AddScoped<IProfessionalFootballAppService, ProfessionalFootballAppService>();
+            services.AddScoped<ITeamNameAliasService, TeamNameAliasService>();
             services.AddScoped<IGetSchedulingEffectiveForDivisionUseCase, GetSchedulingEffectiveForDivisionUseCase>();
             services.AddScoped<IGetDivisionSchedulingExtrasUseCase, GetDivisionSchedulingExtrasUseCase>();
             services.AddScoped<IUpsertDivisionSchedulingExtrasUseCase, UpsertDivisionSchedulingExtrasUseCase>();

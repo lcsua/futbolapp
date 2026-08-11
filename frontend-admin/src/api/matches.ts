@@ -189,6 +189,8 @@ export const matchesService = {
           homeScore: number | null
           awayScore: number | null
           status: string
+          homeCsvName?: string
+          awayCsvName?: string
         }>
       }>
     },

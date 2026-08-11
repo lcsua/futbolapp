@@ -104,9 +104,15 @@ const MARGIN = 0.06
 export function matchCsvNamesToTeams(
   csvNames: string[],
   teams: TeamMatchCandidate[],
-  options?: { alreadyAssignedIds?: Set<string> }
+  options?: {
+    alreadyAssignedIds?: Set<string>
+    /** normalized CSV alias → teamId (must belong to `teams` to apply). */
+    aliasByNormalized?: Map<string, string>
+  }
 ): TeamCsvRowMapping[] {
   const assigned = options?.alreadyAssignedIds ?? new Set<string>()
+  const aliasByNormalized = options?.aliasByNormalized
+  const teamIdSet = new Set(teams.map((t) => t.id))
   const indexed = teams.map((team) => ({
     team,
     norms: teamLabels(team).map(normalizeTeamName).filter(Boolean),
@@ -117,6 +123,23 @@ export function matchCsvNamesToTeams(
 
   for (const csvName of csvNames) {
     const normalizedCsv = normalizeTeamName(csvName)
+    const aliasedTeamId = aliasByNormalized?.get(normalizedCsv)
+    if (aliasedTeamId && teamIdSet.has(aliasedTeamId)) {
+      const team = teams.find((t) => t.id === aliasedTeamId)!
+      usedTeamIds.add(aliasedTeamId)
+      rows.push({
+        csvName,
+        normalizedCsv,
+        action: 'match',
+        teamId: aliasedTeamId,
+        score: 1,
+        candidates: [{ teamId: aliasedTeamId, label: formatTeamLabel(team), score: 1 }],
+        needsReview: assigned.has(aliasedTeamId),
+        reason: 'exact',
+      })
+      continue
+    }
+
     const scored: Array<{ teamId: string; label: string; score: number }> = []
 
     for (const { team, norms } of indexed) {
@@ -195,6 +218,22 @@ export function matchCsvNamesToTeams(
   }
 
   return rows
+}
+
+/** Items suitable for POST team-name-aliases from confirmed match mappings. */
+export function aliasUpsertsFromMappings(
+  mappings: Array<{ csvName: string; action: TeamMatchAction; teamId: string | null }>
+): Array<{ teamId: string; alias: string }> {
+  const seen = new Set<string>()
+  const items: Array<{ teamId: string; alias: string }> = []
+  for (const m of mappings) {
+    if (m.action !== 'match' || !m.teamId || !m.csvName.trim()) continue
+    const key = `${m.teamId}|${normalizeTeamName(m.csvName)}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    items.push({ teamId: m.teamId, alias: m.csvName.trim() })
+  }
+  return items
 }
 
 export function mappingsNeedReview(rows: TeamCsvRowMapping[]): boolean {

@@ -32,7 +32,6 @@ import { teamNameAliasesService } from '../api/teamNameAliases'
 import { parseScheduleCsv, type ScheduleCsvRow } from '../utils/parseScheduleCsv'
 import {
   matchCsvNamesToTeams,
-  normalizeTeamName,
   type TeamCsvRowMapping,
   type TeamMatchCandidate,
 } from '../utils/teamNameMatch'
@@ -225,25 +224,13 @@ export function ImportScheduleModal({
 
     const next: PreparedRow[] = csvRows.map((csv, idx) => {
       // Match only this pair against the selected division (avoids cross-row stealing).
-      const pairMaps = matchCsvNamesToTeams([csv.homeTeam, csv.awayTeam], candidates)
+      const pairMaps = matchCsvNamesToTeams([csv.homeTeam, csv.awayTeam], candidates, {
+        aliasByNormalized,
+      })
       const byCsv = new Map(pairMaps.map((m) => [m.csvName, m]))
-      const divisionTeamIds = new Set(candidates.map((c) => c.id))
-
-      const applyAlias = (name: string, base: TeamCsvRowMapping): TeamCsvRowMapping => {
-        const aliasedTeamId = aliasByNormalized.get(normalizeTeamName(name))
-        if (!aliasedTeamId || !divisionTeamIds.has(aliasedTeamId)) return base
-        return {
-          ...base,
-          action: 'match',
-          teamId: aliasedTeamId,
-          needsReview: false,
-          reason: 'exact',
-          score: 1,
-        }
-      }
 
       const applyOverride = (name: string, fallback: TeamCsvRowMapping): TeamCsvRowMapping => {
-        const base = applyAlias(name, byCsv.get(name) ?? fallback)
+        const base = byCsv.get(name) ?? fallback
         const ov = teamOverride[name]
         if (!ov) return base
         return {

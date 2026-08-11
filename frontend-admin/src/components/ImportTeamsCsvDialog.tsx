@@ -20,11 +20,13 @@ import {
   Chip,
 } from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { teamsService } from '../api/teams'
+import { teamNameAliasesService } from '../api/teamNameAliases'
 import type { Team } from '../api/types'
 import { parseTeamNamesFromCsv } from '../utils/parseTeamCsv'
 import {
+  aliasUpsertsFromMappings,
   mappingsNeedReview,
   matchCsvNamesToTeams,
   type TeamCsvRowMapping,
@@ -83,6 +85,20 @@ export function ImportTeamsCsvDialog({
 
   const assignedSet = useMemo(() => new Set(assignedTeamIds), [assignedTeamIds])
 
+  const { data: aliasesData } = useQuery({
+    queryKey: ['leagues', leagueId, 'team-name-aliases'],
+    queryFn: ({ signal }) => teamNameAliasesService.list(leagueId, signal),
+    enabled: open && !!leagueId,
+  })
+
+  const aliasByNormalized = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const a of aliasesData?.items ?? []) {
+      map.set(a.normalizedAlias, a.teamId)
+    }
+    return map
+  }, [aliasesData])
+
   const reset = () => {
     setFileName(null)
     setRows(null)
@@ -104,6 +120,11 @@ export function ImportTeamsCsvDialog({
       let created = 0
       let skipped = 0
       const errors: string[] = []
+
+      const aliasItems = aliasUpsertsFromMappings(mappings)
+      if (aliasItems.length > 0) {
+        await teamNameAliasesService.upsert(leagueId, aliasItems)
+      }
 
       for (const row of mappings) {
         try {
@@ -147,6 +168,7 @@ export function ImportTeamsCsvDialog({
       void queryClient.invalidateQueries({
         queryKey: ['leagues', leagueId, 'seasons', seasonId, 'assigned-team-ids'],
       })
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'team-name-aliases'] })
       onImported?.(summary)
       reset()
       onClose()
@@ -192,7 +214,10 @@ export function ImportTeamsCsvDialog({
       return
     }
 
-    const mapped = matchCsvNamesToTeams(names, teams, { alreadyAssignedIds: assignedSet })
+    const mapped = matchCsvNamesToTeams(names, teams, {
+      alreadyAssignedIds: assignedSet,
+      aliasByNormalized,
+    })
     setRows(mapped)
 
     if (mappingsNeedReview(mapped)) {

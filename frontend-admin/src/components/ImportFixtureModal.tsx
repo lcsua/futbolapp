@@ -24,10 +24,11 @@ import {
   Typography,
 } from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fixturesService } from '../api/fixtures'
 import { seasonsService, type TeamInSetup } from '../api/seasons'
+import { teamNameAliasesService } from '../api/teamNameAliases'
 import {
   inferRoundByes,
   parseFixtureCsv,
@@ -36,7 +37,12 @@ import {
   type FixtureImportType,
   type ParsedFixtureCsvRow,
 } from '../utils/parseFixtureCsv'
-import { mappingsNeedReview, matchCsvNamesToTeams, type TeamCsvRowMapping } from '../utils/teamNameMatch'
+import {
+  aliasUpsertsFromMappings,
+  mappingsNeedReview,
+  matchCsvNamesToTeams,
+  type TeamCsvRowMapping,
+} from '../utils/teamNameMatch'
 
 const CSV_PLACEHOLDER = `round,home_team,away_team
 1,TIGRES,LEONES
@@ -66,6 +72,7 @@ export function ImportFixtureModal({
   onSuccess,
 }: ImportFixtureModalProps) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [csvText, setCsvText] = useState('')
@@ -84,6 +91,20 @@ export function ImportFixtureModal({
     queryFn: ({ signal }) => seasonsService.getSetup(leagueId, seasonId, signal),
     enabled: open && !!leagueId && !!seasonId,
   })
+
+  const { data: aliasesData } = useQuery({
+    queryKey: ['leagues', leagueId, 'team-name-aliases'],
+    queryFn: ({ signal }) => teamNameAliasesService.list(leagueId, signal),
+    enabled: open && !!leagueId,
+  })
+
+  const aliasByNormalized = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const a of aliasesData?.items ?? []) {
+      map.set(a.normalizedAlias, a.teamId)
+    }
+    return map
+  }, [aliasesData])
 
   const divisionTeams = useMemo(() => {
     const div = setupData?.divisions.find((d) => d.divisionId === divisionId)
@@ -146,14 +167,6 @@ export function ImportFixtureModal({
     onClose()
   }
 
-  const resolveCanonicalName = (csvName: string, mappings: TeamCsvRowMapping[]): string | null => {
-    const row = mappings.find((m) => m.csvName.toLowerCase() === csvName.toLowerCase())
-    if (!row || row.action !== 'match' || !row.teamId) return null
-    const team = divisionTeams.find((t) => t.id === row.teamId)
-    // Prefer displayName so quoted Suffix/Name variants rewrite to what setup shows.
-    return team ? displayName(team) : null
-  }
-
   const analyzeText = (text: string) => {
     setError(null)
     setParseErrors([])
@@ -185,7 +198,7 @@ export function ImportFixtureModal({
       }
 
       const names = uniqueFixtureTeamNames(parsed.rows)
-      const mappings = matchCsvNamesToTeams(names, divisionTeams).map((m) =>
+      const mappings = matchCsvNamesToTeams(names, divisionTeams, { aliasByNormalized }).map((m) =>
         m.action === 'create'
           ? { ...m, needsReview: true }
           : m,
@@ -281,9 +294,18 @@ export function ImportFixtureModal({
     setError(null)
     setImporting(true)
     try {
-      const rebuilt = rebuildFixtureCsv(importType, parsedRows, (csvName) =>
-        resolveCanonicalName(csvName, teamMappings),
-      )
+      const aliasItems = aliasUpsertsFromMappings(teamMappings)
+      if (aliasItems.length > 0) {
+        await teamNameAliasesService.upsert(leagueId, aliasItems)
+        void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'team-name-aliases'] })
+      }
+
+      // Keep original CSV names so the API can resolve via aliases and learn them.
+      const rebuilt = rebuildFixtureCsv(importType, parsedRows, (csvName) => {
+        const row = teamMappings.find((m) => m.csvName.toLowerCase() === csvName.toLowerCase())
+        if (!row || row.action !== 'match' || !row.teamId) return null
+        return csvName
+      })
       if (rebuilt.errors.length > 0 || !rebuilt.csvText.trim()) {
         setError(rebuilt.errors.join('\n') || 'No hay filas válidas para importar.')
         return

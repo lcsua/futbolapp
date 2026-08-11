@@ -275,9 +275,10 @@ export function matchDivisionName(
 
 export function mapTeamNamesForDivision(
   names: string[],
-  candidates: TeamMatchCandidate[]
+  candidates: TeamMatchCandidate[],
+  aliasByNormalized?: Map<string, string>
 ) {
-  return matchCsvNamesToTeams(names, candidates)
+  return matchCsvNamesToTeams(names, candidates, { aliasByNormalized })
 }
 
 export { mappingsNeedReview }

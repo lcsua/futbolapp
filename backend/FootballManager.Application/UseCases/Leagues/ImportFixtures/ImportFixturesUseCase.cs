@@ -3,6 +3,7 @@ using System.Text;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.Services;
 using FootballManager.Domain.Entities;
 
 namespace FootballManager.Application.UseCases.Leagues.ImportFixtures;
@@ -15,6 +16,7 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
     private readonly IDivisionSeasonRepository _divisionSeasonRepository;
     private readonly IFieldRepository _fieldRepository;
     private readonly IFixtureRepository _fixtureRepository;
+    private readonly ITeamNameAliasService _aliasService;
     private readonly IUnitOfWork _unitOfWork;
 
     public ImportFixturesUseCase(
@@ -24,6 +26,7 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
         IDivisionSeasonRepository divisionSeasonRepository,
         IFieldRepository fieldRepository,
         IFixtureRepository fixtureRepository,
+        ITeamNameAliasService aliasService,
         IUnitOfWork unitOfWork)
     {
         _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
@@ -32,6 +35,7 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
         _divisionSeasonRepository = divisionSeasonRepository ?? throw new ArgumentNullException(nameof(divisionSeasonRepository));
         _fieldRepository = fieldRepository ?? throw new ArgumentNullException(nameof(fieldRepository));
         _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
+        _aliasService = aliasService ?? throw new ArgumentNullException(nameof(aliasService));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     }
 
@@ -60,14 +64,17 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
             return ImportFixturesResponse.WithErrors(parseErrors);
 
         var fields = await _fieldRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
+        var aliasLookup = await _aliasService.GetNormalizedLookupAsync(request.LeagueId, cancellationToken);
         var divisionName = divisionSeason.Division.Name;
-        var (resolvedRows, validationErrors) = ValidateAndResolve(parsedRows, importType, divisionSeason, fields, divisionName);
+        var (resolvedRows, validationErrors) = ValidateAndResolve(
+            parsedRows, importType, divisionSeason, fields, divisionName, aliasLookup);
         if (validationErrors.Count > 0)
             return ImportFixturesResponse.WithErrors(validationErrors);
 
         await _fixtureRepository.RemoveByDivisionSeasonIdAsync(divisionSeason.Id, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        var learned = new HashSet<(Guid TeamId, string Normalized)>();
         foreach (var row in resolvedRows)
         {
             Fixture fixture;
@@ -78,6 +85,9 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
             else
                 fixture = new Fixture(league, season, divisionSeason, row.HomeTds, row.AwayTds, row.Round);
             await _fixtureRepository.AddAsync(fixture, cancellationToken);
+
+            await _aliasService.LearnAsync(league, row.HomeTds.TeamId, row.HomeCsvName, "fixture-import", learned, cancellationToken);
+            await _aliasService.LearnAsync(league, row.AwayTds.TeamId, row.AwayCsvName, "fixture-import", learned, cancellationToken);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -216,7 +226,8 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
         string importType,
         DivisionSeason divisionSeason,
         List<Field> fields,
-        string divisionName)
+        string divisionName,
+        IReadOnlyDictionary<string, Guid> aliasLookup)
     {
         var errors = new List<string>();
         var resolved = new List<ResolvedFixtureRow>();
@@ -233,8 +244,8 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
                 continue;
             }
 
-            var homeTds = FindTeamAssignment(teamAssignments, row.HomeTeam);
-            var awayTds = FindTeamAssignment(teamAssignments, row.AwayTeam);
+            var homeTds = TeamDivisionSeasonMatcher.Find(teamAssignments, row.HomeTeam, aliasLookup);
+            var awayTds = TeamDivisionSeasonMatcher.Find(teamAssignments, row.AwayTeam, aliasLookup);
 
             if (homeTds == null)
             {
@@ -280,37 +291,21 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
                 }
             }
 
-            resolved.Add(new ResolvedFixtureRow(row.Round, matchDate, startTime, field, homeTds, awayTds));
+            resolved.Add(new ResolvedFixtureRow(
+                row.Round, matchDate, startTime, field, homeTds, awayTds, row.HomeTeam, row.AwayTeam));
         }
 
         return (resolved, errors);
     }
 
-    private static TeamDivisionSeason? FindTeamAssignment(List<TeamDivisionSeason> teamAssignments, string csvName)
-    {
-        var trimmed = csvName.Trim();
-        if (string.IsNullOrWhiteSpace(trimmed))
-            return null;
-
-        var exactName = teamAssignments.FirstOrDefault(ta =>
-            string.Equals(ta.Team.Name.Trim(), trimmed, StringComparison.OrdinalIgnoreCase));
-        if (exactName != null)
-            return exactName;
-
-        var exactDisplay = teamAssignments.FirstOrDefault(ta =>
-            string.Equals(ta.Team.DisplayName.Trim(), trimmed, StringComparison.OrdinalIgnoreCase));
-        if (exactDisplay != null)
-            return exactDisplay;
-
-        var norm = TeamNameNormalizer.Normalize(trimmed);
-        if (string.IsNullOrEmpty(norm))
-            return null;
-
-        return teamAssignments.FirstOrDefault(ta =>
-            TeamNameNormalizer.Normalize(ta.Team.Name) == norm
-            || TeamNameNormalizer.Normalize(ta.Team.DisplayName) == norm);
-    }
-
     private sealed record ParsedFixtureRow(int Round, string? Date, string? Time, string? Field, string HomeTeam, string AwayTeam);
-    private sealed record ResolvedFixtureRow(int Round, DateOnly? MatchDate, TimeOnly? StartTime, Field? Field, TeamDivisionSeason HomeTds, TeamDivisionSeason AwayTds);
+    private sealed record ResolvedFixtureRow(
+        int Round,
+        DateOnly? MatchDate,
+        TimeOnly? StartTime,
+        Field? Field,
+        TeamDivisionSeason HomeTds,
+        TeamDivisionSeason AwayTds,
+        string HomeCsvName,
+        string AwayCsvName);
 }

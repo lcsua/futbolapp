@@ -25,6 +25,10 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
         public int? AwayScore { get; set; }
         /// <summary>JSON status e.g. finished, suspended.</summary>
         public string? Status { get; set; }
+        /// <summary>Original CSV home name (learned as alias on apply).</summary>
+        public string? HomeCsvName { get; set; }
+        /// <summary>Original CSV away name (learned as alias on apply).</summary>
+        public string? AwayCsvName { get; set; }
     }
 
     public class ImportMatchResultsResponse

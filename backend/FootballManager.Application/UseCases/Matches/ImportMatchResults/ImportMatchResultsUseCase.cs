@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.Services;
 using FootballManager.Domain.Entities;
 using FootballManager.Domain.Enums;
 
@@ -20,6 +21,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
         private readonly IDivisionSeasonRepository _divisionSeasonRepository;
         private readonly IFixtureRepository _fixtureRepository;
         private readonly IResultRepository _resultRepository;
+        private readonly ITeamNameAliasService _aliasService;
         private readonly IUnitOfWork _unitOfWork;
 
         public ImportMatchResultsUseCase(
@@ -30,6 +32,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             IDivisionSeasonRepository divisionSeasonRepository,
             IFixtureRepository fixtureRepository,
             IResultRepository resultRepository,
+            ITeamNameAliasService aliasService,
             IUnitOfWork unitOfWork)
         {
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
@@ -39,6 +42,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             _divisionSeasonRepository = divisionSeasonRepository ?? throw new ArgumentNullException(nameof(divisionSeasonRepository));
             _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
             _resultRepository = resultRepository ?? throw new ArgumentNullException(nameof(resultRepository));
+            _aliasService = aliasService ?? throw new ArgumentNullException(nameof(aliasService));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
@@ -64,6 +68,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             var updated = 0;
             var created = 0;
             var warnings = new List<string>();
+            var learned = new HashSet<(Guid TeamId, string Normalized)>();
 
             foreach (var divDto in divisions)
             {
@@ -117,6 +122,9 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                         warnings.Add($"{division.Name}: away team {item.AwayTeamId} is not assigned to this division.");
                         continue;
                     }
+
+                    await _aliasService.LearnAsync(league, item.HomeTeamId, item.HomeCsvName, "results-import", learned, cancellationToken);
+                    await _aliasService.LearnAsync(league, item.AwayTeamId, item.AwayCsvName, "results-import", learned, cancellationToken);
 
                     if (fixtureByPair.TryGetValue((homeTds.Id, awayTds.Id), out var fixture))
                     {
