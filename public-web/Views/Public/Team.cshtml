@@ -45,21 +45,6 @@
     </div>
 </div>
 
-<ul class="nav nav-pills mb-3 nav-fill bg-white p-2 border rounded shadow-sm">
-    <li class="nav-item">
-        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{leagueSlug}")">Resumen</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{leagueSlug}/tabla")">Tabla de posiciones</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{leagueSlug}/resultados")">Resultados</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{leagueSlug}/partidos")">Próximos partidos</a>
-    </li>
-</ul>
-
 @if (seasons != null && seasons.Count > 1)
 {
     <form method="get" class="mb-3 d-flex align-items-center bg-white rounded shadow-sm flex-wrap league-filters">
