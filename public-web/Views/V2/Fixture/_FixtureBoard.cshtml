@@ -7,142 +7,21 @@
     var selectedDivision = ViewBag.Division as string ?? "all";
     var requestingFecha = ViewBag.Fecha as int?;
 
-    var rounds = (Model?.Divisions ?? new List<PublicWeb.Models.Public.DivisionGroupViewModel<PublicWeb.Models.Public.MatchdayGroupViewModel>>())
-        .SelectMany(d => d.Data ?? new List<PublicWeb.Models.Public.MatchdayGroupViewModel>())
-        .Select(m => m.Round)
-        .Distinct()
-        .OrderBy(r => r)
-        .ToList();
-
-    int? ResolveDefaultFecha()
-    {
-        foreach (var div in Model?.Divisions ?? Enumerable.Empty<PublicWeb.Models.Public.DivisionGroupViewModel<PublicWeb.Models.Public.MatchdayGroupViewModel>>())
-        {
-            if (div.DefaultRound.HasValue && rounds.Contains(div.DefaultRound.Value))
-                return div.DefaultRound.Value;
-        }
-        return rounds.Count > 0 ? rounds[0] : null;
-    }
-
-    var currentFecha = requestingFecha.HasValue && rounds.Contains(requestingFecha.Value)
-        ? requestingFecha.Value
-        : ResolveDefaultFecha();
-
-    var currentIndex = currentFecha.HasValue ? rounds.IndexOf(currentFecha.Value) : -1;
-    int? prevFecha = currentIndex > 0 ? rounds[currentIndex - 1] : null;
-    int? nextFecha = currentIndex >= 0 && currentIndex < rounds.Count - 1 ? rounds[currentIndex + 1] : null;
-
-    DateTime ResolveDisplayDate()
-    {
-        if (Model?.Divisions == null || !currentFecha.HasValue) return default;
-        var matches = Model.Divisions
-            .SelectMany(d => d.Data ?? new List<PublicWeb.Models.Public.MatchdayGroupViewModel>())
-            .Where(m => m.Round == currentFecha.Value)
-            .SelectMany(m => m.Matches ?? new List<PublicWeb.Models.Public.MatchViewModel>())
-            .Where(m => m.Kickoff != default)
-            .ToList();
-        if (!matches.Any()) return default;
-        return matches
-            .GroupBy(m => m.Kickoff.Date)
-            .OrderByDescending(g => g.Count())
-            .Select(g => g.Key)
-            .FirstOrDefault();
-    }
-
-    var displayDate = ResolveDisplayDate();
     ViewData["LeagueSlug"] = leagueSlug;
+    ViewData["SeasonSlug"] = seasonSlug;
+    ViewData["PageDivision"] = selectedDivision;
 }
 <div class="v2-fixture-board"
      data-v2-fixture-board
      data-season="@seasonSlug"
-     data-division="@selectedDivision"
-     data-fecha="@(currentFecha?.ToString() ?? "")">
-
-    @if (rounds.Any() && currentFecha.HasValue)
-    {
-        <div class="v2-fecha-nav" data-v2-fecha-nav>
-            <div class="v2-fecha-nav__main">
-                <button type="button"
-                        class="v2-fecha-nav__arrow"
-                        data-v2-fecha-goto="@(prevFecha?.ToString() ?? "")"
-                        aria-label="Fecha anterior"
-                        @(prevFecha.HasValue ? null : "disabled")>
-                    <span aria-hidden="true">‹</span>
-                </button>
-                <div class="v2-fecha-nav__current">
-                    <p class="v2-fecha-nav__label">Fecha @currentFecha</p>
-                    @if (displayDate != default)
-                    {
-                        <p class="v2-fecha-nav__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(displayDate)</p>
-                    }
-                </div>
-                <button type="button"
-                        class="v2-fecha-nav__arrow"
-                        data-v2-fecha-goto="@(nextFecha?.ToString() ?? "")"
-                        aria-label="Fecha siguiente"
-                        @(nextFecha.HasValue ? null : "disabled")>
-                    <span aria-hidden="true">›</span>
-                </button>
-            </div>
-
-            <details class="v2-fecha-jump" data-v2-fecha-jump>
-                <summary class="v2-fecha-jump__summary">Ver todas las fechas</summary>
-                <ul class="v2-fecha-jump__list" role="listbox" aria-label="Elegir fecha">
-                    @foreach (var r in rounds)
-                    {
-                        <li>
-                            <button type="button"
-                                    class="v2-fecha-jump__item @(r == currentFecha ? "is-active" : null)"
-                                    data-v2-fecha-goto="@r"
-                                    role="option"
-                                    aria-selected="@(r == currentFecha ? "true" : "false")">
-                                Fecha @r
-                                @if (r == currentFecha)
-                                {
-                                    <span class="v2-fecha-jump__check" aria-hidden="true">✓</span>
-                                }
-                            </button>
-                        </li>
-                    }
-                </ul>
-            </details>
-        </div>
-    }
-
+     data-page-division="@selectedDivision">
     @if (Model != null && Model.Divisions.Any())
     {
         foreach (var div in Model.Divisions)
         {
-            var matchday = currentFecha.HasValue
-                ? div.Data?.FirstOrDefault(m => m.Round == currentFecha.Value)
-                : null;
-
-            <section class="v2-result-group" aria-labelledby="fix-div-@div.DivisionSlug">
-                <div class="v2-result-group__head">
-                    <h2 id="fix-div-@div.DivisionSlug" class="v2-result-group__division">
-                        <span class="v2-result-group__division-label">División:</span>
-                        <span class="v2-result-group__division-name">@div.DivisionName</span>
-                    </h2>
-                </div>
-
-                @if (matchday != null && matchday.Matches != null && matchday.Matches.Any())
-                {
-                    <div class="v2-fixture-list">
-                        @foreach (var match in matchday.Matches.OrderBy(m => m.Kickoff))
-                        {
-                            @await Html.PartialAsync("~/Views/V2/Fixture/_FixtureMatchRow.cshtml", match)
-                        }
-                    </div>
-                }
-                else if (div.Data == null || !div.Data.Any())
-                {
-                    <div class="v2-empty">No hay partidos registrados en esta división.</div>
-                }
-                else
-                {
-                    <div class="v2-empty">No hay partidos programados en esta fecha.</div>
-                }
-            </section>
+            // Single-division URL fecha applies; each "all" block uses its DefaultRound.
+            ViewData["BlockFecha"] = selectedDivision != "all" ? requestingFecha : null;
+            @await Html.PartialAsync("~/Views/V2/Fixture/_FixtureDivisionBlock.cshtml", div)
         }
     }
     else

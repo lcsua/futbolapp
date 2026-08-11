@@ -1,0 +1,128 @@
+@model PublicWeb.Models.Public.DivisionGroupViewModel<PublicWeb.Models.Public.MatchdayGroupViewModel>
+@{
+    var leagueSlug = ViewData["LeagueSlug"] as string ?? ViewBag.LeagueSlug as string ?? "";
+    var seasonSlug = ViewData["SeasonSlug"] as string ?? ViewBag.SeasonSlug as string ?? "";
+    var pageDivision = ViewData["PageDivision"] as string ?? ViewBag.Division as string ?? "all";
+    var requestingFecha = ViewData["BlockFecha"] as int? ?? ViewBag.Fecha as int?;
+
+    var rounds = (Model.Data ?? new List<PublicWeb.Models.Public.MatchdayGroupViewModel>())
+        .Select(m => m.Round)
+        .Distinct()
+        .OrderBy(r => r)
+        .ToList();
+
+    var currentFecha = requestingFecha.HasValue && rounds.Contains(requestingFecha.Value)
+        ? requestingFecha.Value
+        : (Model.DefaultRound.HasValue && rounds.Contains(Model.DefaultRound.Value)
+            ? Model.DefaultRound.Value
+            : PublicWeb.Helpers.FixtureCalendarHelper.ResolveInitialFecha(Model));
+
+    var currentIndex = currentFecha.HasValue ? rounds.IndexOf(currentFecha.Value) : -1;
+    int? prevFecha = currentIndex > 0 ? rounds[currentIndex - 1] : null;
+    int? nextFecha = currentIndex >= 0 && currentIndex < rounds.Count - 1 ? rounds[currentIndex + 1] : null;
+
+    var matchday = currentFecha.HasValue
+        ? Model.Data?.FirstOrDefault(m => m.Round == currentFecha.Value)
+        : null;
+
+    DateTime displayDate = default;
+    if (matchday?.Matches != null)
+    {
+        displayDate = matchday.Matches
+            .Where(m => m.Kickoff != default)
+            .GroupBy(m => m.Kickoff.Date)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .FirstOrDefault();
+    }
+
+    var status = PublicWeb.Helpers.FixtureCalendarHelper.ResolveFechaStatus(matchday);
+    ViewData["LeagueSlug"] = leagueSlug;
+}
+<section class="v2-result-group v2-fixture-block"
+         aria-labelledby="fix-div-@Model.DivisionSlug"
+         data-v2-fixture-block
+         data-division-slug="@Model.DivisionSlug"
+         data-season="@seasonSlug"
+         data-fecha="@(currentFecha?.ToString() ?? "")"
+         data-page-division="@pageDivision">
+    <div class="v2-result-group__head">
+        <h2 id="fix-div-@Model.DivisionSlug" class="v2-result-group__division">
+            <span class="v2-result-group__division-label">División:</span>
+            <span class="v2-result-group__division-name">@Model.DivisionName</span>
+        </h2>
+    </div>
+
+    @if (rounds.Any() && currentFecha.HasValue)
+    {
+        <div class="v2-fecha-nav" data-v2-fecha-nav>
+            <div class="v2-fecha-nav__main">
+                <button type="button"
+                        class="v2-fecha-nav__arrow"
+                        data-v2-fecha-goto="@(prevFecha?.ToString() ?? "")"
+                        aria-label="Fecha anterior"
+                        @(prevFecha.HasValue ? null : "disabled")>
+                    <span aria-hidden="true">‹</span>
+                </button>
+                <div class="v2-fecha-nav__current">
+                    <p class="v2-fecha-nav__label">Fecha @currentFecha</p>
+                    @if (displayDate != default)
+                    {
+                        <p class="v2-fecha-nav__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(displayDate)</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(status))
+                    {
+                        <p class="v2-fecha-nav__status">@status</p>
+                    }
+                </div>
+                <button type="button"
+                        class="v2-fecha-nav__arrow"
+                        data-v2-fecha-goto="@(nextFecha?.ToString() ?? "")"
+                        aria-label="Fecha siguiente"
+                        @(nextFecha.HasValue ? null : "disabled")>
+                    <span aria-hidden="true">›</span>
+                </button>
+            </div>
+
+            <details class="v2-fecha-jump" data-v2-fecha-jump>
+                <summary class="v2-fecha-jump__summary">Ver todas las fechas</summary>
+                <ul class="v2-fecha-jump__list" role="listbox" aria-label="Elegir fecha">
+                    @foreach (var r in rounds)
+                    {
+                        <li>
+                            <button type="button"
+                                    class="v2-fecha-jump__item @(r == currentFecha ? "is-active" : null)"
+                                    data-v2-fecha-goto="@r"
+                                    role="option"
+                                    aria-selected="@(r == currentFecha ? "true" : "false")">
+                                Fecha @r
+                                @if (r == currentFecha)
+                                {
+                                    <span class="v2-fecha-jump__check" aria-hidden="true">✓</span>
+                                }
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </details>
+        </div>
+    }
+
+    @if (matchday != null && matchday.Matches != null && matchday.Matches.Any())
+    {
+        <div class="v2-fixture-list">
+            @foreach (var match in matchday.Matches)
+            {
+                @await Html.PartialAsync("~/Views/V2/Fixture/_FixtureMatchRow.cshtml", match)
+            }
+        </div>
+    }
+    else if (Model.Data == null || !Model.Data.Any())
+    {
+        <div class="v2-empty">No hay partidos registrados en esta división.</div>
+    }
+    else
+    {
+        <div class="v2-empty">No hay partidos programados en esta fecha.</div>
+    }
+</section>

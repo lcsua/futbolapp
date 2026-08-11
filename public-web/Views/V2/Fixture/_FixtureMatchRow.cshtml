@@ -2,6 +2,9 @@
 @{
     var leagueSlug = ViewData["LeagueSlug"] as string ?? Model.LeagueSlug ?? "";
     var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
+    var finished = PublicWeb.Helpers.TeamDisplayHelper.IsFinished(Model.Status);
+    var hasScores = Model.HomeScore.HasValue && Model.AwayScore.HasValue;
+    var showScore = finished && !suspended && hasScores;
     var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(Model.Kickoff);
     var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
     ViewData["BadgeSize"] = "sm";
@@ -13,7 +16,7 @@
     var homeUrl = TeamUrl(Model.HomeTeam);
     var awayUrl = TeamUrl(Model.AwayTeam);
 }
-<article class="v2-fixture-row">
+<article class="v2-fixture-row @(showScore ? "is-result" : "is-upcoming")">
     <div class="v2-fixture-row__inner">
         <div class="v2-fixture-row__home">
             @if (homeUrl != null)
@@ -38,6 +41,10 @@
                 {
                     <span class="v2-fixture-row__status is-warn">Suspendido</span>
                 }
+                else if (showScore)
+                {
+                    <span class="v2-fixture-row__score v2-nums">@Model.HomeScore — @Model.AwayScore</span>
+                }
                 else if (time != null)
                 {
                     <span class="v2-fixture-row__time v2-nums">@time</span>
@@ -46,7 +53,7 @@
                 {
                     <span class="v2-fixture-row__vs">VS</span>
                 }
-                @if (!string.IsNullOrWhiteSpace(venue))
+                @if (!showScore && !suspended && !string.IsNullOrWhiteSpace(venue))
                 {
                     <span class="v2-fixture-row__venue">@venue</span>
                 }

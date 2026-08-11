@@ -2292,6 +2292,15 @@ a.v2-standings-preview__team:focus-visible .v2-standings-preview__name {
   color: var(--v2-text-secondary);
 }
 
+.v2-fecha-nav__status {
+  margin: 0.25rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--v2-text-secondary);
+}
+
 .v2-fecha-jump {
   position: relative;
 }
@@ -2473,6 +2482,16 @@ a.v2-fixture-row__team:focus-visible .v2-fixture-row__name {
   line-height: 1.1;
 }
 
+.v2-fixture-row__score {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: var(--letter-tight);
+  color: var(--v2-navy);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
 .v2-fixture-row__vs {
   font-size: 0.75rem;
   font-weight: 700;
@@ -2499,10 +2518,18 @@ a.v2-fixture-row__team:focus-visible .v2-fixture-row__name {
   flex-shrink: 0;
 }
 
-[data-v2-fixture-root][aria-busy="true"] {
+.v2-fixture-block {
+  margin-bottom: var(--space-7);
+}
+
+.v2-fixture-block[aria-busy="true"] {
   opacity: 0.72;
   pointer-events: none;
   transition: opacity 0.15s ease;
+}
+
+.v2-fixture-block .v2-fecha-nav {
+  margin-top: 0.15rem;
 }
 
 @media (max-width: 479.98px) {

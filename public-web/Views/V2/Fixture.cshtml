@@ -94,7 +94,8 @@
 
 <div data-v2-fixture-root
      data-fragment-url="@Url.Content($"~/v2/ligas/{leagueSlug}/fixture/fragment")"
-     data-page-base="@Url.Content($"~/v2/ligas/{leagueSlug}/fixture")">
+     data-page-base="@Url.Content($"~/v2/ligas/{leagueSlug}/fixture")"
+     data-page-division="@selectedDivision">
     @await Html.PartialAsync("~/Views/V2/Fixture/_FixtureBoard.cshtml", Model)
 </div>
 

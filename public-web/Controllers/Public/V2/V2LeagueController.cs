@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PublicWeb.Helpers;
 using PublicWeb.Models.Public;
 using PublicWeb.Services.Public;
 
@@ -165,7 +166,7 @@ public class V2LeagueController : Controller
         if (league == null) return NotFound();
 
         var meta = await _leagueService.GetLeagueMetaAsync(slug);
-        var fixture = await _leagueService.GetFixtureAsync(slug, season, division, null);
+        var calendar = await LoadFixtureCalendarAsync(slug, season, division);
 
         ViewBag.League = league;
         ViewBag.Seasons = meta;
@@ -173,11 +174,17 @@ public class V2LeagueController : Controller
         ViewBag.Fecha = fecha ?? round;
         ViewBag.V2ActiveNav = "ligas";
         ViewBag.V2LeagueTab = "fixture";
+        ViewBag.SeasonName = calendar?.SeasonName;
+        ViewBag.SeasonSlug = calendar?.SeasonSlug;
+        ViewBag.LeagueSlug = league.Slug;
 
-        return View("~/Views/V2/Fixture.cshtml", fixture);
+        return View("~/Views/V2/Fixture.cshtml", calendar);
     }
 
-    /// <summary>HTML fragment for in-page fixture fecha navigation (no layout).</summary>
+    /// <summary>
+    /// HTML fragment for in-page fecha navigation.
+    /// With a concrete division: one independent block. With all: full board.
+    /// </summary>
     [HttpGet("{slug}/fixture/fragment")]
     public async Task<IActionResult> FixtureFragment(
         string slug,
@@ -189,16 +196,46 @@ public class V2LeagueController : Controller
         var league = await _leagueService.GetLeagueBySlugAsync(slug);
         if (league == null) return NotFound();
 
-        var fixture = await _leagueService.GetFixtureAsync(slug, season, division, null);
-        if (fixture == null) return NotFound();
+        var calendar = await LoadFixtureCalendarAsync(slug, season, division);
+        if (calendar == null) return NotFound();
+
+        var selectedDivision = string.IsNullOrWhiteSpace(division) ? "all" : division;
+        var selectedFecha = fecha ?? round;
 
         ViewBag.League = league;
-        ViewBag.Division = string.IsNullOrWhiteSpace(division) ? "all" : division;
-        ViewBag.Fecha = fecha ?? round;
+        ViewBag.Division = selectedDivision;
+        ViewBag.Fecha = selectedFecha;
         ViewBag.LeagueSlug = league.Slug;
-        ViewBag.SeasonSlug = fixture.SeasonSlug;
+        ViewBag.SeasonSlug = calendar.SeasonSlug;
 
-        return PartialView("~/Views/V2/Fixture/_FixtureBoard.cshtml", fixture);
+        // Per-division AJAX navigation: return only that block.
+        if (!string.Equals(selectedDivision, "all", StringComparison.OrdinalIgnoreCase)
+            && calendar.Divisions.Count == 1)
+        {
+            ViewData["LeagueSlug"] = league.Slug;
+            ViewData["SeasonSlug"] = calendar.SeasonSlug;
+            ViewData["PageDivision"] = selectedDivision;
+            ViewData["BlockFecha"] = selectedFecha;
+            return PartialView("~/Views/V2/Fixture/_FixtureDivisionBlock.cshtml", calendar.Divisions[0]);
+        }
+
+        return PartialView("~/Views/V2/Fixture/_FixtureBoard.cshtml", calendar);
+    }
+
+    private async Task<SeasonGroupedViewModel<MatchdayGroupViewModel>?> LoadFixtureCalendarAsync(
+        string slug,
+        string? season,
+        string? division)
+    {
+        var resultsTask = _leagueService.GetResultsAsync(slug, season, division, null);
+        var upcomingTask = _leagueService.GetFixtureAsync(slug, season, division, null);
+        await Task.WhenAll(resultsTask, upcomingTask);
+
+        var results = await resultsTask;
+        var upcoming = await upcomingTask;
+        if (results == null && upcoming == null) return null;
+
+        return FixtureCalendarHelper.MergeCalendar(results, upcoming);
     }
 
     [HttpGet("{slug}/{teamSlug}")]
