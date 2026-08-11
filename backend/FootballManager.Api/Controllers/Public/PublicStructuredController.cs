@@ -33,24 +33,8 @@ public class PublicStructuredController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Team summary: active seasons, next matches, last results, basic stats.
-    /// </summary>
-    [HttpGet("{leagueSlug}/torneo/{season}/equipo/{teamSlug}")]
-    public async Task<IActionResult> GetTeamSummary(string leagueSlug, string season, string teamSlug)
-    {
-        var result = await _structuredService.GetTeamSummaryAsync(leagueSlug, teamSlug, season, HttpContext.RequestAborted);
-        if (result == null) return NotFound();
-        return Ok(result);
-    }
-
-    [HttpGet("{leagueSlug}/equipo/{teamSlug}")]
-    public async Task<IActionResult> GetTeamSummaryByLeague(string leagueSlug, string teamSlug, [FromQuery] string? season)
-    {
-        var result = await _structuredService.GetTeamSummaryAsync(leagueSlug, teamSlug, season, HttpContext.RequestAborted);
-        if (result == null) return NotFound();
-        return Ok(result);
-    }
+    // Team summary lives only on PublicLeagueController to avoid ambiguous routes
+    // (both mapped to api/public/liga/{leagueSlug}/equipo/{teamSlug}).
 
     /// <summary>
     /// Division summary: standings table, teams.
