@@ -10,7 +10,9 @@
 {
     <nav class="v2-tabs v2-league-tabs" aria-label="Secciones de la liga">
         <a class="v2-tabs__link" href="@Url.Content($"~/ligas/{leagueSlug}")@qs">Resumen</a>
-        <a class="v2-tabs__link" href="@Url.Content($"~/ligas/{leagueSlug}/tabla")@qs">Posiciones</a>
+        <a class="v2-tabs__link @(active == "posiciones" ? "is-active" : null)"
+           href="@Url.Content($"~/v2/ligas/{leagueSlug}/posiciones")@qs"
+           aria-current="@(active == "posiciones" ? "page" : null)">Posiciones</a>
         <a class="v2-tabs__link @(active == "resultados" ? "is-active" : null)"
            href="@Url.Content($"~/v2/ligas/{leagueSlug}/resultados")@qs"
            aria-current="@(active == "resultados" ? "page" : null)">Resultados</a>

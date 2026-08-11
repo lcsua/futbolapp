@@ -1,0 +1,62 @@
+@model IReadOnlyList<PublicWeb.Models.Public.StandingsRowViewModel>
+@{
+    var leagueSlug = ViewData["LeagueSlug"] as string ?? "";
+    var rows = Model ?? Array.Empty<PublicWeb.Models.Public.StandingsRowViewModel>();
+    ViewData["BadgeSize"] = "md";
+
+    string FormatGd(int gd) => gd > 0 ? $"+{gd}" : gd.ToString();
+}
+<div class="v2-standings-wrap">
+    <table class="v2-standings-table">
+        <thead>
+            <tr>
+                <th scope="col" class="v2-standings-table__pos" title="Posición">Pos</th>
+                <th scope="col" class="v2-standings-table__team">Equipo</th>
+                <th scope="col" class="v2-standings-table__num" title="Partidos jugados">PJ</th>
+                <th scope="col" class="v2-standings-table__num v2-standings-table__col-full" title="Ganados">G</th>
+                <th scope="col" class="v2-standings-table__num v2-standings-table__col-full" title="Empatados">E</th>
+                <th scope="col" class="v2-standings-table__num v2-standings-table__col-full" title="Perdidos">P</th>
+                <th scope="col" class="v2-standings-table__num v2-standings-table__col-full" title="Goles a favor">GF</th>
+                <th scope="col" class="v2-standings-table__num v2-standings-table__col-full" title="Goles en contra">GC</th>
+                <th scope="col" class="v2-standings-table__num" title="Diferencia de gol">DG</th>
+                <th scope="col" class="v2-standings-table__pts" title="Puntos">Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in rows)
+            {
+                var isLeader = row.Position == 1;
+                var teamUrl = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(row.Team.Slug)
+                    ? Url.Content($"~/v2/ligas/{leagueSlug}/{row.Team.Slug}")
+                    : null;
+                <tr class="@(isLeader ? "is-leader" : null)">
+                    <td class="v2-standings-table__pos">@row.Position</td>
+                    <td class="v2-standings-table__team">
+                        @if (teamUrl != null)
+                        {
+                            <a class="v2-standings-table__team-link" href="@teamUrl">
+                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
+                                <span class="v2-standings-table__team-name">@row.Team.Name</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="v2-standings-table__team-link">
+                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
+                                <span class="v2-standings-table__team-name">@row.Team.Name</span>
+                            </div>
+                        }
+                    </td>
+                    <td class="v2-standings-table__num">@row.Played</td>
+                    <td class="v2-standings-table__num v2-standings-table__col-full">@row.Won</td>
+                    <td class="v2-standings-table__num v2-standings-table__col-full">@row.Drawn</td>
+                    <td class="v2-standings-table__num v2-standings-table__col-full">@row.Lost</td>
+                    <td class="v2-standings-table__num v2-standings-table__col-full">@row.GoalsFor</td>
+                    <td class="v2-standings-table__num v2-standings-table__col-full">@row.GoalsAgainst</td>
+                    <td class="v2-standings-table__num">@FormatGd(row.GoalDifference)</td>
+                    <td class="v2-standings-table__pts">@row.Points</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

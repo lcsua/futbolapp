@@ -47,6 +47,28 @@ public class V2LeagueController : Controller
         return View("~/Views/V2/Results.cshtml", results);
     }
 
+    /// <summary>League standings — must be registered before Team ({slug}/{teamSlug}).</summary>
+    [HttpGet("{slug}/posiciones")]
+    public async Task<IActionResult> Standings(
+        string slug,
+        [FromQuery] string? season,
+        [FromQuery] string? division)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        var standings = await _leagueService.GetStandingsAsync(slug, season, division);
+
+        ViewBag.League = league;
+        ViewBag.Seasons = meta;
+        ViewBag.Division = string.IsNullOrWhiteSpace(division) ? "all" : division;
+        ViewBag.V2ActiveNav = "ligas";
+        ViewBag.V2LeagueTab = "posiciones";
+
+        return View("~/Views/V2/Standings.cshtml", standings);
+    }
+
     [HttpGet("{slug}/{teamSlug}")]
     public async Task<IActionResult> Team(
         string slug,
