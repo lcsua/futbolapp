@@ -119,18 +119,6 @@
                 <div class="v2-empty">Sin próximo partido programado.</div>
             }
         </div>
-
-        @if (standing != null)
-        {
-            <p class="v2-inline-stats" aria-label="Resumen de resultados">
-                <span><strong class="v2-nums">@standing.Wins</strong> G</span>
-                <span><strong class="v2-nums">@standing.Draws</strong> E</span>
-                <span><strong class="v2-nums">@standing.Losses</strong> P</span>
-                <span class="v2-inline-stats__sep" aria-hidden="true"></span>
-                <span><strong class="v2-nums">@standing.GoalsFor</strong> GF</span>
-                <span><strong class="v2-nums">@standing.GoalsAgainst</strong> GC</span>
-            </p>
-        }
     </section>
 
     <section id="panel-partidos"
