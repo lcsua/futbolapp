@@ -7,12 +7,35 @@ public static class TeamDisplayHelper
 {
     private static readonly CultureInfo EsAr = CultureInfo.GetCultureInfo("es-AR");
 
+    private static readonly HashSet<string> InitialStopWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "DE", "DEL", "Y", "E", "DA", "DO", "DI", "DAS", "DOS",
+        "F.C", "F.C.", "FC", "CLUB"
+    };
+
     public static string GetInitials(string? name)
     {
         if (string.IsNullOrWhiteSpace(name)) return "?";
-        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 1)
+
+        var cleaned = name.Trim()
+            .Replace(".", " ", StringComparison.Ordinal)
+            .Replace("  ", " ", StringComparison.Ordinal);
+
+        var parts = cleaned
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Where(p => !InitialStopWords.Contains(p))
+            .Where(p => !p.All(char.IsDigit))
+            .ToList();
+
+        if (parts.Count == 0)
+        {
+            var fallback = name.Trim();
+            return fallback.Substring(0, Math.Min(2, fallback.Length)).ToUpperInvariant();
+        }
+
+        if (parts.Count == 1)
             return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant();
+
         return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}";
     }
 

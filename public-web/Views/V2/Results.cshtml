@@ -136,8 +136,8 @@
                         <span class="v2-result-group__round">Fecha @activeMatchday.Round</span>
                         @if (groupDate != default)
                         {
-                            <span aria-hidden="true">·</span>
-                            <span>@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(groupDate)</span>
+                            <span class="v2-result-group__sep" aria-hidden="true">·</span>
+                            <span class="v2-result-group__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(groupDate)</span>
                         }
                     </div>
 

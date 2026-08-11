@@ -9,11 +9,21 @@
         "sm" => "v2-team-badge--sm",
         _ => "v2-team-badge--md"
     };
+    // Name is usually rendered beside the badge; keep decorative for a11y.
+    var decorative = ViewData["BadgeDecorative"] as bool? ?? true;
 }
-<div class="v2-team-badge @sizeClass" aria-hidden="@(hasLogo ? "true" : "false")">
+<div class="v2-team-badge @sizeClass @(hasLogo ? "has-logo" : "is-fallback")"
+     data-v2-team-badge
+     aria-hidden="@(decorative ? "true" : "false")"
+     title="@Model.Name">
     @if (hasLogo)
     {
-        <img src="@Model.LogoUrl" alt="" />
+        <img src="@Model.LogoUrl"
+             alt="@(decorative ? "" : Model.Name)"
+             loading="lazy"
+             decoding="async"
+             data-v2-team-logo />
+        <span class="v2-team-badge__initials" data-v2-team-initials>@initials</span>
     }
     else
     {

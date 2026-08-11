@@ -520,15 +520,16 @@ body {
 
 .v2-team-badge {
   flex-shrink: 0;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--v2-surface);
   border: 1px solid var(--border);
   display: grid;
   place-items: center;
   overflow: hidden;
+  position: relative;
 }
 
-.v2-team-badge--lg { width: 4.75rem; height: 4.75rem; }
+.v2-team-badge--lg { width: 4.75rem; height: 4.75rem; border-radius: var(--radius-lg); }
 .v2-team-badge--md { width: 2.5rem; height: 2.5rem; }
 .v2-team-badge--sm { width: 1.75rem; height: 1.75rem; border-radius: 8px; }
 
@@ -537,12 +538,31 @@ body {
   height: 100%;
   object-fit: contain;
   padding: 0.25rem;
+  grid-area: 1 / 1;
 }
 
 .v2-team-badge__initials {
-  font-weight: var(--font-weight-extrabold);
-  color: var(--v2-navy);
+  font-weight: 700;
+  color: var(--v2-text);
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  grid-area: 1 / 1;
+}
+
+.v2-team-badge.has-logo .v2-team-badge__initials {
+  display: none;
+}
+
+.v2-team-badge.is-fallback img,
+.v2-team-badge.is-fallback [data-v2-team-logo] {
+  display: none !important;
+}
+
+.v2-team-badge.is-fallback .v2-team-badge__initials,
+.v2-team-badge.is-fallback [data-v2-team-initials] {
+  display: grid;
+  place-items: center;
 }
 
 .v2-team-badge--lg .v2-team-badge__initials { font-size: 1.15rem; }
@@ -1491,12 +1511,9 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: var(--space-4);
-  font-size: var(--font-size-secondary-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--v2-text-secondary);
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-bottom: var(--space-3);
   text-align: center;
 }
 
@@ -1504,7 +1521,19 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: var(--font-size-label-lg);
-  color: var(--v2-navy);
+  font-weight: var(--font-weight-semibold);
+  color: var(--v2-text);
+}
+
+.v2-result-group__sep {
+  color: var(--v2-text-secondary);
+  opacity: 0.6;
+}
+
+.v2-result-group__date {
+  font-size: var(--font-size-secondary);
+  font-weight: var(--font-weight-medium);
+  color: var(--v2-text-secondary);
 }
 
 .v2-result-list {
@@ -1516,7 +1545,7 @@ body {
 
 .v2-result-row {
   display: block;
-  padding: 0.95rem 0.75rem;
+  padding: 1.05rem 0.7rem;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1534,7 +1563,7 @@ body {
 .v2-result-row__board {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 0.45rem 0.55rem;
+  gap: 0.4rem 0.5rem;
   align-items: center;
 }
 
@@ -1542,9 +1571,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   min-width: 0;
   text-align: center;
+  color: inherit !important;
+  text-decoration: none;
 }
 
 .v2-result-row__side.is-home .v2-team-badge { order: 1; }
@@ -1599,23 +1630,23 @@ body {
   color: var(--v2-warning);
 }
 
-.v2-result-row .v2-team-badge--sm {
-  width: 2.25rem;
-  height: 2.25rem;
+.v2-result-row .v2-team-badge--md {
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
 @media (min-width: 768px) {
   .v2-result-row {
-    padding: 1.05rem 1rem;
+    padding: 0.95rem 1rem;
   }
 
   .v2-result-row__board {
-    gap: 0.75rem 1rem;
+    gap: 0.65rem 0.9rem;
   }
 
   .v2-result-row__side {
     flex-direction: row;
-    gap: 0.55rem;
+    gap: 0.5rem;
   }
 
   .v2-result-row__side.is-home {
@@ -1641,27 +1672,36 @@ body {
   }
 
   .v2-result-row__name {
-    font-size: 0.9375rem;
+    font-size: 0.9rem;
     font-weight: 700;
   }
 
   .v2-result-row__score {
-    font-size: 1.55rem;
+    font-size: 1.45rem;
   }
 
-  .v2-result-row .v2-team-badge--sm {
-    width: 2.35rem;
-    height: 2.35rem;
+  .v2-result-row .v2-team-badge--md {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 }
 
 @media (max-width: 359.98px) {
+  .v2-result-row {
+    padding: 1rem 0.55rem;
+  }
+
   .v2-result-row__score {
     font-size: 1.45rem;
   }
 
   .v2-result-row__name {
     font-size: 0.75rem;
+  }
+
+  .v2-result-row .v2-team-badge--md {
+    width: 2.35rem;
+    height: 2.35rem;
   }
 }
 
