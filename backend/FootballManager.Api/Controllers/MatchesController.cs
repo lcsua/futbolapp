@@ -5,6 +5,7 @@ using FootballManager.Application.UseCases.Matches.GetMatches;
 using FootballManager.Application.UseCases.Matches.GetMatchById;
 using FootballManager.Application.UseCases.Matches.UpdateMatchResult;
 using FootballManager.Application.UseCases.Matches.ImportMatchResults;
+using FootballManager.Application.UseCases.Matches.ClearRoundResults;
 using FootballManager.Application.UseCases.Matches.AddMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatchIncident;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,7 @@ namespace FootballManager.Api.Controllers
         private readonly IGetMatchByIdUseCase _getMatchByIdUseCase;
         private readonly IUpdateMatchResultUseCase _updateMatchResultUseCase;
         private readonly IImportMatchResultsUseCase _importMatchResultsUseCase;
+        private readonly IClearRoundResultsUseCase _clearRoundResultsUseCase;
         private readonly IAddMatchIncidentUseCase _addMatchIncidentUseCase;
         private readonly IDeleteMatchIncidentUseCase _deleteMatchIncidentUseCase;
 
@@ -28,6 +30,7 @@ namespace FootballManager.Api.Controllers
             IGetMatchByIdUseCase getMatchByIdUseCase,
             IUpdateMatchResultUseCase updateMatchResultUseCase,
             IImportMatchResultsUseCase importMatchResultsUseCase,
+            IClearRoundResultsUseCase clearRoundResultsUseCase,
             IAddMatchIncidentUseCase addMatchIncidentUseCase,
             IDeleteMatchIncidentUseCase deleteMatchIncidentUseCase)
         {
@@ -35,6 +38,7 @@ namespace FootballManager.Api.Controllers
             _getMatchByIdUseCase = getMatchByIdUseCase ?? throw new ArgumentNullException(nameof(getMatchByIdUseCase));
             _updateMatchResultUseCase = updateMatchResultUseCase ?? throw new ArgumentNullException(nameof(updateMatchResultUseCase));
             _importMatchResultsUseCase = importMatchResultsUseCase ?? throw new ArgumentNullException(nameof(importMatchResultsUseCase));
+            _clearRoundResultsUseCase = clearRoundResultsUseCase ?? throw new ArgumentNullException(nameof(clearRoundResultsUseCase));
             _addMatchIncidentUseCase = addMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(addMatchIncidentUseCase));
             _deleteMatchIncidentUseCase = deleteMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(deleteMatchIncidentUseCase));
         }
@@ -105,6 +109,27 @@ namespace FootballManager.Api.Controllers
             return NoContent();
         }
 
+        [HttpPost("clear-round-results")]
+        public async Task<IActionResult> ClearRoundResults(
+            [FromRoute] Guid leagueId,
+            [FromBody] ClearRoundResultsBody body,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var response = await _clearRoundResultsUseCase.ExecuteAsync(new ClearRoundResultsRequest
+            {
+                LeagueId = leagueId,
+                UserId = userId,
+                SeasonId = body.SeasonId,
+                DivisionId = body.DivisionId,
+                Round = body.Round,
+            }, cancellationToken);
+
+            return Ok(response);
+        }
+
         [HttpPost("{matchId}/incidents")]
         public async Task<IActionResult> AddMatchIncident(
             [FromRoute] Guid leagueId,
@@ -139,5 +164,12 @@ namespace FootballManager.Api.Controllers
                 return Guid.Empty;
             return userId;
         }
+    }
+
+    public class ClearRoundResultsBody
+    {
+        public Guid SeasonId { get; set; }
+        public Guid DivisionId { get; set; }
+        public int Round { get; set; }
     }
 }

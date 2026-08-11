@@ -16,7 +16,8 @@ import {
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import VisibilityIcon from '@mui/icons-material/Visibility'
-import { useQuery } from '@tanstack/react-query'
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { matchesService, type MatchListItem } from '../api/matches'
@@ -26,7 +27,6 @@ import { useLeagueId } from '../contexts/LeagueContext'
 import { MatchResultModal } from '../components/MatchResultModal'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
 import { ImportMatchResultsModal } from '../components/ImportMatchResultsModal'
-import { useQueryClient } from '@tanstack/react-query'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import ScoreboardIcon from '@mui/icons-material/Scoreboard'
 
@@ -42,6 +42,7 @@ export function MatchesPage() {
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importResultsOpen, setImportResultsOpen] = useState(false)
   const [importResultsMsg, setImportResultsMsg] = useState<string | null>(null)
+  const [clearError, setClearError] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
@@ -111,6 +112,61 @@ export function MatchesPage() {
       }))
       .filter((g) => g.matches.length > 0)
   }, [allRounds, teamId])
+
+  const matchesWithResults = React.useMemo(
+    () =>
+      rounds
+        .flatMap((g) => g.matches)
+        .filter(
+          (m) =>
+            m.homeScore != null ||
+            m.awayScore != null ||
+            (m.status && m.status.toUpperCase() !== 'SCHEDULED'),
+        ),
+    [rounds],
+  )
+
+  const canClearRoundResults =
+    !!leagueId &&
+    !!seasonId &&
+    !!divisionId &&
+    round !== '' &&
+    !seasonClosed &&
+    matchesWithResults.length > 0
+
+  const clearRoundMutation = useMutation({
+    mutationFn: () =>
+      matchesService.clearRoundResults(leagueId!, {
+        seasonId,
+        divisionId,
+        round: parseInt(round, 10),
+      }),
+    onSuccess: (res) => {
+      setClearError(null)
+      setImportResultsMsg(
+        res.clearedCount > 0
+          ? `Se borraron resultados de ${res.clearedCount} partido(s). Los partidos siguen en el fixture.`
+          : 'No había resultados para borrar en esa fecha.',
+      )
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
+    },
+    onError: (err) => {
+      setClearError(err instanceof Error ? err.message : 'No se pudieron borrar los resultados')
+    },
+  })
+
+  const handleClearRoundResults = () => {
+    if (!canClearRoundResults) return
+    const divisionName = divisions.find((d) => d.id === divisionId)?.name ?? 'división'
+    if (
+      !window.confirm(
+        `¿Borrar los resultados cargados de la fecha ${round} (${divisionName})?\nSe quitan marcadores e incidentes; los partidos quedan en el fixture.`,
+      )
+    ) {
+      return
+    }
+    clearRoundMutation.mutate()
+  }
 
   if (!leagueId) {
     return (
@@ -224,7 +280,22 @@ export function MatchesPage() {
         >
           Importar resultados CSV
         </Button>
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<DeleteSweepIcon />}
+          onClick={handleClearRoundResults}
+          disabled={!canClearRoundResults || clearRoundMutation.isPending}
+        >
+          {clearRoundMutation.isPending ? 'Borrando…' : 'Borrar resultados de la fecha'}
+        </Button>
       </Box>
+
+      {clearError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setClearError(null)}>
+          {clearError}
+        </Alert>
+      )}
 
       {importResultsMsg && (
         <Alert severity="success" sx={{ mb: 2 }} onClose={() => setImportResultsMsg(null)}>

@@ -32,5 +32,10 @@ namespace FootballManager.Infrastructure.Repositories
         {
             _context.Results.Update(result);
         }
+
+        public void Remove(Result result)
+        {
+            _context.Results.Remove(result);
+        }
     }
 }

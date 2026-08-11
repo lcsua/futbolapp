@@ -2,8 +2,6 @@
     var leagueSlug = ViewBag.LeagueSlug as string
         ?? (ViewBag.League as PublicWeb.Models.Public.LeagueViewModel)?.Slug;
     var active = ViewBag.ActiveLeagueTab as string ?? "resumen";
-    var categories = ViewBag.DocumentCategories as List<PublicWeb.Models.Public.LeagueDocumentCategoryViewModel>
-        ?? new List<PublicWeb.Models.Public.LeagueDocumentCategoryViewModel>();
 }
 
 @if (!string.IsNullOrWhiteSpace(leagueSlug))
@@ -21,12 +19,5 @@
         <li class="nav-item">
             <a class="nav-link @(active == "partidos" ? "active fw-bold" : "text-dark")" href="@Url.Content($"~/ligas/{leagueSlug}/partidos")">Próximos partidos</a>
         </li>
-        @foreach (var cat in categories)
-        {
-            var key = $"doc:{cat.Slug}";
-            <li class="nav-item">
-                <a class="nav-link @(active == key ? "active fw-bold" : "text-dark")" href="@Url.Content($"~/ligas/{leagueSlug}/documentos/{cat.Slug}")">@cat.Name</a>
-            </li>
-        }
     </ul>
 }

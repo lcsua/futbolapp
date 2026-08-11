@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = Model.Name;
     ViewBag.League = Model;
+    var docs = ViewBag.LeagueDocuments as PublicWeb.Models.Public.LeagueDocumentsViewModel;
 }
 
 <div class="mb-3">
@@ -21,6 +22,11 @@
     <div class="card-header bg-white fw-bold">Acerca de la liga</div>
     <div class="card-body">
         <p>@Model.Description</p>
-        <div class="alert alert-info">Seguí el torneo de @Model.Name: tabla de posiciones, resultados y próximos partidos.</div>
+        <div class="alert alert-info mb-0">Seguí el torneo de @Model.Name: tabla de posiciones, resultados y próximos partidos.</div>
     </div>
 </div>
+
+@if (docs?.Categories != null && docs.Categories.Any(c => c.Documents != null && c.Documents.Any()))
+{
+    @await Html.PartialAsync("~/Views/Public/_LeagueDocumentSections.cshtml", docs.Categories)
+}

@@ -113,6 +113,17 @@ export const matchesService = {
   ) =>
     apiClient.put<void>(`/api/leagues/${leagueId}/matches/${matchId}/result`, body, signal),
 
+  clearRoundResults: (
+    leagueId: string,
+    body: { seasonId: string; divisionId: string; round: number },
+    signal?: AbortSignal
+  ) =>
+    apiClient.post<{ clearedCount: number }>(
+      `/api/leagues/${leagueId}/matches/clear-round-results`,
+      body,
+      signal
+    ),
+
   addIncident: (
     leagueId: string,
     matchId: string,

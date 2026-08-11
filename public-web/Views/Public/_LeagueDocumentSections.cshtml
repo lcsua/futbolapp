@@ -1,0 +1,75 @@
+@{
+    var categories = Model as List<PublicWeb.Models.Public.LeagueDocumentCategoryViewModel>
+        ?? ViewBag.DocumentCategories as List<PublicWeb.Models.Public.LeagueDocumentCategoryViewModel>
+        ?? new List<PublicWeb.Models.Public.LeagueDocumentCategoryViewModel>();
+
+    string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:0.#} KB";
+        return $"{bytes / (1024.0 * 1024.0):0.#} MB";
+    }
+}
+
+@foreach (var category in categories)
+{
+    if (category.Documents == null || !category.Documents.Any())
+    {
+        continue;
+    }
+
+    <section id="doc-@category.Slug" class="mb-4 league-doc-section">
+        <div class="mb-3">
+            <h3 class="h5 fw-bold mb-1">@category.Name</h3>
+            <p class="text-muted small mb-0">Documentación oficial de la liga.</p>
+        </div>
+
+        <div class="league-docs">
+            @foreach (var doc in category.Documents)
+            {
+                <article class="league-doc-item card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                            <div>
+                                <h4 class="h6 fw-bold mb-1">@doc.Title</h4>
+                                @if (doc.DocumentDate.HasValue)
+                                {
+                                    <div class="small text-muted">Fecha: @doc.DocumentDate.Value.ToString("dd/MM/yyyy")</div>
+                                }
+                            </div>
+                            <div class="small text-muted text-nowrap">@FormatBytes(doc.FileSizeBytes)</div>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(doc.Description))
+                        {
+                            <p class="mb-3 text-secondary">@doc.Description</p>
+                        }
+
+                        @if (doc.IsImage)
+                        {
+                            <figure class="league-doc-figure mb-0">
+                                <a href="@doc.FileUrl" target="_blank" rel="noopener noreferrer" class="league-doc-image-link">
+                                    <img src="@doc.FileUrl" alt="@doc.Title" class="league-doc-image" loading="lazy" />
+                                </a>
+                                <figcaption class="small text-muted mt-2">Tocá la imagen para verla en tamaño completo.</figcaption>
+                            </figure>
+                        }
+                        else
+                        {
+                            <div class="league-doc-file d-flex align-items-center gap-3 flex-wrap">
+                                <div class="league-doc-file-icon" aria-hidden="true">PDF</div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">@doc.OriginalFileName</div>
+                                    <div class="small text-muted">Documento PDF</div>
+                                </div>
+                                <a class="btn btn-outline-primary btn-sm" href="@doc.FileUrl" target="_blank" rel="noopener noreferrer">
+                                    Ver / descargar
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    </section>
+}
