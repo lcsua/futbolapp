@@ -233,8 +233,8 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
                 continue;
             }
 
-            var homeTds = teamAssignments.FirstOrDefault(ta => string.Equals(ta.Team.Name.Trim(), row.HomeTeam.Trim(), StringComparison.OrdinalIgnoreCase));
-            var awayTds = teamAssignments.FirstOrDefault(ta => string.Equals(ta.Team.Name.Trim(), row.AwayTeam.Trim(), StringComparison.OrdinalIgnoreCase));
+            var homeTds = FindTeamAssignment(teamAssignments, row.HomeTeam);
+            var awayTds = FindTeamAssignment(teamAssignments, row.AwayTeam);
 
             if (homeTds == null)
             {
@@ -284,6 +284,31 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
         }
 
         return (resolved, errors);
+    }
+
+    private static TeamDivisionSeason? FindTeamAssignment(List<TeamDivisionSeason> teamAssignments, string csvName)
+    {
+        var trimmed = csvName.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+            return null;
+
+        var exactName = teamAssignments.FirstOrDefault(ta =>
+            string.Equals(ta.Team.Name.Trim(), trimmed, StringComparison.OrdinalIgnoreCase));
+        if (exactName != null)
+            return exactName;
+
+        var exactDisplay = teamAssignments.FirstOrDefault(ta =>
+            string.Equals(ta.Team.DisplayName.Trim(), trimmed, StringComparison.OrdinalIgnoreCase));
+        if (exactDisplay != null)
+            return exactDisplay;
+
+        var norm = TeamNameNormalizer.Normalize(trimmed);
+        if (string.IsNullOrEmpty(norm))
+            return null;
+
+        return teamAssignments.FirstOrDefault(ta =>
+            TeamNameNormalizer.Normalize(ta.Team.Name) == norm
+            || TeamNameNormalizer.Normalize(ta.Team.DisplayName) == norm);
     }
 
     private sealed record ParsedFixtureRow(int Round, string? Date, string? Time, string? Field, string HomeTeam, string AwayTeam);

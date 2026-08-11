@@ -122,7 +122,8 @@ export function ImportFixtureModal({
     const rebuilt = rebuildFixtureCsv(importType, parsedRows, (csvName) => {
       const row = teamMappings.find((m) => m.csvName.toLowerCase() === csvName.toLowerCase())
       if (!row || row.action !== 'match' || !row.teamId) return null
-      return divisionTeams.find((t) => t.id === row.teamId)?.name ?? null
+      const team = divisionTeams.find((t) => t.id === row.teamId)
+      return team ? displayName(team) : null
     })
     setPreviewRows(rebuilt.rows)
   }, [importType, parsedRows, teamMappings, divisionTeams])
@@ -149,7 +150,8 @@ export function ImportFixtureModal({
     const row = mappings.find((m) => m.csvName.toLowerCase() === csvName.toLowerCase())
     if (!row || row.action !== 'match' || !row.teamId) return null
     const team = divisionTeams.find((t) => t.id === row.teamId)
-    return team?.name ?? null
+    // Prefer displayName so quoted Suffix/Name variants rewrite to what setup shows.
+    return team ? displayName(team) : null
   }
 
   const analyzeText = (text: string) => {
@@ -256,7 +258,7 @@ export function ImportFixtureModal({
     if (!previewRows || divisionTeams.length === 0) return []
     return inferRoundByes(
       previewRows,
-      divisionTeams.map((t) => t.name),
+      divisionTeams.map((t) => displayName(t)),
     )
   }, [previewRows, divisionTeams])
 

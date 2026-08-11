@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Domain.Entities;
 
@@ -52,8 +53,8 @@ public sealed class PreviewFixtureImportUseCase : IPreviewFixtureImportUseCase
                 rowError = "Home and away team cannot be the same.";
             else
             {
-                var homeTds = teamAssignments.FirstOrDefault(ta => string.Equals(ta.Team.Name.Trim(), row.HomeTeam.Trim(), StringComparison.OrdinalIgnoreCase));
-                var awayTds = teamAssignments.FirstOrDefault(ta => string.Equals(ta.Team.Name.Trim(), row.AwayTeam.Trim(), StringComparison.OrdinalIgnoreCase));
+                var homeTds = FindTeamAssignment(teamAssignments, row.HomeTeam);
+                var awayTds = FindTeamAssignment(teamAssignments, row.AwayTeam);
                 if (homeTds == null) rowError = $"Team '{row.HomeTeam.Trim()}' does not belong to division {divisionName}.";
                 else if (awayTds == null) rowError = $"Team '{row.AwayTeam.Trim()}' does not belong to division {divisionName}.";
             }
@@ -166,6 +167,31 @@ public sealed class PreviewFixtureImportUseCase : IPreviewFixtureImportUseCase
             rows.Add(new ParsedFixtureRow(round, dateStr, timeStr, fieldStr, homeTeam, awayTeam));
         }
         return (rows, errors, importType);
+    }
+
+    private static TeamDivisionSeason? FindTeamAssignment(List<TeamDivisionSeason> teamAssignments, string csvName)
+    {
+        var trimmed = csvName.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+            return null;
+
+        var exactName = teamAssignments.FirstOrDefault(ta =>
+            string.Equals(ta.Team.Name.Trim(), trimmed, StringComparison.OrdinalIgnoreCase));
+        if (exactName != null)
+            return exactName;
+
+        var exactDisplay = teamAssignments.FirstOrDefault(ta =>
+            string.Equals(ta.Team.DisplayName.Trim(), trimmed, StringComparison.OrdinalIgnoreCase));
+        if (exactDisplay != null)
+            return exactDisplay;
+
+        var norm = TeamNameNormalizer.Normalize(trimmed);
+        if (string.IsNullOrEmpty(norm))
+            return null;
+
+        return teamAssignments.FirstOrDefault(ta =>
+            TeamNameNormalizer.Normalize(ta.Team.Name) == norm
+            || TeamNameNormalizer.Normalize(ta.Team.DisplayName) == norm);
     }
 
     private static bool IsByeMarker(string? name)
