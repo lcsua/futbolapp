@@ -1469,10 +1469,10 @@ body {
 
 .v2-round-pills {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.15rem;
   overflow-x: auto;
-  padding-bottom: 0.35rem;
-  margin: 0 0 var(--space-4);
+  padding-bottom: 0.15rem;
+  margin: 0 0 var(--space-3);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
@@ -1481,58 +1481,74 @@ body {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  height: 2.15rem;
-  padding: 0 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--v2-surface);
-  color: var(--v2-text) !important;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.85rem;
+  padding: 0 0.45rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--v2-text-secondary) !important;
   font-size: var(--font-size-secondary);
   font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
   text-decoration: none;
   white-space: nowrap;
 }
 
 .v2-round-pills__item:hover {
-  border-color: color-mix(in srgb, var(--v2-primary) 35%, var(--border));
+  color: var(--v2-text) !important;
 }
 
 .v2-round-pills__item.is-active {
-  background: var(--v2-primary);
-  border-color: var(--v2-primary);
-  color: #fff !important;
+  background: transparent;
+  border-bottom-color: var(--v2-primary);
+  color: var(--v2-primary) !important;
+  font-weight: var(--font-weight-semibold);
 }
 
 .v2-result-group {
   margin-bottom: var(--space-7);
 }
 
+.v2-result-group__head {
+  margin-bottom: var(--space-4);
+}
+
+.v2-result-group__division {
+  margin: 0;
+  font-size: clamp(1rem, 2.8vw, 1.125rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--v2-text);
+  line-height: 1.25;
+}
+
 .v2-result-group__meta {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   align-items: baseline;
-  gap: 0.35rem;
-  margin-bottom: var(--space-3);
-  text-align: center;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
 }
 
 .v2-result-group__round {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: var(--font-size-label-lg);
-  font-weight: var(--font-weight-semibold);
+  font-weight: 650;
   color: var(--v2-text);
 }
 
 .v2-result-group__sep {
   color: var(--v2-text-secondary);
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
 .v2-result-group__date {
   font-size: var(--font-size-secondary);
-  font-weight: var(--font-weight-medium);
+  font-weight: 500;
   color: var(--v2-text-secondary);
 }
 

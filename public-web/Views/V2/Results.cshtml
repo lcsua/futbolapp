@@ -98,11 +98,6 @@
     foreach (var div in Model.Divisions)
     {
         <section class="v2-result-group" aria-labelledby="div-@div.DivisionSlug">
-            @if (Model.Divisions.Count > 1 || selectedDivision == "all")
-            {
-                <h2 id="div-@div.DivisionSlug" class="v2-section-title">@div.DivisionName</h2>
-            }
-
             @if (div.Data != null && div.Data.Any())
             {
                 var activeMatchday = requestingRound.HasValue
@@ -110,37 +105,49 @@
                     : div.Data.FirstOrDefault();
                 if (activeMatchday == null) activeMatchday = div.Data.FirstOrDefault();
                 var currentRoundNav = activeMatchday?.Round;
+                var showRoundNav = div.Data.Count > 1;
 
-                <div class="v2-round-pills" role="list" aria-label="Fechas">
-                    @foreach (var matchday in div.Data)
+                <div class="v2-result-group__head">
+                    <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">@div.DivisionName</h2>
+
+                    @if (activeMatchday != null)
                     {
-                        var href = $"?season={Uri.EscapeDataString(Model.SeasonSlug)}&division={Uri.EscapeDataString(selectedDivision)}&round={matchday.Round}";
-                        <a class="v2-round-pills__item @(matchday.Round == currentRoundNav ? "is-active" : null)"
-                           role="listitem"
-                           href="@href"
-                           aria-current="@(matchday.Round == currentRoundNav ? "page" : null)">Fecha @matchday.Round</a>
+                        var groupDate = activeMatchday.Matches
+                            .Select(m => m.Kickoff.Date)
+                            .Where(d => d != default)
+                            .GroupBy(d => d)
+                            .OrderByDescending(g => g.Count())
+                            .Select(g => g.Key)
+                            .FirstOrDefault();
+
+                        <div class="v2-result-group__meta">
+                            <span class="v2-result-group__round">Fecha @activeMatchday.Round</span>
+                            @if (groupDate != default)
+                            {
+                                <span class="v2-result-group__sep" aria-hidden="true">·</span>
+                                <span class="v2-result-group__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(groupDate)</span>
+                            }
+                        </div>
                     }
                 </div>
 
-                @if (activeMatchday != null && activeMatchday.Matches.Any())
+                @if (showRoundNav)
                 {
-                    var groupDate = activeMatchday.Matches
-                        .Select(m => m.Kickoff.Date)
-                        .Where(d => d != default)
-                        .GroupBy(d => d)
-                        .OrderByDescending(g => g.Count())
-                        .Select(g => g.Key)
-                        .FirstOrDefault();
-
-                    <div class="v2-result-group__meta">
-                        <span class="v2-result-group__round">Fecha @activeMatchday.Round</span>
-                        @if (groupDate != default)
+                    <div class="v2-round-pills" role="list" aria-label="Cambiar fecha">
+                        @foreach (var matchday in div.Data)
                         {
-                            <span class="v2-result-group__sep" aria-hidden="true">·</span>
-                            <span class="v2-result-group__date">@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(groupDate)</span>
+                            var href = $"?season={Uri.EscapeDataString(Model.SeasonSlug)}&division={Uri.EscapeDataString(selectedDivision)}&round={matchday.Round}";
+                            <a class="v2-round-pills__item @(matchday.Round == currentRoundNav ? "is-active" : null)"
+                               role="listitem"
+                               href="@href"
+                               aria-label="Fecha @matchday.Round"
+                               aria-current="@(matchday.Round == currentRoundNav ? "page" : null)">@matchday.Round</a>
                         }
                     </div>
+                }
 
+                @if (activeMatchday != null && activeMatchday.Matches.Any())
+                {
                     <div class="v2-result-list">
                         @{
                             ViewData["LeagueSlug"] = leagueSlug;
@@ -158,6 +165,7 @@
             }
             else
             {
+                <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">@div.DivisionName</h2>
                 <div class="v2-empty">No hay resultados registrados en esta división.</div>
             }
         </section>
