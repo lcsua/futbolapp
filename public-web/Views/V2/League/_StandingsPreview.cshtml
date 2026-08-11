@@ -1,0 +1,37 @@
+@model PublicWeb.Models.Public.StandingsPreviewGroupViewModel
+@{
+    var leagueSlug = ViewData["LeagueSlug"] as string ?? "";
+    ViewData["BadgeSize"] = "sm";
+}
+<section class="v2-standings-preview" aria-labelledby="preview-@Model.DivisionSlug">
+    <h3 id="preview-@Model.DivisionSlug" class="v2-result-group__division v2-standings-preview__title">
+        <span class="v2-result-group__division-label">División:</span>
+        <span class="v2-result-group__division-name">@Model.DivisionName</span>
+    </h3>
+    <ol class="v2-standings-preview__list">
+        @foreach (var row in Model.Rows)
+        {
+            var teamUrl = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(row.Team.Slug)
+                ? Url.Content($"~/v2/ligas/{leagueSlug}/{row.Team.Slug}")
+                : null;
+            <li class="v2-standings-preview__row @(row.Position == 1 ? "is-leader" : null)">
+                <span class="v2-standings-preview__pos">@row.Position</span>
+                @if (teamUrl != null)
+                {
+                    <a class="v2-standings-preview__team" href="@teamUrl">
+                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
+                        <span class="v2-standings-preview__name">@row.Team.Name</span>
+                    </a>
+                }
+                else
+                {
+                    <div class="v2-standings-preview__team">
+                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
+                        <span class="v2-standings-preview__name">@row.Team.Name</span>
+                    </div>
+                }
+                <span class="v2-standings-preview__pts v2-nums">@row.Points</span>
+            </li>
+        }
+    </ol>
+</section>

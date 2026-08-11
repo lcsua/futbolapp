@@ -164,3 +164,23 @@ public class LeagueDocumentsPageViewModel
     public LeagueDocumentCategoryViewModel? ActiveCategory { get; set; }
 }
 
+/// <summary>V2 league home composition (portada). Data sliced from existing public endpoints.</summary>
+public class LeagueHomeViewModel
+{
+    public LeagueViewModel League { get; set; } = new();
+    public string SeasonName { get; set; } = string.Empty;
+    public string SeasonSlug { get; set; } = string.Empty;
+    public List<DivisionViewModel> Divisions { get; set; } = new();
+    public List<MatchViewModel> RecentResults { get; set; } = new();
+    public List<MatchViewModel> UpcomingMatches { get; set; } = new();
+    public List<StandingsPreviewGroupViewModel> StandingsPreviews { get; set; } = new();
+    public List<TeamViewModel> SampleTeams { get; set; } = new();
+}
+
+public class StandingsPreviewGroupViewModel
+{
+    public string DivisionName { get; set; } = string.Empty;
+    public string DivisionSlug { get; set; } = string.Empty;
+    public List<StandingsRowViewModel> Rows { get; set; } = new();
+}
+

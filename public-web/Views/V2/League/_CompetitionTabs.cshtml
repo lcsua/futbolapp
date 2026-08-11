@@ -9,7 +9,9 @@
 @if (!string.IsNullOrWhiteSpace(leagueSlug))
 {
     <nav class="v2-tabs v2-league-tabs" aria-label="Secciones de la liga">
-        <a class="v2-tabs__link" href="@Url.Content($"~/ligas/{leagueSlug}")@qs">Resumen</a>
+        <a class="v2-tabs__link @(active == "resumen" ? "is-active" : null)"
+           href="@Url.Content($"~/v2/ligas/{leagueSlug}")@qs"
+           aria-current="@(active == "resumen" ? "page" : null)">Resumen</a>
         <a class="v2-tabs__link @(active == "posiciones" ? "is-active" : null)"
            href="@Url.Content($"~/v2/ligas/{leagueSlug}/posiciones")@qs"
            aria-current="@(active == "posiciones" ? "page" : null)">Posiciones</a>

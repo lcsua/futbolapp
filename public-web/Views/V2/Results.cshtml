@@ -24,14 +24,14 @@
         @if (league != null)
         {
             <span aria-hidden="true">/</span>
-            <a href="@Url.Content($"~/ligas/{leagueSlug}")">@league.Name</a>
+            <a href="@Url.Content($"~/v2/ligas/{leagueSlug}")">@league.Name</a>
         }
         <span aria-hidden="true">/</span>
         <span aria-current="page">Resultados</span>
     </div>
     @if (league != null)
     {
-        <a class="v2-crumb__mobile" href="@Url.Content($"~/ligas/{leagueSlug}")">
+        <a class="v2-crumb__mobile" href="@Url.Content($"~/v2/ligas/{leagueSlug}")">
             <span aria-hidden="true">‹</span> @league.Name
         </a>
     }

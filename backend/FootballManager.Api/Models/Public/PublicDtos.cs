@@ -10,6 +10,7 @@ public class LeaguePublicDto
     public string Slug { get; set; } = string.Empty;
     public string Country { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string? LogoUrl { get; set; }
 }
 
 public class TeamPublicDto

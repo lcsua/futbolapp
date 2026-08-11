@@ -6,7 +6,7 @@
 <section>
     <h1 class="v2-page-title">Ligas</h1>
     <p class="v2-page-lead" style="margin-bottom: var(--space-6, 1.5rem)">
-        Vista previa V2 · entrá a un equipo desde el sitio actual o usá una URL /v2/ligas/…/equipo.
+        Elegí una competición para ver su portada V2.
     </p>
 
     @if (Model == null || !Model.Any())
@@ -18,11 +18,12 @@
         <div class="v2-stack">
             @foreach (var league in Model)
             {
-                <a class="v2-match" href="@Url.Content($"~/ligas/{league.Slug}")">
+                <a class="v2-match" href="@Url.Content($"~/v2/ligas/{league.Slug}")">
                     <strong style="display:block;font-size:1.05rem;font-weight:650">@league.Name</strong>
-                    <span class="v2-match__meta" style="justify-content:flex-start;margin-top:0.45rem">
-                        Sitio actual · rediseño de portada en Fase 3
-                    </span>
+                    @if (!string.IsNullOrWhiteSpace(league.Country))
+                    {
+                        <span class="v2-match__meta" style="justify-content:flex-start;margin-top:0.45rem">@league.Country</span>
+                    }
                 </a>
             }
         </div>

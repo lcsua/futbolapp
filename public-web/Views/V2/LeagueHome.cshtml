@@ -1,0 +1,157 @@
+@model PublicWeb.Models.Public.LeagueHomeViewModel
+@{
+    Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    var league = Model.League;
+    var leagueSlug = league.Slug;
+    var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
+    var seasonQs = string.IsNullOrWhiteSpace(Model.SeasonSlug)
+        ? ""
+        : $"?season={Uri.EscapeDataString(Model.SeasonSlug)}";
+
+    ViewData["Title"] = league.Name;
+    ViewData["Description"] = string.IsNullOrWhiteSpace(league.Description)
+        ? $"Portada de {league.Name}."
+        : league.Description;
+    ViewBag.PageLabel = "Resumen";
+    ViewBag.SeasonName = Model.SeasonName;
+    ViewBag.SeasonSlug = Model.SeasonSlug;
+    ViewBag.LeagueSlug = leagueSlug;
+    ViewData["LeagueSlug"] = leagueSlug;
+}
+
+<nav class="v2-crumb" aria-label="Migajas">
+    <div class="v2-crumb__desktop">
+        <a href="@Url.Content("~/v2/ligas")">Ligas</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">@league.Name</span>
+    </div>
+    <a class="v2-crumb__mobile" href="@Url.Content("~/v2/ligas")">
+        <span aria-hidden="true">‹</span> Ligas
+    </a>
+</nav>
+
+@await Html.PartialAsync("~/Views/V2/League/_LeagueHeader.cshtml", league)
+
+@await Html.PartialAsync("~/Views/V2/League/_CompetitionTabs.cshtml")
+
+@if (seasons != null && seasons.Count > 1)
+{
+    <form method="get" class="v2-filter-bar" aria-label="Filtro de temporada">
+        <div class="v2-filter-bar__group">
+            <label for="v2-filter-season">Temporada</label>
+            <select id="v2-filter-season" name="season" class="v2-select" onchange="this.form.submit()">
+                @foreach (var s in seasons)
+                {
+                    if (Model.SeasonSlug == s.Slug)
+                    {
+                        <option value="@s.Slug" selected>@s.Name</option>
+                    }
+                    else
+                    {
+                        <option value="@s.Slug">@s.Name</option>
+                    }
+                }
+            </select>
+        </div>
+    </form>
+}
+
+@if (Model.Divisions.Any())
+{
+    <section class="v2-home-section" aria-labelledby="home-divisions">
+        <h2 id="home-divisions" class="v2-section-title">Divisiones</h2>
+        <ul class="v2-chip-list">
+            @foreach (var d in Model.Divisions)
+            {
+                var href = Url.Content($"~/v2/ligas/{leagueSlug}/posiciones")
+                           + (string.IsNullOrWhiteSpace(Model.SeasonSlug)
+                               ? $"?division={Uri.EscapeDataString(d.Slug)}"
+                               : $"?season={Uri.EscapeDataString(Model.SeasonSlug)}&division={Uri.EscapeDataString(d.Slug)}");
+                <li>
+                    <a class="v2-chip" href="@href">@d.Name</a>
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+<div class="v2-home-grid">
+    <section class="v2-home-section" aria-labelledby="home-results">
+        <div class="v2-home-section__head">
+            <h2 id="home-results" class="v2-section-title">Últimos resultados</h2>
+        </div>
+        @if (Model.RecentResults.Any())
+        {
+            <div class="v2-result-list">
+                @foreach (var match in Model.RecentResults)
+                {
+                    @await Html.PartialAsync("~/Views/V2/Results/_ResultMatchRow.cshtml", match)
+                }
+            </div>
+            <a class="v2-more-link" href="@Url.Content($"~/v2/ligas/{leagueSlug}/resultados")@seasonQs">Ver todos los resultados →</a>
+        }
+        else
+        {
+            <div class="v2-empty">Todavía no hay resultados cargados.</div>
+        }
+    </section>
+
+    <section class="v2-home-section" aria-labelledby="home-upcoming">
+        <div class="v2-home-section__head">
+            <h2 id="home-upcoming" class="v2-section-title">Próximos partidos</h2>
+        </div>
+        @if (Model.UpcomingMatches.Any())
+        {
+            <div class="v2-match-list">
+                @foreach (var match in Model.UpcomingMatches)
+                {
+                    @await Html.PartialAsync("~/Views/V2/Team/_MatchRow.cshtml", match)
+                }
+            </div>
+            <a class="v2-more-link" href="@Url.Content($"~/ligas/{leagueSlug}/partidos")@seasonQs">Ver próximos partidos →</a>
+        }
+        else
+        {
+            <div class="v2-empty">Sin próximos partidos programados.</div>
+        }
+    </section>
+</div>
+
+<section class="v2-home-section" aria-labelledby="home-standings">
+    <div class="v2-home-section__head">
+        <h2 id="home-standings" class="v2-section-title">Posiciones destacadas</h2>
+    </div>
+    @if (Model.StandingsPreviews.Any())
+    {
+        <div class="v2-standings-preview-grid">
+            @foreach (var preview in Model.StandingsPreviews)
+            {
+                @await Html.PartialAsync("~/Views/V2/League/_StandingsPreview.cshtml", preview)
+            }
+        </div>
+        <a class="v2-more-link" href="@Url.Content($"~/v2/ligas/{leagueSlug}/posiciones")@seasonQs">Ver tabla completa →</a>
+    }
+    else
+    {
+        <div class="v2-empty">No hay posiciones disponibles para esta selección.</div>
+    }
+</section>
+
+@if (Model.SampleTeams.Any())
+{
+    <section class="v2-home-section" aria-labelledby="home-teams">
+        <h2 id="home-teams" class="v2-section-title">Equipos</h2>
+        <ul class="v2-team-chip-list">
+            @foreach (var team in Model.SampleTeams)
+            {
+                ViewData["BadgeSize"] = "sm";
+                <li>
+                    <a class="v2-team-chip" href="@Url.Content($"~/v2/ligas/{leagueSlug}/{team.Slug}")">
+                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team)
+                        <span>@team.Name</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </section>
+}

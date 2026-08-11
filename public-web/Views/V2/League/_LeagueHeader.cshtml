@@ -2,14 +2,31 @@
 @{
     var league = Model ?? ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
     var seasonName = ViewBag.SeasonName as string;
-    var pageLabel = ViewBag.PageLabel as string ?? "Resultados";
+    var pageLabel = ViewBag.PageLabel as string ?? "Resumen";
+    var showLocation = !string.IsNullOrWhiteSpace(league?.Country);
+    var hasLogo = !string.IsNullOrWhiteSpace(league?.LogoUrl);
+    var initials = PublicWeb.Helpers.TeamDisplayHelper.GetInitials(league?.Name);
 }
 <header class="v2-league-header">
     <div class="v2-league-header__identity">
-        @if (league != null && !string.IsNullOrWhiteSpace(league.LogoUrl))
+        @if (league != null)
         {
-            <div class="v2-league-header__logo">
-                <img src="@league.LogoUrl" alt="" />
+            <div class="v2-league-header__logo @(hasLogo ? "has-logo" : "is-fallback")"
+                 data-v2-team-badge
+                 aria-hidden="true">
+                @if (hasLogo)
+                {
+                    <img src="@league.LogoUrl"
+                         alt=""
+                         loading="lazy"
+                         decoding="async"
+                         data-v2-team-logo />
+                    <span class="v2-league-header__initials" data-v2-team-initials>@initials</span>
+                }
+                else
+                {
+                    <span class="v2-league-header__initials">@initials</span>
+                }
             </div>
         }
         <div class="v2-league-header__copy">
@@ -18,6 +35,10 @@
             @if (!string.IsNullOrWhiteSpace(seasonName))
             {
                 <p class="v2-league-header__sub">@seasonName</p>
+            }
+            @if (showLocation)
+            {
+                <p class="v2-league-header__loc">@league!.Country</p>
             }
         </div>
     </div>

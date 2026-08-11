@@ -107,7 +107,8 @@ public class PublicStructuredService
                 Name = l.Name,
                 Slug = l.Slug,
                 Country = l.Country ?? string.Empty,
-                Description = l.Description ?? string.Empty
+                Description = l.Description ?? string.Empty,
+                LogoUrl = string.IsNullOrWhiteSpace(l.LogoUrl) ? null : l.LogoUrl
             })
             .ToListAsync(cancellationToken);
     }
@@ -123,7 +124,8 @@ public class PublicStructuredService
             Name = league.Name,
             Slug = league.Slug,
             Country = league.Country ?? string.Empty,
-            Description = league.Description ?? string.Empty
+            Description = league.Description ?? string.Empty,
+            LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl
         };
     }
 
@@ -158,7 +160,8 @@ public class PublicStructuredService
                 Name = league.Name,
                 Slug = league.Slug,
                 Country = league.Country ?? string.Empty,
-                Description = league.Description ?? string.Empty
+                Description = league.Description ?? string.Empty,
+                LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl
             },
             Season = new SeasonPublicDto
             {

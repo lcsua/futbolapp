@@ -12,6 +12,10 @@ public class V2LeagueController : Controller
 {
     private const int SummaryPageSize = 5;
     private const int PartidosPageSize = 10;
+    private const int HomeMatchPreviewCount = 5;
+    private const int HomeStandingsTop = 4;
+    private const int HomeStandingsMaxDivisions = 4;
+    private const int HomeSampleTeams = 8;
 
     private readonly LeaguePublicService _leagueService;
     private readonly TeamPublicService _teamService;
@@ -20,6 +24,85 @@ public class V2LeagueController : Controller
     {
         _leagueService = leagueService;
         _teamService = teamService;
+    }
+
+    /// <summary>League home / Resumen — must be registered before Team ({slug}/{teamSlug}).</summary>
+    [HttpGet("{slug}")]
+    public async Task<IActionResult> Home(string slug, [FromQuery] string? season)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        var selectedSeason = meta.FirstOrDefault(s =>
+                                !string.IsNullOrWhiteSpace(season)
+                                && string.Equals(s.Slug, season, StringComparison.OrdinalIgnoreCase))
+            ?? meta.FirstOrDefault(s => s.IsActive)
+            ?? meta.FirstOrDefault();
+        var seasonSlug = selectedSeason?.Slug;
+
+        var resultsTask = _leagueService.GetResultsAsync(slug, seasonSlug, null, null);
+        var fixtureTask = _leagueService.GetFixtureAsync(slug, seasonSlug, null, null);
+        var standingsTask = _leagueService.GetStandingsAsync(slug, seasonSlug, null);
+        await Task.WhenAll(resultsTask, fixtureTask, standingsTask);
+
+        var results = await resultsTask;
+        var fixture = await fixtureTask;
+        var standings = await standingsTask;
+
+        var recent = FlattenMatches(results)
+            .OrderByDescending(m => m.Kickoff)
+            .Take(HomeMatchPreviewCount)
+            .ToList();
+
+        var upcoming = FlattenMatches(fixture)
+            .OrderBy(m => m.Kickoff)
+            .Take(HomeMatchPreviewCount)
+            .ToList();
+
+        var previews = (standings?.Divisions ?? new List<DivisionGroupViewModel<StandingsRowViewModel>>())
+            .Where(d => d.Data != null && d.Data.Any())
+            .Take(HomeStandingsMaxDivisions)
+            .Select(d => new StandingsPreviewGroupViewModel
+            {
+                DivisionName = d.DivisionName,
+                DivisionSlug = d.DivisionSlug,
+                Rows = d.Data.OrderBy(r => r.Position).Take(HomeStandingsTop).ToList()
+            })
+            .ToList();
+
+        var sampleTeams = (standings?.Divisions ?? new List<DivisionGroupViewModel<StandingsRowViewModel>>())
+            .SelectMany(d => d.Data ?? new List<StandingsRowViewModel>())
+            .OrderBy(r => r.Position)
+            .Select(r => r.Team)
+            .Where(t => !string.IsNullOrWhiteSpace(t.Slug))
+            .GroupBy(t => t.Id)
+            .Select(g => g.First())
+            .Take(HomeSampleTeams)
+            .ToList();
+
+        var model = new LeagueHomeViewModel
+        {
+            League = league,
+            SeasonName = results?.SeasonName ?? fixture?.SeasonName ?? standings?.SeasonName ?? selectedSeason?.Name ?? string.Empty,
+            SeasonSlug = results?.SeasonSlug ?? fixture?.SeasonSlug ?? standings?.SeasonSlug ?? selectedSeason?.Slug ?? string.Empty,
+            Divisions = selectedSeason?.Divisions ?? new List<DivisionViewModel>(),
+            RecentResults = recent,
+            UpcomingMatches = upcoming,
+            StandingsPreviews = previews,
+            SampleTeams = sampleTeams
+        };
+
+        ViewBag.League = league;
+        ViewBag.Seasons = meta;
+        ViewBag.V2ActiveNav = "ligas";
+        ViewBag.V2LeagueTab = "resumen";
+        ViewBag.SeasonName = model.SeasonName;
+        ViewBag.SeasonSlug = model.SeasonSlug;
+        ViewBag.LeagueSlug = league.Slug;
+        ViewBag.PageLabel = "Resumen";
+
+        return View("~/Views/V2/LeagueHome.cshtml", model);
     }
 
     /// <summary>League results — must be registered before Team ({slug}/{teamSlug}).</summary>
@@ -175,6 +258,21 @@ public class V2LeagueController : Controller
     {
         var t = (tab ?? "resumen").Trim().ToLowerInvariant();
         return t is "partidos" or "estadisticas" ? t : "resumen";
+    }
+
+    private static IEnumerable<MatchViewModel> FlattenMatches(SeasonGroupedViewModel<MatchdayGroupViewModel>? grouped)
+    {
+        if (grouped?.Divisions == null) yield break;
+        foreach (var div in grouped.Divisions)
+        {
+            if (div.Data == null) continue;
+            foreach (var day in div.Data)
+            {
+                if (day.Matches == null) continue;
+                foreach (var match in day.Matches)
+                    yield return match;
+            }
+        }
     }
 
     private static bool IsReservedTeamSlug(string teamSlug) =>
