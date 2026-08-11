@@ -177,7 +177,8 @@
         "mappedTeam": "Equipo en la división",
         "chooseTeam": "Elegir equipo…",
         "matches": "partidos",
-        "readyHint": "Matching completo. Revisá la vista previa y confirmá la importación (reemplaza el fixture actual de la división)."
+        "readyHint": "Matching completo. Revisá la vista previa y confirmá la importación (reemplaza el fixture actual de la división).",
+        "confirmSuggestions": "Confirmar sugerencias y continuar"
       },
       "cols": {
         "round": "Fecha",

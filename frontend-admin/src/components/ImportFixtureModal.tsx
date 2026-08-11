@@ -106,15 +106,15 @@ export function ImportFixtureModal({
     if (fileRef.current) fileRef.current.value = ''
   }, [open, divisionId, seasonId])
 
-  // After team mappings are complete, build the resolved fixture preview.
+  const mappingUnresolved = (m: TeamCsvRowMapping) => m.action !== 'match' || !m.teamId
+
+  // Preview as soon as every CSV name has a selected division team (fuzzy suggestions count).
   useEffect(() => {
     if (!importType || !parsedRows || !teamMappings) {
       setPreviewRows(null)
       return
     }
-    const unresolved =
-      mappingsNeedReview(teamMappings) || teamMappings.some((m) => m.action === 'create' || !m.teamId)
-    if (unresolved) {
+    if (teamMappings.some(mappingUnresolved)) {
       setPreviewRows(null)
       return
     }
@@ -234,12 +234,22 @@ export function ImportFixtureModal({
     })
   }
 
+  const confirmSuggestedMappings = () => {
+    setTeamMappings((prev) => {
+      if (!prev) return prev
+      return prev.map((row) =>
+        row.action === 'match' && row.teamId ? { ...row, needsReview: false } : row,
+      )
+    })
+  }
+
+  const missingTeamCount = teamMappings?.filter(mappingUnresolved).length ?? 0
+  const reviewHintCount =
+    teamMappings?.filter((m) => m.needsReview || mappingUnresolved(m)).length ?? 0
+
   const showReview =
     !!teamMappings &&
-    (mappingsNeedReview(teamMappings) || teamMappings.some((m) => m.action === 'create'))
-
-  const unresolvedCount =
-    teamMappings?.filter((m) => m.needsReview || m.action !== 'match' || !m.teamId).length ?? 0
+    (mappingsNeedReview(teamMappings) || teamMappings.some((m) => m.action === 'create' || !m.teamId))
 
   const canImport =
     !!importType &&
@@ -247,7 +257,7 @@ export function ImportFixtureModal({
     !!teamMappings &&
     !!previewRows &&
     previewRows.length > 0 &&
-    unresolvedCount === 0 &&
+    missingTeamCount === 0 &&
     !analyzing &&
     !importing
 
@@ -371,8 +381,13 @@ export function ImportFixtureModal({
         {showReview && teamMappings && (
           <Box sx={{ mt: 2 }}>
             <Alert severity="info" sx={{ mb: 1.5 }}>
-              {t('fixtures.importModal.reviewHint', { count: unresolvedCount })}
+              {t('fixtures.importModal.reviewHint', { count: reviewHintCount })}
             </Alert>
+            {missingTeamCount === 0 && (
+              <Button size="small" variant="outlined" sx={{ mb: 1.5 }} onClick={confirmSuggestedMappings}>
+                {t('fixtures.importModal.confirmSuggestions')}
+              </Button>
+            )}
             <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 280 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
@@ -383,7 +398,7 @@ export function ImportFixtureModal({
                 </TableHead>
                 <TableBody>
                   {teamMappings.map((row, mappingIndex) => (
-                    <TableRow key={`${row.csvName}-${mappingIndex}`} selected={row.needsReview || row.action === 'create'}>
+                    <TableRow key={`${row.csvName}-${mappingIndex}`} selected={row.needsReview || mappingUnresolved(row)}>
                       <TableCell>
                         <Typography variant="body2">{row.csvName}</Typography>
                         {row.score > 0 && (
@@ -418,7 +433,6 @@ export function ImportFixtureModal({
                                 {c.score > 0 ? ` (${Math.round(c.score * 100)}%)` : ''}
                               </MenuItem>
                             ))}
-                            {/* Always allow picking any division team */}
                             {row.candidates.length > 0 &&
                               divisionTeams
                                 .filter((tm) => !row.candidates.some((c) => c.teamId === tm.id))
@@ -438,7 +452,7 @@ export function ImportFixtureModal({
           </Box>
         )}
 
-        {previewRows && previewRows.length > 0 && importType && !showReview && (
+        {previewRows && previewRows.length > 0 && importType && (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle2" color="text.secondary">
               {t('fixtures.importModal.formatDetected')} {importType} · {previewRows.length}{' '}
