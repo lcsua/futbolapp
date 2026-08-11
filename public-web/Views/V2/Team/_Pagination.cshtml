@@ -21,7 +21,8 @@
         q.Add($"{paramName}={page}");
         if (!string.IsNullOrWhiteSpace(otherParamName))
             q.Add($"{otherParamName}={otherParamValue}");
-        return Url.Content($"~/v2/ligas/{leagueSlug}/{teamSlug}") + "?" + string.Join("&", q) + "#" + fragment;
+        return Url.Content($"~/v2/ligas/{leagueSlug}/{teamSlug}") + "?" + string.Join("&", q)
+            + (string.IsNullOrWhiteSpace(fragment) ? "" : "#" + fragment);
     }
 
     var prevDisabled = current <= 1;

@@ -8,8 +8,8 @@
         .Take(slots)
         .ToList();
 }
-<div class="v2-form" aria-label="Forma reciente">
-    <span class="v2-form__label">Forma</span>
+<div class="v2-form v2-form--header" aria-label="Racha reciente">
+    <span class="v2-form__label">Racha reciente</span>
     <div class="v2-form__slots" role="list">
         @for (var i = 0; i < slots; i++)
         {
@@ -27,7 +27,7 @@
             }
             else
             {
-                <span class="v2-form__slot is-empty" role="listitem" title="Sin disputar">-</span>
+                <span class="v2-form__slot is-empty" role="listitem" title="Sin partido disponible">-</span>
             }
         }
     </div>

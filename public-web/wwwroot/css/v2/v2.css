@@ -482,9 +482,9 @@ body {
 .v2-team-hero {
   display: grid;
   gap: var(--space-5);
-  padding-bottom: var(--space-5);
-  margin-bottom: var(--space-2);
-  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-4);
+  margin-bottom: 0;
+  border-bottom: 0;
 }
 
 .v2-team-header__identity,
@@ -585,7 +585,7 @@ body {
   .v2-lbl-short { display: inline; }
 }
 
-/* Tabs — flat links, no overflow scrollbar chrome */
+/* Tabs — flat buttons, no overflow scrollbar chrome */
 .v2-tabs {
   display: flex;
   gap: 0;
@@ -596,22 +596,41 @@ body {
 
 .v2-tabs__link {
   flex: 1 1 auto;
+  appearance: none;
+  border: 0;
+  background: transparent;
   text-align: center;
-  color: var(--v2-text-secondary) !important;
+  color: var(--v2-text-secondary);
+  font-family: inherit;
   font-weight: var(--font-weight-medium);
   font-size: var(--font-size-secondary-lg);
   padding: 0.75rem 0.4rem;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   white-space: nowrap;
+  cursor: pointer;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.v2-tabs__link:hover { color: var(--v2-text) !important; }
+.v2-tabs__link:hover { color: var(--v2-text); }
 
 .v2-tabs__link.is-active {
-  color: var(--v2-primary) !important;
+  color: var(--v2-primary);
   font-weight: var(--font-weight-semibold);
   border-bottom-color: var(--v2-primary);
+}
+
+.v2-panel {
+  transition: opacity 120ms ease;
+}
+
+.v2-panel[hidden] {
+  display: none !important;
+}
+
+.v2-panel.is-visible {
+  opacity: 1;
 }
 
 @media (min-width: 400px) {
@@ -641,7 +660,7 @@ body {
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
-  margin-bottom: var(--space-2);
+  margin: var(--space-4) 0 0;
 }
 
 /* Summary 2-col on desktop */
@@ -908,12 +927,18 @@ body {
   }
 }
 
-/* Form */
+/* Form / racha — compact under header metrics */
 .v2-form {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+.v2-form--header {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
 }
 
 .v2-form__label {
@@ -962,8 +987,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3) var(--space-5);
-  margin: var(--space-6) 0 0;
-  padding-top: var(--space-5);
+  margin: var(--space-5) 0 0;
+  padding-top: var(--space-4);
   border-top: 1px solid var(--border);
   color: var(--v2-text-secondary);
   font-size: var(--font-size-secondary-lg);
@@ -1259,7 +1284,7 @@ body {
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.85fr);
     align-items: end;
     gap: var(--space-7);
-    padding-bottom: var(--space-6);
+    padding-bottom: var(--space-4);
   }
 
   .v2-team-header__name,

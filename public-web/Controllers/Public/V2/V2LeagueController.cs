@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PublicWeb.Models.Public;
 using PublicWeb.Services.Public;
 
 namespace PublicWeb.Controllers.Public.V2;
@@ -29,7 +30,6 @@ public class V2LeagueController : Controller
         [FromQuery] string? tab,
         [FromQuery] int? resultadosPage,
         [FromQuery] int? proximosPage,
-        // Compat with existing / original query names
         [FromQuery] int? resultsPage,
         [FromQuery] int? nextPage)
     {
@@ -40,23 +40,35 @@ public class V2LeagueController : Controller
         var rPage = Math.Max(1, resultadosPage ?? resultsPage ?? 1);
         var nPage = Math.Max(1, proximosPage ?? nextPage ?? 1);
 
-        // Resumen / estadísticas: siempre página 1 (featured + forma). Partidos: paginación real.
-        var pageSize = activeTab == "partidos" ? PartidosPageSize : SummaryPageSize;
-        var requestResultsPage = activeTab == "partidos" ? rPage : 1;
-        var requestNextPage = activeTab == "partidos" ? nPage : 1;
+        TeamDetailViewModel partidos;
+        TeamDetailViewModel summary;
 
-        var model = await _teamService.GetTeamSummaryAsync(
-            slug, teamSlug, season, requestNextPage, requestResultsPage, pageSize);
-        if (model == null) return NotFound();
+        if (rPage == 1 && nPage == 1)
+        {
+            var firstPage = await _teamService.GetTeamSummaryAsync(
+                slug, teamSlug, season, nextPage: 1, resultsPage: 1, pageSize: PartidosPageSize);
+            if (firstPage == null) return NotFound();
+            partidos = firstPage;
+            summary = firstPage;
+        }
+        else
+        {
+            var recent = await _teamService.GetTeamSummaryAsync(
+                slug, teamSlug, season, nextPage: 1, resultsPage: 1, pageSize: SummaryPageSize);
+            if (recent == null) return NotFound();
+            summary = recent;
 
-        ViewBag.League = model.League ?? await _leagueService.GetLeagueBySlugAsync(slug);
+            partidos = await _teamService.GetTeamSummaryAsync(
+                slug, teamSlug, season, nPage, rPage, PartidosPageSize) ?? recent;
+        }
+
+        ViewBag.League = partidos.League ?? summary.League ?? await _leagueService.GetLeagueBySlugAsync(slug);
         ViewBag.Seasons = await _leagueService.GetLeagueMetaAsync(slug);
         ViewBag.V2ActiveNav = "ligas";
         ViewBag.V2TeamTab = activeTab;
-        ViewBag.V2ResultadosPage = model.LastResultsPage;
-        ViewBag.V2ProximosPage = model.NextMatchesPage;
+        ViewBag.V2Summary = summary;
 
-        return View("~/Views/V2/Team.cshtml", model);
+        return View("~/Views/V2/Team.cshtml", partidos);
     }
 
     [HttpGet("{slug}/{teamSlug}/pagina")]

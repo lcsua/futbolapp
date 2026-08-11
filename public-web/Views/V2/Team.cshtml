@@ -3,6 +3,7 @@
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
     var league = Model.League ?? ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
     var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
+    var summary = ViewBag.V2Summary as PublicWeb.Models.Public.TeamDetailViewModel ?? Model;
     var leagueSlug = league?.Slug ?? string.Empty;
     var teamSlug = Model.Team.Slug;
     var activeTab = (ViewBag.V2TeamTab as string) ?? "resumen";
@@ -10,17 +11,9 @@
     ViewData["Title"] = Model.Team.Name + (league != null ? $" · {league.Name}" : string.Empty);
     ViewData["Description"] = $"Ficha de {Model.Team.Name} en {league?.Name}.";
 
-    var lastMatch = Model.LastResults.FirstOrDefault();
-    var nextMatch = Model.NextMatches.FirstOrDefault();
-    var standing = Model.Standing;
-
-    string TabUrl(string tab)
-    {
-        var q = new List<string> { $"tab={tab}" };
-        if (!string.IsNullOrWhiteSpace(seasonSlug))
-            q.Add($"season={Uri.EscapeDataString(seasonSlug)}");
-        return Url.Content($"~/v2/ligas/{leagueSlug}/{teamSlug}") + "?" + string.Join("&", q) + "#" + tab;
-    }
+    var lastMatch = summary.LastResults.FirstOrDefault();
+    var nextMatch = summary.NextMatches.FirstOrDefault();
+    var standing = Model.Standing ?? summary.Standing;
 }
 
 <nav class="v2-crumb" aria-label="Migajas">
@@ -50,10 +43,12 @@
 
 @await Html.PartialAsync("~/Views/V2/Team/_TeamHeader.cshtml", Model)
 
+@await Html.PartialAsync("~/Views/V2/Team/_TeamForm.cshtml", summary)
+
 @if (seasons != null && seasons.Count > 1)
 {
-    <form method="get" class="v2-toolbar">
-        <input type="hidden" name="tab" value="@activeTab" />
+    <form method="get" class="v2-toolbar" data-v2-season-form>
+        <input type="hidden" name="tab" value="@activeTab" data-v2-season-tab />
         <label for="v2-season" class="visually-hidden">Temporada</label>
         <select id="v2-season" name="season" class="v2-select" onchange="this.form.submit()">
             @foreach (var s in seasons)
@@ -71,24 +66,40 @@
     </form>
 }
 
-<div class="v2-tabs" role="tablist" aria-label="Secciones del equipo">
-    <a class="v2-tabs__link @(activeTab == "resumen" ? "is-active" : null)"
-       href="@TabUrl("resumen")"
-       role="tab"
-       aria-selected="@(activeTab == "resumen" ? "true" : "false")">Resumen</a>
-    <a class="v2-tabs__link @(activeTab == "partidos" ? "is-active" : null)"
-       href="@TabUrl("partidos")"
-       role="tab"
-       aria-selected="@(activeTab == "partidos" ? "true" : "false")">Partidos</a>
-    <a class="v2-tabs__link @(activeTab == "estadisticas" ? "is-active" : null)"
-       href="@TabUrl("estadisticas")"
-       role="tab"
-       aria-selected="@(activeTab == "estadisticas" ? "true" : "false")">Estadísticas</a>
-</div>
+<div class="v2-team-tabs" data-v2-team-tabs data-v2-initial-tab="@activeTab">
+    <div class="v2-tabs" role="tablist" aria-label="Secciones del equipo">
+        <button type="button"
+                class="v2-tabs__link @(activeTab == "resumen" ? "is-active" : null)"
+                role="tab"
+                id="tab-resumen"
+                data-v2-tab="resumen"
+                aria-controls="panel-resumen"
+                aria-selected="@(activeTab == "resumen" ? "true" : "false")"
+                tabindex="@(activeTab == "resumen" ? "0" : "-1")">Resumen</button>
+        <button type="button"
+                class="v2-tabs__link @(activeTab == "partidos" ? "is-active" : null)"
+                role="tab"
+                id="tab-partidos"
+                data-v2-tab="partidos"
+                aria-controls="panel-partidos"
+                aria-selected="@(activeTab == "partidos" ? "true" : "false")"
+                tabindex="@(activeTab == "partidos" ? "0" : "-1")">Partidos</button>
+        <button type="button"
+                class="v2-tabs__link @(activeTab == "estadisticas" ? "is-active" : null)"
+                role="tab"
+                id="tab-estadisticas"
+                data-v2-tab="estadisticas"
+                aria-controls="panel-estadisticas"
+                aria-selected="@(activeTab == "estadisticas" ? "true" : "false")"
+                tabindex="@(activeTab == "estadisticas" ? "0" : "-1")">Estadísticas</button>
+    </div>
 
-@if (activeTab == "resumen")
-{
-    <section id="resumen" class="v2-panel" role="tabpanel">
+    <section id="panel-resumen"
+             class="v2-panel"
+             role="tabpanel"
+             aria-labelledby="tab-resumen"
+             data-v2-panel="resumen"
+             @(activeTab == "resumen" ? null : "hidden")>
         <div class="v2-summary-grid">
             @if (lastMatch != null)
             {
@@ -109,10 +120,6 @@
             }
         </div>
 
-        <div class="v2-block-gap">
-            @await Html.PartialAsync("~/Views/V2/Team/_TeamForm.cshtml", Model)
-        </div>
-
         @if (standing != null)
         {
             <p class="v2-inline-stats" aria-label="Resumen de resultados">
@@ -125,10 +132,13 @@
             </p>
         }
     </section>
-}
-else if (activeTab == "partidos")
-{
-    <section id="partidos" class="v2-panel" role="tabpanel">
+
+    <section id="panel-partidos"
+             class="v2-panel"
+             role="tabpanel"
+             aria-labelledby="tab-partidos"
+             data-v2-panel="partidos"
+             @(activeTab == "partidos" ? null : "hidden")>
         <h2 class="v2-section-title">Resultados</h2>
         <div class="v2-match-list">
             @if (Model.LastResults.Any())
@@ -153,7 +163,7 @@ else if (activeTab == "partidos")
             ViewData["Season"] = seasonSlug;
             ViewData["LeagueSlug"] = leagueSlug;
             ViewData["TeamSlug"] = teamSlug;
-            ViewData["Fragment"] = "partidos";
+            ViewData["Fragment"] = "";
         }
         @await Html.PartialAsync("~/Views/V2/Team/_Pagination.cshtml")
 
@@ -177,16 +187,17 @@ else if (activeTab == "partidos")
             ViewData["ParamName"] = "proximosPage";
             ViewData["OtherParamName"] = "resultadosPage";
             ViewData["OtherParamValue"] = Model.LastResultsPage;
-            ViewData["Fragment"] = "proximos";
+            ViewData["Fragment"] = "";
         }
-        <div id="proximos">
-            @await Html.PartialAsync("~/Views/V2/Team/_Pagination.cshtml")
-        </div>
+        @await Html.PartialAsync("~/Views/V2/Team/_Pagination.cshtml")
     </section>
-}
-else
-{
-    <section id="estadisticas" class="v2-panel" role="tabpanel">
+
+    <section id="panel-estadisticas"
+             class="v2-panel"
+             role="tabpanel"
+             aria-labelledby="tab-estadisticas"
+             data-v2-panel="estadisticas"
+             @(activeTab == "estadisticas" ? null : "hidden")>
         @if (standing != null)
         {
             <div class="v2-stats-blocks">
@@ -220,4 +231,8 @@ else
             <div class="v2-empty">No hay estadísticas disponibles para esta temporada.</div>
         }
     </section>
+</div>
+
+@section Scripts {
+    <script src="~/js/v2/team-tabs.js" asp-append-version="true"></script>
 }
