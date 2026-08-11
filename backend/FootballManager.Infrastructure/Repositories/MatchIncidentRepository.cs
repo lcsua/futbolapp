@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Domain.Entities;
+using FootballManager.Domain.Enums;
 using FootballManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -47,6 +48,15 @@ namespace FootballManager.Infrastructure.Repositories
             var incident = await _context.MatchIncidents.FindAsync(new object[] { id }, cancellationToken);
             if (incident != null)
                 _context.MatchIncidents.Remove(incident);
+        }
+
+        public async Task DeleteByFixtureAndTypeAsync(Guid fixtureId, MatchIncidentType incidentType, CancellationToken cancellationToken = default)
+        {
+            var incidents = await _context.MatchIncidents
+                .Where(i => i.FixtureId == fixtureId && i.IncidentType == incidentType)
+                .ToListAsync(cancellationToken);
+            if (incidents.Count > 0)
+                _context.MatchIncidents.RemoveRange(incidents);
         }
 
         public async Task<bool> ExistsByTeamIdAsync(Guid teamId, CancellationToken cancellationToken = default)

@@ -17,14 +17,15 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
 
             builder.Property(e => e.FirstName).IsRequired().HasMaxLength(100).HasColumnName("first_name");
             builder.Property(e => e.LastName).IsRequired().HasMaxLength(100).HasColumnName("last_name");
+            builder.Property(e => e.Nickname).IsRequired().HasMaxLength(100).HasColumnName("nickname");
             builder.Property(e => e.Document).HasMaxLength(50).HasColumnName("document");
-            builder.Property(e => e.BirthDate).HasColumnName("birth_date");
+            builder.Property(e => e.BirthDate).IsRequired(false).HasColumnName("birth_date");
             builder.Property(e => e.JerseyNumber).HasColumnName("jersey_number");
-            
+
             builder.Property(e => e.Position)
                 .HasMaxLength(10)
                 .HasColumnName("position")
-                .HasConversion<string>(); // Map Enum to String
+                .HasConversion<string>();
 
             builder.Property(e => e.Phone).HasMaxLength(50).HasColumnName("phone");
             builder.Property(e => e.Email).HasMaxLength(100).HasColumnName("email");
@@ -33,13 +34,17 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.Property(e => e.WeightKg).HasColumnName("weight_kg");
             builder.Property(e => e.PhotoUrl).HasColumnName("photo_url");
             builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
-            
+
             builder.Property(e => e.CreatedAt).HasColumnName("created_at");
             builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
             builder.Property(e => e.DeletedAt).HasColumnName("deleted_at");
 
+            builder.Ignore(e => e.DisplayName);
+
             builder.HasIndex(e => new { e.TeamId, e.JerseyNumber }).IsUnique();
-            builder.HasIndex(e => e.Document).IsUnique();
+            builder.HasIndex(e => e.Document)
+                .IsUnique()
+                .HasFilter("document IS NOT NULL AND document <> ''");
         }
     }
 }

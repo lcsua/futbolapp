@@ -65,10 +65,21 @@ public sealed class MatchIncidentDto
     public Guid? TeamId { get; }
     public string TeamName { get; }
     public string PlayerName { get; }
+    public Guid? PlayerId { get; }
+    public Guid? AgainstPlayerId { get; }
     public string IncidentType { get; }
     public string Notes { get; }
 
-    public MatchIncidentDto(Guid id, int minute, Guid? teamId, string teamName, string playerName, string incidentType, string notes)
+    public MatchIncidentDto(
+        Guid id,
+        int minute,
+        Guid? teamId,
+        string teamName,
+        string playerName,
+        string incidentType,
+        string notes,
+        Guid? playerId = null,
+        Guid? againstPlayerId = null)
     {
         Id = id;
         Minute = minute;
@@ -77,5 +88,7 @@ public sealed class MatchIncidentDto
         PlayerName = playerName;
         IncidentType = incidentType;
         Notes = notes ?? "";
+        PlayerId = playerId;
+        AgainstPlayerId = againstPlayerId;
     }
 }

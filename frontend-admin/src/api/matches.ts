@@ -64,6 +64,15 @@ export interface UpdateMatchResultBody {
   homeScore: number
   awayScore: number
   status: string
+  goals?: MatchGoalAttribution[] | null
+}
+
+export interface MatchGoalAttribution {
+  teamId: string
+  scorerPlayerId?: string | null
+  againstGoalkeeperPlayerId?: string | null
+  minute?: number | null
+  scorerName?: string | null
 }
 
 export interface AddIncidentBody {

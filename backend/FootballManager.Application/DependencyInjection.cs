@@ -58,6 +58,12 @@ using FootballManager.Application.UseCases.Matches.UpdateMatchResult;
 using FootballManager.Application.UseCases.Matches.ImportMatchResults;
 using FootballManager.Application.UseCases.Matches.AddMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatchIncident;
+using FootballManager.Application.UseCases.Players.GetTeamPlayers;
+using FootballManager.Application.UseCases.Players.GetPlayersByTeamIds;
+using FootballManager.Application.UseCases.Players.CreatePlayer;
+using FootballManager.Application.UseCases.Players.UpdatePlayer;
+using FootballManager.Application.UseCases.Players.DeletePlayer;
+using FootballManager.Application.UseCases.Players.ImportPlayers;
 using FootballManager.Application.Interfaces;
 using FootballManager.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -131,6 +137,12 @@ namespace FootballManager.Application
             services.AddScoped<IImportMatchResultsUseCase, ImportMatchResultsUseCase>();
             services.AddScoped<IAddMatchIncidentUseCase, AddMatchIncidentUseCase>();
             services.AddScoped<IDeleteMatchIncidentUseCase, DeleteMatchIncidentUseCase>();
+            services.AddScoped<IGetTeamPlayersUseCase, GetTeamPlayersUseCase>();
+            services.AddScoped<IGetPlayersByTeamIdsUseCase, GetPlayersByTeamIdsUseCase>();
+            services.AddScoped<ICreatePlayerUseCase, CreatePlayerUseCase>();
+            services.AddScoped<IUpdatePlayerUseCase, UpdatePlayerUseCase>();
+            services.AddScoped<IDeletePlayerUseCase, DeletePlayerUseCase>();
+            services.AddScoped<IImportPlayersUseCase, ImportPlayersUseCase>();
 
             services.AddSingleton<IFixtureDraftStore, FixtureDraftStore>();
 

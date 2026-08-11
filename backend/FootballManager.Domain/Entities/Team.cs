@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FootballManager.Domain.Common;
+using FootballManager.Domain.Enums;
 
 namespace FootballManager.Domain.Entities
 {
@@ -91,9 +92,15 @@ namespace FootballManager.Domain.Entities
             UpdateTimestamp();
         }
 
-        public Player AddPlayer(string firstName, string lastName, DateOnly birthDate, string document)
+        public Player AddPlayer(
+            string firstName,
+            string lastName,
+            string? nickname = null,
+            string? document = null,
+            DateOnly? birthDate = null,
+            PlayerPosition? position = null)
         {
-            var player = new Player(this, firstName, lastName, birthDate, document);
+            var player = new Player(this, firstName, lastName, nickname, document, birthDate, position);
             _players.Add(player);
             return player;
         }

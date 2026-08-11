@@ -32,6 +32,7 @@ import { FixturesPage } from './pages/FixturesPage'
 import { MatchesPage } from './pages/MatchesPage'
 import { MatchDetailPage } from './pages/MatchDetailPage'
 import { StandingsPage } from './pages/StandingsPage'
+import { TeamPlayersPage } from './pages/TeamPlayersPage'
 import { LoginPage } from './pages/LoginPage'
 
 export default function App() {
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="leagues/:leagueId/teams/bulk" element={<BulkTeamImportPage />} />
           <Route path="leagues/:leagueId/teams/never-assigned" element={<NeverAssignedTeamsPage />} />
           <Route path="leagues/:leagueId/teams/:teamId/edit" element={<EditTeamPage />} />
+          <Route path="leagues/:leagueId/teams/:teamId/players" element={<TeamPlayersPage />} />
           <Route path="leagues/:leagueId/season-setup" element={<SeasonSetupPage />} />
           <Route path="leagues/:leagueId/season-setup/advanced" element={<AdvancedSeasonSetupPage />} />
           <Route path="leagues/:leagueId/fields" element={<FieldsListPage />} />
@@ -97,6 +99,7 @@ export default function App() {
             <Route path="teams/bulk" element={<BulkTeamImportPage />} />
             <Route path="teams/never-assigned" element={<NeverAssignedTeamsPage />} />
             <Route path="teams/:teamId/edit" element={<EditTeamPage />} />
+            <Route path="teams/:teamId/players" element={<TeamPlayersPage />} />
             <Route path="season-setup" element={<SeasonSetupPage />} />
             <Route path="season-setup/advanced" element={<AdvancedSeasonSetupPage />} />
             <Route path="fields" element={<FieldsListPage />} />

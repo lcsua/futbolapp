@@ -47,7 +47,9 @@ public sealed class GetMatchByIdUseCase : IGetMatchByIdUseCase
                 i.Team?.Name,
                 i.PlayerName,
                 i.IncidentType.ToString(),
-                i.Notes))
+                i.Notes,
+                i.PlayerId,
+                i.AgainstPlayerId))
             .ToList();
 
         return new GetMatchByIdResponse(

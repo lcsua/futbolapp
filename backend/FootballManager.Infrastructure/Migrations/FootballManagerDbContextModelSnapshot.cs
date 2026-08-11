@@ -685,6 +685,10 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("AgainstPlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("against_player_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -712,6 +716,10 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("notes");
 
+                    b.Property<Guid?>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
                     b.Property<string>("PlayerName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -727,7 +735,11 @@ namespace FootballManager.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AgainstPlayerId");
+
                     b.HasIndex("FixtureId");
+
+                    b.HasIndex("PlayerId");
 
                     b.HasIndex("TeamId");
 
@@ -803,7 +815,7 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<DateOnly>("BirthDate")
+                    b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("date")
                         .HasColumnName("birth_date");
 
@@ -859,6 +871,12 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("nationality");
 
+                    b.Property<string>("Nickname")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nickname");
+
                     b.Property<string>("Phone")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -890,7 +908,8 @@ namespace FootballManager.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Document")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("document IS NOT NULL AND document <> ''");
 
                     b.HasIndex("TeamId", "JerseyNumber")
                         .IsUnique();
@@ -1562,18 +1581,32 @@ namespace FootballManager.Infrastructure.Migrations
 
             modelBuilder.Entity("FootballManager.Domain.Entities.MatchIncident", b =>
                 {
+                    b.HasOne("FootballManager.Domain.Entities.Player", "AgainstPlayer")
+                        .WithMany()
+                        .HasForeignKey("AgainstPlayerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("FootballManager.Domain.Entities.Fixture", "Fixture")
                         .WithMany("Incidents")
                         .HasForeignKey("FixtureId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FootballManager.Domain.Entities.Player", "Player")
+                        .WithMany()
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("FootballManager.Domain.Entities.Team", "Team")
                         .WithMany()
                         .HasForeignKey("TeamId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.Navigation("AgainstPlayer");
+
                     b.Navigation("Fixture");
+
+                    b.Navigation("Player");
 
                     b.Navigation("Team");
                 });

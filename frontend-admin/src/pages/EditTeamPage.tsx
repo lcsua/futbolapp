@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import GroupsIcon from '@mui/icons-material/Groups'
 import DomainAddIcon from '@mui/icons-material/DomainAdd'
 import { Link as RouterLink } from 'react-router-dom'
 import { TeamForm } from '../components/TeamForm'
@@ -92,20 +93,24 @@ export function EditTeamPage() {
   return (
     <Box>
       <Button component={RouterLink} to={teamsBase} startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
-        Back to teams
+        Volver a equipos
       </Button>
-      <Typography variant="h5" component="h1" sx={{ mb: 3, fontWeight: 600 }}>
-        Edit team
+      <Typography variant="h5" component="h1" sx={{ mb: 2, fontWeight: 600 }}>
+        Editar equipo
       </Typography>
-      <Button
-        variant="outlined"
-        size="small"
-        startIcon={<DomainAddIcon />}
-        onClick={() => setClubDialogOpen(true)}
-        sx={{ mb: 2 }}
-      >
-        Create club
-      </Button>
+      <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mb: 2 }}>
+        <Button variant="outlined" size="small" startIcon={<GroupsIcon />} component={RouterLink} to={`${teamsBase}/${teamId}/players`}>
+          Integrantes / plantel
+        </Button>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<DomainAddIcon />}
+          onClick={() => setClubDialogOpen(true)}
+        >
+          Crear club
+        </Button>
+      </Stack>
       <TeamForm
         initialValues={initialValues}
         clubs={clubs}
@@ -113,8 +118,8 @@ export function EditTeamPage() {
         onSubmit={handleSubmit}
         loading={updateMutation.isPending}
         error={error}
-        submitLabel="Save"
-        title="Team details"
+        submitLabel="Guardar"
+        title="Datos del equipo"
       />
       <CreateClubDialog open={clubDialogOpen} leagueId={leagueId} onClose={() => setClubDialogOpen(false)} />
     </Box>

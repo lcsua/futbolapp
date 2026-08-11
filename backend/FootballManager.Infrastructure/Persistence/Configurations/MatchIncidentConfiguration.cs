@@ -1,5 +1,4 @@
 using FootballManager.Domain.Entities;
-using FootballManager.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,6 +15,8 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.Property(e => e.FixtureId).HasColumnName("match_id");
             builder.Property(e => e.Minute).HasColumnName("minute");
             builder.Property(e => e.TeamId).HasColumnName("team_id");
+            builder.Property(e => e.PlayerId).HasColumnName("player_id");
+            builder.Property(e => e.AgainstPlayerId).HasColumnName("against_player_id");
             builder.Property(e => e.PlayerName).HasMaxLength(200).HasColumnName("player_name");
             builder.Property(e => e.IncidentType)
                 .HasMaxLength(20)
@@ -25,6 +26,8 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.Property(e => e.CreatedAt).HasColumnName("created_at");
 
             builder.HasIndex(e => e.FixtureId);
+            builder.HasIndex(e => e.PlayerId);
+            builder.HasIndex(e => e.AgainstPlayerId);
 
             builder.HasOne(e => e.Fixture)
                 .WithMany(f => f.Incidents)
@@ -34,6 +37,14 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
                 .WithMany()
                 .HasForeignKey(e => e.TeamId)
                 .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(e => e.Player)
+                .WithMany()
+                .HasForeignKey(e => e.PlayerId)
+                .OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne(e => e.AgainstPlayer)
+                .WithMany()
+                .HasForeignKey(e => e.AgainstPlayerId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
