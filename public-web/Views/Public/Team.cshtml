@@ -7,19 +7,8 @@
     var hasLogo = !string.IsNullOrWhiteSpace(Model.Team.LogoUrl);
     var standing = Model.Standing;
     var seasonQuery = Model.Season?.Slug ?? string.Empty;
-
-    string BuildTeamUrl(int nextPage, int resultsPage)
-    {
-        var parts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(seasonQuery))
-            parts.Add($"season={Uri.EscapeDataString(seasonQuery)}");
-        if (nextPage > 1)
-            parts.Add($"nextPage={nextPage}");
-        if (resultsPage > 1)
-            parts.Add($"resultsPage={resultsPage}");
-        var qs = parts.Count > 0 ? "?" + string.Join("&", parts) : string.Empty;
-        return Url.Content($"~/ligas/{leagueSlug}/{Model.Team.Slug}") + qs;
-    }
+    var teamPageBase = Url.Content($"~/ligas/{leagueSlug}/{Model.Team.Slug}");
+    var teamPageJson = Url.Content($"~/ligas/{leagueSlug}/{Model.Team.Slug}/pagina");
 }
 
 <div class="mb-3">
@@ -133,65 +122,34 @@
     </div>
 }
 
-<div class="row g-3">
+<div class="row g-3"
+     id="team-matches"
+     data-endpoint="@teamPageJson"
+     data-page-base="@teamPageBase"
+     data-season="@seasonQuery"
+     data-next-page="@Model.NextMatchesPage"
+     data-results-page="@Model.LastResultsPage"
+     data-match-base="@Url.Content("~/partido/")">
     <div class="col-md-6">
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <span class="fw-bold">Últimos resultados</span>
-                @if (Model.LastResultsTotal > 0)
-                {
-                    <span class="small text-muted">@Model.LastResultsTotal en total</span>
-                }
-            </div>
-            <div class="card-body p-0">
-                @if (Model.LastResults.Any())
-                {
-                    <div class="list-group list-group-flush league-match-list">
-                        @foreach (var match in Model.LastResults)
-                        {
-                            <a href="@Url.Content($"~/partido/{match.Id}")" class="list-group-item list-group-item-action">
-                                <div class="row align-items-center g-2 league-match-row">
-                                    <div class="col-5">
-                                        <div class="text-end text-truncate match-team" title="@match.HomeTeam.Name">@match.HomeTeam.Name</div>
-                                    </div>
-                                    <div class="col-2 text-center">
-                                        <div class="match-score">@match.HomeScore - @match.AwayScore</div>
-                                        <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
-                                    </div>
-                                    <div class="col-5">
-                                        <div class="text-start text-truncate match-team" title="@match.AwayTeam.Name">@match.AwayTeam.Name</div>
-                                    </div>
-                                </div>
-                            </a>
-                        }
-                    </div>
-                    @if (Model.LastResultsTotalPages > 1)
+                <span class="small text-muted" data-role="results-total">
+                    @if (Model.LastResultsTotal > 0)
                     {
-                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top team-pager">
-                            @if (Model.LastResultsPage > 1)
-                            {
-                                <a class="btn btn-sm btn-outline-secondary" href="@BuildTeamUrl(Model.NextMatchesPage, Model.LastResultsPage - 1)">← Anteriores</a>
-                            }
-                            else
-                            {
-                                <span class="btn btn-sm btn-outline-secondary disabled">← Anteriores</span>
-                            }
-                            <span class="small text-muted">Pág. @Model.LastResultsPage / @Model.LastResultsTotalPages</span>
-                            @if (Model.LastResultsPage < Model.LastResultsTotalPages)
-                            {
-                                <a class="btn btn-sm btn-outline-secondary" href="@BuildTeamUrl(Model.NextMatchesPage, Model.LastResultsPage + 1)">Siguientes →</a>
-                            }
-                            else
-                            {
-                                <span class="btn btn-sm btn-outline-secondary disabled">Siguientes →</span>
-                            }
-                        </div>
+                        @($"{Model.LastResultsTotal} en total")
                     }
-                }
-                else
+                </span>
+            </div>
+            <div class="card-body p-0" data-role="results-body">
+                @await Html.PartialAsync("~/Views/Public/_TeamMatchList.cshtml", new PublicWeb.Models.Public.TeamMatchListPartialViewModel
                 {
-                    <div class="p-4 text-center text-muted small">Sin resultados recientes.</div>
-                }
+                    Matches = Model.LastResults,
+                    Mode = "results",
+                    Page = Model.LastResultsPage,
+                    TotalPages = Model.LastResultsTotalPages,
+                    EmptyText = "Sin resultados recientes."
+                })
             </div>
         </div>
     </div>
@@ -199,64 +157,180 @@
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <span class="fw-bold">Próximos partidos</span>
-                @if (Model.NextMatchesTotal > 0)
-                {
-                    <span class="small text-muted">@Model.NextMatchesTotal en total</span>
-                }
-            </div>
-            <div class="card-body p-0">
-                @if (Model.NextMatches.Any())
-                {
-                    <div class="list-group list-group-flush league-match-list">
-                        @foreach (var match in Model.NextMatches)
-                        {
-                            <a href="@Url.Content($"~/partido/{match.Id}")" class="list-group-item list-group-item-action">
-                                <div class="row align-items-center g-2 league-match-row">
-                                    <div class="col-5">
-                                        <div class="text-end text-truncate match-team" title="@match.HomeTeam.Name">@match.HomeTeam.Name</div>
-                                    </div>
-                                    <div class="col-2 text-center">
-                                        <div class="match-time">@(match.Kickoff == default ? "—" : match.Kickoff.ToString("HH:mm"))</div>
-                                        <div class="league-match-meta text-muted">@match.Kickoff.ToString("dd/MM")</div>
-                                    </div>
-                                    <div class="col-5">
-                                        <div class="text-start text-truncate match-team" title="@match.AwayTeam.Name">@match.AwayTeam.Name</div>
-                                    </div>
-                                </div>
-                            </a>
-                        }
-                    </div>
-                    @if (Model.NextMatchesTotalPages > 1)
+                <span class="small text-muted" data-role="next-total">
+                    @if (Model.NextMatchesTotal > 0)
                     {
-                        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top team-pager">
-                            @if (Model.NextMatchesPage > 1)
-                            {
-                                <a class="btn btn-sm btn-outline-secondary" href="@BuildTeamUrl(Model.NextMatchesPage - 1, Model.LastResultsPage)">← Anteriores</a>
-                            }
-                            else
-                            {
-                                <span class="btn btn-sm btn-outline-secondary disabled">← Anteriores</span>
-                            }
-                            <span class="small text-muted">Pág. @Model.NextMatchesPage / @Model.NextMatchesTotalPages</span>
-                            @if (Model.NextMatchesPage < Model.NextMatchesTotalPages)
-                            {
-                                <a class="btn btn-sm btn-outline-secondary" href="@BuildTeamUrl(Model.NextMatchesPage + 1, Model.LastResultsPage)">Siguientes →</a>
-                            }
-                            else
-                            {
-                                <span class="btn btn-sm btn-outline-secondary disabled">Siguientes →</span>
-                            }
-                        </div>
+                        @($"{Model.NextMatchesTotal} en total")
                     }
-                }
-                else
+                </span>
+            </div>
+            <div class="card-body p-0" data-role="next-body">
+                @await Html.PartialAsync("~/Views/Public/_TeamMatchList.cshtml", new PublicWeb.Models.Public.TeamMatchListPartialViewModel
                 {
-                    <div class="p-4 text-center text-muted small">Sin partidos próximos.</div>
-                }
+                    Matches = Model.NextMatches,
+                    Mode = "next",
+                    Page = Model.NextMatchesPage,
+                    TotalPages = Model.NextMatchesTotalPages,
+                    EmptyText = "Sin partidos próximos."
+                })
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+(() => {
+  const root = document.getElementById('team-matches');
+  if (!root) return;
+
+  const endpoint = root.dataset.endpoint;
+  const pageBase = root.dataset.pageBase;
+  const season = root.dataset.season || '';
+  const matchBase = root.dataset.matchBase || '/partido/';
+  let nextPage = Number(root.dataset.nextPage || 1);
+  let resultsPage = Number(root.dataset.resultsPage || 1);
+  let loading = false;
+
+  const escapeHtml = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const formatDate = (iso) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}`;
+  };
+
+  const formatTime = (iso) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mi}`;
+  };
+
+  const renderMatches = (matches, mode) => {
+    if (!matches || matches.length === 0) {
+      const empty = mode === 'next' ? 'Sin partidos próximos.' : 'Sin resultados recientes.';
+      return `<div class="p-4 text-center text-muted small">${empty}</div>`;
+    }
+
+    const rows = matches.map((m) => {
+      const center = mode === 'next'
+        ? `<div class="match-time">${escapeHtml(formatTime(m.kickoff))}</div>`
+        : `<div class="match-score">${escapeHtml(m.homeScore ?? '')} - ${escapeHtml(m.awayScore ?? '')}</div>`;
+      return `
+        <a href="${escapeHtml(matchBase)}${escapeHtml(m.id)}" class="list-group-item list-group-item-action">
+          <div class="row align-items-center g-2 league-match-row">
+            <div class="col-5">
+              <div class="text-end text-truncate match-team" title="${escapeHtml(m.homeTeam)}">${escapeHtml(m.homeTeam)}</div>
+            </div>
+            <div class="col-2 text-center">
+              ${center}
+              <div class="league-match-meta text-muted">${escapeHtml(formatDate(m.kickoff))}</div>
+            </div>
+            <div class="col-5">
+              <div class="text-start text-truncate match-team" title="${escapeHtml(m.awayTeam)}">${escapeHtml(m.awayTeam)}</div>
+            </div>
+          </div>
+        </a>`;
+    }).join('');
+
+    return `<div class="list-group list-group-flush league-match-list">${rows}</div>`;
+  };
+
+  const renderPager = (page, totalPages, kind) => {
+    if (totalPages <= 1) return '';
+    const prevDisabled = page <= 1;
+    const nextDisabled = page >= totalPages;
+    return `
+      <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top team-pager">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-page-kind="${kind}" data-page-dir="-1"${prevDisabled ? ' disabled' : ''}>← Anteriores</button>
+        <span class="small text-muted">Pág. ${page} / ${totalPages}</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-page-kind="${kind}" data-page-dir="1"${nextDisabled ? ' disabled' : ''}>Siguientes →</button>
+      </div>`;
+  };
+
+  const syncUrl = () => {
+    const params = new URLSearchParams();
+    if (season) params.set('season', season);
+    if (nextPage > 1) params.set('nextPage', String(nextPage));
+    if (resultsPage > 1) params.set('resultsPage', String(resultsPage));
+    const qs = params.toString();
+    history.replaceState(null, '', qs ? `${pageBase}?${qs}` : pageBase);
+  };
+
+  const applyData = (data) => {
+    nextPage = data.nextMatchesPage;
+    resultsPage = data.lastResultsPage;
+    root.dataset.nextPage = String(nextPage);
+    root.dataset.resultsPage = String(resultsPage);
+
+    const nextBody = root.querySelector('[data-role="next-body"]');
+    const resultsBody = root.querySelector('[data-role="results-body"]');
+    const nextTotal = root.querySelector('[data-role="next-total"]');
+    const resultsTotal = root.querySelector('[data-role="results-total"]');
+
+    if (nextBody) {
+      nextBody.innerHTML = renderMatches(data.nextMatches, 'next') + renderPager(data.nextMatchesPage, data.nextMatchesTotalPages, 'next');
+    }
+    if (resultsBody) {
+      resultsBody.innerHTML = renderMatches(data.lastResults, 'results') + renderPager(data.lastResultsPage, data.lastResultsTotalPages, 'results');
+    }
+    if (nextTotal) {
+      nextTotal.textContent = data.nextMatchesTotal > 0 ? `${data.nextMatchesTotal} en total` : '';
+    }
+    if (resultsTotal) {
+      resultsTotal.textContent = data.lastResultsTotal > 0 ? `${data.lastResultsTotal} en total` : '';
+    }
+    syncUrl();
+  };
+
+  const loadPage = async (next, results) => {
+    if (loading) return;
+    loading = true;
+    root.classList.add('is-paging');
+    try {
+      const params = new URLSearchParams({
+        nextPage: String(next),
+        resultsPage: String(results)
+      });
+      if (season) params.set('season', season);
+      const res = await fetch(`${endpoint}?${params.toString()}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error('No se pudo cargar la página');
+      const data = await res.json();
+      applyData(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      loading = false;
+      root.classList.remove('is-paging');
+    }
+  };
+
+  root.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-page-kind]');
+    if (!btn || btn.disabled) return;
+    event.preventDefault();
+    const kind = btn.dataset.pageKind;
+    const dir = Number(btn.dataset.pageDir || 0);
+    if (kind === 'next') {
+      loadPage(nextPage + dir, resultsPage);
+    } else if (kind === 'results') {
+      loadPage(nextPage, resultsPage + dir);
+    }
+  });
+})();
+</script>
+}
 
 @functions {
     private static string GetInitials(string name)

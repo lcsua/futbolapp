@@ -589,7 +589,14 @@ a:hover {
   font-size: 2rem;
 }
 
-.team-pager .btn.disabled {
+.team-pager .btn.disabled,
+.team-pager .btn:disabled {
   pointer-events: none;
   opacity: 0.45;
+}
+
+#team-matches.is-paging {
+  opacity: 0.65;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }

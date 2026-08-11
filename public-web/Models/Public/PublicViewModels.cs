@@ -80,6 +80,15 @@ public class TeamDetailViewModel
     public int LastResultsTotalPages => Math.Max(1, (int)Math.Ceiling(LastResultsTotal / (double)Math.Max(1, PageSize)));
 }
 
+public class TeamMatchListPartialViewModel
+{
+    public List<MatchViewModel> Matches { get; set; } = new();
+    public string Mode { get; set; } = "next"; // next | results
+    public int Page { get; set; } = 1;
+    public int TotalPages { get; set; } = 1;
+    public string EmptyText { get; set; } = string.Empty;
+}
+
 public class DivisionViewModel
 {
     public Guid Id { get; set; }
