@@ -81,9 +81,10 @@ jobs:
           EOF
             nginx_patch="$(mktemp)"
             cat > "$nginx_patch" <<'PY'
+          import re
           from pathlib import Path
 
-          block = """    # BEGIN FUTBOLNET PUBLIC WEB
+          public_web_block = """    # BEGIN FUTBOLNET PUBLIC WEB
               location = /public-web {
                   return 301 /public-web/;
               }
@@ -96,7 +97,10 @@ jobs:
                   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                   proxy_set_header X-Forwarded-Proto $scheme;
               }
+              # END FUTBOLNET PUBLIC WEB
+          """
 
+          uploads_block = """    # BEGIN FUTBOLNET UPLOADS
               location /uploads/ {
                   proxy_pass http://127.0.0.1:5001;
                   proxy_http_version 1.1;
@@ -105,8 +109,27 @@ jobs:
                   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                   proxy_set_header X-Forwarded-Proto $scheme;
               }
-              # END FUTBOLNET PUBLIC WEB
+              # END FUTBOLNET UPLOADS
           """
+
+          def strip_marked_blocks(text: str, begin: str, end: str) -> str:
+              while True:
+                  start = text.find(begin)
+                  if start == -1:
+                      break
+                  stop = text.find(end, start)
+                  if stop == -1:
+                      raise SystemExit(f"Found {begin!r} without {end!r}")
+                  stop = text.find("\n", stop)
+                  if stop == -1:
+                      text = text[:start]
+                  else:
+                      text = text[:start] + text[stop + 1:]
+              return text
+
+          def strip_location(text: str, location: str) -> str:
+              pattern = rf"(?m)^\s*location\s+{re.escape(location)}\s*\{{(?:[^{{}}]|{{[^{{}}]*}})*\}}\s*\n?"
+              return re.sub(pattern, "", text)
 
           candidates = [
               *Path("/etc/nginx/sites-enabled").glob("*"),
@@ -125,23 +148,23 @@ jobs:
               raise SystemExit("Could not find existing futbolnet nginx server config")
 
           text = target.read_text()
-          start = text.find("# BEGIN FUTBOLNET PUBLIC WEB")
-          end = text.find("# END FUTBOLNET PUBLIC WEB")
-          if start != -1 and end != -1:
-              end = text.find("\n", end)
-              if end == -1:
-                  end = len(text)
-              text = text[:start] + block + text[end + 1:]
-          else:
-              marker = text.find("    location /backoffice/")
-              if marker == -1:
-                  marker = text.rfind("}")
-              if marker == -1:
-                  raise SystemExit(f"Could not find insertion point in {target}")
-              text = text[:marker] + block + "\n" + text[marker:]
+          text = strip_marked_blocks(text, "# BEGIN FUTBOLNET PUBLIC WEB", "# END FUTBOLNET PUBLIC WEB")
+          text = strip_marked_blocks(text, "# BEGIN FUTBOLNET UPLOADS", "# END FUTBOLNET UPLOADS")
+          text = strip_location(text, "= /public-web")
+          text = strip_location(text, "/public-web/")
+          text = strip_location(text, "/uploads/")
 
+          marker = text.find("    location /backoffice/")
+          if marker == -1:
+              marker = text.rfind("}")
+          if marker == -1:
+              raise SystemExit(f"Could not find insertion point in {target}")
+
+          text = text[:marker] + public_web_block + "\n" + uploads_block + "\n" + text[marker:]
           target.write_text(text)
+          print(f"Patched nginx config: {target}")
           PY
+            set -euo pipefail
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' mv "$service_file" /etc/systemd/system/futbolnet-web.service
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' rm -f /etc/nginx/conf.d/futbolnet-public-web.conf
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' python3 "$nginx_patch"
@@ -163,3 +186,4 @@ jobs:
           curl -fsS http://127.0.0.1:5001/api/public/liga >/dev/null
           curl -fsS https://miliga.com.ar/ligas | grep -q "Liga"
           curl -fsS http://127.0.0.1:5002/public-web/ >/dev/null
+          curl -fsSI https://miliga.com.ar/uploads/leagues/70f8835d-3f26-4809-82f0-754a8643d263/documents/a502262536114ae093e972df50c68866.png | grep -qi "image/png"
