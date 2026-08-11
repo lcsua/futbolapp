@@ -152,6 +152,55 @@ public class V2LeagueController : Controller
         return View("~/Views/V2/Standings.cshtml", standings);
     }
 
+    /// <summary>League fixture — must be registered before Team ({slug}/{teamSlug}).</summary>
+    [HttpGet("{slug}/fixture")]
+    public async Task<IActionResult> Fixture(
+        string slug,
+        [FromQuery] string? season,
+        [FromQuery] string? division,
+        [FromQuery] int? fecha,
+        [FromQuery] int? round)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        var fixture = await _leagueService.GetFixtureAsync(slug, season, division, null);
+
+        ViewBag.League = league;
+        ViewBag.Seasons = meta;
+        ViewBag.Division = string.IsNullOrWhiteSpace(division) ? "all" : division;
+        ViewBag.Fecha = fecha ?? round;
+        ViewBag.V2ActiveNav = "ligas";
+        ViewBag.V2LeagueTab = "fixture";
+
+        return View("~/Views/V2/Fixture.cshtml", fixture);
+    }
+
+    /// <summary>HTML fragment for in-page fixture fecha navigation (no layout).</summary>
+    [HttpGet("{slug}/fixture/fragment")]
+    public async Task<IActionResult> FixtureFragment(
+        string slug,
+        [FromQuery] string? season,
+        [FromQuery] string? division,
+        [FromQuery] int? fecha,
+        [FromQuery] int? round)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var fixture = await _leagueService.GetFixtureAsync(slug, season, division, null);
+        if (fixture == null) return NotFound();
+
+        ViewBag.League = league;
+        ViewBag.Division = string.IsNullOrWhiteSpace(division) ? "all" : division;
+        ViewBag.Fecha = fecha ?? round;
+        ViewBag.LeagueSlug = league.Slug;
+        ViewBag.SeasonSlug = fixture.SeasonSlug;
+
+        return PartialView("~/Views/V2/Fixture/_FixtureBoard.cshtml", fixture);
+    }
+
     [HttpGet("{slug}/{teamSlug}")]
     public async Task<IActionResult> Team(
         string slug,
@@ -280,5 +329,6 @@ public class V2LeagueController : Controller
         teamSlug.Equals("resultados", StringComparison.OrdinalIgnoreCase) ||
         teamSlug.Equals("partidos", StringComparison.OrdinalIgnoreCase) ||
         teamSlug.Equals("documentos", StringComparison.OrdinalIgnoreCase) ||
-        teamSlug.Equals("posiciones", StringComparison.OrdinalIgnoreCase);
+        teamSlug.Equals("posiciones", StringComparison.OrdinalIgnoreCase) ||
+        teamSlug.Equals("fixture", StringComparison.OrdinalIgnoreCase);
 }

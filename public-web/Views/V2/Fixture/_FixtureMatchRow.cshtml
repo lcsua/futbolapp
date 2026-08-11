@@ -1,0 +1,73 @@
+@model PublicWeb.Models.Public.MatchViewModel
+@{
+    var leagueSlug = ViewData["LeagueSlug"] as string ?? Model.LeagueSlug ?? "";
+    var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
+    var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(Model.Kickoff);
+    var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
+    ViewData["BadgeSize"] = "sm";
+
+    string? TeamUrl(PublicWeb.Models.Public.TeamViewModel team) =>
+        !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(team.Slug)
+            ? Url.Content($"~/v2/ligas/{leagueSlug}/{team.Slug}")
+            : null;
+    var homeUrl = TeamUrl(Model.HomeTeam);
+    var awayUrl = TeamUrl(Model.AwayTeam);
+}
+<article class="v2-fixture-row">
+    <div class="v2-fixture-row__inner">
+        <div class="v2-fixture-row__home">
+            @if (homeUrl != null)
+            {
+                <a class="v2-fixture-row__team" href="@homeUrl">
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                    <span class="v2-fixture-row__name">@Model.HomeTeam.Name</span>
+                </a>
+            }
+            else
+            {
+                <div class="v2-fixture-row__team">
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                    <span class="v2-fixture-row__name">@Model.HomeTeam.Name</span>
+                </div>
+            }
+        </div>
+
+        <div class="v2-fixture-row__mid">
+            <a class="v2-fixture-row__info" href="@Url.Content($"~/partido/{Model.Id}")">
+                @if (suspended)
+                {
+                    <span class="v2-fixture-row__status is-warn">Suspendido</span>
+                }
+                else if (time != null)
+                {
+                    <span class="v2-fixture-row__time v2-nums">@time</span>
+                }
+                else
+                {
+                    <span class="v2-fixture-row__vs">VS</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(venue))
+                {
+                    <span class="v2-fixture-row__venue">@venue</span>
+                }
+            </a>
+        </div>
+
+        <div class="v2-fixture-row__away">
+            @if (awayUrl != null)
+            {
+                <a class="v2-fixture-row__team" href="@awayUrl">
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+                    <span class="v2-fixture-row__name">@Model.AwayTeam.Name</span>
+                </a>
+            }
+            else
+            {
+                <div class="v2-fixture-row__team">
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+                    <span class="v2-fixture-row__name">@Model.AwayTeam.Name</span>
+                </div>
+            }
+        </div>
+    </div>
+</article>

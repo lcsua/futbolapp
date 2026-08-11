@@ -108,7 +108,7 @@
                     @await Html.PartialAsync("~/Views/V2/Team/_MatchRow.cshtml", match)
                 }
             </div>
-            <a class="v2-more-link" href="@Url.Content($"~/ligas/{leagueSlug}/partidos")@seasonQs">Ver próximos partidos →</a>
+            <a class="v2-more-link" href="@Url.Content($"~/v2/ligas/{leagueSlug}/fixture")@seasonQs">Ver fixture →</a>
         }
         else
         {
