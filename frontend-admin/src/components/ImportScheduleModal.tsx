@@ -67,6 +67,8 @@ type PreparedRow = {
   inverted: boolean
   allowInverted: boolean
   status: RowStatus
+  /** null = still no franja detectada; true/false once known */
+  sameTimeBand: boolean | null
 }
 
 function displayName(t: TeamInSetup) {
@@ -100,6 +102,71 @@ function statusLabel(s: RowStatus): string {
     default:
       return s
   }
+}
+
+const SOFT_SCORE = 0.55
+const STRONG_SCORE = 0.9
+
+function isStrongMapping(m: TeamCsvRowMapping): boolean {
+  return (
+    m.action === 'match' &&
+    !!m.teamId &&
+    !m.needsReview &&
+    m.score >= STRONG_SCORE
+  )
+}
+
+/** Promote weak/create mappings using top candidate when the time band backs this division. */
+function promoteSoftMatch(m: TeamCsvRowMapping): TeamCsvRowMapping {
+  if (m.action === 'match' && m.teamId && m.score >= 0.72) return m
+  const top = m.candidates[0]
+  if (!top || top.score < SOFT_SCORE) return m
+  return {
+    ...m,
+    action: 'match',
+    teamId: top.teamId,
+    score: top.score,
+    needsReview: true,
+    reason: top.score >= 0.72 ? (m.reason === 'ambiguous' ? 'ambiguous' : 'fuzzy') : 'fuzzy',
+  }
+}
+
+function ScorePct({ score }: { score: number }) {
+  if (score <= 0) return null
+  return (
+    <Typography variant="caption" color="text.secondary" component="span" sx={{ ml: 0.5 }}>
+      {(score * 100).toFixed(0)}%
+    </Typography>
+  )
+}
+
+function TeamPickMenuItems({
+  mapping,
+  teamsSorted,
+}: {
+  mapping: TeamCsvRowMapping
+  teamsSorted: TeamInSetup[]
+}) {
+  const candidateIds = new Set(mapping.candidates.map((c) => c.teamId))
+  const rest = teamsSorted.filter((t) => !candidateIds.has(t.id))
+  return (
+    <>
+      <MenuItem value="">
+        <em>Elegir equipo / vacío = no es de esta división</em>
+      </MenuItem>
+      {mapping.candidates.map((c) => (
+        <MenuItem key={c.teamId} value={c.teamId}>
+          {c.label}
+          {c.score > 0 ? ` (${Math.round(c.score * 100)}%)` : ''}
+        </MenuItem>
+      ))}
+      {rest.map((t) => (
+        <MenuItem key={t.id} value={t.id}>
+          {displayName(t)}
+        </MenuItem>
+      ))}
+    </>
+  )
 }
 
 export function ImportScheduleModal({
@@ -199,6 +266,14 @@ export function ImportScheduleModal({
     return setupData.divisions.find((d) => d.divisionId === divisionId)?.teams ?? []
   }, [setupData, divisionId])
 
+  const teamsSorted = useMemo(
+    () =>
+      [...divisionTeams].sort((a, b) =>
+        displayName(a).localeCompare(displayName(b), 'es', { sensitivity: 'base' })
+      ),
+    [divisionTeams]
+  )
+
   const fieldNames = useMemo(
     () => new Set(fields.map((f) => f.name.trim().toLowerCase())),
     [fields]
@@ -222,15 +297,46 @@ export function ImportScheduleModal({
 
     const candidates = toCandidates(divisionTeams)
 
-    const next: PreparedRow[] = csvRows.map((csv, idx) => {
-      // Match only this pair against the selected division (avoids cross-row stealing).
+    const emptyMap = (name: string): TeamCsvRowMapping => ({
+      csvName: name,
+      normalizedCsv: name,
+      action: 'create',
+      teamId: null,
+      score: 0,
+      candidates: [],
+      needsReview: false,
+      reason: 'none',
+    })
+
+    type Draft = {
+      key: string
+      csv: ScheduleCsvRow
+      homeMapping: TeamCsvRowMapping
+      awayMapping: TeamCsvRowMapping
+      fieldOk: boolean
+      fixture: MatchListItem | null
+      inverted: boolean
+      homeMatched: boolean
+      awayMatched: boolean
+      homeResolved: boolean
+      awayResolved: boolean
+      homeId: string | null
+      awayId: string | null
+    }
+
+    const buildDraft = (
+      csv: ScheduleCsvRow,
+      idx: number,
+      options?: { softPromote?: boolean }
+    ): Draft => {
       const pairMaps = matchCsvNamesToTeams([csv.homeTeam, csv.awayTeam], candidates, {
         aliasByNormalized,
       })
       const byCsv = new Map(pairMaps.map((m) => [m.csvName, m]))
 
       const applyOverride = (name: string, fallback: TeamCsvRowMapping): TeamCsvRowMapping => {
-        const base = byCsv.get(name) ?? fallback
+        let base = byCsv.get(name) ?? fallback
+        if (options?.softPromote) base = promoteSoftMatch(base)
         const ov = teamOverride[name]
         if (!ov) return base
         return {
@@ -243,27 +349,21 @@ export function ImportScheduleModal({
         }
       }
 
-      const emptyMap = (name: string): TeamCsvRowMapping => ({
-        csvName: name,
-        normalizedCsv: name,
-        action: 'create',
-        teamId: null,
-        score: 0,
-        candidates: [],
-        needsReview: false,
-        reason: 'none',
-      })
-
       const homeMapping = applyOverride(csv.homeTeam, emptyMap(csv.homeTeam))
       const awayMapping = applyOverride(csv.awayTeam, emptyMap(csv.awayTeam))
 
-      const homeMatched = homeMapping.action === 'match' && !!homeMapping.teamId && homeMapping.score >= 0.72
-      const awayMatched = awayMapping.action === 'match' && !!awayMapping.teamId && awayMapping.score >= 0.72
-      // Confirmación explícita: override del usuario, o match sin duda (exact/high).
+      const homeMatched =
+        homeMapping.action === 'match' && !!homeMapping.teamId && homeMapping.score >= SOFT_SCORE
+      const awayMatched =
+        awayMapping.action === 'match' && !!awayMapping.teamId && awayMapping.score >= SOFT_SCORE
       const homeResolved =
-        homeMatched && (!!teamOverride[csv.homeTeam] || !homeMapping.needsReview)
+        homeMatched &&
+        homeMapping.score >= 0.72 &&
+        (!!teamOverride[csv.homeTeam] || !homeMapping.needsReview)
       const awayResolved =
-        awayMatched && (!!teamOverride[csv.awayTeam] || !awayMapping.needsReview)
+        awayMatched &&
+        awayMapping.score >= 0.72 &&
+        (!!teamOverride[csv.awayTeam] || !awayMapping.needsReview)
       const fieldOk = !!csv.fieldName && fieldNames.has(csv.fieldName.trim().toLowerCase())
       const homeId = homeMatched ? homeMapping.teamId : null
       const awayId = awayMatched ? awayMapping.teamId : null
@@ -280,21 +380,6 @@ export function ImportScheduleModal({
         }
       }
 
-      let status: RowStatus
-      if (!homeMatched && !awayMatched) {
-        status = 'out_of_division'
-      } else if (!homeResolved || !awayResolved || !homeId || !awayId) {
-        status = 'review_teams'
-      } else if (!fieldOk) {
-        status = 'bad_field'
-      } else if (!fixture) {
-        status = 'no_fixture'
-      } else if (inverted) {
-        status = 'inverted'
-      } else {
-        status = 'ready'
-      }
-
       return {
         key: `${idx}-${csv.homeTeam}-${csv.awayTeam}`,
         csv,
@@ -303,8 +388,96 @@ export function ImportScheduleModal({
         fieldOk,
         fixture,
         inverted,
+        homeMatched,
+        awayMatched,
+        homeResolved,
+        awayResolved,
+        homeId,
+        awayId,
+      }
+    }
+
+    const draftStatus = (d: Draft, sameTimeBand: boolean | null): RowStatus => {
+      if (
+        sameTimeBand === false &&
+        (!d.homeMatched ||
+          !d.awayMatched ||
+          d.homeMapping.score < 0.85 ||
+          d.awayMapping.score < 0.85)
+      ) {
+        return 'out_of_division'
+      }
+
+      if (!d.homeMatched && !d.awayMatched) return 'out_of_division'
+      if (!d.homeResolved || !d.awayResolved || !d.homeId || !d.awayId) return 'review_teams'
+      if (!d.fieldOk) return 'bad_field'
+      if (!d.fixture) return 'no_fixture'
+      if (d.inverted) return 'inverted'
+      return 'ready'
+    }
+
+    const pass1 = csvRows.map((csv, idx) => buildDraft(csv, idx))
+    const timeCounts = new Map<string, number>()
+    for (const d of pass1) {
+      const bothStrong =
+        isStrongMapping(d.homeMapping) && isStrongMapping(d.awayMapping) && !!d.fixture
+      const bothResolvedFixture = d.homeResolved && d.awayResolved && !!d.fixture
+      if (bothStrong || bothResolvedFixture) {
+        timeCounts.set(d.csv.startTime, (timeCounts.get(d.csv.startTime) ?? 0) + 1)
+      }
+    }
+    const dominantTimes = new Set<string>()
+    let maxCount = 0
+    for (const c of timeCounts.values()) maxCount = Math.max(maxCount, c)
+    if (maxCount >= 2) {
+      for (const [t, c] of timeCounts) {
+        if (c === maxCount) dominantTimes.add(t)
+      }
+    }
+
+    const bandFor = (startTime: string): boolean | null => {
+      if (dominantTimes.size === 0) return null
+      return dominantTimes.has(startTime)
+    }
+
+    const next: PreparedRow[] = csvRows.map((csv, idx) => {
+      const inBand = bandFor(csv.startTime)
+      const d = inBand === true ? buildDraft(csv, idx, { softPromote: true }) : pass1[idx]!
+
+      let homeMapping = d.homeMapping
+      let awayMapping = d.awayMapping
+      let homeResolved = d.homeResolved
+      let awayResolved = d.awayResolved
+      if (
+        inBand === true &&
+        d.fixture &&
+        d.homeMatched &&
+        d.awayMatched &&
+        d.homeMapping.score >= 0.72 &&
+        d.awayMapping.score >= 0.72 &&
+        !teamOverride[csv.homeTeam] &&
+        !teamOverride[csv.awayTeam]
+      ) {
+        homeMapping = { ...homeMapping, needsReview: false }
+        awayMapping = { ...awayMapping, needsReview: false }
+        homeResolved = true
+        awayResolved = true
+      }
+
+      const adjusted: Draft = { ...d, homeMapping, awayMapping, homeResolved, awayResolved }
+      const status = draftStatus(adjusted, inBand)
+
+      return {
+        key: d.key,
+        csv,
+        homeMapping,
+        awayMapping,
+        fieldOk: d.fieldOk,
+        fixture: d.fixture,
+        inverted: d.inverted,
         allowInverted: false,
         status,
+        sameTimeBand: inBand,
       }
     })
 
@@ -333,6 +506,25 @@ export function ImportScheduleModal({
     teamOverride,
     aliasByNormalized,
   ])
+
+  const dominantTimeHint = useMemo(() => {
+    if (!prepared) return null
+    const counts = new Map<string, number>()
+    for (const p of prepared) {
+      if (p.sameTimeBand === true && p.status !== 'out_of_division') {
+        counts.set(p.csv.startTime, (counts.get(p.csv.startTime) ?? 0) + 1)
+      }
+    }
+    let best: string | null = null
+    let n = 0
+    for (const [t, c] of counts) {
+      if (c > n) {
+        best = t
+        n = c
+      }
+    }
+    return best && n >= 2 ? best : null
+  }, [prepared])
 
   const visibleRows = useMemo(() => {
     if (!prepared) return []
@@ -449,7 +641,8 @@ export function ImportScheduleModal({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           El CSV puede traer <strong>todas las divisiones</strong> (sin columna de división). Al elegir una
           división, se dejan solo partidos cuyos equipos matchean con esa división; el resto se oculta.
-          Las dudas quedan para resolver o <strong>descartar</strong> si son de otra división. El archivo
+          Las dudas quedan para resolver o <strong>descartar</strong> si son de otra división. Si varios
+          partidos claros caen en el mismo horario, esa franja ayuda a filtrar otra división. El archivo
           permanece cargado para repetir en otras fechas/divisiones.
         </Typography>
 
@@ -561,6 +754,9 @@ export function ImportScheduleModal({
                 {' · '}Listos: <strong>{readyCount}</strong>
                 {reviewNeeded ? ' · hay dudas por resolver' : ''}
               </Typography>
+              {dominantTimeHint && (
+                <Chip size="small" color="info" variant="outlined" label={`Franja: ${dominantTimeHint}`} />
+              )}
               {reviewNeeded && (
                 <Button size="small" color="warning" onClick={discardAllDoubts}>
                   Descartar todas las dudas
@@ -599,7 +795,10 @@ export function ImportScheduleModal({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{row.csv.homeTeam}</Typography>
+                      <Typography variant="body2" component="span">
+                        {row.csv.homeTeam}
+                        <ScorePct score={row.homeMapping.score} />
+                      </Typography>
                       {row.status === 'review_teams' && (
                         <FormControl size="small" fullWidth sx={{ mt: 0.5, minWidth: 140 }}>
                           {!teamOverride[row.csv.homeTeam] && row.homeMapping.teamId && (
@@ -608,7 +807,10 @@ export function ImportScheduleModal({
                               {divisionTeams.find((t) => t.id === row.homeMapping.teamId)?.displayName
                                 ?? divisionTeams.find((t) => t.id === row.homeMapping.teamId)?.name
                                 ?? 'equipo'}
-                              {' '}(confirmá o elegí otro)
+                              {row.homeMapping.score > 0
+                                ? ` (${Math.round(row.homeMapping.score * 100)}%)`
+                                : ''}{' '}
+                              (confirmá o elegí otro)
                             </Typography>
                           )}
                           <Select
@@ -616,14 +818,7 @@ export function ImportScheduleModal({
                             value={teamOverride[row.csv.homeTeam] ?? ''}
                             onChange={(e) => setOverrideForCsvName(row.csv.homeTeam, String(e.target.value))}
                           >
-                            <MenuItem value="">
-                              <em>Elegir equipo / vacío = no es de esta división</em>
-                            </MenuItem>
-                            {divisionTeams.map((t) => (
-                              <MenuItem key={t.id} value={t.id}>
-                                {displayName(t)}
-                              </MenuItem>
-                            ))}
+                            <TeamPickMenuItems mapping={row.homeMapping} teamsSorted={teamsSorted} />
                           </Select>
                         </FormControl>
                       )}
@@ -636,7 +831,10 @@ export function ImportScheduleModal({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{row.csv.awayTeam}</Typography>
+                      <Typography variant="body2" component="span">
+                        {row.csv.awayTeam}
+                        <ScorePct score={row.awayMapping.score} />
+                      </Typography>
                       {row.status === 'review_teams' && (
                         <FormControl size="small" fullWidth sx={{ mt: 0.5, minWidth: 140 }}>
                           {!teamOverride[row.csv.awayTeam] && row.awayMapping.teamId && (
@@ -645,7 +843,10 @@ export function ImportScheduleModal({
                               {divisionTeams.find((t) => t.id === row.awayMapping.teamId)?.displayName
                                 ?? divisionTeams.find((t) => t.id === row.awayMapping.teamId)?.name
                                 ?? 'equipo'}
-                              {' '}(confirmá o elegí otro)
+                              {row.awayMapping.score > 0
+                                ? ` (${Math.round(row.awayMapping.score * 100)}%)`
+                                : ''}{' '}
+                              (confirmá o elegí otro)
                             </Typography>
                           )}
                           <Select
@@ -653,14 +854,7 @@ export function ImportScheduleModal({
                             value={teamOverride[row.csv.awayTeam] ?? ''}
                             onChange={(e) => setOverrideForCsvName(row.csv.awayTeam, String(e.target.value))}
                           >
-                            <MenuItem value="">
-                              <em>Elegir equipo / vacío = no es de esta división</em>
-                            </MenuItem>
-                            {divisionTeams.map((t) => (
-                              <MenuItem key={t.id} value={t.id}>
-                                {displayName(t)}
-                              </MenuItem>
-                            ))}
+                            <TeamPickMenuItems mapping={row.awayMapping} teamsSorted={teamsSorted} />
                           </Select>
                         </FormControl>
                       )}
@@ -672,7 +866,19 @@ export function ImportScheduleModal({
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell>{row.csv.startTime}</TableCell>
+                    <TableCell>
+                      {row.csv.startTime}
+                      {row.sameTimeBand === true && (
+                        <Typography variant="caption" color="info.main" display="block">
+                          franja división
+                        </Typography>
+                      )}
+                      {row.sameTimeBand === false && (
+                        <Typography variant="caption" color="warning.main" display="block">
+                          fuera de franja
+                        </Typography>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Chip
                         size="small"
