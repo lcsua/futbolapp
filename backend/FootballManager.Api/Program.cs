@@ -2,6 +2,7 @@ using FootballManager.Application;
 using FootballManager.Application.Interfaces;
 using FootballManager.Infrastructure;
 using FootballManager.Api.Auth;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +28,21 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+var wwwroot = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+Directory.CreateDirectory(wwwroot);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(wwwroot),
+    OnPrepareResponse = ctx =>
+    {
+        if (ctx.Context.Request.Path.StartsWithSegments("/uploads"))
+        {
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=86400";
+        }
+    }
+});
+
 app.UseMiddleware<FootballManager.Api.Middleware.DevAuthMiddleware>();
 app.UseMiddleware<FootballManager.Api.Middleware.ExceptionHandlingMiddleware>();
 app.MapControllers();

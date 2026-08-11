@@ -43,6 +43,7 @@ public class LeagueController : Controller
         var model = await _leagueService.GetLeagueBySlugAsync(slug);
         if (model == null) return NotFound();
 
+        await SetLeagueNavAsync(slug, "resumen");
         return View("~/Views/Public/League.cshtml", model);
     }
 
@@ -56,9 +57,10 @@ public class LeagueController : Controller
         ViewBag.Seasons = meta;
         ViewBag.League = league;
         ViewBag.Division = division ?? "all";
+        await SetLeagueNavAsync(slug, "tabla");
 
         var standings = await _leagueService.GetStandingsAsync(slug, season, division);
-        
+
         return View("~/Views/Public/Standings.cshtml", standings);
     }
 
@@ -73,6 +75,7 @@ public class LeagueController : Controller
         ViewBag.League = league;
         ViewBag.Division = division ?? "all";
         ViewBag.Round = round;
+        await SetLeagueNavAsync(slug, "resultados");
 
         var results = await _leagueService.GetResultsAsync(slug, season, division, null);
 
@@ -90,10 +93,49 @@ public class LeagueController : Controller
         ViewBag.League = league;
         ViewBag.Division = division ?? "all";
         ViewBag.Round = round;
+        await SetLeagueNavAsync(slug, "partidos");
 
         var fixture = await _leagueService.GetFixtureAsync(slug, season, division, null);
 
         return View("~/Views/Public/Fixture.cshtml", fixture);
+    }
+
+    [HttpGet("{slug}/documentos")]
+    public async Task<IActionResult> DocumentsIndex(string slug)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var docs = await _leagueService.GetDocumentsAsync(slug) ?? new LeagueDocumentsViewModel();
+        var first = docs.Categories.FirstOrDefault();
+        if (first == null)
+            return RedirectToAction(nameof(Details), new { slug });
+
+        return RedirectToAction(nameof(Documents), new { slug, categorySlug = first.Slug });
+    }
+
+    [HttpGet("{slug}/documentos/{categorySlug}")]
+    public async Task<IActionResult> Documents(string slug, string categorySlug)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var docs = await _leagueService.GetDocumentsAsync(slug) ?? new LeagueDocumentsViewModel();
+        var category = docs.Categories.FirstOrDefault(c =>
+            c.Slug.Equals(categorySlug, StringComparison.OrdinalIgnoreCase));
+        if (category == null) return NotFound();
+
+        Response.Headers.CacheControl = "public, max-age=300";
+        await SetLeagueNavAsync(slug, $"doc:{category.Slug}", docs);
+
+        var model = new LeagueDocumentsPageViewModel
+        {
+            League = league,
+            Documents = docs,
+            ActiveCategory = category,
+        };
+
+        return View("~/Views/Public/LeagueDocuments.cshtml", model);
     }
 
     [HttpGet("{slug}/{teamSlug}")]
@@ -160,8 +202,16 @@ public class LeagueController : Controller
         });
     }
 
+    private async Task SetLeagueNavAsync(string slug, string activeKey, LeagueDocumentsViewModel? docs = null)
+    {
+        docs ??= await _leagueService.GetDocumentsAsync(slug) ?? new LeagueDocumentsViewModel();
+        ViewBag.DocumentCategories = docs.Categories;
+        ViewBag.ActiveLeagueTab = activeKey;
+    }
+
     private static bool IsReservedTeamSlug(string teamSlug) =>
         teamSlug.Equals("tabla", StringComparison.OrdinalIgnoreCase) ||
         teamSlug.Equals("resultados", StringComparison.OrdinalIgnoreCase) ||
-        teamSlug.Equals("partidos", StringComparison.OrdinalIgnoreCase);
+        teamSlug.Equals("partidos", StringComparison.OrdinalIgnoreCase) ||
+        teamSlug.Equals("documentos", StringComparison.OrdinalIgnoreCase);
 }

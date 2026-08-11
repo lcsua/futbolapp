@@ -34,6 +34,8 @@ namespace FootballManager.Infrastructure.Persistence
         public DbSet<UserLeague> UserLeagues { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<Standing> Standings { get; set; }
+        public DbSet<LeagueDocumentCategory> LeagueDocumentCategories { get; set; }
+        public DbSet<LeagueDocument> LeagueDocuments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

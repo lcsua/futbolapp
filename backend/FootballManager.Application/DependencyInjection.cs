@@ -64,6 +64,15 @@ using FootballManager.Application.UseCases.Players.CreatePlayer;
 using FootballManager.Application.UseCases.Players.UpdatePlayer;
 using FootballManager.Application.UseCases.Players.DeletePlayer;
 using FootballManager.Application.UseCases.Players.ImportPlayers;
+using FootballManager.Application.UseCases.Leagues.GetDocumentCategories;
+using FootballManager.Application.UseCases.Leagues.CreateDocumentCategory;
+using FootballManager.Application.UseCases.Leagues.UpdateDocumentCategory;
+using FootballManager.Application.UseCases.Leagues.DeleteDocumentCategory;
+using FootballManager.Application.UseCases.Leagues.GetDocuments;
+using FootballManager.Application.UseCases.Leagues.CreateDocument;
+using FootballManager.Application.UseCases.Leagues.UpdateDocument;
+using FootballManager.Application.UseCases.Leagues.DeleteDocument;
+using FootballManager.Application.UseCases.Leagues.SeedLeagueDocumentDefaults;
 using FootballManager.Application.Interfaces;
 using FootballManager.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -143,6 +152,15 @@ namespace FootballManager.Application
             services.AddScoped<IUpdatePlayerUseCase, UpdatePlayerUseCase>();
             services.AddScoped<IDeletePlayerUseCase, DeletePlayerUseCase>();
             services.AddScoped<IImportPlayersUseCase, ImportPlayersUseCase>();
+            services.AddScoped<IGetDocumentCategoriesUseCase, GetDocumentCategoriesUseCase>();
+            services.AddScoped<ICreateDocumentCategoryUseCase, CreateDocumentCategoryUseCase>();
+            services.AddScoped<IUpdateDocumentCategoryUseCase, UpdateDocumentCategoryUseCase>();
+            services.AddScoped<IDeleteDocumentCategoryUseCase, DeleteDocumentCategoryUseCase>();
+            services.AddScoped<IGetDocumentsUseCase, GetDocumentsUseCase>();
+            services.AddScoped<ICreateDocumentUseCase, CreateDocumentUseCase>();
+            services.AddScoped<IUpdateDocumentUseCase, UpdateDocumentUseCase>();
+            services.AddScoped<IDeleteDocumentUseCase, DeleteDocumentUseCase>();
+            services.AddScoped<ISeedLeagueDocumentDefaultsUseCase, SeedLeagueDocumentDefaultsUseCase>();
 
             services.AddSingleton<IFixtureDraftStore, FixtureDraftStore>();
 

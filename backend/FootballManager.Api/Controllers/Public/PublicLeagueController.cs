@@ -82,4 +82,13 @@ public class PublicLeagueController : ControllerBase
         if (result == null) return NotFound();
         return Ok(result);
     }
+
+    [HttpGet("documentos")]
+    public async Task<IActionResult> GetDocuments(string leagueSlug)
+    {
+        var result = await _service.GetLeagueDocumentsAsync(leagueSlug);
+        if (result == null) return NotFound();
+        Response.Headers.CacheControl = "public, max-age=300";
+        return Ok(result);
+    }
 }

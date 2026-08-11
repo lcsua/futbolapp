@@ -126,3 +126,39 @@ public class MatchdayGroupViewModel
     public List<MatchViewModel> Matches { get; set; } = new();
 }
 
+public class LeagueDocumentsViewModel
+{
+    public List<LeagueDocumentCategoryViewModel> Categories { get; set; } = new();
+}
+
+public class LeagueDocumentCategoryViewModel
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public bool RequiresDocumentDate { get; set; }
+    public int SortOrder { get; set; }
+    public List<LeagueDocumentItemViewModel> Documents { get; set; } = new();
+}
+
+public class LeagueDocumentItemViewModel
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string FileUrl { get; set; } = string.Empty;
+    public string ContentType { get; set; } = string.Empty;
+    public long FileSizeBytes { get; set; }
+    public string OriginalFileName { get; set; } = string.Empty;
+    public DateOnly? DocumentDate { get; set; }
+    public bool IsImage { get; set; }
+    public int SortOrder { get; set; }
+}
+
+public class LeagueDocumentsPageViewModel
+{
+    public LeagueViewModel League { get; set; } = new();
+    public LeagueDocumentsViewModel Documents { get; set; } = new();
+    public LeagueDocumentCategoryViewModel? ActiveCategory { get; set; }
+}
+

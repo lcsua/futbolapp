@@ -599,4 +599,59 @@ public class PublicStructuredService
         }
         return result;
     }
+
+    public async Task<LeagueDocumentsPublicDto?> GetLeagueDocumentsAsync(string leagueSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
+
+        var categories = await _db.LeagueDocumentCategories
+            .AsNoTracking()
+            .Where(c => c.LeagueId == league.Id && c.IsActive)
+            .OrderBy(c => c.SortOrder)
+            .ThenBy(c => c.Name)
+            .ToListAsync(cancellationToken);
+
+        var categoryIds = categories.Select(c => c.Id).ToList();
+        var documents = await _db.LeagueDocuments
+            .AsNoTracking()
+            .Where(d => d.LeagueId == league.Id && d.IsPublished && categoryIds.Contains(d.CategoryId))
+            .OrderBy(d => d.SortOrder)
+            .ThenBy(d => d.Title)
+            .ToListAsync(cancellationToken);
+
+        var docsByCategory = documents.GroupBy(d => d.CategoryId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var result = new LeagueDocumentsPublicDto();
+        foreach (var category in categories)
+        {
+            if (!docsByCategory.TryGetValue(category.Id, out var catsDocs) || catsDocs.Count == 0)
+                continue;
+
+            result.Categories.Add(new LeagueDocumentCategoryPublicDto
+            {
+                Id = category.Id,
+                Name = category.Name,
+                Slug = category.Slug,
+                RequiresDocumentDate = category.RequiresDocumentDate,
+                SortOrder = category.SortOrder,
+                Documents = catsDocs.Select(d => new LeagueDocumentPublicDto
+                {
+                    Id = d.Id,
+                    Title = d.Title,
+                    Description = d.Description,
+                    FileUrl = d.FileUrl,
+                    ContentType = d.ContentType,
+                    FileSizeBytes = d.FileSizeBytes,
+                    OriginalFileName = d.OriginalFileName,
+                    DocumentDate = d.DocumentDate,
+                    IsImage = !string.IsNullOrWhiteSpace(d.ContentType) &&
+                              d.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase),
+                    SortOrder = d.SortOrder,
+                }).ToList(),
+            });
+        }
+
+        return result;
+    }
 }

@@ -1,6 +1,7 @@
 @model PublicWeb.Models.Public.LeagueViewModel
 @{
     ViewData["Title"] = Model.Name;
+    ViewBag.League = Model;
 }
 
 <div class="mb-3">
@@ -14,20 +15,7 @@
     </div>
 </div>
 
-<ul class="nav nav-pills mb-4 nav-fill bg-white p-2 border rounded shadow-sm">
-    <li class="nav-item">
-        <a class="nav-link active fw-bold" href="@Url.Content($"~/ligas/{Model.Slug}")">Resumen</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{Model.Slug}/tabla")">Tabla de posiciones</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{Model.Slug}/resultados")">Resultados</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link text-dark" href="@Url.Content($"~/ligas/{Model.Slug}/partidos")">Próximos partidos</a>
-    </li>
-</ul>
+@await Html.PartialAsync("~/Views/Public/_LeagueNavTabs.cshtml")
 
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-white fw-bold">Acerca de la liga</div>

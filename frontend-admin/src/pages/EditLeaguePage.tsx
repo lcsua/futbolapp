@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material'
 import { LeagueForm } from '../components/LeagueForm'
+import { LeagueDocumentsSection } from '../components/LeagueDocumentsSection'
 import { leaguesService } from '../api/leagues'
 import type { LeagueFormData } from '../api/types'
 
@@ -87,6 +88,7 @@ export function EditLeaguePage() {
         title="League details"
         excludeLeagueId={leagueId}
       />
+      <LeagueDocumentsSection leagueId={leagueId} />
     </Box>
   )
 }

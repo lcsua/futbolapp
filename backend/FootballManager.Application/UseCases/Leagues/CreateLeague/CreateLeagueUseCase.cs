@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.UseCases.Leagues.SeedLeagueDocumentDefaults;
 using FootballManager.Domain.Entities;
 using FootballManager.Domain.Enums;
 
@@ -14,17 +15,20 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
         private readonly ILeagueRepository _leagueRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ISeedLeagueDocumentDefaultsUseCase _seedDocumentDefaultsUseCase;
         private readonly IUnitOfWork _unitOfWork;
 
         public CreateLeagueUseCase(
             ILeagueRepository leagueRepository,
             IUserLeagueRepository userLeagueRepository,
             IUserRepository userRepository,
+            ISeedLeagueDocumentDefaultsUseCase seedDocumentDefaultsUseCase,
             IUnitOfWork unitOfWork)
         {
             _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _seedDocumentDefaultsUseCase = seedDocumentDefaultsUseCase ?? throw new ArgumentNullException(nameof(seedDocumentDefaultsUseCase));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
 
@@ -36,7 +40,7 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
             if (await _leagueRepository.ExistsByNameAsync(request.Name, cancellationToken))
                 throw new LeagueAlreadyExistsException(request.Name);
 
-            var slug = SlugGenerator.GenerateLeagueSlug(!string.IsNullOrWhiteSpace(request.Slug) ? request.Slug : request.Name);
+            var slug = SoftGenerateSlug(request);
             if (string.IsNullOrWhiteSpace(slug))
                 throw new ArgumentException("Could not generate a valid slug from the league name.");
 
@@ -55,7 +59,18 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            await _seedDocumentDefaultsUseCase.ExecuteAsync(new SeedLeagueDocumentDefaultsRequest
+            {
+                LeagueId = league.Id,
+                RequireMembership = false,
+            }, cancellationToken);
+
             return new CreateLeagueResponse(league.Id, league.Slug);
+        }
+
+        private static string SoftGenerateSlug(CreateLeagueRequest request)
+        {
+            return SlugGenerator.GenerateLeagueSlug(!string.IsNullOrWhiteSpace(request.Slug) ? request.Slug : request.Name);
         }
     }
 }

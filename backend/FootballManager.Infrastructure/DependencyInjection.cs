@@ -36,6 +36,8 @@ namespace FootballManager.Infrastructure
             services.AddScoped<IFixtureRepository, FixtureRepository>();
             services.AddScoped<IResultRepository, ResultRepository>();
             services.AddScoped<IMatchIncidentRepository, MatchIncidentRepository>();
+            services.AddScoped<ILeagueDocumentCategoryRepository, LeagueDocumentCategoryRepository>();
+            services.AddScoped<ILeagueDocumentRepository, LeagueDocumentRepository>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 

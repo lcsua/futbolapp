@@ -117,3 +117,32 @@ public class MatchdayGroupDto
     public int Round { get; set; }
     public List<MatchPublicDto> Matches { get; set; } = new();
 }
+
+public class LeagueDocumentsPublicDto
+{
+    public List<LeagueDocumentCategoryPublicDto> Categories { get; set; } = new();
+}
+
+public class LeagueDocumentCategoryPublicDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public bool RequiresDocumentDate { get; set; }
+    public int SortOrder { get; set; }
+    public List<LeagueDocumentPublicDto> Documents { get; set; } = new();
+}
+
+public class LeagueDocumentPublicDto
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string FileUrl { get; set; } = string.Empty;
+    public string ContentType { get; set; } = string.Empty;
+    public long FileSizeBytes { get; set; }
+    public string OriginalFileName { get; set; } = string.Empty;
+    public DateOnly? DocumentDate { get; set; }
+    public bool IsImage { get; set; }
+    public int SortOrder { get; set; }
+}

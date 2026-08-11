@@ -179,4 +179,28 @@ public class LeaguePublicService
 
         return null;
     }
+
+    public async Task<LeagueDocumentsViewModel?> GetDocumentsAsync(string leagueSlug)
+    {
+        string cacheKey = $"liga_documentos_{leagueSlug}";
+        if (_cache.TryGetValue(cacheKey, out LeagueDocumentsViewModel? cached) && cached != null)
+            return cached;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            var model = await client.GetFromJsonAsync<LeagueDocumentsViewModel>($"liga/{leagueSlug}/documentos");
+            if (model != null)
+            {
+                _cache.Set(cacheKey, model, TimeSpan.FromMinutes(5));
+                return model;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calling backend API for documents in league {Slug}", leagueSlug);
+        }
+
+        return null;
+    }
 }
