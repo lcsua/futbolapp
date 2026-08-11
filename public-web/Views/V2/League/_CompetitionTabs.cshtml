@@ -21,5 +21,8 @@
         <a class="v2-tabs__link @(active == "resultados" ? "is-active" : null)"
            href="@Url.Content($"~/v2/ligas/{leagueSlug}/resultados")@qs"
            aria-current="@(active == "resultados" ? "page" : null)">Resultados</a>
+        <a class="v2-tabs__link @(active == "informacion" ? "is-active" : null)"
+           href="@Url.Content($"~/v2/ligas/{leagueSlug}/informacion")@qs"
+           aria-current="@(active == "informacion" ? "page" : null)">Información</a>
     </nav>
 }

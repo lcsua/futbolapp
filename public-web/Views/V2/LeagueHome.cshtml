@@ -17,6 +17,7 @@
     ViewBag.SeasonSlug = Model.SeasonSlug;
     ViewBag.LeagueSlug = leagueSlug;
     ViewData["LeagueSlug"] = leagueSlug;
+    ViewData["BadgeSize"] = "md";
 }
 
 <nav class="v2-crumb" aria-label="Migajas">
@@ -75,83 +76,55 @@
     </section>
 }
 
-<div class="v2-home-grid">
-    <section class="v2-home-section" aria-labelledby="home-results">
-        <div class="v2-home-section__head">
-            <h2 id="home-results" class="v2-section-title">Últimos resultados</h2>
-        </div>
-        @if (Model.RecentResults.Any())
-        {
-            <div class="v2-result-list">
-                @foreach (var match in Model.RecentResults)
-                {
-                    @await Html.PartialAsync("~/Views/V2/Results/_ResultMatchRow.cshtml", match)
-                }
-            </div>
-            <a class="v2-more-link" href="@Url.Content($"~/v2/ligas/{leagueSlug}/resultados")@seasonQs">Ver todos los resultados →</a>
-        }
-        else
-        {
-            <div class="v2-empty">Todavía no hay resultados cargados.</div>
-        }
-    </section>
-
-    <section class="v2-home-section" aria-labelledby="home-upcoming">
-        <div class="v2-home-section__head">
-            <h2 id="home-upcoming" class="v2-section-title">Próximos partidos</h2>
-        </div>
-        @if (Model.UpcomingMatches.Any())
-        {
-            <div class="v2-match-list">
-                @foreach (var match in Model.UpcomingMatches)
-                {
-                    @await Html.PartialAsync("~/Views/V2/Team/_MatchRow.cshtml", match)
-                }
-            </div>
-            <a class="v2-more-link" href="@Url.Content($"~/v2/ligas/{leagueSlug}/fixture")@seasonQs">Ver fixture →</a>
-        }
-        else
-        {
-            <div class="v2-empty">Sin próximos partidos programados.</div>
-        }
-    </section>
-</div>
-
-<section class="v2-home-section" aria-labelledby="home-standings">
-    <div class="v2-home-section__head">
-        <h2 id="home-standings" class="v2-section-title">Posiciones destacadas</h2>
-    </div>
-    @if (Model.StandingsPreviews.Any())
-    {
-        <div class="v2-standings-preview-grid">
-            @foreach (var preview in Model.StandingsPreviews)
-            {
-                @await Html.PartialAsync("~/Views/V2/League/_StandingsPreview.cshtml", preview)
-            }
-        </div>
-        <a class="v2-more-link" href="@Url.Content($"~/v2/ligas/{leagueSlug}/posiciones")@seasonQs">Ver tabla completa →</a>
-    }
-    else
-    {
-        <div class="v2-empty">No hay posiciones disponibles para esta selección.</div>
-    }
-</section>
-
 @if (Model.SampleTeams.Any())
 {
     <section class="v2-home-section" aria-labelledby="home-teams">
-        <h2 id="home-teams" class="v2-section-title">Equipos</h2>
-        <ul class="v2-team-chip-list">
-            @foreach (var team in Model.SampleTeams)
-            {
-                ViewData["BadgeSize"] = "sm";
-                <li>
-                    <a class="v2-team-chip" href="@Url.Content($"~/v2/ligas/{leagueSlug}/{team.Slug}")">
-                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team)
-                        <span>@team.Name</span>
-                    </a>
-                </li>
-            }
-        </ul>
+        <div class="v2-home-section__head v2-home-section__head--row">
+            <h2 id="home-teams" class="v2-section-title">Equipos</h2>
+            <div class="v2-team-carousel__controls" data-v2-carousel-controls>
+                <button type="button" class="v2-team-carousel__btn" data-v2-carousel-prev aria-label="Equipos anteriores">‹</button>
+                <button type="button" class="v2-team-carousel__btn" data-v2-carousel-next aria-label="Equipos siguientes">›</button>
+            </div>
+        </div>
+        <div class="v2-team-carousel" data-v2-team-carousel>
+            <ul class="v2-team-carousel__track" data-v2-carousel-track>
+                @foreach (var team in Model.SampleTeams)
+                {
+                    <li class="v2-team-carousel__item">
+                        <a class="v2-team-carousel__card" href="@Url.Content($"~/v2/ligas/{leagueSlug}/{team.Slug}")">
+                            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team)
+                            <span class="v2-team-carousel__name">@team.Name</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
     </section>
+}
+
+@if (Model.NextFecha != null)
+{
+    <section class="v2-home-section v2-home-next" aria-labelledby="home-next">
+        <h2 id="home-next" class="v2-section-title">Próxima fecha</h2>
+        <div class="v2-home-next__body">
+            <p class="v2-home-next__title">
+                Fecha @Model.NextFecha.Round
+                @if (Model.NextFecha.DisplayDate.HasValue)
+                {
+                    <span aria-hidden="true">·</span>
+                    <span>@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.NextFecha.DisplayDate.Value)</span>
+                }
+            </p>
+            <p class="v2-home-next__meta">
+                @(Model.NextFecha.MatchCount == 1
+                    ? "1 partido"
+                    : $"{Model.NextFecha.MatchCount} partidos")
+            </p>
+            <a class="v2-more-link" href="@Url.Content($"~/v2/ligas/{leagueSlug}/fixture")@seasonQs">Ver fixture →</a>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <script src="~/js/v2/team-carousel.js" asp-append-version="true"></script>
 }

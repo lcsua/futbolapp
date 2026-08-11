@@ -13,10 +13,7 @@ public class V2LeagueController : Controller
 {
     private const int SummaryPageSize = 5;
     private const int PartidosPageSize = 10;
-    private const int HomeMatchPreviewCount = 5;
-    private const int HomeStandingsTop = 4;
-    private const int HomeStandingsMaxDivisions = 4;
-    private const int HomeSampleTeams = 8;
+    private const int HomeCarouselTeams = 24;
 
     private readonly LeaguePublicService _leagueService;
     private readonly TeamPublicService _teamService;
@@ -42,56 +39,29 @@ public class V2LeagueController : Controller
             ?? meta.FirstOrDefault();
         var seasonSlug = selectedSeason?.Slug;
 
-        var resultsTask = _leagueService.GetResultsAsync(slug, seasonSlug, null, null);
-        var fixtureTask = _leagueService.GetFixtureAsync(slug, seasonSlug, null, null);
+        var calendarTask = LoadFixtureCalendarAsync(slug, seasonSlug, null);
         var standingsTask = _leagueService.GetStandingsAsync(slug, seasonSlug, null);
-        await Task.WhenAll(resultsTask, fixtureTask, standingsTask);
+        await Task.WhenAll(calendarTask, standingsTask);
 
-        var results = await resultsTask;
-        var fixture = await fixtureTask;
+        var calendar = await calendarTask;
         var standings = await standingsTask;
 
-        var recent = FlattenMatches(results)
-            .OrderByDescending(m => m.Kickoff)
-            .Take(HomeMatchPreviewCount)
-            .ToList();
-
-        var upcoming = FlattenMatches(fixture)
-            .OrderBy(m => m.Kickoff)
-            .Take(HomeMatchPreviewCount)
-            .ToList();
-
-        var previews = (standings?.Divisions ?? new List<DivisionGroupViewModel<StandingsRowViewModel>>())
-            .Where(d => d.Data != null && d.Data.Any())
-            .Take(HomeStandingsMaxDivisions)
-            .Select(d => new StandingsPreviewGroupViewModel
-            {
-                DivisionName = d.DivisionName,
-                DivisionSlug = d.DivisionSlug,
-                Rows = d.Data.OrderBy(r => r.Position).Take(HomeStandingsTop).ToList()
-            })
-            .ToList();
-
-        var sampleTeams = (standings?.Divisions ?? new List<DivisionGroupViewModel<StandingsRowViewModel>>())
+        var teams = (standings?.Divisions ?? new List<DivisionGroupViewModel<StandingsRowViewModel>>())
             .SelectMany(d => d.Data ?? new List<StandingsRowViewModel>())
-            .OrderBy(r => r.Position)
             .Select(r => r.Team)
             .Where(t => !string.IsNullOrWhiteSpace(t.Slug))
             .GroupBy(t => t.Id)
             .Select(g => g.First())
-            .Take(HomeSampleTeams)
             .ToList();
 
         var model = new LeagueHomeViewModel
         {
             League = league,
-            SeasonName = results?.SeasonName ?? fixture?.SeasonName ?? standings?.SeasonName ?? selectedSeason?.Name ?? string.Empty,
-            SeasonSlug = results?.SeasonSlug ?? fixture?.SeasonSlug ?? standings?.SeasonSlug ?? selectedSeason?.Slug ?? string.Empty,
+            SeasonName = calendar?.SeasonName ?? standings?.SeasonName ?? selectedSeason?.Name ?? string.Empty,
+            SeasonSlug = calendar?.SeasonSlug ?? standings?.SeasonSlug ?? selectedSeason?.Slug ?? string.Empty,
             Divisions = selectedSeason?.Divisions ?? new List<DivisionViewModel>(),
-            RecentResults = recent,
-            UpcomingMatches = upcoming,
-            StandingsPreviews = previews,
-            SampleTeams = sampleTeams
+            SampleTeams = StableSample(teams, HomeCarouselTeams, $"{slug}:{seasonSlug}"),
+            NextFecha = ResolveHomeNextFecha(calendar)
         };
 
         ViewBag.League = league;
@@ -104,6 +74,34 @@ public class V2LeagueController : Controller
         ViewBag.PageLabel = "Resumen";
 
         return View("~/Views/V2/LeagueHome.cshtml", model);
+    }
+
+    /// <summary>League information — documents / about (V1 data, V2 presentation).</summary>
+    [HttpGet("{slug}/informacion")]
+    public async Task<IActionResult> Information(string slug, [FromQuery] string? season)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        var docs = await _leagueService.GetDocumentsAsync(slug) ?? new LeagueDocumentsViewModel();
+        var selectedSeason = meta.FirstOrDefault(s =>
+                                !string.IsNullOrWhiteSpace(season)
+                                && string.Equals(s.Slug, season, StringComparison.OrdinalIgnoreCase))
+            ?? meta.FirstOrDefault(s => s.IsActive)
+            ?? meta.FirstOrDefault();
+
+        ViewBag.League = league;
+        ViewBag.Seasons = meta;
+        ViewBag.LeagueDocuments = docs;
+        ViewBag.V2ActiveNav = "ligas";
+        ViewBag.V2LeagueTab = "informacion";
+        ViewBag.SeasonName = selectedSeason?.Name;
+        ViewBag.SeasonSlug = selectedSeason?.Slug;
+        ViewBag.LeagueSlug = league.Slug;
+        ViewBag.PageLabel = "Información";
+
+        return View("~/Views/V2/Information.cshtml", league);
     }
 
     /// <summary>League results — must be registered before Team ({slug}/{teamSlug}).</summary>
@@ -346,19 +344,49 @@ public class V2LeagueController : Controller
         return t is "partidos" or "estadisticas" ? t : "resumen";
     }
 
-    private static IEnumerable<MatchViewModel> FlattenMatches(SeasonGroupedViewModel<MatchdayGroupViewModel>? grouped)
+    private static LeagueHomeNextFechaViewModel? ResolveHomeNextFecha(
+        SeasonGroupedViewModel<MatchdayGroupViewModel>? calendar)
     {
-        if (grouped?.Divisions == null) yield break;
-        foreach (var div in grouped.Divisions)
+        if (calendar?.Divisions == null) return null;
+
+        var openByRound = calendar.Divisions
+            .SelectMany(d => d.Data ?? new List<MatchdayGroupViewModel>())
+            .Where(md => md.Matches != null && md.Matches.Any(m => !TeamDisplayHelper.IsFinished(m.Status)))
+            .GroupBy(md => md.Round)
+            .OrderBy(g => g.Key)
+            .FirstOrDefault();
+
+        if (openByRound == null) return null;
+
+        var matches = openByRound.SelectMany(md => md.Matches ?? new List<MatchViewModel>()).ToList();
+        if (matches.Count == 0) return null;
+
+        DateTime? display = matches
+            .Where(m => m.Kickoff != default)
+            .GroupBy(m => m.Kickoff.Date)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (DateTime?)g.Key)
+            .FirstOrDefault();
+
+        return new LeagueHomeNextFechaViewModel
         {
-            if (div.Data == null) continue;
-            foreach (var day in div.Data)
-            {
-                if (day.Matches == null) continue;
-                foreach (var match in day.Matches)
-                    yield return match;
-            }
+            Round = openByRound.Key,
+            DisplayDate = display,
+            MatchCount = matches.Count
+        };
+    }
+
+    private static List<TeamViewModel> StableSample(IReadOnlyList<TeamViewModel> teams, int take, string seed)
+    {
+        if (teams.Count == 0) return new List<TeamViewModel>();
+        var list = teams.ToList();
+        var rng = new Random(HashCode.Combine(seed));
+        for (var i = list.Count - 1; i > 0; i--)
+        {
+            var j = rng.Next(i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
         }
+        return list.Take(Math.Min(take, list.Count)).ToList();
     }
 
     private static bool IsReservedTeamSlug(string teamSlug) =>
@@ -367,5 +395,6 @@ public class V2LeagueController : Controller
         teamSlug.Equals("partidos", StringComparison.OrdinalIgnoreCase) ||
         teamSlug.Equals("documentos", StringComparison.OrdinalIgnoreCase) ||
         teamSlug.Equals("posiciones", StringComparison.OrdinalIgnoreCase) ||
-        teamSlug.Equals("fixture", StringComparison.OrdinalIgnoreCase);
+        teamSlug.Equals("fixture", StringComparison.OrdinalIgnoreCase) ||
+        teamSlug.Equals("informacion", StringComparison.OrdinalIgnoreCase);
 }
