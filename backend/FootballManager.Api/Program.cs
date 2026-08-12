@@ -18,6 +18,7 @@ builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicLeagueServi
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicTeamService>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicMatchService>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicStructuredService>();
+builder.Services.AddScoped<FootballManager.Api.Services.LeagueLogoMigrationService>();
 
 var app = builder.Build();
 

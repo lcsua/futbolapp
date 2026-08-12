@@ -35,6 +35,13 @@ export const teamsService = {
     }>(`/api/leagues/${leagueId}/uploads/images`, formData, signal)
   },
 
+  materializeDataUrlLogos: (leagueId: string, signal?: AbortSignal) =>
+    apiClient.post<{ converted: number; skipped: number; failed: number }>(
+      `/api/leagues/${leagueId}/uploads/images/materialize-data-urls`,
+      {},
+      signal
+    ),
+
   getClubsByLeague: (leagueId: string, signal?: AbortSignal) =>
     apiClient.get<Club[]>(`/api/leagues/${leagueId}/clubs`, signal),
 

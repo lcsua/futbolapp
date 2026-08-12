@@ -123,6 +123,7 @@ namespace FootballManager.Api.Controllers
         private readonly IUpsertDivisionSchedulingExtrasUseCase _upsertDivisionSchedulingExtrasUseCase;
         private readonly ILeagueRepository _leagueRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
+        private readonly LeagueLogoMigrationService _leagueLogoMigrationService;
 
         public LeaguesController(
             ICreateLeagueUseCase createLeagueUseCase,
@@ -179,7 +180,8 @@ namespace FootballManager.Api.Controllers
             IGetDivisionSchedulingExtrasUseCase getDivisionSchedulingExtrasUseCase,
             IUpsertDivisionSchedulingExtrasUseCase upsertDivisionSchedulingExtrasUseCase,
             ILeagueRepository leagueRepository,
-            IUserLeagueRepository userLeagueRepository)
+            IUserLeagueRepository userLeagueRepository,
+            LeagueLogoMigrationService leagueLogoMigrationService)
         {
             _createLeagueUseCase = createLeagueUseCase ?? throw new ArgumentNullException(nameof(createLeagueUseCase));
             _createSeasonUseCase = createSeasonUseCase ?? throw new ArgumentNullException(nameof(createSeasonUseCase));
@@ -236,6 +238,7 @@ namespace FootballManager.Api.Controllers
             _upsertDivisionSchedulingExtrasUseCase = upsertDivisionSchedulingExtrasUseCase ?? throw new ArgumentNullException(nameof(upsertDivisionSchedulingExtrasUseCase));
             _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
+            _leagueLogoMigrationService = leagueLogoMigrationService ?? throw new ArgumentNullException(nameof(leagueLogoMigrationService));
         }
 
         [HttpGet("check-slug")]
@@ -443,6 +446,15 @@ namespace FootballManager.Api.Controllers
             var userId = GetUserId();
             if (userId == Guid.Empty) return Unauthorized();
 
+            try
+            {
+                request.LogoUrl = await DataUrlImageMaterializer.MaterializeIfDataUrlAsync(request.LogoUrl, leagueId, Request, cancellationToken);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+
             request.LeagueId = leagueId;
             request.UserId = userId;
             var response = await _createClubUseCase.ExecuteAsync(request, cancellationToken);
@@ -454,6 +466,15 @@ namespace FootballManager.Api.Controllers
         {
             var userId = GetUserId();
             if (userId == Guid.Empty) return Unauthorized();
+
+            try
+            {
+                request.LogoUrl = await DataUrlImageMaterializer.MaterializeIfDataUrlAsync(request.LogoUrl, leagueId, Request, cancellationToken);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
 
             request.LeagueId = leagueId;
             request.ClubId = clubId;
@@ -540,6 +561,23 @@ namespace FootballManager.Api.Controllers
             var rootDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "leagues", leagueId.ToString(), "images");
             var (created, skipped, failed) = await LogoThumbnailService.BackfillDirectoryAsync(rootDir, cancellationToken);
             return Ok(new { created, skipped, failed, directory = rootDir });
+        }
+
+        /// <summary>
+        /// Converts team logo/photo data-URLs stored in the DB into uploaded files + thumbnails.
+        /// </summary>
+        [HttpPost("{leagueId}/uploads/images/materialize-data-urls")]
+        [RequestSizeLimit(50 * 1024 * 1024)]
+        public async Task<IActionResult> MaterializeDataUrlLogos([FromRoute] Guid leagueId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var hasAccess = await _userLeagueRepository.IsUserInLeagueAsync(userId, leagueId, cancellationToken);
+            if (!hasAccess) return Forbid();
+
+            var (converted, skipped, failed) = await _leagueLogoMigrationService.MaterializeDataUrlLogosAsync(leagueId, Request, cancellationToken);
+            return Ok(new { converted, skipped, failed });
         }
 
         [HttpPut("{leagueId}/divisions/{divisionId}")]
@@ -633,10 +671,21 @@ namespace FootballManager.Api.Controllers
         }
 
         [HttpPut("{leagueId}/teams/{teamId}")]
+        [RequestSizeLimit(15 * 1024 * 1024)]
         public async Task<IActionResult> UpdateTeam([FromRoute] Guid leagueId, [FromRoute] Guid teamId, [FromBody] UpdateTeamRequest request, CancellationToken cancellationToken)
         {
             var userId = GetUserId();
             if (userId == Guid.Empty) return Unauthorized();
+
+            try
+            {
+                request.LogoUrl = await DataUrlImageMaterializer.MaterializeIfDataUrlAsync(request.LogoUrl, leagueId, Request, cancellationToken);
+                request.PhotoUrl = await DataUrlImageMaterializer.MaterializeIfDataUrlAsync(request.PhotoUrl, leagueId, Request, cancellationToken);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
 
             request.LeagueId = leagueId;
             request.TeamId = teamId;

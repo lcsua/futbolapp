@@ -16,21 +16,24 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import DomainAddIcon from '@mui/icons-material/DomainAdd'
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { teamsService } from '../api/teams'
 import { leaguesService } from '../api/leagues'
 import { useLeagueId, useActiveLeague } from '../contexts/LeagueContext'
 import type { Team } from '../api/types'
 import { CreateClubDialog } from '../components/CreateClubDialog'
+import ImageIcon from '@mui/icons-material/Image'
 
 export function TeamsListPage() {
   const params = useParams<{ leagueId?: string }>()
   const leagueId = useLeagueId()
   const activeLeague = useActiveLeague()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [clubDialogOpen, setClubDialogOpen] = useState(false)
+  const [optimizeMsg, setOptimizeMsg] = useState<string | null>(null)
   const fromParams = !!params.leagueId
   const seasonsBase = fromParams && leagueId ? `/leagues/${leagueId}/seasons` : '/seasons'
   const divisionsBase = fromParams && leagueId ? `/leagues/${leagueId}/divisions` : '/divisions'
@@ -46,6 +49,17 @@ export function TeamsListPage() {
     queryKey: ['leagues', leagueId, 'teams'],
     queryFn: ({ signal }) => teamsService.getByLeagueId(leagueId!, signal),
     enabled: !!leagueId,
+  })
+
+  const optimizeMutation = useMutation({
+    mutationFn: () => teamsService.materializeDataUrlLogos(leagueId!),
+    onSuccess: (res) => {
+      setOptimizeMsg(`Escudos optimizados: ${res.converted} convertidos, ${res.skipped} sin cambio, ${res.failed} con error.`)
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'teams'] })
+    },
+    onError: (err) => {
+      setOptimizeMsg(err instanceof Error ? err.message : 'No se pudieron optimizar los escudos')
+    },
   })
 
   const filteredTeams = useMemo(() => {
@@ -115,6 +129,17 @@ export function TeamsListPage() {
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           <Button
+            variant="outlined"
+            startIcon={<ImageIcon />}
+            disabled={optimizeMutation.isPending}
+            onClick={() => {
+              setOptimizeMsg(null)
+              optimizeMutation.mutate()
+            }}
+          >
+            {optimizeMutation.isPending ? 'Optimizando…' : 'Optimizar escudos'}
+          </Button>
+          <Button
             component={RouterLink}
             to={`${teamsBase}/never-assigned`}
             variant="outlined"
@@ -131,6 +156,12 @@ export function TeamsListPage() {
           </Button>
         </Box>
       </Box>
+
+      {optimizeMsg && (
+        <Alert severity={optimizeMutation.isError ? 'error' : 'success'} sx={{ mb: 2 }} onClose={() => setOptimizeMsg(null)}>
+          {optimizeMsg}
+        </Alert>
+      )}
 
       <Box
         sx={{

@@ -14,7 +14,7 @@ import {
 import type { Club, TeamFormData } from '../api/types'
 import { teamsService } from '../api/teams'
 
-const MAX_FILE_BYTES = 1024 * 1024
+const MAX_FILE_BYTES = 5 * 1024 * 1024
 const ACCEPT_IMAGES = 'image/jpeg,image/png,image/gif,image/webp'
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -92,7 +92,7 @@ export function TeamForm({
 
   const validateFile = useCallback((file: File, label: string): string | null => {
     if (!file.type.startsWith('image/')) return `${label} must be an image (e.g. JPEG, PNG, GIF, WebP).`
-    if (file.size > MAX_FILE_BYTES) return `${label} must be no larger than 1 MB.`
+    if (file.size > MAX_FILE_BYTES) return `${label} must be no larger than 5 MB.`
     return null
   }, [])
 
@@ -385,7 +385,7 @@ export function TeamForm({
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-            Logo (max 1 MB, images only)
+            Logo (max 5 MB, images only)
           </Typography>
           <input
             ref={logoInputRef}
@@ -412,7 +412,7 @@ export function TeamForm({
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-            Photo (max 1 MB, images only)
+            Photo (max 5 MB, images only)
           </Typography>
           <input
             ref={photoInputRef}
