@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Api.Models.Public;
+using FootballManager.Api.Services;
 using FootballManager.Application.Interfaces.Repositories;
 
 namespace FootballManager.Api.Services.Public;
@@ -28,7 +29,8 @@ public class PublicTeamService
             Name = team.Name,
             Slug = team.Id.ToString(),
             ShortName = team.ShortName,
-            LogoUrl = team.LogoUrl
+            LogoUrl = team.LogoUrl,
+            LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(team.LogoUrl)
         };
     }
 }

@@ -112,6 +112,7 @@ export function EditTeamPage() {
         </Button>
       </Stack>
       <TeamForm
+        leagueId={leagueId}
         initialValues={initialValues}
         clubs={clubs}
         clubsLoading={clubsLoading}

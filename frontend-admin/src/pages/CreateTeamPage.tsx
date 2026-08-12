@@ -86,6 +86,7 @@ export function CreateTeamPage() {
         Create club
       </Button>
       <TeamForm
+        leagueId={leagueId}
         onSubmit={handleSubmit}
         clubs={clubs}
         clubsLoading={clubsLoading}

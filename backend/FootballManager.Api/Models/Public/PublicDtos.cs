@@ -20,6 +20,8 @@ public class TeamPublicDto
     public string Slug { get; set; } = string.Empty;
     public string? ShortName { get; set; }
     public string? LogoUrl { get; set; }
+    /// <summary>Compact WebP thumb for lists; null when unavailable.</summary>
+    public string? LogoThumbUrl { get; set; }
 }
 
 public class StandingsRowPublicDto

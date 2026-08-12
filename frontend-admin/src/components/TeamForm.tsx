@@ -12,6 +12,7 @@ import {
   Switch,
 } from '@mui/material'
 import type { Club, TeamFormData } from '../api/types'
+import { teamsService } from '../api/teams'
 
 const MAX_FILE_BYTES = 1024 * 1024
 const ACCEPT_IMAGES = 'image/jpeg,image/png,image/gif,image/webp'
@@ -22,6 +23,7 @@ function isValidEmail(value: string): boolean {
 }
 
 export interface TeamFormProps {
+  leagueId: string
   initialValues?: Partial<TeamFormData>
   clubs?: Club[]
   clubsLoading?: boolean
@@ -48,6 +50,7 @@ const defaultValues: TeamFormData = {
 }
 
 export function TeamForm({
+  leagueId,
   initialValues,
   clubs = [],
   clubsLoading = false,
@@ -69,16 +72,21 @@ export function TeamForm({
   const [delegateName, setDelegateName] = useState(values.delegateName ?? '')
   const [delegateContact, setDelegateContact] = useState(values.delegateContact ?? '')
   const [email, setEmail] = useState(values.email ?? '')
-  const initialLogo = values.logoUrl && (values.logoUrl.startsWith('data:') || values.logoUrl.startsWith('http')) ? values.logoUrl : null
-  const initialPhoto = values.photoUrl && (values.photoUrl.startsWith('data:') || values.photoUrl.startsWith('http')) ? values.photoUrl : null
+  const initialLogo = values.logoUrl && (values.logoUrl.startsWith('data:') || values.logoUrl.startsWith('http') || values.logoUrl.startsWith('/'))
+    ? values.logoUrl
+    : null
+  const initialPhoto = values.photoUrl && (values.photoUrl.startsWith('data:') || values.photoUrl.startsWith('http') || values.photoUrl.startsWith('/'))
+    ? values.photoUrl
+    : null
   const [logoPreview, setLogoPreview] = useState<string | null>(initialLogo)
-  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(values.logoUrl?.startsWith('data:') ? values.logoUrl : null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoRemoved, setLogoRemoved] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(initialPhoto)
-  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(values.photoUrl?.startsWith('data:') ? values.photoUrl : null)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoRemoved, setPhotoRemoved] = useState(false)
   const [fileError, setFileError] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
@@ -94,25 +102,20 @@ export function TeamForm({
       const file = e.target.files?.[0]
       if (!file) {
         setLogoPreview(null)
-        setLogoDataUrl(null)
+        setLogoFile(null)
         return
       }
       const err = validateFile(file, 'Logo')
       if (err) {
         setFileError(err)
         setLogoPreview(null)
-        setLogoDataUrl(null)
+        setLogoFile(null)
         if (logoInputRef.current) logoInputRef.current.value = ''
         return
       }
-      const reader = new FileReader()
-      reader.onload = () => {
-        const dataUrl = reader.result as string
-        setLogoDataUrl(dataUrl)
-        setLogoPreview(dataUrl)
-        setLogoRemoved(false)
-      }
-      reader.readAsDataURL(file)
+      setLogoFile(file)
+      setLogoPreview(URL.createObjectURL(file))
+      setLogoRemoved(false)
     },
     [validateFile]
   )
@@ -123,32 +126,27 @@ export function TeamForm({
       const file = e.target.files?.[0]
       if (!file) {
         setPhotoPreview(null)
-        setPhotoDataUrl(null)
+        setPhotoFile(null)
         return
       }
       const err = validateFile(file, 'Photo')
       if (err) {
         setFileError(err)
         setPhotoPreview(null)
-        setPhotoDataUrl(null)
+        setPhotoFile(null)
         if (photoInputRef.current) photoInputRef.current.value = ''
         return
       }
-      const reader = new FileReader()
-      reader.onload = () => {
-        const dataUrl = reader.result as string
-        setPhotoDataUrl(dataUrl)
-        setPhotoPreview(dataUrl)
-        setPhotoRemoved(false)
-      }
-      reader.readAsDataURL(file)
+      setPhotoFile(file)
+      setPhotoPreview(URL.createObjectURL(file))
+      setPhotoRemoved(false)
     },
     [validateFile]
   )
 
   const clearLogo = useCallback(() => {
     setLogoPreview(null)
-    setLogoDataUrl(null)
+    setLogoFile(null)
     setLogoRemoved(true)
     setFileError(null)
     if (logoInputRef.current) logoInputRef.current.value = ''
@@ -156,13 +154,13 @@ export function TeamForm({
 
   const clearPhoto = useCallback(() => {
     setPhotoPreview(null)
-    setPhotoDataUrl(null)
+    setPhotoFile(null)
     setPhotoRemoved(true)
     setFileError(null)
     if (photoInputRef.current) photoInputRef.current.value = ''
   }, [])
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setFileError(null)
     setEmailError(null)
@@ -174,14 +172,40 @@ export function TeamForm({
       return
     }
     if (fileError) return
-    const logoUrl =
-      logoRemoved ? undefined : (logoDataUrl ?? (logoPreview ? logoPreview : initialValues?.logoUrl) ?? undefined)
-    const photoUrl =
-      photoRemoved ? undefined : (photoDataUrl ?? (photoPreview ? photoPreview : initialValues?.photoUrl) ?? undefined)
     const foundedYearNum = foundedYear.trim() === '' ? undefined : parseInt(foundedYear, 10)
     if (foundedYear.trim() !== '' && (Number.isNaN(foundedYearNum) || foundedYearNum! < 1800 || foundedYearNum! > 2100)) {
       return
     }
+
+    let logoUrl: string | undefined
+    let photoUrl: string | undefined
+    try {
+      setUploading(true)
+      if (logoRemoved) {
+        logoUrl = undefined
+      } else if (logoFile) {
+        const upload = await teamsService.uploadImage(leagueId, logoFile)
+        logoUrl = upload.url
+      } else {
+        logoUrl = initialValues?.logoUrl || undefined
+      }
+
+      if (photoRemoved) {
+        photoUrl = undefined
+      } else if (photoFile) {
+        const upload = await teamsService.uploadImage(leagueId, photoFile)
+        photoUrl = upload.url
+      } else {
+        photoUrl = initialValues?.photoUrl || undefined
+      }
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : 'Failed to upload image')
+      setUploading(false)
+      return
+    } finally {
+      setUploading(false)
+    }
+
     const data: TeamFormData = {
       name: nameTrim,
       suffix: suffix.trim() || undefined,
@@ -196,10 +220,11 @@ export function TeamForm({
       logoUrl,
       photoUrl,
     }
-    void onSubmit(data)
+    await onSubmit(data)
   }
 
-  const canSubmit = !fileError && !loading && !emailError
+  const busy = loading || uploading
+  const canSubmit = !fileError && !busy && !emailError
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 640 }}>
@@ -221,7 +246,7 @@ export function TeamForm({
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            disabled={loading}
+            disabled={busy}
             autoFocus
           />
         </Grid>
@@ -231,7 +256,7 @@ export function TeamForm({
             label="Suffix (optional)"
             value={suffix}
             onChange={(e) => setSuffix(e.target.value)}
-            disabled={loading}
+            disabled={busy}
             helperText="If omitted, backend may assign one automatically if needed."
           />
         </Grid>
@@ -241,7 +266,7 @@ export function TeamForm({
             label="Short name"
             value={shortName}
             onChange={(e) => setShortName(e.target.value)}
-            disabled={loading}
+            disabled={busy}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -254,7 +279,7 @@ export function TeamForm({
                   setAssignToClub(checked)
                   if (!checked) setClubId('')
                 }}
-                disabled={loading}
+                disabled={busy}
               />
             }
             label="Assign to a club"
@@ -274,7 +299,7 @@ export function TeamForm({
                   {...params}
                   label="Club"
                   placeholder="Select a club"
-                  disabled={loading}
+                  disabled={busy}
                 />
               )}
             />
@@ -288,7 +313,7 @@ export function TeamForm({
             inputProps={{ min: 1800, max: 2100 }}
             value={foundedYear}
             onChange={(e) => setFoundedYear(e.target.value)}
-            disabled={loading}
+            disabled={busy}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -298,7 +323,7 @@ export function TeamForm({
             type="color"
             value={primaryColor}
             onChange={(e) => setPrimaryColor(e.target.value)}
-            disabled={loading}
+            disabled={busy}
             slotProps={{
               input: {
                 sx: { width: '100%', height: 40, p: 0.5, cursor: 'pointer' },
@@ -313,7 +338,7 @@ export function TeamForm({
             type="color"
             value={secondaryColor}
             onChange={(e) => setSecondaryColor(e.target.value)}
-            disabled={loading}
+            disabled={busy}
             slotProps={{
               input: {
                 sx: { width: '100%', height: 40, p: 0.5, cursor: 'pointer' },
@@ -327,7 +352,7 @@ export function TeamForm({
             label="Delegate name"
             value={delegateName}
             onChange={(e) => setDelegateName(e.target.value)}
-            disabled={loading}
+            disabled={busy}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -336,7 +361,7 @@ export function TeamForm({
             label="Delegate contact"
             value={delegateContact}
             onChange={(e) => setDelegateContact(e.target.value)}
-            disabled={loading}
+            disabled={busy}
           />
         </Grid>
         <Grid size={{ xs: 12 }}>
@@ -355,7 +380,7 @@ export function TeamForm({
             }}
             error={!!emailError}
             helperText={emailError}
-            disabled={loading}
+            disabled={busy}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
@@ -367,7 +392,7 @@ export function TeamForm({
             type="file"
             accept={ACCEPT_IMAGES}
             onChange={handleLogoChange}
-            disabled={loading}
+            disabled={busy}
             style={{ display: 'block', marginBottom: 8 }}
             aria-label="Upload logo"
           />
@@ -379,7 +404,7 @@ export function TeamForm({
                 alt="Logo preview"
                 sx={{ maxWidth: 80, maxHeight: 80, objectFit: 'contain', border: 1, borderColor: 'divider', borderRadius: 1 }}
               />
-              <Button type="button" size="small" onClick={clearLogo} disabled={loading}>
+              <Button type="button" size="small" onClick={clearLogo} disabled={busy}>
                 Remove
               </Button>
             </Box>
@@ -394,7 +419,7 @@ export function TeamForm({
             type="file"
             accept={ACCEPT_IMAGES}
             onChange={handlePhotoChange}
-            disabled={loading}
+            disabled={busy}
             style={{ display: 'block', marginBottom: 8 }}
             aria-label="Upload photo"
           />
@@ -406,7 +431,7 @@ export function TeamForm({
                 alt="Photo preview"
                 sx={{ maxWidth: 80, maxHeight: 80, objectFit: 'contain', border: 1, borderColor: 'divider', borderRadius: 1 }}
               />
-              <Button type="button" size="small" onClick={clearPhoto} disabled={loading}>
+              <Button type="button" size="small" onClick={clearPhoto} disabled={busy}>
                 Remove
               </Button>
             </Box>
@@ -419,7 +444,7 @@ export function TeamForm({
         )}
         <Grid size={12}>
           <Button type="submit" variant="contained" disabled={!canSubmit} sx={{ minWidth: 120 }}>
-            {loading ? <CircularProgress size={24} color="inherit" /> : submitLabel}
+            {busy ? <CircularProgress size={24} color="inherit" /> : submitLabel}
           </Button>
         </Grid>
       </Grid>

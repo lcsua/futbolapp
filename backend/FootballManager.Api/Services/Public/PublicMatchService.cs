@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Api.Models.Public;
+using FootballManager.Api.Services;
 using FootballManager.Application.UseCases.Matches.GetMatchById;
 
 namespace FootballManager.Api.Services.Public;
@@ -36,14 +37,16 @@ public class PublicMatchService
                     Id = res.HomeTeamId,
                     Name = res.HomeTeamName,
                     Slug = res.HomeTeamSlug ?? string.Empty,
-                    LogoUrl = res.HomeTeamLogoUrl
+                    LogoUrl = res.HomeTeamLogoUrl,
+                    LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(res.HomeTeamLogoUrl)
                 },
                 AwayTeam = new TeamPublicDto
                 {
                     Id = res.AwayTeamId,
                     Name = res.AwayTeamName,
                     Slug = res.AwayTeamSlug ?? string.Empty,
-                    LogoUrl = res.AwayTeamLogoUrl
+                    LogoUrl = res.AwayTeamLogoUrl,
+                    LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(res.AwayTeamLogoUrl)
                 },
                 Kickoff = DateTime.TryParse(res.MatchDate + " " + res.KickoffTime, out var dt) ? dt : DateTime.UtcNow,
                 FieldName = string.IsNullOrWhiteSpace(res.FieldName) ? null : res.FieldName.Trim()

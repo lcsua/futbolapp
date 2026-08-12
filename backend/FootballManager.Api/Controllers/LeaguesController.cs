@@ -33,6 +33,7 @@ using FootballManager.Application.UseCases.Leagues.SaveSeasonSetup;
 using FootballManager.Application.UseCases.Leagues.CopySeasonFrom;
 using FootballManager.Application.UseCases.Leagues.GetLeagueFields;
 using FootballManager.Application.UseCases.Leagues.CreateField;
+using FootballManager.Api.Services;
 using FootballManager.Application.UseCases.Leagues.UpdateField;
 using FootballManager.Application.UseCases.Leagues.GetCompetitionRule;
 using FootballManager.Application.UseCases.Leagues.UpsertCompetitionRule;
@@ -493,15 +494,52 @@ namespace FootballManager.Api.Controllers
 
             var fileName = $"{Guid.NewGuid():N}{ext}";
             var fullPath = Path.Combine(rootDir, fileName);
+            var thumbFileName = LogoThumbnailService.ThumbFileName(fileName);
 
             await using (var fs = new FileStream(fullPath, FileMode.Create))
             {
                 await file.CopyToAsync(fs, cancellationToken);
             }
 
+            string? thumbRelativeUrl = null;
+            string? thumbPublicUrl = null;
+            try
+            {
+                await LogoThumbnailService.GenerateThumbFromFileAsync(fullPath, cancellationToken);
+                thumbRelativeUrl = $"/{relativeDir.Replace("\\", "/")}/{thumbFileName}";
+                thumbPublicUrl = $"{Request.Scheme}://{Request.Host}{thumbRelativeUrl}";
+            }
+            catch
+            {
+                // Thumbnail is best-effort; original upload still succeeds.
+            }
+
             var relativeUrl = $"/{relativeDir.Replace("\\", "/")}/{fileName}";
             var publicUrl = $"{Request.Scheme}://{Request.Host}{relativeUrl}";
-            return Ok(new { url = publicUrl, relativeUrl });
+            return Ok(new
+            {
+                url = publicUrl,
+                relativeUrl,
+                thumbUrl = thumbPublicUrl,
+                thumbRelativeUrl
+            });
+        }
+
+        /// <summary>
+        /// Generates missing .thumb.webp files for existing logos under this league's upload folder.
+        /// </summary>
+        [HttpPost("{leagueId}/uploads/images/backfill-thumbs")]
+        public async Task<IActionResult> BackfillLogoThumbnails([FromRoute] Guid leagueId, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var hasAccess = await _userLeagueRepository.IsUserInLeagueAsync(userId, leagueId, cancellationToken);
+            if (!hasAccess) return Forbid();
+
+            var rootDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "leagues", leagueId.ToString(), "images");
+            var (created, skipped, failed) = await LogoThumbnailService.BackfillDirectoryAsync(rootDir, cancellationToken);
+            return Ok(new { created, skipped, failed, directory = rootDir });
         }
 
         [HttpPut("{leagueId}/divisions/{divisionId}")]

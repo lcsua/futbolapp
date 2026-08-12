@@ -1,5 +1,6 @@
 using FootballManager.Api.Helpers;
 using FootballManager.Api.Models.Public;
+using FootballManager.Api.Services;
 using FootballManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using FootballManager.Domain.Entities;
@@ -83,7 +84,8 @@ public class PublicStructuredService
             ShortName = string.IsNullOrWhiteSpace(team.ShortName)
                 ? team.DisplayName.Substring(0, Math.Min(team.DisplayName.Length, 3)).ToUpperInvariant()
                 : team.ShortName,
-            LogoUrl = string.IsNullOrWhiteSpace(team.LogoUrl) ? null : team.LogoUrl
+            LogoUrl = string.IsNullOrWhiteSpace(team.LogoUrl) ? null : team.LogoUrl,
+            LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(team.LogoUrl)
         };
     }
 
@@ -434,7 +436,9 @@ public class PublicStructuredService
         if (!includeLogos)
         {
             home.LogoUrl = null;
+            home.LogoThumbUrl = null;
             away.LogoUrl = null;
+            away.LogoThumbUrl = null;
         }
 
         return new MatchPublicDto

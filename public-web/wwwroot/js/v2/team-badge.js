@@ -17,11 +17,22 @@
 
     const fail = () => activateFallback(badge);
 
-    img.addEventListener('error', fail, { once: true });
+    const onError = () => {
+      const full = img.getAttribute('data-full-logo');
+      if (full && img.getAttribute('src') !== full) {
+        img.removeAttribute('data-full-logo');
+        img.addEventListener('error', fail, { once: true });
+        img.setAttribute('src', full);
+        return;
+      }
+      fail();
+    };
+
+    img.addEventListener('error', onError, { once: true });
 
     // Cached/broken image may already be in error state before listener binds.
     if (img.complete && img.naturalWidth === 0) {
-      fail();
+      onError();
     }
   }
 

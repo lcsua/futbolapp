@@ -1,6 +1,12 @@
 @model PublicWeb.Models.Public.TeamViewModel
 @{
-    var hasLogo = !string.IsNullOrWhiteSpace(Model.LogoUrl);
+    var preferFull = ViewData["PreferFullLogo"] as bool? ?? false;
+    var thumb = Model.LogoThumbUrl;
+    var full = Model.LogoUrl;
+    var logoSrc = preferFull
+        ? full
+        : (!string.IsNullOrWhiteSpace(thumb) ? thumb : full);
+    var hasLogo = !string.IsNullOrWhiteSpace(logoSrc);
     var initials = PublicWeb.Helpers.TeamDisplayHelper.GetInitials(Model.Name);
     var size = (ViewData["BadgeSize"] as string ?? "md").ToLowerInvariant();
     var sizeClass = size switch
@@ -18,6 +24,13 @@
     // Name is usually rendered beside the badge; keep decorative for a11y unless overridden.
     var decorative = ViewData["BadgeDecorative"] as bool? ?? true;
     var alt = decorative ? "" : $"Escudo {Model.Name}";
+    // When showing thumb, keep full URL for JS fallback if thumb 404s.
+    var fullFallback = !preferFull
+        && !string.IsNullOrWhiteSpace(thumb)
+        && !string.IsNullOrWhiteSpace(full)
+        && !string.Equals(thumb, full, StringComparison.OrdinalIgnoreCase)
+            ? full
+            : null;
 }
 <div class="v2-team-badge @sizeClass @(hasLogo ? "has-logo" : "is-fallback")"
      data-v2-team-badge
@@ -25,13 +38,27 @@
      title="@Model.Name">
     @if (hasLogo)
     {
-        <img src="@Model.LogoUrl"
-             alt="@alt"
-             width="@w"
-             height="@h"
-             loading="lazy"
-             decoding="async"
-             data-v2-team-logo />
+        if (fullFallback != null)
+        {
+            <img src="@logoSrc"
+                 alt="@alt"
+                 width="@w"
+                 height="@h"
+                 loading="lazy"
+                 decoding="async"
+                 data-v2-team-logo
+                 data-full-logo="@fullFallback" />
+        }
+        else
+        {
+            <img src="@logoSrc"
+                 alt="@alt"
+                 width="@w"
+                 height="@h"
+                 loading="lazy"
+                 decoding="async"
+                 data-v2-team-logo />
+        }
         <span class="v2-team-badge__initials" data-v2-team-initials>@initials</span>
     }
     else

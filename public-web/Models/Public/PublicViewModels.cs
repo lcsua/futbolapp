@@ -17,6 +17,8 @@ public class TeamViewModel
     public string Slug { get; set; } = string.Empty;
     public string ShortName { get; set; } = string.Empty;
     public string? LogoUrl { get; set; }
+    /// <summary>Compact WebP thumb for lists; falls back to LogoUrl when null.</summary>
+    public string? LogoThumbUrl { get; set; }
     public int? FoundedYear { get; set; }
     public string? PhotoUrl { get; set; }
 }

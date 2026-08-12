@@ -45,6 +45,17 @@ export function QuickCreateTeamForDivisionDialog({
         seasonId,
         divisionId,
       })
+      const hasDetails =
+        data.primaryColor ||
+        data.secondaryColor ||
+        data.logoUrl ||
+        data.photoUrl ||
+        data.foundedYear != null ||
+        data.delegateName ||
+        data.delegateContact
+      if (hasDetails) {
+        await teamsService.update(leagueId, created.id, data)
+      }
       await teamsService.assignTeamToDivisionSeason(leagueId, seasonId, divisionId, created.id)
     },
     onSuccess: () => {
@@ -70,6 +81,7 @@ export function QuickCreateTeamForDivisionDialog({
       <DialogContent>
         <TeamForm
           key={`${divisionId}-${String(open)}`}
+          leagueId={leagueId}
           clubs={clubs}
           clubsLoading={clubsLoading}
           onSubmit={handleSubmit}

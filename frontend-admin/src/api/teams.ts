@@ -27,7 +27,12 @@ export const teamsService = {
   uploadImage: async (leagueId: string, file: File, signal?: AbortSignal) => {
     const formData = new FormData()
     formData.append('file', file)
-    return apiClient.postForm<{ url: string; relativeUrl: string }>(`/api/leagues/${leagueId}/uploads/images`, formData, signal)
+    return apiClient.postForm<{
+      url: string
+      relativeUrl: string
+      thumbUrl?: string | null
+      thumbRelativeUrl?: string | null
+    }>(`/api/leagues/${leagueId}/uploads/images`, formData, signal)
   },
 
   getClubsByLeague: (leagueId: string, signal?: AbortSignal) =>

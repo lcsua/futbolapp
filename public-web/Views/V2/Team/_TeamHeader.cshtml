@@ -14,6 +14,7 @@
         @{
             ViewData["BadgeSize"] = "lg";
             ViewData["BadgeDecorative"] = false;
+            ViewData["PreferFullLogo"] = true;
         }
         @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Team)
         <div class="v2-team-header__copy v2-team-hero__copy">
