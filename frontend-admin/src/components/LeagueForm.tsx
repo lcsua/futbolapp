@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Box,
   Button,
@@ -14,9 +14,12 @@ import {
 import type { LeagueFormData } from '../api/types'
 import { leaguesService } from '../api/leagues'
 
+const ACCEPT_IMAGES = 'image/jpeg,image/png,image/gif,image/webp'
+const MAX_FILE_BYTES = 5 * 1024 * 1024
+
 export interface LeagueFormProps {
   initialValues?: Partial<LeagueFormData>
-  onSubmit: (data: LeagueFormData) => void | Promise<void>
+  onSubmit: (data: LeagueFormData, logoFile?: File | null) => void | Promise<void>
   loading?: boolean
   error?: string | null
   submitLabel: string
@@ -55,6 +58,11 @@ export function LeagueForm({
   const [country, setCountry] = useState(values.country)
   const [description, setDescription] = useState(values.description ?? '')
   const [logoUrl, setLogoUrl] = useState(values.logoUrl ?? '')
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(values.logoUrl?.trim() || null)
+  const [logoRemoved, setLogoRemoved] = useState(false)
+  const [fileError, setFileError] = useState<string | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
   const [isPublic, setIsPublic] = useState(values.isPublic ?? false)
   const [isActive, setIsActive] = useState(values.isActive ?? true)
 
@@ -82,6 +90,10 @@ export function LeagueForm({
       setCountry(initialValues.country ?? '')
       setDescription(initialValues.description ?? '')
       setLogoUrl(initialValues.logoUrl ?? '')
+      setLogoFile(null)
+      setLogoPreview(initialValues.logoUrl?.trim() || null)
+      setLogoRemoved(false)
+      setFileError(null)
       setIsPublic(initialValues.isPublic ?? false)
       setIsActive(initialValues.isActive ?? true)
     }
@@ -101,19 +113,50 @@ export function LeagueForm({
     return () => clearTimeout(timer)
   }, [slug, checkSlug])
 
+  const handleLogoFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null)
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setFileError('El logo debe ser una imagen (JPEG, PNG, GIF o WebP).')
+      if (logoInputRef.current) logoInputRef.current.value = ''
+      return
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      setFileError('El logo no puede superar 5 MB.')
+      if (logoInputRef.current) logoInputRef.current.value = ''
+      return
+    }
+    setLogoFile(file)
+    setLogoRemoved(false)
+    const reader = new FileReader()
+    reader.onload = () => setLogoPreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }, [])
+
+  const clearLogo = useCallback(() => {
+    setLogoFile(null)
+    setLogoUrl('')
+    setLogoPreview(null)
+    setLogoRemoved(true)
+    setFileError(null)
+    if (logoInputRef.current) logoInputRef.current.value = ''
+  }, [])
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (fileError) return
     const finalSlug = slug.trim() || leaguesService.generateSlug(name)
     const data: LeagueFormData = {
       name: name.trim(),
       country: country.trim(),
       slug: finalSlug,
       description: description.trim(),
-      logoUrl: logoUrl.trim(),
+      logoUrl: logoRemoved ? '' : logoUrl.trim(),
       isPublic,
       isActive,
     }
-    void onSubmit(data)
+    void onSubmit(data, logoRemoved ? null : logoFile)
   }
 
   const slugError = slugAvailable === false
@@ -196,14 +239,49 @@ export function LeagueForm({
         disabled={loading}
         sx={{ mb: 2 }}
       />
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        Logo de la liga
+      </Typography>
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept={ACCEPT_IMAGES}
+        onChange={handleLogoFileChange}
+        disabled={loading}
+        style={{ display: 'block', marginBottom: 8 }}
+        aria-label="Subir logo de la liga"
+      />
+      {fileError && (
+        <Alert severity="error" sx={{ mb: 1 }} onClose={() => setFileError(null)}>
+          {fileError}
+        </Alert>
+      )}
+      {logoPreview && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+          <Box
+            component="img"
+            src={logoPreview}
+            alt="Vista previa del logo"
+            sx={{ width: 64, height: 64, objectFit: 'contain', border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}
+          />
+          <Button size="small" onClick={clearLogo} disabled={loading}>
+            Quitar logo
+          </Button>
+        </Box>
+      )}
       <TextField
         fullWidth
         name="logoUrl"
-        label="Logo URL"
-        type="url"
+        label="Logo URL (opcional)"
         value={logoUrl}
-        onChange={(e) => setLogoUrl(e.target.value)}
+        onChange={(e) => {
+          setLogoUrl(e.target.value)
+          setLogoFile(null)
+          setLogoRemoved(false)
+          setLogoPreview(e.target.value.trim() || null)
+        }}
         disabled={loading}
+        helperText="Podés subir un archivo o pegar una URL. Si subís un archivo, reemplaza la URL."
         sx={{ mb: 2 }}
       />
       <Tooltip title="Inactive leagues may be hidden from lists and selection">
@@ -240,7 +318,7 @@ export function LeagueForm({
       <Button
         type="submit"
         variant="contained"
-        disabled={loading || slugError}
+        disabled={loading || slugError || !!fileError}
         sx={{ minWidth: 120 }}
       >
         {loading ? <CircularProgress size={24} color="inherit" /> : submitLabel}

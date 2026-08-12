@@ -35,6 +35,16 @@ export const leaguesService = {
   update: (leagueId: string, data: LeagueFormData, signal?: AbortSignal) =>
     apiClient.put<void>(`/api/leagues/${leagueId}`, data, signal),
 
+  uploadImage: async (leagueId: string, file: File, signal?: AbortSignal) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.postForm<{ url: string; relativeUrl: string }>(
+      `/api/leagues/${leagueId}/uploads/images`,
+      formData,
+      signal
+    )
+  },
+
   checkSlugAvailability: (slug: string, excludeLeagueId?: string, signal?: AbortSignal) => {
     const params = new URLSearchParams({ slug })
     if (excludeLeagueId) params.set('excludeLeagueId', excludeLeagueId)

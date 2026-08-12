@@ -17,6 +17,7 @@ export function EditLeaguePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
 
   const { data: league, isLoading, isError, error: queryError } = useQuery({
     queryKey: ['leagues', leagueId],
@@ -37,9 +38,21 @@ export function EditLeaguePage() {
     },
   })
 
-  const handleSubmit = (data: LeagueFormData) => {
+  const handleSubmit = async (data: LeagueFormData, logoFile?: File | null) => {
     setError(null)
-    updateMutation.mutate(data)
+    try {
+      let logoUrl = data.logoUrl
+      if (logoFile) {
+        setUploading(true)
+        const upload = await leaguesService.uploadImage(leagueId!, logoFile)
+        logoUrl = upload.url
+      }
+      updateMutation.mutate({ ...data, logoUrl })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload league logo')
+    } finally {
+      setUploading(false)
+    }
   }
 
   if (!leagueId) {
@@ -82,7 +95,7 @@ export function EditLeaguePage() {
       <LeagueForm
         initialValues={initialValues}
         onSubmit={handleSubmit}
-        loading={updateMutation.isPending}
+        loading={updateMutation.isPending || uploading}
         error={error}
         submitLabel="Save"
         title="League details"
