@@ -18,12 +18,20 @@
         <div class="v2-stack">
             @foreach (var league in Model.AmateurLeagues)
             {
-                <a class="v2-match" href="@Url.Content($"~/ligas/{league.Slug}")">
-                    <strong style="display:block;font-size:1.05rem;font-weight:650">@league.Name</strong>
-                    @if (!string.IsNullOrWhiteSpace(league.Country))
+                <a class="v2-league-card" href="@Url.Content($"~/ligas/{league.Slug}")">
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", new PublicWeb.Models.Public.TeamViewModel
                     {
-                        <span class="v2-match__meta" style="justify-content:flex-start;margin-top:0.45rem">@league.Country</span>
-                    }
+                        Name = league.Name,
+                        LogoUrl = league.LogoUrl
+                    })
+                    <span class="v2-league-card__copy">
+                        <span class="v2-league-card__name">@league.Name</span>
+                        @if (!string.IsNullOrWhiteSpace(league.Country))
+                        {
+                            <span class="v2-league-card__meta">@league.Country</span>
+                        }
+                    </span>
+                    <span class="v2-league-card__arrow" aria-hidden="true">→</span>
                 </a>
             }
         </div>
@@ -47,14 +55,23 @@
         <div class="v2-stack">
             @foreach (var tournament in Model.ArgentineTournaments)
             {
-                <a class="v2-match" href="@Url.Content($"~/ligas/argentina/{tournament.Slug}")">
-                    <strong style="display:block;font-size:1.05rem;font-weight:650">@tournament.Name</strong>
-                    @if (!string.IsNullOrWhiteSpace(tournament.CurrentTournament))
+                var tournamentMeta = !string.IsNullOrWhiteSpace(tournament.Country)
+                    ? tournament.Country
+                    : $"{tournament.CurrentTournament} {(tournament.Season > 0 ? tournament.Season.ToString() : "")}".Trim();
+                <a class="v2-league-card" href="@Url.Content($"~/ligas/argentina/{tournament.Slug}")">
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", new PublicWeb.Models.Public.TeamViewModel
                     {
-                        <span class="v2-match__meta" style="justify-content:flex-start;margin-top:0.45rem">
-                            @tournament.CurrentTournament @(tournament.Season > 0 ? tournament.Season.ToString() : "")
-                        </span>
-                    }
+                        Name = tournament.Name,
+                        LogoUrl = tournament.LogoUrl
+                    })
+                    <span class="v2-league-card__copy">
+                        <span class="v2-league-card__name">@tournament.Name</span>
+                        @if (!string.IsNullOrWhiteSpace(tournamentMeta))
+                        {
+                            <span class="v2-league-card__meta">@tournamentMeta</span>
+                        }
+                    </span>
+                    <span class="v2-league-card__arrow" aria-hidden="true">→</span>
                 </a>
             }
         </div>

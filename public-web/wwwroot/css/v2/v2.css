@@ -1195,6 +1195,109 @@ body {
   font-size: var(--font-size-secondary);
 }
 
+/* League picker cards — /ligas */
+.v2-league-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+  background: var(--v2-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.05rem 0.95rem;
+  color: inherit !important;
+  text-decoration: none;
+  overflow: hidden;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.v2-league-card:hover,
+.v2-league-card:focus-visible {
+  color: inherit !important;
+}
+
+.v2-league-card .v2-team-badge--md {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.v2-league-card__copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.v2-league-card__name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--v2-text);
+}
+
+.v2-league-card__meta {
+  font-size: var(--font-size-secondary);
+  color: var(--v2-text-secondary);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v2-league-card__arrow {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--v2-text-secondary);
+  font-size: 1.35rem;
+  line-height: 1;
+  transform: translateX(0);
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .v2-league-card:hover {
+    border-color: color-mix(in srgb, var(--v2-primary) 32%, var(--border));
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+
+  .v2-league-card:hover .v2-league-card__arrow {
+    color: var(--v2-accent);
+    transform: translateX(4px);
+  }
+}
+
+@media (min-width: 768px) {
+  .v2-league-card {
+    padding: 1.35rem 1.15rem;
+    gap: 1rem;
+  }
+
+  .v2-league-card__name {
+    font-size: 1.05rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-league-card,
+  .v2-league-card__arrow {
+    transition: none;
+  }
+
+  .v2-league-card:hover .v2-league-card__arrow {
+    transform: none;
+  }
+}
+
 /* Pagination */
 .v2-pagination {
   margin-top: var(--space-4);
