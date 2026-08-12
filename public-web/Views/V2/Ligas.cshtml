@@ -19,11 +19,16 @@
             @foreach (var league in Model.AmateurLeagues)
             {
                 <a class="v2-league-card" href="@Url.Content($"~/ligas/{league.Slug}")">
-                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", new PublicWeb.Models.Public.TeamViewModel
-                    {
-                        Name = league.Name,
-                        LogoUrl = league.LogoUrl
-                    })
+                    <span class="v2-league-card__badge" aria-hidden="true">
+                        <img data-v2-brand="icon-192"
+                             src="~/branding/blue/icon-192.png"
+                             asp-append-version="true"
+                             alt=""
+                             width="40"
+                             height="40"
+                             loading="lazy"
+                             decoding="async" />
+                    </span>
                     <span class="v2-league-card__copy">
                         <span class="v2-league-card__name">@league.Name</span>
                         @if (!string.IsNullOrWhiteSpace(league.Country))
@@ -59,11 +64,16 @@
                     ? tournament.Country
                     : $"{tournament.CurrentTournament} {(tournament.Season > 0 ? tournament.Season.ToString() : "")}".Trim();
                 <a class="v2-league-card" href="@Url.Content($"~/ligas/argentina/{tournament.Slug}")">
-                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", new PublicWeb.Models.Public.TeamViewModel
-                    {
-                        Name = tournament.Name,
-                        LogoUrl = tournament.LogoUrl
-                    })
+                    <span class="v2-league-card__badge" aria-hidden="true">
+                        <img data-v2-brand="icon-192"
+                             src="~/branding/blue/icon-192.png"
+                             asp-append-version="true"
+                             alt=""
+                             width="40"
+                             height="40"
+                             loading="lazy"
+                             decoding="async" />
+                    </span>
                     <span class="v2-league-card__copy">
                         <span class="v2-league-card__name">@tournament.Name</span>
                         @if (!string.IsNullOrWhiteSpace(tournamentMeta))

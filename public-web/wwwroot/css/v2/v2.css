@@ -1233,9 +1233,23 @@ body {
   color: inherit !important;
 }
 
-.v2-league-card .v2-team-badge--md {
+.v2-league-card__badge {
+  flex-shrink: 0;
   width: 2.5rem;
   height: 2.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--v2-surface);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.v2-league-card__badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .v2-league-card__copy {

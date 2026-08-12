@@ -28,6 +28,9 @@
     root.querySelectorAll('[data-v2-brand="icon"]').forEach((img) => {
       img.setAttribute('src', `${base}/icon.svg`);
     });
+    root.querySelectorAll('[data-v2-brand="icon-192"]').forEach((img) => {
+      img.setAttribute('src', `${base}/icon-192.png`);
+    });
 
     const themeColor = document.getElementById('v2-theme-color');
     if (themeColor) {

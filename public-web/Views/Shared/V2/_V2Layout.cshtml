@@ -71,6 +71,9 @@
             root.querySelectorAll('[data-v2-brand="icon"]').forEach(function (img) {
                 img.setAttribute('src', base + '/icon.svg');
             });
+            root.querySelectorAll('[data-v2-brand="icon-192"]').forEach(function (img) {
+                img.setAttribute('src', base + '/icon-192.png');
+            });
             var tc = document.getElementById('v2-theme-color');
             if (tc) tc.setAttribute('content', t === 'green' ? '#16A34A' : '#2563EB');
         })();
