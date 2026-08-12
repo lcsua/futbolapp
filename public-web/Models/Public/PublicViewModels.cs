@@ -171,7 +171,7 @@ public class LeagueHomeViewModel
     public string SeasonName { get; set; } = string.Empty;
     public string SeasonSlug { get; set; } = string.Empty;
     public List<DivisionViewModel> Divisions { get; set; } = new();
-    public List<TeamViewModel> SampleTeams { get; set; } = new();
+    public List<LeagueHomeDivisionLeaderViewModel> DivisionLeaders { get; set; } = new();
     public LeagueHomeNextFechaViewModel? NextFecha { get; set; }
 }
 
@@ -180,6 +180,14 @@ public class LeagueHomeNextFechaViewModel
     public int Round { get; set; }
     public DateTime? DisplayDate { get; set; }
     public int MatchCount { get; set; }
+}
+
+public class LeagueHomeDivisionLeaderViewModel
+{
+    public string DivisionName { get; set; } = string.Empty;
+    public string DivisionSlug { get; set; } = string.Empty;
+    public TeamViewModel Team { get; set; } = new();
+    public int Points { get; set; }
 }
 
 public class StandingsPreviewGroupViewModel

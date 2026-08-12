@@ -2613,6 +2613,132 @@ a.v2-standings-preview__team:focus-visible .v2-standings-preview__name {
   font-weight: 500;
 }
 
+/* Division leaders — one row per division */
+.v2-home-leaders {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--v2-surface);
+  overflow: hidden;
+}
+
+.v2-home-leaders__table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-home-leaders__table thead th {
+  padding: 0.65rem 0.85rem;
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--v2-text-secondary);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--v2-surface) 88%, var(--v2-background));
+}
+
+.v2-home-leaders__table thead th.v2-home-leaders__pts {
+  text-align: right;
+  width: 3.25rem;
+  padding-right: 1rem;
+}
+
+.v2-home-leaders__table tbody td {
+  padding: 0.85rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--v2-text);
+}
+
+.v2-home-leaders__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.v2-home-leaders__table tbody tr:hover td {
+  background: color-mix(in srgb, var(--v2-primary) 4%, transparent);
+}
+
+.v2-home-leaders__division {
+  width: 28%;
+  font-size: var(--font-size-secondary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--v2-text-secondary);
+}
+
+.v2-home-leaders__division a {
+  color: inherit !important;
+  text-decoration: none;
+}
+
+.v2-home-leaders__division a:hover,
+.v2-home-leaders__division a:focus-visible {
+  color: var(--v2-primary) !important;
+}
+
+.v2-home-leaders__team-link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  color: inherit !important;
+  text-decoration: none;
+}
+
+.v2-home-leaders__team-name {
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.v2-home-leaders__team-link:hover .v2-home-leaders__team-name,
+a.v2-home-leaders__team-link:focus-visible .v2-home-leaders__team-name {
+  color: var(--v2-primary);
+}
+
+.v2-home-leaders__pts {
+  text-align: right;
+  font-weight: var(--font-weight-bold);
+  font-size: 1rem;
+  color: var(--v2-navy);
+  padding-right: 1rem !important;
+  white-space: nowrap;
+}
+
+.v2-home-leaders .v2-team-badge--sm {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+@media (max-width: 529.98px) {
+  .v2-home-leaders__table thead th,
+  .v2-home-leaders__table tbody td {
+    padding: 0.75rem 0.65rem;
+  }
+
+  .v2-home-leaders__division {
+    width: 30%;
+    font-size: 0.75rem;
+  }
+
+  .v2-home-leaders__team-name {
+    font-size: 0.875rem;
+  }
+
+  .v2-home-leaders__table thead th.v2-home-leaders__pts,
+  .v2-home-leaders__pts {
+    width: 2.75rem;
+    padding-right: 0.75rem !important;
+  }
+}
+
 /* —— Información V2 —— */
 .v2-info {
   width: min(100%, 56rem);

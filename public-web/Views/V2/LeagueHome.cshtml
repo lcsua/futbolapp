@@ -7,6 +7,10 @@
     var seasonQs = string.IsNullOrWhiteSpace(Model.SeasonSlug)
         ? ""
         : $"?season={Uri.EscapeDataString(Model.SeasonSlug)}";
+    var posicionesBase = Url.Content($"~/ligas/{leagueSlug}/posiciones")
+                         + (string.IsNullOrWhiteSpace(Model.SeasonSlug)
+                             ? ""
+                             : $"?season={Uri.EscapeDataString(Model.SeasonSlug)}");
 
     ViewData["Title"] = league.Name;
     ViewData["Description"] = string.IsNullOrWhiteSpace(league.Description)
@@ -18,7 +22,7 @@
     ViewBag.LeagueSlug = leagueSlug;
     ViewBag.League = league;
     ViewData["LeagueSlug"] = leagueSlug;
-    ViewData["BadgeSize"] = "md";
+    ViewData["BadgeSize"] = "sm";
 }
 
 @await Html.PartialAsync("~/Views/V2/League/_LeagueBackNav.cshtml")
@@ -68,28 +72,57 @@
     </section>
 }
 
-@if (Model.SampleTeams.Any())
+@if (Model.DivisionLeaders.Any())
 {
-    <section class="v2-home-section" aria-labelledby="home-teams">
+    <section class="v2-home-section" aria-labelledby="home-leaders">
         <div class="v2-home-section__head v2-home-section__head--row">
-            <h2 id="home-teams" class="v2-section-title">Equipos</h2>
-            <div class="v2-team-carousel__controls" data-v2-carousel-controls>
-                <button type="button" class="v2-team-carousel__btn" data-v2-carousel-prev aria-label="Equipos anteriores">‹</button>
-                <button type="button" class="v2-team-carousel__btn" data-v2-carousel-next aria-label="Equipos siguientes">›</button>
-            </div>
+            <h2 id="home-leaders" class="v2-section-title">Líderes</h2>
+            <a class="v2-more-link" href="@posicionesBase">Ver posiciones →</a>
         </div>
-        <div class="v2-team-carousel" data-v2-team-carousel>
-            <ul class="v2-team-carousel__track" data-v2-carousel-track>
-                @foreach (var team in Model.SampleTeams)
-                {
-                    <li class="v2-team-carousel__item">
-                        <a class="v2-team-carousel__card" href="@Url.Content($"~/ligas/{leagueSlug}/{team.Slug}")">
-                            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team)
-                            <span class="v2-team-carousel__name">@team.Name</span>
-                        </a>
-                    </li>
-                }
-            </ul>
+        <div class="v2-home-leaders">
+            <table class="v2-home-leaders__table">
+                <thead>
+                    <tr>
+                        <th scope="col">División</th>
+                        <th scope="col">Equipo</th>
+                        <th scope="col" class="v2-home-leaders__pts">Pts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.DivisionLeaders)
+                    {
+                        var divisionHref = Url.Content($"~/ligas/{leagueSlug}/posiciones")
+                            + (string.IsNullOrWhiteSpace(Model.SeasonSlug)
+                                ? $"?division={Uri.EscapeDataString(row.DivisionSlug)}"
+                                : $"?season={Uri.EscapeDataString(Model.SeasonSlug)}&division={Uri.EscapeDataString(row.DivisionSlug)}");
+                        var teamHref = !string.IsNullOrWhiteSpace(row.Team.Slug)
+                            ? Url.Content($"~/ligas/{leagueSlug}/{row.Team.Slug}")
+                            : null;
+                        <tr>
+                            <td class="v2-home-leaders__division">
+                                <a href="@divisionHref">@row.DivisionName</a>
+                            </td>
+                            <td class="v2-home-leaders__team">
+                                @if (teamHref != null)
+                                {
+                                    <a class="v2-home-leaders__team-link" href="@teamHref">
+                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
+                                        <span class="v2-home-leaders__team-name">@row.Team.Name</span>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="v2-home-leaders__team-link">
+                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
+                                        <span class="v2-home-leaders__team-name">@row.Team.Name</span>
+                                    </span>
+                                }
+                            </td>
+                            <td class="v2-home-leaders__pts v2-nums">@row.Points</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </section>
 }
@@ -115,8 +148,4 @@
             <a class="v2-more-link" href="@Url.Content($"~/ligas/{leagueSlug}/fixture")@seasonQs">Ver fixture →</a>
         </div>
     </section>
-}
-
-@section Scripts {
-    <script src="~/js/v2/team-carousel.js" asp-append-version="true"></script>
 }

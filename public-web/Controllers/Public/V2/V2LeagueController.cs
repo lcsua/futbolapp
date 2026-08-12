@@ -13,7 +13,6 @@ public class V2LeagueController : Controller
 {
     private const int SummaryPageSize = 5;
     private const int PartidosPageSize = 10;
-    private const int HomeCarouselTeams = 24;
 
     private readonly LeaguePublicService _leagueService;
     private readonly TeamPublicService _teamService;
@@ -46,12 +45,26 @@ public class V2LeagueController : Controller
         var calendar = await calendarTask;
         var standings = await standingsTask;
 
-        var teams = (standings?.Divisions ?? new List<DivisionGroupViewModel<StandingsRowViewModel>>())
-            .SelectMany(d => d.Data ?? new List<StandingsRowViewModel>())
-            .Select(r => r.Team)
-            .Where(t => !string.IsNullOrWhiteSpace(t.Slug))
-            .GroupBy(t => t.Id)
-            .Select(g => g.First())
+        var divisionLeaders = (standings?.Divisions ?? new List<DivisionGroupViewModel<StandingsRowViewModel>>())
+            .Select(d =>
+            {
+                var leader = (d.Data ?? new List<StandingsRowViewModel>())
+                    .OrderBy(r => r.Position)
+                    .ThenByDescending(r => r.Points)
+                    .FirstOrDefault();
+                if (leader?.Team == null || string.IsNullOrWhiteSpace(leader.Team.Name))
+                    return null;
+
+                return new LeagueHomeDivisionLeaderViewModel
+                {
+                    DivisionName = d.DivisionName,
+                    DivisionSlug = d.DivisionSlug,
+                    Team = leader.Team,
+                    Points = leader.Points
+                };
+            })
+            .Where(x => x != null)
+            .Cast<LeagueHomeDivisionLeaderViewModel>()
             .ToList();
 
         var model = new LeagueHomeViewModel
@@ -60,7 +73,7 @@ public class V2LeagueController : Controller
             SeasonName = calendar?.SeasonName ?? standings?.SeasonName ?? selectedSeason?.Name ?? string.Empty,
             SeasonSlug = calendar?.SeasonSlug ?? standings?.SeasonSlug ?? selectedSeason?.Slug ?? string.Empty,
             Divisions = selectedSeason?.Divisions ?? new List<DivisionViewModel>(),
-            SampleTeams = StableSample(teams, HomeCarouselTeams, $"{slug}:{seasonSlug}"),
+            DivisionLeaders = divisionLeaders,
             NextFecha = ResolveHomeNextFecha(calendar)
         };
 
@@ -374,19 +387,6 @@ public class V2LeagueController : Controller
             DisplayDate = display,
             MatchCount = matches.Count
         };
-    }
-
-    private static List<TeamViewModel> StableSample(IReadOnlyList<TeamViewModel> teams, int take, string seed)
-    {
-        if (teams.Count == 0) return new List<TeamViewModel>();
-        var list = teams.ToList();
-        var rng = new Random(HashCode.Combine(seed));
-        for (var i = list.Count - 1; i > 0; i--)
-        {
-            var j = rng.Next(i + 1);
-            (list[i], list[j]) = (list[j], list[i]);
-        }
-        return list.Take(Math.Min(take, list.Count)).ToList();
     }
 
     private static bool IsReservedTeamSlug(string teamSlug) =>
