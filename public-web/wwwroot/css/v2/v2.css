@@ -546,7 +546,7 @@ body {
   position: relative;
 }
 
-.v2-team-badge--lg { width: 4.75rem; height: 4.75rem; border-radius: var(--radius-lg); }
+.v2-team-badge--lg { width: 5.5rem; height: 5.5rem; border-radius: var(--radius-lg); }
 .v2-team-badge--md { width: 2.5rem; height: 2.5rem; }
 .v2-team-badge--sm { width: 1.75rem; height: 1.75rem; border-radius: 8px; }
 
@@ -556,6 +556,10 @@ body {
   object-fit: contain;
   padding: 0.25rem;
   grid-area: 1 / 1;
+}
+
+.v2-team-badge--lg img {
+  padding: 0.2rem;
 }
 
 .v2-team-badge__initials {
@@ -1504,8 +1508,8 @@ body {
   }
 
   .v2-team-badge--lg {
-    width: 5.75rem;
-    height: 5.75rem;
+    width: 6.5rem;
+    height: 6.5rem;
   }
 
   .v2-hero-stat__value { font-size: var(--font-size-stat-lg); }
