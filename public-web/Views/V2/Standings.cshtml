@@ -17,30 +17,7 @@
     ViewBag.LeagueSlug = leagueSlug;
 }
 
-<nav class="v2-crumb" aria-label="Migajas">
-    <div class="v2-crumb__desktop">
-        <a href="@Url.Content("~/ligas")">Ligas</a>
-        @if (league != null)
-        {
-            <span aria-hidden="true">/</span>
-            <a href="@Url.Content($"~/ligas/{leagueSlug}")">@league.Name</a>
-        }
-        <span aria-hidden="true">/</span>
-        <span aria-current="page">Posiciones</span>
-    </div>
-    @if (league != null)
-    {
-        <a class="v2-crumb__mobile" href="@Url.Content($"~/ligas/{leagueSlug}")">
-            <span aria-hidden="true">‹</span> @league.Name
-        </a>
-    }
-    else
-    {
-        <a class="v2-crumb__mobile" href="@Url.Content("~/ligas")">
-            <span aria-hidden="true">‹</span> Ligas
-        </a>
-    }
-</nav>
+@await Html.PartialAsync("~/Views/V2/League/_LeagueBackNav.cshtml")
 
 @await Html.PartialAsync("~/Views/V2/League/_LeagueHeader.cshtml", league)
 

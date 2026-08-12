@@ -1,0 +1,39 @@
+@{
+    var league = ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
+    var leagueSlug = ViewBag.LeagueSlug as string ?? league?.Slug ?? "";
+    var pageLabel = ViewBag.PageLabel as string ?? "Resumen";
+    var isHome = string.Equals(pageLabel, "Resumen", StringComparison.OrdinalIgnoreCase);
+
+    var pathBase = Context.Request.PathBase.HasValue ? Context.Request.PathBase.Value!.TrimEnd('/') : "";
+    var host = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    var ligasUrl = $"{host}{pathBase}/ligas";
+    var leagueUrl = string.IsNullOrWhiteSpace(leagueSlug) ? ligasUrl : $"{host}{pathBase}/ligas/{leagueSlug}";
+    var currentUrl = $"{host}{pathBase}{Context.Request.Path}";
+}
+<nav class="v2-crumb" aria-label="Migajas">
+    @* Breadcrumb semántico / SEO: visible para lectores de pantalla; el enlace visual es más limpio. *@
+    <ol class="visually-hidden" itemscope itemtype="https://schema.org/BreadcrumbList">
+        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+            <a itemprop="item" href="@ligasUrl"><span itemprop="name">Ligas</span></a>
+            <meta itemprop="position" content="1" />
+        </li>
+        @if (league != null && !string.IsNullOrWhiteSpace(leagueSlug))
+        {
+            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                <a itemprop="item" href="@leagueUrl"><span itemprop="name">@league.Name</span></a>
+                <meta itemprop="position" content="2" />
+            </li>
+            @if (!isHome)
+            {
+                <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                    <span itemprop="name">@pageLabel</span>
+                    <meta itemprop="item" content="@currentUrl" />
+                    <meta itemprop="position" content="3" />
+                </li>
+            }
+        }
+    </ol>
+    <a class="v2-crumb__back" href="@Url.Content("~/ligas")">
+        <span aria-hidden="true">‹</span> Todas las ligas
+    </a>
+</nav>

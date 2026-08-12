@@ -16,20 +16,12 @@
     ViewBag.SeasonName = Model.SeasonName;
     ViewBag.SeasonSlug = Model.SeasonSlug;
     ViewBag.LeagueSlug = leagueSlug;
+    ViewBag.League = league;
     ViewData["LeagueSlug"] = leagueSlug;
     ViewData["BadgeSize"] = "md";
 }
 
-<nav class="v2-crumb" aria-label="Migajas">
-    <div class="v2-crumb__desktop">
-        <a href="@Url.Content("~/ligas")">Ligas</a>
-        <span aria-hidden="true">/</span>
-        <span aria-current="page">@league.Name</span>
-    </div>
-    <a class="v2-crumb__mobile" href="@Url.Content("~/ligas")">
-        <span aria-hidden="true">‹</span> Ligas
-    </a>
-</nav>
+@await Html.PartialAsync("~/Views/V2/League/_LeagueBackNav.cshtml")
 
 @await Html.PartialAsync("~/Views/V2/League/_LeagueHeader.cshtml", league)
 
