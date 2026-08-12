@@ -53,6 +53,29 @@
     </form>
 }
 
+@if (Model.NextFecha != null)
+{
+    <section class="v2-home-section v2-home-next" aria-labelledby="home-next">
+        <h2 id="home-next" class="v2-section-title">Próxima fecha</h2>
+        <div class="v2-home-next__body">
+            <p class="v2-home-next__title">
+                Fecha @Model.NextFecha.Round
+                @if (Model.NextFecha.DisplayDate.HasValue)
+                {
+                    <span aria-hidden="true">·</span>
+                    <span>@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.NextFecha.DisplayDate.Value)</span>
+                }
+            </p>
+            <p class="v2-home-next__meta">
+                @(Model.NextFecha.MatchCount == 1
+                    ? "1 partido"
+                    : $"{Model.NextFecha.MatchCount} partidos")
+            </p>
+            <a class="v2-more-link" href="@Url.Content($"~/ligas/{leagueSlug}/fixture")@seasonQs">Ver fixture →</a>
+        </div>
+    </section>
+}
+
 @if (Model.Divisions.Any())
 {
     <section class="v2-home-section" aria-labelledby="home-divisions">
@@ -123,29 +146,6 @@
                     }
                 </tbody>
             </table>
-        </div>
-    </section>
-}
-
-@if (Model.NextFecha != null)
-{
-    <section class="v2-home-section v2-home-next" aria-labelledby="home-next">
-        <h2 id="home-next" class="v2-section-title">Próxima fecha</h2>
-        <div class="v2-home-next__body">
-            <p class="v2-home-next__title">
-                Fecha @Model.NextFecha.Round
-                @if (Model.NextFecha.DisplayDate.HasValue)
-                {
-                    <span aria-hidden="true">·</span>
-                    <span>@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.NextFecha.DisplayDate.Value)</span>
-                }
-            </p>
-            <p class="v2-home-next__meta">
-                @(Model.NextFecha.MatchCount == 1
-                    ? "1 partido"
-                    : $"{Model.NextFecha.MatchCount} partidos")
-            </p>
-            <a class="v2-more-link" href="@Url.Content($"~/ligas/{leagueSlug}/fixture")@seasonQs">Ver fixture →</a>
         </div>
     </section>
 }
