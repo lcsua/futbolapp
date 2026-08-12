@@ -1,9 +1,32 @@
 <!DOCTYPE html>
 <html lang="es" data-path-base="@(Context.Request.PathBase.HasValue ? Context.Request.PathBase.Value : "")">
+@{
+    var seoUrls = Context.RequestServices.GetRequiredService<PublicWeb.Seo.SeoUrlBuilder>();
+    var seoOptions = Context.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<PublicWeb.Seo.SeoOptions>>().Value;
+    var title = ViewData["Title"] as string ?? "MiLiga";
+    // Titles from SeoCopy already include "| MiLiga"; legacy pages may not.
+    if (!title.Contains("MiLiga", StringComparison.OrdinalIgnoreCase) &&
+        !title.Contains("Mi Liga", StringComparison.OrdinalIgnoreCase))
+    {
+        title = $"{title} | MiLiga";
+    }
+    var description = ViewData["Description"] as string
+        ?? "Resultados, posiciones, partidos y estadísticas de tu torneo.";
+    var canonicalPath = ViewData["CanonicalPath"] as string
+        ?? Context.Request.Path.Value
+        ?? "/";
+    var canonical = seoUrls.Absolute(canonicalPath);
+    var ogImage = seoUrls.AbsoluteMedia(ViewData["OgImage"] as string);
+    var ogType = ViewData["OgType"] as string ?? "website";
+    var noIndex = ViewData["NoIndex"] as bool? == true;
+    var crumbs = ViewBag.SeoBreadcrumbs as IReadOnlyList<PublicWeb.Seo.SeoBreadcrumbItem>;
+    var breadcrumbJson = PublicWeb.Seo.SeoJsonLd.BreadcrumbList(crumbs, seoUrls);
+    var siteJson = PublicWeb.Seo.SeoJsonLd.WebsiteAndOrganization(seoUrls, seoOptions);
+}
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Mi Liga</title>
+    <title>@title</title>
 
     <script>
         (function () {
@@ -17,12 +40,26 @@
         })();
     </script>
 
-    <meta name="description" content="@(ViewData["Description"] ?? "Resultados, posiciones, partidos y estadísticas de tu torneo.")" />
-    <meta property="og:title" content="@ViewData["Title"] - Mi Liga" />
-    <meta property="og:description" content="@(ViewData["Description"] ?? "Mi Liga es la plataforma para gestionar ligas de fútbol amateur.")" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="@(ViewData["OgUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}")" />
-    <meta property="og:site_name" content="Mi Liga" />
+    <meta name="description" content="@description" />
+    @if (noIndex)
+    {
+        <meta name="robots" content="noindex, follow" />
+    }
+    <link rel="canonical" href="@canonical" />
+
+    <meta property="og:title" content="@title" />
+    <meta property="og:description" content="@description" />
+    <meta property="og:type" content="@ogType" />
+    <meta property="og:url" content="@canonical" />
+    <meta property="og:image" content="@ogImage" />
+    <meta property="og:site_name" content="@seoOptions.SiteName" />
+    <meta property="og:locale" content="es_AR" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="@title" />
+    <meta name="twitter:description" content="@description" />
+    <meta name="twitter:image" content="@ogImage" />
+
     <meta id="v2-theme-color" name="theme-color" content="#2563EB" />
 
     <link id="miliga-favicon" rel="icon" href="~/branding/favicon.ico" asp-append-version="true" sizes="any" />
@@ -54,6 +91,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/v2/v2.css" asp-append-version="true" />
+
+    <script type="application/ld+json">@Html.Raw(siteJson)</script>
+    @if (!string.IsNullOrWhiteSpace(breadcrumbJson))
+    {
+        <script type="application/ld+json">@Html.Raw(breadcrumbJson)</script>
+    }
 </head>
 <body>
 <div class="v2-app" id="v2-app-root" data-v2-theme="blue">

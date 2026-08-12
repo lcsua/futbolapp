@@ -1,8 +1,14 @@
+using PublicWeb.Seo;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
+builder.Services.Configure<SeoOptions>(builder.Configuration.GetSection(SeoOptions.SectionName));
+builder.Services.AddSingleton<SeoUrlBuilder>();
+builder.Services.AddScoped<SitemapDocumentService>();
+
 builder.Services.AddHttpClient("BackendApi", client =>
 {
     var baseUrl = builder.Configuration["BackendApi:BaseUrl"] ?? "http://127.0.0.1:5001/api/public/";
@@ -29,7 +35,7 @@ if (!string.IsNullOrWhiteSpace(pathBase))
     app.UsePathBase(pathBase);
 }
 
-/// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -38,6 +44,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<CanonicalPathMiddleware>();
 app.UseRouting();
 
 app.UseAuthorization();
@@ -55,3 +62,4 @@ app.MapControllerRoute(
 
 app.Run();
 
+public partial class Program { }

@@ -1,22 +1,17 @@
 @{
-    ViewData["Title"] = "Página no disponible";
-    ViewData["Description"] = "Mi Liga sigue creciendo. Esa sección todavía no está disponible.";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    PublicWeb.Seo.SeoPageApplicator.Apply(PublicWeb.Seo.SeoCopy.NotFound(), ViewData, ViewBag);
 }
 
-<section class="container py-5 my-lg-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8 text-center">
-            <p class="text-uppercase text-secondary fw-semibold small mb-2 letter-spacing">Ups</p>
-            <h1 class="display-5 fw-bold mb-3" style="color: var(--navy);">Seguimos creciendo</h1>
-            <p class="lead text-secondary mb-4 mx-auto" style="max-width: 34rem;">
-                Todavía estamos en proceso de desarrollo y expansión. La página que buscás no está disponible por ahora,
-                pero el resto de Mi Liga sigue a un clic.
-            </p>
-            <div class="d-flex flex-wrap gap-2 justify-content-center">
-                <a class="btn btn-primary btn-lg px-4" href="@Url.Content("~/")">Ir al inicio</a>
-                <a class="btn btn-outline-secondary btn-lg px-4" href="@Url.Content("~/ligas")">Ver ligas</a>
-            </div>
-        </div>
-    </div>
+<section>
+    <p class="v2-page-lead" style="text-transform:uppercase;letter-spacing:0.06em;font-size:0.75rem;font-weight:600">Ups</p>
+    <h1 class="v2-page-title">Seguimos creciendo</h1>
+    <p class="v2-page-lead" style="margin-bottom: var(--space-6, 1.5rem); max-width: 34rem;">
+        Todavía estamos en proceso de desarrollo y expansión. La página que buscás no está disponible por ahora,
+        pero el resto de Mi Liga sigue a un clic.
+    </p>
+    <p style="display:flex;flex-wrap:wrap;gap:0.75rem">
+        <a class="v2-button" href="@Url.Content("~/")">Ir al inicio</a>
+        <a class="v2-more-link" href="@Url.Content("~/ligas")">Ver ligas →</a>
+    </p>
 </section>

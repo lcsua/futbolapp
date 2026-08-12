@@ -10,6 +10,8 @@
     var showLocation = !string.IsNullOrWhiteSpace(league?.Country);
     var hasLogo = !string.IsNullOrWhiteSpace(league?.LogoUrl);
     var initials = PublicWeb.Helpers.TeamDisplayHelper.GetInitials(league?.Name);
+    var h1 = ViewBag.SeoH1 as string ?? league?.Name ?? "Liga";
+    var logoAlt = league != null ? $"Logo {league.Name}" : "Logo de la liga";
 
     var metaParts = new List<string>();
     if (!string.IsNullOrWhiteSpace(seasonName)) metaParts.Add(seasonName);
@@ -21,25 +23,26 @@
         @if (league != null)
         {
             <div class="v2-league-header__logo @(hasLogo ? "has-logo" : "is-fallback")"
-                 data-v2-team-badge
-                 aria-hidden="true">
+                 data-v2-team-badge>
                 @if (hasLogo)
                 {
                     <img src="@league.LogoUrl"
-                         alt=""
-                         loading="lazy"
+                         alt="@logoAlt"
+                         width="120"
+                         height="120"
+                         loading="eager"
                          decoding="async"
                          data-v2-team-logo />
                     <span class="v2-league-header__initials" data-v2-team-initials>@initials</span>
                 }
                 else
                 {
-                    <span class="v2-league-header__initials">@initials</span>
+                    <span class="v2-league-header__initials" aria-hidden="true">@initials</span>
                 }
             </div>
         }
         <div class="v2-league-header__copy">
-            <h1 class="v2-league-header__name">@(league?.Name ?? "Liga")</h1>
+            <h1 class="v2-league-header__name">@h1</h1>
             @if (!string.IsNullOrWhiteSpace(metaLine))
             {
                 <p class="v2-league-header__meta">@metaLine</p>

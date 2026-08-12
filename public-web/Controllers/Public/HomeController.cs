@@ -17,8 +17,7 @@ public class HomeController : Controller
     public IActionResult Index()
     {
         ViewBag.V2ActiveNav = "home";
-        ViewData["Title"] = "Inicio";
-        ViewData["Description"] = "Resultados, posiciones, partidos y estadísticas de tu torneo.";
+        PublicWeb.Seo.SeoPageApplicator.Apply(PublicWeb.Seo.SeoCopy.Home(), ViewData, ViewBag);
         return View("~/Views/V2/Home.cshtml");
     }
 

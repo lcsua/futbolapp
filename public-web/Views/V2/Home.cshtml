@@ -1,6 +1,6 @@
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
-    ViewData["Title"] = "Inicio";
+    PublicWeb.Seo.SeoPageApplicator.Apply(PublicWeb.Seo.SeoCopy.Home(), ViewData, ViewBag);
 }
 <section>
     <h1 class="v2-page-title">Todo tu torneo, en un solo lugar.</h1>

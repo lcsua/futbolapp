@@ -23,6 +23,11 @@
     ViewBag.League = league;
     ViewData["LeagueSlug"] = leagueSlug;
     ViewData["BadgeSize"] = "sm";
+
+    PublicWeb.Seo.SeoPageApplicator.Apply(
+        PublicWeb.Seo.SeoCopy.LeagueHome(league.Name, leagueSlug, Model.SeasonName, league.LogoUrl, league.Description),
+        ViewData,
+        ViewBag);
 }
 
 @await Html.PartialAsync("~/Views/V2/League/_LeagueBackNav.cshtml")

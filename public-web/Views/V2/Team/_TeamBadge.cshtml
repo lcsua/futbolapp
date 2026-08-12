@@ -9,8 +9,15 @@
         "sm" => "v2-team-badge--sm",
         _ => "v2-team-badge--md"
     };
-    // Name is usually rendered beside the badge; keep decorative for a11y.
+    var (w, h) = size switch
+    {
+        "lg" => (76, 76),
+        "sm" => (28, 28),
+        _ => (40, 40)
+    };
+    // Name is usually rendered beside the badge; keep decorative for a11y unless overridden.
     var decorative = ViewData["BadgeDecorative"] as bool? ?? true;
+    var alt = decorative ? "" : $"Escudo {Model.Name}";
 }
 <div class="v2-team-badge @sizeClass @(hasLogo ? "has-logo" : "is-fallback")"
      data-v2-team-badge
@@ -19,7 +26,9 @@
     @if (hasLogo)
     {
         <img src="@Model.LogoUrl"
-             alt="@(decorative ? "" : Model.Name)"
+             alt="@alt"
+             width="@w"
+             height="@h"
              loading="lazy"
              decoding="async"
              data-v2-team-logo />

@@ -15,6 +15,14 @@
     ViewBag.SeasonName = Model?.SeasonName ?? selectedSeason?.Name;
     ViewBag.SeasonSlug = Model?.SeasonSlug ?? selectedSeason?.Slug;
     ViewBag.LeagueSlug = leagueSlug;
+
+    if (league != null)
+    {
+        PublicWeb.Seo.SeoPageApplicator.Apply(
+            PublicWeb.Seo.SeoCopy.LeagueFixture(league.Name, leagueSlug, ViewBag.SeasonName as string, league.LogoUrl),
+            ViewData,
+            ViewBag);
+    }
 }
 
 @await Html.PartialAsync("~/Views/V2/League/_LeagueBackNav.cshtml")

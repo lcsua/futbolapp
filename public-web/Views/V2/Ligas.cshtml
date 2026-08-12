@@ -1,7 +1,7 @@
 @model PublicWeb.Models.Public.LeaguesIndexPageViewModel
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
-    ViewData["Title"] = "Ligas";
+    PublicWeb.Seo.SeoPageApplicator.Apply(PublicWeb.Seo.SeoCopy.LigasIndex(), ViewData, ViewBag);
 }
 <section>
     <h1 class="v2-page-title">Ligas</h1>

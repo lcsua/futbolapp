@@ -113,6 +113,61 @@ public class PublicStructuredService
             .ToListAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Lightweight payload for public-web sitemap generation (public + active leagues and their teams).
+    /// </summary>
+    public async Task<SitemapPublicDto> GetSitemapAsync(CancellationToken cancellationToken = default)
+    {
+        var leagues = await _db.Leagues
+            .AsNoTracking()
+            .Where(l => l.IsPublic && l.IsActive)
+            .OrderBy(l => l.Name)
+            .Select(l => new
+            {
+                l.Id,
+                l.Slug,
+                l.UpdatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        var leagueIds = leagues.Select(l => l.Id).ToList();
+        var teams = await _db.Teams
+            .AsNoTracking()
+            .Where(t => leagueIds.Contains(t.LeagueId) && t.Slug != null && t.Slug != "")
+            .Select(t => new
+            {
+                t.LeagueId,
+                t.Slug,
+                t.UpdatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        var teamsByLeague = teams
+            .GroupBy(t => t.LeagueId)
+            .ToDictionary(g => g.Key, g => g
+                .GroupBy(x => x.Slug, StringComparer.OrdinalIgnoreCase)
+                .Select(gg => gg.OrderByDescending(x => x.UpdatedAt).First())
+                .OrderBy(x => x.Slug)
+                .ToList());
+
+        return new SitemapPublicDto
+        {
+            GeneratedAtUtc = DateTime.UtcNow,
+            Leagues = leagues.Select(l => new SitemapLeagueDto
+            {
+                Slug = l.Slug,
+                UpdatedAtUtc = l.UpdatedAt == default ? null : l.UpdatedAt,
+                Teams = teamsByLeague.TryGetValue(l.Id, out var leagueTeams)
+                    ? leagueTeams.Select(t => new SitemapTeamDto
+                    {
+                        Slug = t.Slug,
+                        UpdatedAtUtc = t.UpdatedAt == default ? null : t.UpdatedAt
+                    }).ToList()
+                    : new List<SitemapTeamDto>()
+            }).ToList()
+        };
+    }
+
     public async Task<LeaguePublicDto?> GetLeagueSummaryAsync(string leagueSlug, CancellationToken cancellationToken = default)
     {
         var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);

@@ -13,6 +13,7 @@
     <div class="v2-team-header__identity v2-team-hero__identity">
         @{
             ViewData["BadgeSize"] = "lg";
+            ViewData["BadgeDecorative"] = false;
         }
         @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Team)
         <div class="v2-team-header__copy v2-team-hero__copy">

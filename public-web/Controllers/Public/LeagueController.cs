@@ -25,8 +25,7 @@ public class LeagueController : Controller
     public async Task<IActionResult> Index()
     {
         ViewBag.V2ActiveNav = "ligas";
-        ViewData["Title"] = "Ligas";
-        ViewData["Description"] = "Explorá ligas amateur y torneos argentinos en Mi Liga.";
+        PublicWeb.Seo.SeoPageApplicator.Apply(PublicWeb.Seo.SeoCopy.LigasIndex(), ViewData, ViewBag);
 
         var leagues = await _leagueService.GetPublicLeaguesAsync();
         var (tournaments, failed) = await _professionalFootballService.GetArgentineCompetitionsAsync();
