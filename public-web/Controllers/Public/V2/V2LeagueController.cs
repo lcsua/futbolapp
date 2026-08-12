@@ -6,9 +6,9 @@ using PublicWeb.Services.Public;
 namespace PublicWeb.Controllers.Public.V2;
 
 /// <summary>
-/// Public UI V2 — isolated routes under /v2/ligas. Reuses V1 services/models; does not alter V1 routes.
+/// Public league UI (ex-V2). Serves canonical /ligas/{slug}/… routes.
 /// </summary>
-[Route("v2/ligas")]
+[Route("ligas")]
 public class V2LeagueController : Controller
 {
     private const int SummaryPageSize = 5;

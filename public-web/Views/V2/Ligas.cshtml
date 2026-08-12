@@ -6,7 +6,7 @@
 <section>
     <h1 class="v2-page-title">Ligas</h1>
     <p class="v2-page-lead" style="margin-bottom: var(--space-6, 1.5rem)">
-        Elegí una competición para ver su portada V2.
+        Elegí una competición para ver resultados, posiciones y fixture.
     </p>
 
     @if (Model.AmateurLeagues == null || !Model.AmateurLeagues.Any())
@@ -18,7 +18,7 @@
         <div class="v2-stack">
             @foreach (var league in Model.AmateurLeagues)
             {
-                <a class="v2-match" href="@Url.Content($"~/v2/ligas/{league.Slug}")">
+                <a class="v2-match" href="@Url.Content($"~/ligas/{league.Slug}")">
                     <strong style="display:block;font-size:1.05rem;font-weight:650">@league.Name</strong>
                     @if (!string.IsNullOrWhiteSpace(league.Country))
                     {

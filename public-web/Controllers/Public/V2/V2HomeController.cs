@@ -1,48 +1,31 @@
 using Microsoft.AspNetCore.Mvc;
-using PublicWeb.Models.Public;
-using PublicWeb.Services.Public;
 
 namespace PublicWeb.Controllers.Public.V2;
 
+/// <summary>
+/// Permanent redirects from retired /v2 surface onto canonical public URLs.
+/// </summary>
 [Route("v2")]
 public class V2HomeController : Controller
 {
-    private readonly LeaguePublicService _leagueService;
-    private readonly ProfessionalFootballPublicService _professionalFootballService;
-
-    public V2HomeController(
-        LeaguePublicService leagueService,
-        ProfessionalFootballPublicService professionalFootballService)
-    {
-        _leagueService = leagueService;
-        _professionalFootballService = professionalFootballService;
-    }
-
     [HttpGet("")]
     public IActionResult Index()
     {
-        ViewBag.V2ActiveNav = "home";
-        ViewData["Title"] = "Vista previa V2";
-        return View("~/Views/V2/Home.cshtml");
+        return PermanentTo("~/");
     }
 
-    [HttpGet("ligas")]
-    public async Task<IActionResult> Ligas()
+    [HttpGet("{**path}")]
+    public IActionResult CatchAll(string path)
     {
-        ViewBag.V2ActiveNav = "ligas";
-        ViewData["Title"] = "Ligas";
-        ViewData["Description"] = "Explorá ligas y torneos argentinos en la vista previa V2.";
+        var target = string.IsNullOrWhiteSpace(path)
+            ? "~/"
+            : $"~/{path.TrimStart('/')}";
+        return PermanentTo(target);
+    }
 
-        var leagues = await _leagueService.GetPublicLeaguesAsync();
-        var (tournaments, failed) = await _professionalFootballService.GetArgentineCompetitionsAsync();
-
-        var model = new LeaguesIndexPageViewModel
-        {
-            AmateurLeagues = leagues,
-            ArgentineTournaments = tournaments,
-            ArgentineTournamentsUnavailable = failed,
-        };
-
-        return View("~/Views/V2/Ligas.cshtml", model);
+    private IActionResult PermanentTo(string appRelativePath)
+    {
+        var qs = Request.QueryString.HasValue ? Request.QueryString.Value : string.Empty;
+        return RedirectPermanent(Url.Content(appRelativePath)! + qs);
     }
 }

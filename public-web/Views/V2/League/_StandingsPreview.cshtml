@@ -12,7 +12,7 @@
         @foreach (var row in Model.Rows)
         {
             var teamUrl = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(row.Team.Slug)
-                ? Url.Content($"~/v2/ligas/{leagueSlug}/{row.Team.Slug}")
+                ? Url.Content($"~/ligas/{leagueSlug}/{row.Team.Slug}")
                 : null;
             <li class="v2-standings-preview__row @(row.Position == 1 ? "is-leader" : null)">
                 <span class="v2-standings-preview__pos">@row.Position</span>

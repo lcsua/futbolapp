@@ -18,7 +18,36 @@
     </script>
 
     <meta name="description" content="@(ViewData["Description"] ?? "Resultados, posiciones, partidos y estadísticas de tu torneo.")" />
+    <meta property="og:title" content="@ViewData["Title"] - Mi Liga" />
+    <meta property="og:description" content="@(ViewData["Description"] ?? "Mi Liga es la plataforma para gestionar ligas de fútbol amateur.")" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="@(ViewData["OgUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}")" />
+    <meta property="og:site_name" content="Mi Liga" />
     <meta id="v2-theme-color" name="theme-color" content="#2563EB" />
+
+    <link id="miliga-favicon" rel="icon" href="~/branding/favicon.ico" asp-append-version="true" sizes="any" />
+    <link id="miliga-favicon-32" rel="icon" type="image/png" sizes="32x32" href="~/branding/favicon-32x32.png" asp-append-version="true" />
+    <link id="miliga-favicon-16" rel="icon" type="image/png" sizes="16x16" href="~/branding/favicon-16x16.png" asp-append-version="true" />
+    <link id="miliga-apple-touch" rel="apple-touch-icon" sizes="180x180" href="~/branding/apple-touch-icon.png" asp-append-version="true" />
+    <link rel="manifest" href="~/branding/site.webmanifest" asp-append-version="true" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RDP3H0YFV9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-RDP3H0YFV9');
+    </script>
+
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "xyv8aibxjo");
+    </script>
 
     <link rel="icon" href="~/branding/blue/favicon.ico" asp-append-version="true" sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

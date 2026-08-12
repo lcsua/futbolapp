@@ -21,7 +21,7 @@
         q.Add($"{paramName}={page}");
         if (!string.IsNullOrWhiteSpace(otherParamName))
             q.Add($"{otherParamName}={otherParamValue}");
-        return Url.Content($"~/v2/ligas/{leagueSlug}/{teamSlug}") + "?" + string.Join("&", q)
+        return Url.Content($"~/ligas/{leagueSlug}/{teamSlug}") + "?" + string.Join("&", q)
             + (string.IsNullOrWhiteSpace(fragment) ? "" : "#" + fragment);
     }
 

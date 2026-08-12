@@ -10,19 +10,19 @@
 {
     <nav class="v2-tabs v2-league-tabs" aria-label="Secciones de la liga">
         <a class="v2-tabs__link @(active == "resumen" ? "is-active" : null)"
-           href="@Url.Content($"~/v2/ligas/{leagueSlug}")@qs"
+           href="@Url.Content($"~/ligas/{leagueSlug}")@qs"
            aria-current="@(active == "resumen" ? "page" : null)">Resumen</a>
         <a class="v2-tabs__link @(active == "fixture" ? "is-active" : null)"
-           href="@Url.Content($"~/v2/ligas/{leagueSlug}/fixture")@qs"
+           href="@Url.Content($"~/ligas/{leagueSlug}/fixture")@qs"
            aria-current="@(active == "fixture" ? "page" : null)">Fixture</a>
         <a class="v2-tabs__link @(active == "posiciones" ? "is-active" : null)"
-           href="@Url.Content($"~/v2/ligas/{leagueSlug}/posiciones")@qs"
+           href="@Url.Content($"~/ligas/{leagueSlug}/posiciones")@qs"
            aria-current="@(active == "posiciones" ? "page" : null)">Posiciones</a>
         <a class="v2-tabs__link @(active == "resultados" ? "is-active" : null)"
-           href="@Url.Content($"~/v2/ligas/{leagueSlug}/resultados")@qs"
+           href="@Url.Content($"~/ligas/{leagueSlug}/resultados")@qs"
            aria-current="@(active == "resultados" ? "page" : null)">Resultados</a>
         <a class="v2-tabs__link @(active == "informacion" ? "is-active" : null)"
-           href="@Url.Content($"~/v2/ligas/{leagueSlug}/informacion")@qs"
+           href="@Url.Content($"~/ligas/{leagueSlug}/informacion")@qs"
            aria-current="@(active == "informacion" ? "page" : null)">Información</a>
     </nav>
 }

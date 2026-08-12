@@ -3,7 +3,7 @@
 }
 <header class="v2-header">
     <div class="v2-shell v2-header__inner">
-        <a class="v2-brand" href="@Url.Content("~/v2")" aria-label="Mi Liga">
+        <a class="v2-brand" href="@Url.Content("~/")" aria-label="Mi Liga">
             <img class="v2-brand__logo"
                  data-v2-brand="logo-nav"
                  src="~/branding/blue/logo-dark.svg"
@@ -13,7 +13,7 @@
 
         <ul class="v2-nav" role="list">
             <li>
-                <a class="@(active == "ligas" ? "is-active" : null)" href="@Url.Content("~/v2/ligas")">Ligas</a>
+                <a class="@(active == "ligas" ? "is-active" : null)" href="@Url.Content("~/ligas")">Ligas</a>
             </li>
         </ul>
 
@@ -44,8 +44,6 @@
                     <button type="button" role="option" data-v2-theme-option="green">Verde + Azul noche</button>
                 </div>
             </div>
-
-            <a class="v2-preview-link" href="@Url.Content("~/ligas")">Sitio actual</a>
 
             <button type="button"
                     class="v2-menu-btn"

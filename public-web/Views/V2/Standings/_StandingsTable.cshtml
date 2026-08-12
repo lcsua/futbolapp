@@ -27,7 +27,7 @@
             {
                 var isLeader = row.Position == 1;
                 var teamUrl = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(row.Team.Slug)
-                    ? Url.Content($"~/v2/ligas/{leagueSlug}/{row.Team.Slug}")
+                    ? Url.Content($"~/ligas/{leagueSlug}/{row.Team.Slug}")
                     : null;
                 <tr class="@(isLeader ? "is-leader" : null)">
                     <td class="v2-standings-table__pos">@row.Position</td>

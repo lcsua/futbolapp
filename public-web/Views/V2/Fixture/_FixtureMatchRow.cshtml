@@ -11,7 +11,7 @@
 
     string? TeamUrl(PublicWeb.Models.Public.TeamViewModel team) =>
         !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(team.Slug)
-            ? Url.Content($"~/v2/ligas/{leagueSlug}/{team.Slug}")
+            ? Url.Content($"~/ligas/{leagueSlug}/{team.Slug}")
             : null;
     var homeUrl = TeamUrl(Model.HomeTeam);
     var awayUrl = TeamUrl(Model.AwayTeam);

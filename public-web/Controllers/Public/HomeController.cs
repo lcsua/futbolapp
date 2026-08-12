@@ -16,7 +16,10 @@ public class HomeController : Controller
     [ResponseCache(Duration = 1800)] // 30 mins
     public IActionResult Index()
     {
-        return View("~/Views/Public/Home.cshtml");
+        ViewBag.V2ActiveNav = "home";
+        ViewData["Title"] = "Inicio";
+        ViewData["Description"] = "Resultados, posiciones, partidos y estadísticas de tu torneo.";
+        return View("~/Views/V2/Home.cshtml");
     }
 
     [HttpGet("precios")]
@@ -29,10 +32,6 @@ public class HomeController : Controller
     [HttpGet("login")]
     public IActionResult Login()
     {
-        // For now, redirect to a hypothetical admin/login route or return a view
-        // The instructions say "Redirigir o enlazar al panel admin"
-        // Let's redirect to /admin or just return an HTML page with a link.
         return Redirect("/admin");
     }
 }
-

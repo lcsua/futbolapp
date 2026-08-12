@@ -22,11 +22,11 @@
 
 <nav class="v2-crumb" aria-label="Migajas">
     <div class="v2-crumb__desktop">
-        <a href="@Url.Content("~/v2/ligas")">Ligas</a>
+        <a href="@Url.Content("~/ligas")">Ligas</a>
         <span aria-hidden="true">/</span>
         <span aria-current="page">@league.Name</span>
     </div>
-    <a class="v2-crumb__mobile" href="@Url.Content("~/v2/ligas")">
+    <a class="v2-crumb__mobile" href="@Url.Content("~/ligas")">
         <span aria-hidden="true">‹</span> Ligas
     </a>
 </nav>
@@ -64,7 +64,7 @@
         <ul class="v2-chip-list">
             @foreach (var d in Model.Divisions)
             {
-                var href = Url.Content($"~/v2/ligas/{leagueSlug}/posiciones")
+                var href = Url.Content($"~/ligas/{leagueSlug}/posiciones")
                            + (string.IsNullOrWhiteSpace(Model.SeasonSlug)
                                ? $"?division={Uri.EscapeDataString(d.Slug)}"
                                : $"?season={Uri.EscapeDataString(Model.SeasonSlug)}&division={Uri.EscapeDataString(d.Slug)}");
@@ -91,7 +91,7 @@
                 @foreach (var team in Model.SampleTeams)
                 {
                     <li class="v2-team-carousel__item">
-                        <a class="v2-team-carousel__card" href="@Url.Content($"~/v2/ligas/{leagueSlug}/{team.Slug}")">
+                        <a class="v2-team-carousel__card" href="@Url.Content($"~/ligas/{leagueSlug}/{team.Slug}")">
                             @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team)
                             <span class="v2-team-carousel__name">@team.Name</span>
                         </a>
@@ -120,7 +120,7 @@
                     ? "1 partido"
                     : $"{Model.NextFecha.MatchCount} partidos")
             </p>
-            <a class="v2-more-link" href="@Url.Content($"~/v2/ligas/{leagueSlug}/fixture")@seasonQs">Ver fixture →</a>
+            <a class="v2-more-link" href="@Url.Content($"~/ligas/{leagueSlug}/fixture")@seasonQs">Ver fixture →</a>
         </div>
     </section>
 }
