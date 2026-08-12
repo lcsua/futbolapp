@@ -8,6 +8,8 @@
             ? $"+{standing.GoalDifference}"
             : standing.GoalDifference.ToString();
     var posClass = standing?.Position == 1 ? "is-champion" : null;
+    var leagueSlug = league?.Slug ?? ViewBag.LeagueSlug as string ?? "";
+    var teamSlug = Model.Team.Slug;
 }
 <header class="v2-team-header v2-team-hero">
     <div class="v2-team-header__identity v2-team-hero__identity">
@@ -31,6 +33,16 @@
                 }
                 @string.Join(" · ", bits)
             </p>
+            @if (!string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(teamSlug))
+            {
+                ViewData["ShareTitle"] = Model.Team.Name;
+                ViewData["ShareText"] = league != null
+                    ? $"{Model.Team.Name} · {league.Name} en MiLiga"
+                    : $"{Model.Team.Name} en MiLiga";
+                ViewData["SharePath"] = $"/ligas/{leagueSlug}/{teamSlug}";
+                ViewData["ShareCompact"] = true;
+                @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
+            }
         </div>
     </div>
 

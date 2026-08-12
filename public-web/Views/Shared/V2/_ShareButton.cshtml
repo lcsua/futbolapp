@@ -1,0 +1,39 @@
+@{
+    var seoUrls = Context.RequestServices.GetRequiredService<PublicWeb.Seo.SeoUrlBuilder>();
+    var shareTitle = ViewData["ShareTitle"] as string ?? (ViewData["Title"] as string) ?? "MiLiga";
+    var shareText = ViewData["ShareText"] as string ?? shareTitle;
+    var sharePath = ViewData["SharePath"] as string
+        ?? ViewData["CanonicalPath"] as string
+        ?? Context.Request.Path.Value
+        ?? "/";
+    var shareUrl = ViewData["ShareUrl"] as string ?? seoUrls.Absolute(sharePath);
+    var compact = ViewData["ShareCompact"] as bool? == true;
+}
+<div class="v2-share @(compact ? "v2-share--compact" : null)" data-v2-share>
+    <button type="button"
+            class="v2-share-btn"
+            data-v2-share-trigger
+            data-share-title="@shareTitle"
+            data-share-text="@shareText"
+            data-share-url="@shareUrl"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-label="Compartir">
+        <svg class="v2-share-btn__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+            <circle cx="18" cy="5" r="2.25" stroke="currentColor" stroke-width="1.75" />
+            <circle cx="6" cy="12" r="2.25" stroke="currentColor" stroke-width="1.75" />
+            <circle cx="18" cy="19" r="2.25" stroke="currentColor" stroke-width="1.75" />
+            <path d="M8.1 10.9 15.9 6.1M8.1 13.1l7.8 4.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+        </svg>
+        <span class="v2-share-btn__label">Compartir</span>
+    </button>
+    <div class="v2-share-menu" data-v2-share-menu hidden role="menu" aria-label="Opciones para compartir">
+        <button type="button" class="v2-share-menu__item" data-v2-share-whatsapp role="menuitem">
+            WhatsApp
+        </button>
+        <button type="button" class="v2-share-menu__item" data-v2-share-copy role="menuitem">
+            Copiar enlace
+        </button>
+    </div>
+    <span class="v2-share-toast" data-v2-share-toast hidden aria-live="polite">Enlace copiado</span>
+</div>
