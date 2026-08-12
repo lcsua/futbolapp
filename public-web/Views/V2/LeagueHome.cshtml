@@ -106,7 +106,6 @@
             <table class="v2-home-leaders__table">
                 <thead>
                     <tr>
-                        <th scope="col">División</th>
                         <th scope="col">Equipo</th>
                         <th scope="col" class="v2-home-leaders__pts">Pts</th>
                     </tr>
@@ -122,24 +121,21 @@
                             ? Url.Content($"~/ligas/{leagueSlug}/{row.Team.Slug}")
                             : null;
                         <tr>
-                            <td class="v2-home-leaders__division">
-                                <a href="@divisionHref">@row.DivisionName</a>
-                            </td>
                             <td class="v2-home-leaders__team">
-                                @if (teamHref != null)
-                                {
-                                    <a class="v2-home-leaders__team-link" href="@teamHref">
-                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
-                                        <span class="v2-home-leaders__team-name">@row.Team.Name</span>
-                                    </a>
-                                }
-                                else
-                                {
-                                    <span class="v2-home-leaders__team-link">
-                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
-                                        <span class="v2-home-leaders__team-name">@row.Team.Name</span>
+                                <div class="v2-home-leaders__team-row">
+                                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
+                                    <span class="v2-home-leaders__team-copy">
+                                        @if (teamHref != null)
+                                        {
+                                            <a class="v2-home-leaders__team-name" href="@teamHref">@row.Team.Name</a>
+                                        }
+                                        else
+                                        {
+                                            <span class="v2-home-leaders__team-name">@row.Team.Name</span>
+                                        }
+                                        <a class="v2-home-leaders__division" href="@divisionHref">División: @row.DivisionName</a>
                                     </span>
-                                }
+                                </div>
                             </td>
                             <td class="v2-home-leaders__pts v2-nums">@row.Points</td>
                         </tr>

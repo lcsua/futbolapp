@@ -2643,7 +2643,7 @@ a.v2-standings-preview__team:focus-visible .v2-standings-preview__name {
 
 .v2-home-leaders__table thead th.v2-home-leaders__pts {
   text-align: right;
-  width: 3.25rem;
+  width: 3.5rem;
   padding-right: 1rem;
 }
 
@@ -2662,45 +2662,49 @@ a.v2-standings-preview__team:focus-visible .v2-standings-preview__name {
   background: color-mix(in srgb, var(--v2-primary) 4%, transparent);
 }
 
-.v2-home-leaders__division {
-  width: 28%;
-  font-size: var(--font-size-secondary);
-  font-weight: var(--font-weight-semibold);
-  color: var(--v2-text-secondary);
-}
-
-.v2-home-leaders__division a {
-  color: inherit !important;
-  text-decoration: none;
-}
-
-.v2-home-leaders__division a:hover,
-.v2-home-leaders__division a:focus-visible {
-  color: var(--v2-primary) !important;
-}
-
-.v2-home-leaders__team-link {
+.v2-home-leaders__team-row {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.65rem;
   min-width: 0;
-  color: inherit !important;
-  text-decoration: none;
+}
+
+.v2-home-leaders__team-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .v2-home-leaders__team-name {
+  display: block;
   min-width: 0;
   font-size: 0.9375rem;
   font-weight: var(--font-weight-semibold);
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  color: var(--v2-text) !important;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
-a.v2-home-leaders__team-link:hover .v2-home-leaders__team-name,
-a.v2-home-leaders__team-link:focus-visible .v2-home-leaders__team-name {
-  color: var(--v2-primary);
+a.v2-home-leaders__team-name:hover,
+a.v2-home-leaders__team-name:focus-visible {
+  color: var(--v2-primary) !important;
+}
+
+.v2-home-leaders__division {
+  display: block;
+  font-size: var(--font-size-secondary);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+  color: var(--v2-text-secondary) !important;
+  text-decoration: none;
+}
+
+a.v2-home-leaders__division:hover,
+a.v2-home-leaders__division:focus-visible {
+  color: var(--v2-primary) !important;
 }
 
 .v2-home-leaders__pts {
@@ -2710,31 +2714,28 @@ a.v2-home-leaders__team-link:focus-visible .v2-home-leaders__team-name {
   color: var(--v2-navy);
   padding-right: 1rem !important;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
 .v2-home-leaders .v2-team-badge--sm {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.85rem;
+  height: 1.85rem;
+  flex-shrink: 0;
 }
 
 @media (max-width: 529.98px) {
   .v2-home-leaders__table thead th,
   .v2-home-leaders__table tbody td {
-    padding: 0.75rem 0.65rem;
-  }
-
-  .v2-home-leaders__division {
-    width: 30%;
-    font-size: 0.75rem;
+    padding: 0.8rem 0.7rem;
   }
 
   .v2-home-leaders__team-name {
-    font-size: 0.875rem;
+    font-size: 0.9rem;
   }
 
   .v2-home-leaders__table thead th.v2-home-leaders__pts,
   .v2-home-leaders__pts {
-    width: 2.75rem;
+    width: 3rem;
     padding-right: 0.75rem !important;
   }
 }
