@@ -37,6 +37,8 @@ namespace FootballManager.Infrastructure.Persistence
         public DbSet<LeagueDocumentCategory> LeagueDocumentCategories { get; set; }
         public DbSet<LeagueDocument> LeagueDocuments { get; set; }
         public DbSet<TeamNameAlias> TeamNameAliases { get; set; }
+        public DbSet<PushSubscription> PushSubscriptions { get; set; }
+        public DbSet<PushFollow> PushFollows { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

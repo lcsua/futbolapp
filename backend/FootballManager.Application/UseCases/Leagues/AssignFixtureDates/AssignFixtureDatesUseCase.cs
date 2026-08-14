@@ -7,7 +7,9 @@ using FootballManager.Application.Dtos;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.Push;
 using FootballManager.Application.Services;
+using FootballManager.Domain.Entities;
 
 namespace FootballManager.Application.UseCases.Leagues.AssignFixtureDates;
 
@@ -20,6 +22,8 @@ public sealed class AssignFixtureDatesUseCase : IAssignFixtureDatesUseCase
     private readonly IFixtureRepository _fixtureRepository;
     private readonly IFixtureDraftStore _draftStore;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPushNotificationService _pushNotifications;
+    private readonly ILeagueRepository _leagueRepository;
 
     public AssignFixtureDatesUseCase(
         IUserLeagueRepository userLeagueRepository,
@@ -28,7 +32,9 @@ public sealed class AssignFixtureDatesUseCase : IAssignFixtureDatesUseCase
         ICompetitionRuleRepository competitionRuleRepository,
         IFixtureRepository fixtureRepository,
         IFixtureDraftStore draftStore,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IPushNotificationService pushNotifications,
+        ILeagueRepository leagueRepository)
     {
         _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
         _seasonRepository = seasonRepository ?? throw new ArgumentNullException(nameof(seasonRepository));
@@ -37,6 +43,8 @@ public sealed class AssignFixtureDatesUseCase : IAssignFixtureDatesUseCase
         _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
         _draftStore = draftStore ?? throw new ArgumentNullException(nameof(draftStore));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _pushNotifications = pushNotifications ?? throw new ArgumentNullException(nameof(pushNotifications));
+        _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
     }
 
     public async Task<AssignFixtureDatesResponse> ExecuteAsync(
@@ -96,6 +104,7 @@ public sealed class AssignFixtureDatesUseCase : IAssignFixtureDatesUseCase
             var updated = ApplyDatesToFixtures(fixtures, request.FirstRoundDate, matchDays);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             _draftStore.Clear(request.SeasonId);
+            await TryNotifyBulkFixtureAsync(season, cancellationToken);
             return updated;
         }
 
@@ -110,7 +119,7 @@ public sealed class AssignFixtureDatesUseCase : IAssignFixtureDatesUseCase
     }
 
     private static AssignFixtureDatesResponse ApplyDatesToFixtures(
-        List<Domain.Entities.Fixture> fixtures,
+        List<Fixture> fixtures,
         DateOnly firstRoundDate,
         IReadOnlyList<int> matchDays)
     {
@@ -246,4 +255,24 @@ public sealed class AssignFixtureDatesUseCase : IAssignFixtureDatesUseCase
             m.FieldName,
             date,
             m.KickoffTime);
+
+    private async Task TryNotifyBulkFixtureAsync(Season season, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var league = await _leagueRepository.GetByIdAsync(season.LeagueId, cancellationToken);
+            if (league == null) return;
+
+            await _pushNotifications.NotifyFixtureUpdatedAsync(new FixtureUpdatedPushEvent
+            {
+                LeagueId = league.Id,
+                LeagueSlug = league.Slug,
+                LeagueName = league.Name,
+                BulkAssign = true
+            }, cancellationToken);
+        }
+        catch
+        {
+        }
+    }
 }

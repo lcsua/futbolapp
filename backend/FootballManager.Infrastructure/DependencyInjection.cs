@@ -1,7 +1,10 @@
-using FootballManager.Application.Interfaces.Repositories;
+﻿using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Application.ProfessionalFootball;
+using FootballManager.Application.Push;
+using FootballManager.Application.Services;
 using FootballManager.Infrastructure.Persistence;
 using FootballManager.Infrastructure.ProfessionalFootball;
+using FootballManager.Infrastructure.Push;
 using FootballManager.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +18,15 @@ namespace FootballManager.Infrastructure
         {
             services.AddDbContext<FootballManagerDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+            services.Configure<WebPushOptions>(configuration.GetSection(WebPushOptions.SectionName));
+            services.AddHttpClient(nameof(WebPushSender));
+            services.AddSingleton<IPushDispatchQueue, InMemoryPushDispatchQueue>();
+            services.AddHostedService<PushDispatchBackgroundService>();
+            services.AddScoped<IWebPushSender, WebPushSender>();
+            services.AddScoped<IPushFollowQuery, PushFollowQuery>();
+            services.AddScoped<IPushSubscriptionService, PushSubscriptionService>();
+            services.AddScoped<IPushNotificationService, PushNotificationService>();
 
             services.AddScoped<ILeagueRepository, LeagueRepository>();
             services.AddScoped<ISeasonRepository, SeasonRepository>();

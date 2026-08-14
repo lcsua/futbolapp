@@ -35,13 +35,25 @@
             </p>
             @if (!string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(teamSlug))
             {
-                ViewData["ShareTitle"] = Model.Team.Name;
-                ViewData["ShareText"] = league != null
-                    ? $"{Model.Team.Name} · {league.Name} en MiLiga"
-                    : $"{Model.Team.Name} en MiLiga";
-                ViewData["SharePath"] = $"/ligas/{leagueSlug}/{teamSlug}";
-                ViewData["ShareCompact"] = true;
-                @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
+                <div class="v2-team-header__actions">
+                    @{
+                        ViewData["ShareTitle"] = Model.Team.Name;
+                        ViewData["ShareText"] = league != null
+                            ? $"{Model.Team.Name} · {league.Name} en MiLiga"
+                            : $"{Model.Team.Name} en MiLiga";
+                        ViewData["SharePath"] = $"/ligas/{leagueSlug}/{teamSlug}";
+                        ViewData["ShareCompact"] = true;
+                    }
+                    @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
+                    @{
+                        ViewData["FollowScopeType"] = "Team";
+                        ViewData["FollowScopeId"] = Model.Team.Id;
+                        ViewData["FollowLabel"] = "Seguir equipo";
+                        ViewData["FollowFollowingLabel"] = "Siguiendo";
+                        ViewData["FollowCompact"] = true;
+                    }
+                    @await Html.PartialAsync("~/Views/Shared/V2/_FollowButton.cshtml")
+                </div>
             }
         </div>
     </div>

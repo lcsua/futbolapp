@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.Push;
 using FootballManager.Domain.Entities;
 using FootballManager.Domain.Enums;
 
@@ -18,6 +19,7 @@ public sealed class UpdateMatchResultUseCase : IUpdateMatchResultUseCase
     private readonly IPlayerRepository _playerRepository;
     private readonly IMatchIncidentRepository _matchIncidentRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPushNotificationService _pushNotifications;
 
     public UpdateMatchResultUseCase(
         IUserLeagueRepository userLeagueRepository,
@@ -25,7 +27,8 @@ public sealed class UpdateMatchResultUseCase : IUpdateMatchResultUseCase
         IResultRepository resultRepository,
         IPlayerRepository playerRepository,
         IMatchIncidentRepository matchIncidentRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IPushNotificationService pushNotifications)
     {
         _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
         _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
@@ -33,6 +36,7 @@ public sealed class UpdateMatchResultUseCase : IUpdateMatchResultUseCase
         _playerRepository = playerRepository ?? throw new ArgumentNullException(nameof(playerRepository));
         _matchIncidentRepository = matchIncidentRepository ?? throw new ArgumentNullException(nameof(matchIncidentRepository));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _pushNotifications = pushNotifications ?? throw new ArgumentNullException(nameof(pushNotifications));
     }
 
     public async Task ExecuteAsync(Guid leagueId, Guid matchId, Guid userId, UpdateMatchResultRequest request, CancellationToken cancellationToken = default)
@@ -69,7 +73,6 @@ public sealed class UpdateMatchResultUseCase : IUpdateMatchResultUseCase
         }
         else if (status is MatchStatus.SUSPENDED or MatchStatus.POSTPONED or MatchStatus.CANCELLED or MatchStatus.SCHEDULED)
         {
-            // Suspended / non-played: wipe score so it never affects standings or public results.
             var existingResult = await _resultRepository.GetByFixtureIdAsync(matchId, cancellationToken);
             if (existingResult != null)
                 _resultRepository.Remove(existingResult);
@@ -83,6 +86,40 @@ public sealed class UpdateMatchResultUseCase : IUpdateMatchResultUseCase
             await SyncGoalIncidentsAsync(fixture, request.Goals, cancellationToken);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (countsForStandings)
+            await TryNotifyResultAsync(fixture, request.HomeScore, request.AwayScore, cancellationToken);
+    }
+
+    private async Task TryNotifyResultAsync(Fixture fixture, int homeScore, int awayScore, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var home = fixture.HomeTeamDivisionSeason?.Team;
+            var away = fixture.AwayTeamDivisionSeason?.Team;
+            if (home == null || away == null) return;
+
+            await _pushNotifications.NotifyResultUpdatedAsync(new ResultUpdatedPushEvent
+            {
+                LeagueId = fixture.LeagueId,
+                LeagueSlug = fixture.League?.Slug ?? string.Empty,
+                LeagueName = fixture.League?.Name ?? string.Empty,
+                FixtureId = fixture.Id,
+                RoundNumber = fixture.RoundNumber,
+                HomeTeamId = home.Id,
+                AwayTeamId = away.Id,
+                HomeTeamName = home.DisplayName,
+                AwayTeamName = away.DisplayName,
+                HomeTeamSlug = home.Slug,
+                AwayTeamSlug = away.Slug,
+                HomeScore = homeScore,
+                AwayScore = awayScore
+            }, cancellationToken);
+        }
+        catch
+        {
+            // Push must never fail the result update.
+        }
     }
 
     private async Task SyncGoalIncidentsAsync(

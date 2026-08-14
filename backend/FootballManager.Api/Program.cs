@@ -1,8 +1,10 @@
-using FootballManager.Application;
+﻿using FootballManager.Application;
 using FootballManager.Application.Interfaces;
 using FootballManager.Infrastructure;
 using FootballManager.Api.Auth;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.FileProviders;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,17 @@ builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("push", limiter =>
+    {
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.PermitLimit = 60;
+        limiter.QueueLimit = 0;
+    });
+});
 
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicLeagueService>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicTeamService>();
@@ -44,6 +57,7 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
+app.UseRateLimiter();
 app.UseMiddleware<FootballManager.Api.Middleware.DevAuthMiddleware>();
 app.UseMiddleware<FootballManager.Api.Middleware.ExceptionHandlingMiddleware>();
 app.MapControllers();
