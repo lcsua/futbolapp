@@ -161,7 +161,9 @@ public sealed class PushNotificationService : IPushNotificationService
                 SuppressSubscriptionIds = teamNotified,
                 Payload = new PushPayloadDto(
                     "Fixture actualizado",
-                    $"Se actualizó un partido de {evt.LeagueName}.",
+                    evt.RoundNumber > 0
+                        ? $"Se actualizó el fixture de la Fecha {evt.RoundNumber} de {evt.LeagueName}."
+                        : $"Se actualizó un partido de {evt.LeagueName}.",
                     $"/ligas/{evt.LeagueSlug}/fixture")
             }, cancellationToken);
         }

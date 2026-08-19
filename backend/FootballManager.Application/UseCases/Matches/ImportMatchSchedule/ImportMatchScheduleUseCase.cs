@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.Push;
 using FootballManager.Application.Services;
 using FootballManager.Domain.Entities;
 
@@ -23,6 +24,7 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
     private readonly IFieldRepository _fieldRepository;
     private readonly ITeamNameAliasService _aliasService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IPushNotificationService _pushNotifications;
 
     public ImportMatchScheduleUseCase(
         IUserLeagueRepository userLeagueRepository,
@@ -33,7 +35,8 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
         IFixtureRepository fixtureRepository,
         IFieldRepository fieldRepository,
         ITeamNameAliasService aliasService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IPushNotificationService pushNotifications)
     {
         _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
         _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
@@ -44,6 +47,7 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
         _fieldRepository = fieldRepository ?? throw new ArgumentNullException(nameof(fieldRepository));
         _aliasService = aliasService ?? throw new ArgumentNullException(nameof(aliasService));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _pushNotifications = pushNotifications ?? throw new ArgumentNullException(nameof(pushNotifications));
     }
 
     public async Task<ImportMatchScheduleResponse> ExecuteAsync(
@@ -102,6 +106,7 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
         var warnings = new List<string>();
         var seenFixtureIds = new HashSet<Guid>();
         var learned = new HashSet<(Guid TeamId, string Normalized)>();
+        var changedFixtures = new Dictionary<Guid, Fixture>();
 
         foreach (var row in request.Rows ?? new List<ImportMatchScheduleRowDto>())
         {
@@ -153,7 +158,12 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
                 continue;
             }
 
+            var prevTime = fixture.StartTime;
+            var prevFieldId = fixture.FieldId;
             fixture.AssignKickoffAndField(startTime, field);
+            if (prevTime != fixture.StartTime || prevFieldId != fixture.FieldId)
+                changedFixtures[fixture.Id] = fixture;
+
             if (!seenFixtureIds.Add(fixture.Id))
             {
                 warnings.Add($"Fixture {fixture.Id} aparece más de una vez en el CSV; se usa la última fila válida.");
@@ -168,7 +178,43 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        foreach (var fixture in changedFixtures.Values)
+            await TryNotifyScheduleAsync(league, fixture, cancellationToken);
+
         return new ImportMatchScheduleResponse(updated, warnings);
+    }
+
+    private async Task TryNotifyScheduleAsync(League league, Fixture fixture, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var home = fixture.HomeTeamDivisionSeason?.Team;
+            var away = fixture.AwayTeamDivisionSeason?.Team;
+            if (home == null || away == null) return;
+
+            await _pushNotifications.NotifyFixtureUpdatedAsync(new FixtureUpdatedPushEvent
+            {
+                LeagueId = league.Id,
+                LeagueSlug = league.Slug,
+                LeagueName = league.Name,
+                FixtureId = fixture.Id,
+                RoundNumber = fixture.RoundNumber,
+                HomeTeamId = home.Id,
+                AwayTeamId = away.Id,
+                HomeTeamName = home.DisplayName,
+                AwayTeamName = away.DisplayName,
+                HomeTeamSlug = home.Slug,
+                AwayTeamSlug = away.Slug,
+                MatchDate = fixture.MatchDate,
+                KickoffTime = fixture.StartTime,
+                FieldName = fixture.Field?.Name
+            }, cancellationToken);
+        }
+        catch
+        {
+            // Push must never fail the schedule import.
+        }
     }
 
     private static bool TryParseTime(string? raw, out TimeOnly time)
