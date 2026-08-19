@@ -140,17 +140,44 @@ function ScorePct({ score }: { score: number }) {
   )
 }
 
-function TeamPickMenuItems({
+function teamPickLabel(
+  teamId: string,
+  mapping: TeamCsvRowMapping,
+  teamsSorted: TeamInSetup[]
+): string {
+  const candidate = mapping.candidates.find((c) => c.teamId === teamId)
+  if (candidate) return candidate.label
+  const team = teamsSorted.find((t) => t.id === teamId)
+  return team ? displayName(team) : teamId
+}
+
+/** MenuItems must be direct children of MUI Select or the chosen value stays visually empty. */
+function TeamOverrideSelect({
   mapping,
   teamsSorted,
+  value,
+  onChange,
 }: {
   mapping: TeamCsvRowMapping
   teamsSorted: TeamInSetup[]
+  value: string
+  onChange: (teamId: string) => void
 }) {
   const candidateIds = new Set(mapping.candidates.map((c) => c.teamId))
   const rest = teamsSorted.filter((t) => !candidateIds.has(t.id))
   return (
-    <>
+    <Select
+      displayEmpty
+      value={value}
+      onChange={(e) => onChange(String(e.target.value))}
+      renderValue={(selected) =>
+        selected ? (
+          teamPickLabel(String(selected), mapping, teamsSorted)
+        ) : (
+          <em>Elegir equipo / vacío = no es de esta división</em>
+        )
+      }
+    >
       <MenuItem value="">
         <em>Elegir equipo / vacío = no es de esta división</em>
       </MenuItem>
@@ -165,7 +192,7 @@ function TeamPickMenuItems({
           {displayName(t)}
         </MenuItem>
       ))}
-    </>
+    </Select>
   )
 }
 
@@ -813,13 +840,12 @@ export function ImportScheduleModal({
                               (confirmá o elegí otro)
                             </Typography>
                           )}
-                          <Select
-                            displayEmpty
+                          <TeamOverrideSelect
+                            mapping={row.homeMapping}
+                            teamsSorted={teamsSorted}
                             value={teamOverride[row.csv.homeTeam] ?? ''}
-                            onChange={(e) => setOverrideForCsvName(row.csv.homeTeam, String(e.target.value))}
-                          >
-                            <TeamPickMenuItems mapping={row.homeMapping} teamsSorted={teamsSorted} />
-                          </Select>
+                            onChange={(teamId) => setOverrideForCsvName(row.csv.homeTeam, teamId)}
+                          />
                         </FormControl>
                       )}
                       {row.status !== 'review_teams' && row.homeMapping.teamId && (
@@ -849,13 +875,12 @@ export function ImportScheduleModal({
                               (confirmá o elegí otro)
                             </Typography>
                           )}
-                          <Select
-                            displayEmpty
+                          <TeamOverrideSelect
+                            mapping={row.awayMapping}
+                            teamsSorted={teamsSorted}
                             value={teamOverride[row.csv.awayTeam] ?? ''}
-                            onChange={(e) => setOverrideForCsvName(row.csv.awayTeam, String(e.target.value))}
-                          >
-                            <TeamPickMenuItems mapping={row.awayMapping} teamsSorted={teamsSorted} />
-                          </Select>
+                            onChange={(teamId) => setOverrideForCsvName(row.csv.awayTeam, teamId)}
+                          />
                         </FormControl>
                       )}
                       {row.status !== 'review_teams' && row.awayMapping.teamId && (
