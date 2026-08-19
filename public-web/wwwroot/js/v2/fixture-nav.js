@@ -30,26 +30,14 @@
     return s ? `?${s}` : '';
   }
 
-  function bind(scope) {
+  function bindBadges(scope) {
     if (typeof window.v2BindTeamBadges === 'function') {
       window.v2BindTeamBadges(scope || root);
     }
-
-    (scope || root).querySelectorAll('[data-v2-fixture-block]').forEach((block) => {
-      block.querySelectorAll('[data-v2-fecha-goto]').forEach((el) => {
-        el.addEventListener('click', (ev) => {
-          ev.preventDefault();
-          if (el.disabled) return;
-          const fecha = el.getAttribute('data-v2-fecha-goto');
-          if (!fecha) return;
-          loadBlockFecha(block, fecha, { push: true });
-        });
-      });
-    });
   }
 
   async function loadBlockFecha(block, fecha, { push }) {
-    if (busy || !fragmentUrl || !block) return;
+    if (busy || !fragmentUrl || !block || !fecha) return;
     busy = true;
     block.setAttribute('aria-busy', 'true');
 
@@ -79,7 +67,7 @@
       // Preserve page-level division mode on the replacement block.
       next.setAttribute('data-page-division', pageDiv);
       block.replaceWith(next);
-      bind(next);
+      bindBadges(next);
 
       if (push && pageDiv !== 'all') {
         const nextUrl = pageBase + buildQuery({
@@ -102,6 +90,20 @@
     }
   }
 
+  // Delegate from the stable root: querySelectorAll on a replaced block
+  // does not match the block itself, so per-button listeners were lost
+  // after the first fecha change.
+  root.addEventListener('click', (ev) => {
+    const el = ev.target.closest('[data-v2-fecha-goto]');
+    if (!el || !root.contains(el) || el.disabled) return;
+    const fecha = el.getAttribute('data-v2-fecha-goto');
+    if (!fecha) return;
+    const block = el.closest('[data-v2-fixture-block]');
+    if (!block) return;
+    ev.preventDefault();
+    loadBlockFecha(block, fecha, { push: true });
+  });
+
   window.addEventListener('popstate', () => {
     if (pageDivision() === 'all') return;
     const url = new URL(window.location.href);
@@ -109,7 +111,7 @@
     const block = root.querySelector('[data-v2-fixture-block]');
     if (!block) return;
     const current = block.getAttribute('data-fecha') || '';
-    if (fecha !== current) {
+    if (fecha && fecha !== current) {
       loadBlockFecha(block, fecha, { push: false });
     }
   });
@@ -124,5 +126,5 @@
     );
   }
 
-  bind(root);
+  bindBadges(root);
 })();
