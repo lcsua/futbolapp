@@ -380,10 +380,11 @@ export function MatchesPage() {
           seasonId={seasonId}
           filterDivisionId={divisionId}
           divisions={divisions}
-          onImported={({ updatedCount, createdCount, warnings }) => {
+          onImported={({ updatedCount, createdCount, skippedCount, warnings }) => {
             const parts = [
               updatedCount ? `${updatedCount} actualizado(s)` : null,
               createdCount ? `${createdCount} creado(s)` : null,
+              skippedCount ? `${skippedCount} omitido(s) (ya tenían resultado)` : null,
             ].filter(Boolean)
             const warn = warnings.length ? ` Advertencias: ${warnings.length}.` : ''
             setImportResultsMsg(

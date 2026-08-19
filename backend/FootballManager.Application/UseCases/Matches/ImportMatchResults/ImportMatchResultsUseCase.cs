@@ -67,6 +67,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
 
             var updated = 0;
             var created = 0;
+            var skipped = 0;
             var warnings = new List<string>();
             var learned = new HashSet<(Guid TeamId, string Normalized)>();
 
@@ -93,8 +94,13 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                 var existingFixtures = await _fixtureRepository.GetBySeasonAndDivisionAndRoundAsync(
                     request.SeasonId, divisionSeason.Id, null, cancellationToken);
 
+                var csvRound = divDto.Round is > 0 ? divDto.Round.Value : (int?)null;
+                var scopedFixtures = csvRound.HasValue
+                    ? existingFixtures.Where(f => f.RoundNumber == csvRound.Value).ToList()
+                    : existingFixtures;
+
                 var fixtureByPair = new Dictionary<(Guid Home, Guid Away), Fixture>();
-                foreach (var f in existingFixtures)
+                foreach (var f in scopedFixtures)
                 {
                     var key = (f.HomeTeamDivisionSeasonId, f.AwayTeamDivisionSeasonId);
                     if (!fixtureByPair.ContainsKey(key))
@@ -102,6 +108,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                 }
 
                 var maxRound = existingFixtures.Count == 0 ? 0 : existingFixtures.Max(f => f.RoundNumber);
+                var skippedThisDivision = 0;
                 var toCreate = new List<(TeamDivisionSeason Home, TeamDivisionSeason Away, ImportMatchResultItemDto Item)>();
 
                 foreach (var item in divDto.Matches)
@@ -128,6 +135,12 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
 
                     if (fixtureByPair.TryGetValue((homeTds.Id, awayTds.Id), out var fixture))
                     {
+                        if (AlreadyHasLoadedResult(fixture))
+                        {
+                            skipped++;
+                            skippedThisDivision++;
+                            continue;
+                        }
                         await ApplyResultAsync(fixture, item.HomeScore, item.AwayScore, item.Status, swap: false, cancellationToken);
                         updated++;
                         continue;
@@ -135,6 +148,12 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
 
                     if (fixtureByPair.TryGetValue((awayTds.Id, homeTds.Id), out var inverted))
                     {
+                        if (AlreadyHasLoadedResult(inverted))
+                        {
+                            skipped++;
+                            skippedThisDivision++;
+                            continue;
+                        }
                         await ApplyResultAsync(inverted, item.HomeScore, item.AwayScore, item.Status, swap: true, cancellationToken);
                         updated++;
                         continue;
@@ -143,9 +162,16 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                     toCreate.Add((homeTds, awayTds, item));
                 }
 
+                if (skippedThisDivision > 0)
+                {
+                    var roundLabel = csvRound.HasValue ? $" fecha {csvRound.Value}" : string.Empty;
+                    warnings.Add(
+                        $"{division.Name}{roundLabel}: {skippedThisDivision} partido(s) ya tenían resultado y no se modificaron.");
+                }
+
                 if (toCreate.Count > 0)
                 {
-                    var newRound = maxRound + 1;
+                    var newRound = csvRound ?? (maxRound + 1);
                     foreach (var (homeTds, awayTds, item) in toCreate)
                     {
                         var fixture = new Fixture(league, season, divisionSeason, homeTds, awayTds, newRound);
@@ -161,7 +187,14 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return new ImportMatchResultsResponse(updated, created, warnings);
+            return new ImportMatchResultsResponse(updated, created, warnings, skipped);
+        }
+
+        private static bool AlreadyHasLoadedResult(Fixture fixture)
+        {
+            if (fixture.Result != null)
+                return true;
+            return fixture.Status != MatchStatus.SCHEDULED;
         }
 
         private async Task ApplyResultAsync(

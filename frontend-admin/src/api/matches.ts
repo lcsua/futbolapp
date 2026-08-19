@@ -183,6 +183,7 @@ export const matchesService = {
       seasonId: string
       divisions: Array<{
         divisionId: string
+        round?: number
         matches: Array<{
           homeTeamId: string
           awayTeamId: string
@@ -196,7 +197,7 @@ export const matchesService = {
     },
     signal?: AbortSignal
   ) =>
-    apiClient.post<{ updatedCount: number; createdCount: number; warnings: string[] }>(
+    apiClient.post<{ updatedCount: number; createdCount: number; skippedCount: number; warnings: string[] }>(
       `/api/leagues/${leagueId}/matches/import-results`,
       body,
       signal

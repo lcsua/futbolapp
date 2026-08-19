@@ -57,7 +57,12 @@ export type ImportMatchResultsModalProps = {
   /** Preselect division filter from Matches page (optional). */
   filterDivisionId?: string
   divisions: Array<{ id: string; name: string }>
-  onImported?: (summary: { updatedCount: number; createdCount: number; warnings: string[] }) => void
+  onImported?: (summary: {
+    updatedCount: number
+    createdCount: number
+    skippedCount: number
+    warnings: string[]
+  }) => void
 }
 
 function displayName(t: TeamInSetup) {
@@ -236,7 +241,7 @@ export function ImportMatchResultsModal({
             awayCsvName: m.awayTeam,
           })
         }
-        payloadDivisions.push({ divisionId: plan.divisionId, matches })
+        payloadDivisions.push({ divisionId: plan.divisionId, round: plan.round, matches })
       }
 
       if (payloadDivisions.length === 0) {
@@ -260,6 +265,7 @@ export function ImportMatchResultsModal({
       onImported?.({
         updatedCount: res.updatedCount,
         createdCount: res.createdCount,
+        skippedCount: res.skippedCount ?? 0,
         warnings: [...(res.warnings ?? []), ...(infoMsg ? [infoMsg] : [])],
       })
       reset()
@@ -390,8 +396,9 @@ export function ImportMatchResultsModal({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Subí un CSV con columnas: <strong>fecha, division, Equipo 1, goles equipo 1, equipo 2, goles equipo 2,
           estado</strong>. Estados: Finalizado, Partido Suspendido, Libre. Los libres se omiten; los suspendidos se
-          guardan como Suspendido (no suman en la tabla) hasta que se resuelvan a mano. Si el partido ya existe se
-          actualiza; si no, se crea en la próxima jornada.
+          guardan como Suspendido (no suman en la tabla) hasta que se resuelvan a mano. Si el partido de esa fecha y
+          división ya tiene resultado (o no está Pendiente), se omite y no se pisa. Si no existe el fixture, se crea
+          en esa fecha.
         </Typography>
 
         <FormControl fullWidth size="small" sx={{ mb: 2 }} disabled={!!plans || importMutation.isPending}>

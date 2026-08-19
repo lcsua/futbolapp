@@ -14,6 +14,8 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
     public class ImportMatchResultsDivisionDto
     {
         public Guid DivisionId { get; set; }
+        /// <summary>CSV round (fecha). Used to match fixtures without overwriting other dates.</summary>
+        public int? Round { get; set; }
         public List<ImportMatchResultItemDto> Matches { get; set; } = new();
     }
 
@@ -35,12 +37,18 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
     {
         public int UpdatedCount { get; }
         public int CreatedCount { get; }
+        public int SkippedCount { get; }
         public List<string> Warnings { get; }
 
-        public ImportMatchResultsResponse(int updatedCount, int createdCount, List<string>? warnings = null)
+        public ImportMatchResultsResponse(
+            int updatedCount,
+            int createdCount,
+            List<string>? warnings = null,
+            int skippedCount = 0)
         {
             UpdatedCount = updatedCount;
             CreatedCount = createdCount;
+            SkippedCount = skippedCount;
             Warnings = warnings ?? new List<string>();
         }
     }
