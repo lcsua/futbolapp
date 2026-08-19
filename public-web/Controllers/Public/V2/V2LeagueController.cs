@@ -362,16 +362,14 @@ public class V2LeagueController : Controller
     {
         if (calendar?.Divisions == null) return null;
 
-        var openByRound = calendar.Divisions
+        var round = FixtureCalendarHelper.ResolveLeagueNextFecha(calendar);
+        if (!round.HasValue) return null;
+
+        var matches = calendar.Divisions
             .SelectMany(d => d.Data ?? new List<MatchdayGroupViewModel>())
-            .Where(md => md.Matches != null && md.Matches.Any(m => !TeamDisplayHelper.IsFinished(m.Status)))
-            .GroupBy(md => md.Round)
-            .OrderBy(g => g.Key)
-            .FirstOrDefault();
-
-        if (openByRound == null) return null;
-
-        var matches = openByRound.SelectMany(md => md.Matches ?? new List<MatchViewModel>()).ToList();
+            .Where(md => md.Round == round.Value)
+            .SelectMany(md => md.Matches ?? new List<MatchViewModel>())
+            .ToList();
         if (matches.Count == 0) return null;
 
         DateTime? display = matches
@@ -383,7 +381,7 @@ public class V2LeagueController : Controller
 
         return new LeagueHomeNextFechaViewModel
         {
-            Round = openByRound.Key,
+            Round = round.Value,
             DisplayDate = display,
             MatchCount = matches.Count
         };

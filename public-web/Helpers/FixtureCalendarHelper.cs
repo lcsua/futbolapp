@@ -62,23 +62,46 @@ public static class FixtureCalendarHelper
     {
         if (div.Data == null || div.Data.Count == 0) return null;
 
-        // 1) Next fecha that still has at least one non-finished match
-        var nextOpen = div.Data
-            .Where(md => md.Matches.Any(m => !TeamDisplayHelper.IsFinished(m.Status)))
-            .Select(md => (int?)md.Round)
-            .FirstOrDefault();
-        if (nextOpen.HasValue) return nextOpen;
+        var ordered = div.Data.OrderBy(md => md.Round).ToList();
+        var lastPlayed = ordered
+            .Where(HasFinishedMatch)
+            .Select(md => md.Round)
+            .DefaultIfEmpty(0)
+            .Last();
 
-        // 2) Last fecha that has a finished match
-        var lastPlayed = div.Data
-            .Where(md => md.Matches.Any(m => TeamDisplayHelper.IsFinished(m.Status)))
-            .Select(md => (int?)md.Round)
-            .LastOrDefault();
-        if (lastPlayed.HasValue) return lastPlayed;
+        var open = ordered.Where(HasOpenMatch).ToList();
+        if (open.Count == 0)
+            return lastPlayed > 0 ? lastPlayed : ordered[0].Round;
 
-        // 3) First available
-        return div.Data[0].Round;
+        // Skip leftover earlier rounds (e.g. fecha 1 deferred to the end of the season).
+        var nextAfterPlayed = open.FirstOrDefault(md => md.Round > lastPlayed);
+        return (nextAfterPlayed ?? open[0]).Round;
     }
+
+    public static int? ResolveLeagueNextFecha(SeasonGroupedViewModel<MatchdayGroupViewModel>? calendar)
+    {
+        if (calendar?.Divisions == null || calendar.Divisions.Count == 0) return null;
+
+        var resolved = calendar.Divisions
+            .Select(ResolveInitialFecha)
+            .Where(r => r.HasValue)
+            .Select(r => r!.Value)
+            .ToList();
+        if (resolved.Count == 0) return null;
+
+        return resolved
+            .GroupBy(r => r)
+            .OrderByDescending(g => g.Count())
+            .ThenBy(g => g.Key)
+            .First()
+            .Key;
+    }
+
+    private static bool HasOpenMatch(MatchdayGroupViewModel md) =>
+        md.Matches != null && md.Matches.Any(m => !TeamDisplayHelper.IsFinished(m.Status));
+
+    private static bool HasFinishedMatch(MatchdayGroupViewModel md) =>
+        md.Matches != null && md.Matches.Any(m => TeamDisplayHelper.IsFinished(m.Status));
 
     /// <summary>
     /// Discrete label from real match statuses only. Returns null when not determinable.
