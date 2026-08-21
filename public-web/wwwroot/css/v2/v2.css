@@ -2392,6 +2392,10 @@ a.v2-standings-table__team-link:focus-visible {
   min-width: 0;
 }
 
+.v2-standings-table__team-short {
+  display: none;
+}
+
 .v2-standings-table .v2-team-badge--md {
   flex-shrink: 0;
   width: 2.1rem;
@@ -2526,9 +2530,10 @@ a.v2-standings-table__team-link:focus-visible {
   }
 
   .v2-standings-page.is-full .v2-standings-table {
-    min-width: 36rem;
+    min-width: 27.5rem;
     table-layout: fixed;
-    --v2-standings-pos-w: 2.25rem;
+    --v2-standings-pos-w: 1.85rem;
+    --v2-standings-team-w: 5.85rem;
   }
 
   .v2-standings-page.is-full .v2-standings-table__col-full {
@@ -2552,11 +2557,15 @@ a.v2-standings-table__team-link:focus-visible {
 
   .v2-standings-page.is-full .v2-standings-table__num,
   .v2-standings-page.is-full .v2-standings-table__pts {
-    width: 2.15rem;
+    width: 2.05rem;
   }
 
   .v2-standings-page.is-full .v2-standings-table__team {
-    min-width: 8.5rem;
+    width: var(--v2-standings-team-w);
+    min-width: var(--v2-standings-team-w);
+    max-width: var(--v2-standings-team-w);
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
   }
 
   .v2-standings-page.is-full .v2-standings-table__pos,
@@ -2596,20 +2605,29 @@ a.v2-standings-table__team-link:focus-visible {
     display: block;
     -webkit-line-clamp: unset;
     -webkit-box-orient: unset;
+    min-width: 0;
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .v2-standings-page.is-full .v2-standings-table__team-full {
+    display: none;
+  }
+
+  .v2-standings-page.is-full .v2-standings-table__team-short {
+    display: block;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
     overflow-wrap: normal;
-    font-size: 0.78rem;
   }
 
   .v2-standings-page.is-full .v2-standings-table .v2-team-badge--md {
-    width: 1.65rem;
-    height: 1.65rem;
+    display: none;
   }
 
   .v2-standings-page.is-full .v2-standings-table__team-link {
-    gap: 0.4rem;
+    gap: 0;
   }
 }
 

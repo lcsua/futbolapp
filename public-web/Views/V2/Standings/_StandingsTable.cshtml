@@ -29,21 +29,30 @@
                 var teamUrl = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(row.Team.Slug)
                     ? Url.Content($"~/ligas/{leagueSlug}/{row.Team.Slug}")
                     : null;
+                var compactName = !string.IsNullOrWhiteSpace(row.Team.ShortName)
+                    ? row.Team.ShortName.Trim()
+                    : row.Team.Name;
                 <tr class="@(isLeader ? "is-leader" : null)">
                     <td class="v2-standings-table__pos">@row.Position</td>
                     <td class="v2-standings-table__team">
                         @if (teamUrl != null)
                         {
-                            <a class="v2-standings-table__team-link" href="@teamUrl">
+                            <a class="v2-standings-table__team-link" href="@teamUrl" title="@row.Team.Name">
                                 @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
-                                <span class="v2-standings-table__team-name">@row.Team.Name</span>
+                                <span class="v2-standings-table__team-name">
+                                    <span class="v2-standings-table__team-full">@row.Team.Name</span>
+                                    <span class="v2-standings-table__team-short">@compactName</span>
+                                </span>
                             </a>
                         }
                         else
                         {
-                            <div class="v2-standings-table__team-link">
+                            <div class="v2-standings-table__team-link" title="@row.Team.Name">
                                 @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
-                                <span class="v2-standings-table__team-name">@row.Team.Name</span>
+                                <span class="v2-standings-table__team-name">
+                                    <span class="v2-standings-table__team-full">@row.Team.Name</span>
+                                    <span class="v2-standings-table__team-short">@compactName</span>
+                                </span>
                             </div>
                         }
                     </td>
