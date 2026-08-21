@@ -2470,15 +2470,6 @@ a.v2-standings-table__team-link:focus-visible {
   color: var(--v2-primary);
 }
 
-.v2-standings-scroll-hint {
-  display: none;
-  margin: 0.45rem 0 0;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--v2-text-secondary);
-  text-align: center;
-}
-
 /* Mobile: POS | EQUIPO | PJ | DG | PTS */
 @media (max-width: 767.98px) {
   .v2-standings-toolbar {
@@ -2486,10 +2477,6 @@ a.v2-standings-table__team-link:focus-visible {
     flex-direction: column;
     align-items: stretch;
     margin: 0 0 var(--space-4);
-  }
-
-  .v2-standings-page.is-full .v2-standings-scroll-hint {
-    display: block;
   }
 
   .v2-standings-table__col-full {
@@ -2530,10 +2517,10 @@ a.v2-standings-table__team-link:focus-visible {
   }
 
   .v2-standings-page.is-full .v2-standings-table {
-    min-width: 27.5rem;
+    width: 100%;
+    min-width: 0;
     table-layout: fixed;
-    --v2-standings-pos-w: 1.85rem;
-    --v2-standings-team-w: 5.85rem;
+    --v2-standings-pos-w: 1.4rem;
   }
 
   .v2-standings-page.is-full .v2-standings-table__col-full {
@@ -2542,30 +2529,35 @@ a.v2-standings-table__team-link:focus-visible {
 
   .v2-standings-page.is-full .v2-standings-table thead th,
   .v2-standings-page.is-full .v2-standings-table tbody td {
-    padding: 0.7rem 0.28rem;
-    font-size: 0.8125rem;
+    padding: 0.55rem 0.1rem;
+    font-size: 0.75rem;
   }
 
   .v2-standings-page.is-full .v2-standings-table thead th {
-    font-size: 0.625rem;
+    font-size: 0.5625rem;
+    letter-spacing: 0.02em;
+    padding-left: 0.08rem;
+    padding-right: 0.08rem;
   }
 
   .v2-standings-page.is-full .v2-standings-table__pos {
     width: var(--v2-standings-pos-w);
-    min-width: var(--v2-standings-pos-w);
   }
 
   .v2-standings-page.is-full .v2-standings-table__num,
   .v2-standings-page.is-full .v2-standings-table__pts {
-    width: 2.05rem;
+    width: 1.42rem;
+  }
+
+  .v2-standings-page.is-full .v2-standings-table__pts {
+    width: 1.5rem;
   }
 
   .v2-standings-page.is-full .v2-standings-table__team {
-    width: var(--v2-standings-team-w);
-    min-width: var(--v2-standings-team-w);
-    max-width: var(--v2-standings-team-w);
-    padding-left: 0.2rem;
-    padding-right: 0.2rem;
+    width: auto;
+    min-width: 3.5rem;
+    padding-left: 0.18rem;
+    padding-right: 0.18rem;
   }
 
   .v2-standings-page.is-full .v2-standings-table__pos,
@@ -2606,7 +2598,7 @@ a.v2-standings-table__team-link:focus-visible {
     -webkit-line-clamp: unset;
     -webkit-box-orient: unset;
     min-width: 0;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     line-height: 1.2;
   }
 
@@ -2654,6 +2646,16 @@ a.v2-standings-table__team-link:focus-visible {
   .v2-standings-table .v2-team-badge--md {
     width: 1.75rem;
     height: 1.75rem;
+  }
+
+  .v2-standings-page.is-full .v2-standings-table__num {
+    width: 1.32rem;
+  }
+
+  .v2-standings-page.is-full .v2-standings-table thead th,
+  .v2-standings-page.is-full .v2-standings-table tbody td {
+    padding: 0.5rem 0.06rem;
+    font-size: 0.7rem;
   }
 }
 
