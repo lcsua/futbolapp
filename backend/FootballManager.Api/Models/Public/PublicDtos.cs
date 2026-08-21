@@ -48,6 +48,19 @@ public class MatchPublicDto
     public int? AwayScore { get; set; }
     public string? LeagueSlug { get; set; }
     public string? FieldName { get; set; }
+    public int RoundNumber { get; set; }
+    public string? DivisionName { get; set; }
+    public List<MatchIncidentPublicDto> Incidents { get; set; } = new();
+}
+
+public class MatchIncidentPublicDto
+{
+    public int? Minute { get; set; }
+    public Guid? TeamId { get; set; }
+    public string TeamName { get; set; } = string.Empty;
+    public string PlayerName { get; set; } = string.Empty;
+    public string IncidentType { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
 }
 
 public class SeasonPublicDto

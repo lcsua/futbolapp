@@ -1,0 +1,117 @@
+@model PublicWeb.Models.Public.MatchViewModel
+@{
+    Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    var league = ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
+    var leagueSlug = ViewBag.LeagueSlug as string ?? Model.LeagueSlug ?? string.Empty;
+    var backHref = ViewBag.BackHref as string ?? Url.Content("~/ligas");
+    var backLabel = ViewBag.BackLabel as string ?? "Volver";
+    var crumbs = ViewBag.SeoBreadcrumbs as IReadOnlyList<PublicWeb.Seo.SeoBreadcrumbItem>;
+    ViewData["LeagueSlug"] = leagueSlug;
+    ViewData["BadgeSize"] = "md";
+
+    PublicWeb.Seo.SeoPageApplicator.Apply(
+        PublicWeb.Seo.SeoCopy.MatchPage(
+            Model.HomeTeam.Name,
+            Model.AwayTeam.Name,
+            league?.Name,
+            leagueSlug,
+            Model.Id,
+            league?.LogoUrl ?? Model.HomeTeam.LogoUrl),
+        ViewData,
+        ViewBag);
+    crumbs = ViewBag.SeoBreadcrumbs as IReadOnlyList<PublicWeb.Seo.SeoBreadcrumbItem> ?? crumbs;
+}
+
+<article class="v2-match-page">
+    <nav class="v2-crumb" aria-label="Navegación">
+        @if (crumbs != null && crumbs.Count > 1)
+        {
+            <div class="v2-crumb__desktop">
+                @for (var i = 0; i < crumbs.Count; i++)
+                {
+                    var c = crumbs[i];
+                    if (i > 0)
+                    {
+                        <span aria-hidden="true">/</span>
+                    }
+                    if (!string.IsNullOrWhiteSpace(c.Path) && i < crumbs.Count - 1)
+                    {
+                        <a href="@Url.Content("~" + c.Path)">@c.Name</a>
+                    }
+                    else
+                    {
+                        <span aria-current="page">@c.Name</span>
+                    }
+                }
+            </div>
+        }
+        <a class="v2-crumb__back" href="@backHref">
+            <span aria-hidden="true">‹</span> @backLabel
+        </a>
+    </nav>
+
+    @if (league != null)
+    {
+        @await Html.PartialAsync("~/Views/V2/League/_LeagueHeader.cshtml", league)
+        @await Html.PartialAsync("~/Views/V2/League/_CompetitionTabs.cshtml")
+    }
+
+    <section class="v2-home-section v2-match-page__hero" aria-labelledby="match-heading">
+        <h2 id="match-heading" class="v2-section-title visually-hidden">@ViewBag.SeoH1</h2>
+        @if (Model.RoundNumber > 0 || !string.IsNullOrWhiteSpace(Model.DivisionName))
+        {
+            <p class="v2-match-page__context">
+                @if (Model.RoundNumber > 0)
+                {
+                    <span>Fecha @Model.RoundNumber</span>
+                }
+                @if (Model.RoundNumber > 0 && !string.IsNullOrWhiteSpace(Model.DivisionName))
+                {
+                    <span aria-hidden="true">·</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.DivisionName))
+                {
+                    <span>@Model.DivisionName</span>
+                }
+            </p>
+        }
+        @await Html.PartialAsync("~/Views/V2/Match/_MatchHero.cshtml", Model)
+    </section>
+
+    <section class="v2-home-section" aria-labelledby="match-incidents">
+        <h2 id="match-incidents" class="v2-section-title">Incidencias</h2>
+        @if (Model.Incidents != null && Model.Incidents.Count > 0)
+        {
+            <ol class="v2-incident-list">
+                @foreach (var incident in Model.Incidents)
+                {
+                    var label = PublicWeb.Helpers.TeamDisplayHelper.FormatIncidentLabel(incident.IncidentType);
+                    var who = string.IsNullOrWhiteSpace(incident.PlayerName)
+                        ? incident.TeamName
+                        : incident.PlayerName;
+                    <li class="v2-incident" data-type="@incident.IncidentType">
+                        <span class="v2-incident__minute v2-nums">
+                            @(incident.Minute.HasValue ? $"{incident.Minute}'" : "—")
+                        </span>
+                        <span class="v2-incident__body">
+                            <span class="v2-incident__type">@label</span>
+                            @if (!string.IsNullOrWhiteSpace(who))
+                            {
+                                <span class="v2-incident__who">@who</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(incident.TeamName) &&
+                                 !string.Equals(incident.TeamName, who, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <span class="v2-incident__team">@incident.TeamName</span>
+                            }
+                        </span>
+                    </li>
+                }
+            </ol>
+        }
+        else
+        {
+            <p class="v2-empty">Las incidencias (goles, tarjetas, cambios) aparecerán aquí.</p>
+        }
+    </section>
+</article>

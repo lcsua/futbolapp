@@ -1,0 +1,125 @@
+@model PublicWeb.Models.Public.MatchViewModel
+@{
+    var leagueSlug = ViewData["LeagueSlug"] as string ?? Model.LeagueSlug ?? "";
+    var finished = PublicWeb.Helpers.TeamDisplayHelper.IsFinished(Model.Status);
+    var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
+    var hasScores = Model.HomeScore.HasValue && Model.AwayScore.HasValue;
+    var showAsResult = finished || hasScores;
+    var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
+    var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(Model.Kickoff);
+    var statusLabel = PublicWeb.Helpers.TeamDisplayHelper.FormatStatusLabel(Model.Status);
+    ViewData["BadgeSize"] = "md";
+
+    string? TeamUrl(PublicWeb.Models.Public.TeamViewModel team) =>
+        !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(team.Slug)
+            ? Url.Content($"~/ligas/{leagueSlug}/{team.Slug}")
+            : null;
+}
+
+<article class="v2-match-card v2-match-card--detail @(showAsResult ? "v2-match-card--result" : "v2-match-card--upcoming")">
+    <div class="v2-match-card__meta @(showAsResult ? null : "v2-match-card__meta--upcoming")">
+        <span class="v2-match-card__meta-desktop">@statusLabel</span>
+        <span class="v2-match-card__meta-mobile">
+            @statusLabel
+            <span aria-hidden="true">·</span>
+            @PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)
+        </span>
+        @if (!showAsResult && time != null)
+        {
+            <span class="v2-match-card__kick v2-nums">@time</span>
+        }
+        @if (!showAsResult && !string.IsNullOrWhiteSpace(venue))
+        {
+            <span class="v2-match-card__venue">@venue</span>
+        }
+    </div>
+
+    @if (!showAsResult)
+    {
+        <div class="v2-match-card__meta-line v2-match-card__meta-line--desktop">
+            <span class="v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)</span>
+            @if (time != null)
+            {
+                <span aria-hidden="true">·</span>
+                <span class="v2-nums">@time</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(venue))
+            {
+                <span aria-hidden="true">·</span>
+                <span>@venue</span>
+            }
+        </div>
+    }
+
+    <div class="v2-match-card__board">
+        @{
+            var homeUrl = TeamUrl(Model.HomeTeam);
+            var awayUrl = TeamUrl(Model.AwayTeam);
+        }
+        @if (homeUrl != null)
+        {
+            <a class="v2-match-card__side is-home" href="@homeUrl">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                <span class="v2-match-card__name">@Model.HomeTeam.Name</span>
+            </a>
+        }
+        else
+        {
+            <div class="v2-match-card__side is-home">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                <span class="v2-match-card__name">@Model.HomeTeam.Name</span>
+            </div>
+        }
+
+        <div class="v2-match-card__center">
+            @if (suspended)
+            {
+                <span class="v2-match-card__score is-warn">—</span>
+            }
+            else if (hasScores)
+            {
+                <span class="v2-match-card__score">@Model.HomeScore — @Model.AwayScore</span>
+            }
+            else if (!showAsResult)
+            {
+                <span class="v2-match-card__vs">VS</span>
+            }
+            else
+            {
+                <span class="v2-match-card__vs">—</span>
+            }
+        </div>
+
+        @if (awayUrl != null)
+        {
+            <a class="v2-match-card__side is-away" href="@awayUrl">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+                <span class="v2-match-card__name">@Model.AwayTeam.Name</span>
+            </a>
+        }
+        else
+        {
+            <div class="v2-match-card__side is-away">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+                <span class="v2-match-card__name">@Model.AwayTeam.Name</span>
+            </div>
+        }
+    </div>
+
+    @if (showAsResult)
+    {
+        <div class="v2-match-card__foot v2-match-card__foot--desktop">
+            <span class="v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonthYear(Model.Kickoff)</span>
+            @if (time != null)
+            {
+                <span aria-hidden="true">·</span>
+                <span class="v2-nums">@time</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(venue))
+            {
+                <span aria-hidden="true">·</span>
+                <span>@venue</span>
+            }
+        </div>
+    }
+</article>

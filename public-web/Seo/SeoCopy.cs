@@ -125,6 +125,36 @@ public static class SeoCopy
         };
     }
 
+    public static SeoPageModel MatchPage(
+        string homeName,
+        string awayName,
+        string? leagueName,
+        string? leagueSlug,
+        Guid matchId,
+        string? logoUrl)
+    {
+        var vs = $"{homeName} vs {awayName}";
+        var league = string.IsNullOrWhiteSpace(leagueName) ? "MiLiga" : leagueName;
+        var crumbs = new List<SeoBreadcrumbItem>
+        {
+            new() { Name = "Inicio", Path = "/" },
+            new() { Name = "Ligas", Path = "/ligas" }
+        };
+        if (!string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(leagueName))
+            crumbs.Add(new SeoBreadcrumbItem { Name = leagueName, Path = $"/ligas/{leagueSlug}" });
+        crumbs.Add(new SeoBreadcrumbItem { Name = vs, Path = $"/partido/{matchId}" });
+
+        return new SeoPageModel
+        {
+            Title = Title($"{vs} - {league}"),
+            Description = $"Resultado, horario y detalles de {vs} en la {league}.",
+            CanonicalPath = $"/partido/{matchId}",
+            OgImage = logoUrl,
+            H1 = vs,
+            Breadcrumbs = crumbs
+        };
+    }
+
     public static SeoPageModel TeamPage(string teamName, string leagueName, string leagueSlug, string teamSlug, string? logoUrl)
     {
         return new SeoPageModel

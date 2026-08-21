@@ -48,6 +48,31 @@ public static class TeamDisplayHelper
     public static bool IsSuspended(string? status) =>
         string.Equals(status, "SUSPENDED", StringComparison.OrdinalIgnoreCase);
 
+    public static string FormatStatusLabel(string? status)
+    {
+        var s = (status ?? string.Empty).Trim().ToUpperInvariant();
+        return s switch
+        {
+            "COMPLETED" or "PLAYED" or "FINISHED" => "Finalizado",
+            "IN_PROGRESS" => "En juego",
+            "SUSPENDED" => "Suspendido",
+            "CANCELLED" => "Cancelado",
+            "POSTPONED" => "Aplazado",
+            _ => "Programado"
+        };
+    }
+
+    public static string FormatIncidentLabel(string? type) =>
+        (type ?? string.Empty).Trim() switch
+        {
+            "Goal" => "Gol",
+            "YellowCard" => "Amarilla",
+            "RedCard" => "Roja",
+            "Substitution" => "Cambio",
+            "Injury" => "Lesión",
+            _ => "Incidencia"
+        };
+
     /// <summary>G / E / P relative to focus team; null if not a completed result.</summary>
     public static char? FormLetter(MatchViewModel match, Guid focusTeamId)
     {

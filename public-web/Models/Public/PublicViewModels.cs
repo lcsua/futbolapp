@@ -49,6 +49,19 @@ public class MatchViewModel
     public string? MatchDay { get; set; }
     public string? LeagueSlug { get; set; }
     public string? FieldName { get; set; }
+    public int RoundNumber { get; set; }
+    public string? DivisionName { get; set; }
+    public List<MatchIncidentViewModel> Incidents { get; set; } = new();
+}
+
+public class MatchIncidentViewModel
+{
+    public int? Minute { get; set; }
+    public Guid? TeamId { get; set; }
+    public string TeamName { get; set; } = string.Empty;
+    public string PlayerName { get; set; } = string.Empty;
+    public string IncidentType { get; set; } = string.Empty;
+    public string Notes { get; set; } = string.Empty;
 }
 
 public class StandingSummaryViewModel

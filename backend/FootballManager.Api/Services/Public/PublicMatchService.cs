@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Api.Models.Public;
@@ -49,7 +50,20 @@ public class PublicMatchService
                     LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(res.AwayTeamLogoUrl)
                 },
                 Kickoff = DateTime.TryParse(res.MatchDate + " " + res.KickoffTime, out var dt) ? dt : DateTime.UtcNow,
-                FieldName = string.IsNullOrWhiteSpace(res.FieldName) ? null : res.FieldName.Trim()
+                FieldName = string.IsNullOrWhiteSpace(res.FieldName) ? null : res.FieldName.Trim(),
+                RoundNumber = res.RoundNumber,
+                DivisionName = string.IsNullOrWhiteSpace(res.DivisionName) ? null : res.DivisionName.Trim(),
+                Incidents = (res.Incidents ?? Array.Empty<MatchIncidentDto>())
+                    .Select(i => new MatchIncidentPublicDto
+                    {
+                        Minute = i.Minute,
+                        TeamId = i.TeamId,
+                        TeamName = i.TeamName ?? string.Empty,
+                        PlayerName = i.PlayerName ?? string.Empty,
+                        IncidentType = i.IncidentType ?? string.Empty,
+                        Notes = i.Notes ?? string.Empty
+                    })
+                    .ToList()
             };
         }
         catch { return null; }

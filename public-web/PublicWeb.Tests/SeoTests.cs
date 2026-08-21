@@ -33,6 +33,17 @@ public class SeoCopyTests
     }
 
     [Fact]
+    public void MatchPage_HasSpecificMetadata()
+    {
+        var id = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        var page = SeoCopy.MatchPage("ATL FOR EVER", "AC. LA UNION", "Liga de Veteranos", "veteranos", id, null);
+        Assert.Equal("/partido/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", page.CanonicalPath);
+        Assert.Equal("ATL FOR EVER vs AC. LA UNION", page.H1);
+        Assert.Contains("ATL FOR EVER", page.Title);
+        Assert.Contains("Liga de Veteranos", page.Title);
+    }
+
+    [Fact]
     public void NotFound_IsNoIndex()
     {
         var page = SeoCopy.NotFound();

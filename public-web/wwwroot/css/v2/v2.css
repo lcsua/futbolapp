@@ -3440,3 +3440,91 @@ a.v2-fixture-row__team:focus-visible .v2-fixture-row__name {
   }
 }
 
+/* Match detail (/partido/{id}) */
+.v2-match-page .v2-crumb {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.v2-match-page .v2-crumb__back {
+  display: inline-flex;
+}
+
+.v2-match-page__hero {
+  margin-top: var(--space-4);
+}
+
+.v2-match-page__context {
+  margin: 0 0 0.75rem;
+  text-align: center;
+  font-size: var(--font-size-secondary);
+  font-weight: var(--font-weight-medium);
+  color: var(--v2-text-secondary);
+}
+
+.v2-match-card--detail {
+  cursor: default;
+}
+
+.v2-match-card--detail:hover {
+  border-color: var(--border);
+}
+
+a.v2-match-card__side {
+  color: inherit !important;
+  text-decoration: none;
+}
+
+a.v2-match-card__side:hover .v2-match-card__name,
+a.v2-match-card__side:focus-visible .v2-match-card__name {
+  color: var(--v2-primary);
+}
+
+.v2-incident-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--v2-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.v2-incident {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.v2-incident:last-child {
+  border-bottom: 0;
+}
+
+.v2-incident__minute {
+  font-weight: var(--font-weight-bold);
+  color: var(--v2-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-incident__body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.55rem;
+  min-width: 0;
+}
+
+.v2-incident__type {
+  font-weight: var(--font-weight-semibold);
+}
+
+.v2-incident__who,
+.v2-incident__team {
+  color: var(--v2-text-secondary);
+  font-size: var(--font-size-secondary);
+}
+
