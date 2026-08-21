@@ -16,6 +16,8 @@
     ViewBag.SeasonSlug = Model?.SeasonSlug ?? selectedSeason?.Slug;
     ViewBag.LeagueSlug = leagueSlug;
 
+    var hasStandingsRows = Model?.Divisions?.Any(d => d.Data != null && d.Data.Count > 0) == true;
+
     if (league != null)
     {
         PublicWeb.Seo.SeoPageApplicator.Apply(
@@ -31,6 +33,7 @@
 
 @await Html.PartialAsync("~/Views/V2/League/_CompetitionTabs.cshtml")
 
+<div class="v2-standings-page" data-v2-standings-page>
 @if (seasons != null && seasons.Any())
 {
     <form method="get" class="v2-filter-bar" aria-label="Filtros de posiciones">
@@ -77,6 +80,24 @@
     </form>
 }
 
+@if (hasStandingsRows)
+{
+    <div class="v2-standings-toolbar">
+        <button type="button"
+                class="v2-standings-expand"
+                data-v2-standings-expand
+                aria-pressed="false"
+                aria-label="Mostrar todas las estadísticas de la tabla">
+            <svg class="v2-standings-expand__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                <rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" stroke-width="1.75" />
+                <path d="M8.5 4.5v15M15.5 4.5v15M3.5 9.5h17M3.5 14.5h17" stroke="currentColor" stroke-width="1.75" />
+            </svg>
+            <span data-v2-standings-expand-label>Ver todas las estadísticas</span>
+        </button>
+        <p class="v2-standings-scroll-hint">Deslizá la tabla para ver PJ, G, E, P, GF, GC, DG y Pts.</p>
+    </div>
+}
+
 @if (Model != null && Model.Divisions.Any())
 {
     foreach (var div in Model.Divisions)
@@ -104,4 +125,9 @@
 else
 {
     <div class="v2-empty">No hay posiciones disponibles para esta selección.</div>
+}
+</div>
+
+@section Scripts {
+    <script src="~/js/v2/standings.js" asp-append-version="true"></script>
 }
