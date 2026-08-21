@@ -206,10 +206,20 @@ jobs:
             setsid env ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:5002 BackendApi__BaseUrl=http://127.0.0.1:5001/api/public/ PublicWeb__PathBase=/public-web Seo__PublicBaseUrl=https://miliga.com.ar ./PublicWeb > public-web.log 2>&1 < /dev/null &
           fi
 
+          # grep -q closes the pipe early (curl 23) when pipefail is on; load the body first.
+          assert_contains() {
+            local url="$1"
+            local needle="$2"
+            local body
+            body="$(curl -fsS "$url")"
+            printf '%s' "$body" | grep -F -- "$needle" >/dev/null
+          }
+
           sleep 5
           curl -fsS http://127.0.0.1:5001/api/public/liga >/dev/null
-          curl -fsS https://miliga.com.ar/ligas | grep -q "Liga"
+          assert_contains "https://miliga.com.ar/ligas" "Liga"
           curl -fsS http://127.0.0.1:5002/public-web/ >/dev/null
-          curl -fsS http://127.0.0.1:5002/public-web/robots.txt | grep -q "Sitemap:"
-          curl -fsS http://127.0.0.1:5002/public-web/sitemap.xml | grep -q "<urlset"
-          curl -fsSI https://miliga.com.ar/uploads/leagues/70f8835d-3f26-4809-82f0-754a8643d263/documents/a502262536114ae093e972df50c68866.png | grep -qi "image/png"
+          assert_contains "http://127.0.0.1:5002/public-web/robots.txt" "Sitemap:"
+          assert_contains "http://127.0.0.1:5002/public-web/sitemap.xml" "<urlset"
+          headers="$(curl -fsSI https://miliga.com.ar/uploads/leagues/70f8835d-3f26-4809-82f0-754a8643d263/documents/a502262536114ae093e972df50c68866.png)"
+          printf '%s' "$headers" | grep -i "image/png" >/dev/null
