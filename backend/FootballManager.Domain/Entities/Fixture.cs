@@ -26,7 +26,7 @@ namespace FootballManager.Domain.Entities
         public DateOnly? MatchDate { get; private set; }
         public TimeOnly? StartTime { get; private set; }
         public Guid? FieldId { get; private set; }
-        public virtual Field Field { get; private set; }
+        public virtual Field? Field { get; private set; }
         public MatchStatus Status { get; private set; }
 
         public string RefereeName { get; private set; }
@@ -61,8 +61,7 @@ namespace FootballManager.Domain.Entities
             RoundNumber = roundNumber;
             MatchDate = matchDate;
             StartTime = startTime;
-            Field = field ?? throw new ArgumentNullException(nameof(field));
-            FieldId = field.Id;
+            AssignField(field ?? throw new ArgumentNullException(nameof(field)));
             Status = MatchStatus.SCHEDULED;
             RefereeName = string.Empty;
         }
@@ -90,8 +89,7 @@ namespace FootballManager.Domain.Entities
             RoundNumber = roundNumber;
             MatchDate = null;
             StartTime = null;
-            FieldId = null;
-            Field = null;
+            AssignField(null);
             Status = MatchStatus.SCHEDULED;
             RefereeName = string.Empty;
         }
@@ -118,8 +116,7 @@ namespace FootballManager.Domain.Entities
             RoundNumber = roundNumber;
             MatchDate = matchDate;
             StartTime = startTime;
-            Field = field;
-            FieldId = field?.Id;
+            AssignField(field);
             Status = MatchStatus.SCHEDULED;
             RefereeName = string.Empty;
         }
@@ -128,8 +125,7 @@ namespace FootballManager.Domain.Entities
         {
             MatchDate = date;
             StartTime = startTime;
-            Field = field ?? throw new ArgumentNullException(nameof(field));
-            FieldId = field.Id;
+            AssignField(field ?? throw new ArgumentNullException(nameof(field)));
             UpdateTimestamp();
         }
 
@@ -149,12 +145,18 @@ namespace FootballManager.Domain.Entities
                 StartTime = startTime.Value;
 
             if (field != null)
-            {
-                Field = field;
-                FieldId = field.Id;
-            }
+                AssignField(field);
 
             UpdateTimestamp();
+        }
+
+        /// <summary>
+        /// Stores only the FK. Callers often pass Fields loaded with AsNoTracking;
+        /// assigning the navigation would make EF try to INSERT the cancha again.
+        /// </summary>
+        private void AssignField(Field? field)
+        {
+            FieldId = field?.Id;
         }
 
         public void SetReferee(string refereeName)

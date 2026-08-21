@@ -43,7 +43,7 @@ namespace FootballManager.Api.Middleware
             _logger.LogError(exception, "An unhandled exception has occurred.");
 
             var statusCode = HttpStatusCode.InternalServerError;
-            var response = new { error = exception.Message };
+            var response = new { error = GetPublicMessage(exception) };
 
             switch (exception)
             {
@@ -65,6 +65,21 @@ namespace FootballManager.Api.Middleware
             context.Response.StatusCode = (int)statusCode;
 
             await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+
+        private static string GetPublicMessage(Exception exception)
+        {
+            // EF wraps Postgres errors as "See the inner exception for details."
+            if (exception.InnerException != null &&
+                exception.Message.Contains("inner exception", StringComparison.OrdinalIgnoreCase))
+            {
+                var inner = exception;
+                while (inner.InnerException != null)
+                    inner = inner.InnerException;
+                return inner.Message;
+            }
+
+            return exception.Message;
         }
     }
 }
