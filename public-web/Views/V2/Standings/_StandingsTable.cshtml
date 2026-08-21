@@ -29,9 +29,9 @@
                 var teamUrl = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(row.Team.Slug)
                     ? Url.Content($"~/ligas/{leagueSlug}/{row.Team.Slug}")
                     : null;
-                var compactName = !string.IsNullOrWhiteSpace(row.Team.ShortName)
-                    ? row.Team.ShortName.Trim()
-                    : row.Team.Name;
+                var compactName = PublicWeb.Helpers.TeamDisplayHelper.GetCompactName(
+                    row.Team.Name,
+                    row.Team.ShortName);
                 <tr class="@(isLeader ? "is-leader" : null)">
                     <td class="v2-standings-table__pos">@row.Position</td>
                     <td class="v2-standings-table__team">

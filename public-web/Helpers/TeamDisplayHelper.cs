@@ -13,6 +13,23 @@ public static class TeamDisplayHelper
         "F.C", "F.C.", "FC", "CLUB"
     };
 
+    /// <summary>
+    /// Articles, club suffixes and generic prefixes that should not be the
+    /// compact label on a narrow standings table (e.g. "LA" from "LA BARRA FC").
+    /// </summary>
+    private static readonly HashSet<string> CompactSkipTokens = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "LA", "EL", "LOS", "LAS", "LO", "DE", "DEL", "Y", "E",
+        "DA", "DO", "DI", "DAS", "DOS", "A",
+        "FC", "F.C", "F.C.", "CF", "C.F", "C.F.", "CLUB", "AFC",
+        "CA", "C.A", "C.A.",
+        "ATL", "ATL.", "ATLETICO", "ATLÉTICO",
+        "DEF", "DEF.", "DEFENSORES",
+        "DEP", "DEPORTIVO", "SP", "SPORTIVO",
+        "CS", "C.S", "C.S.", "CSD", "CSC",
+        "SOCIAL", "ASOC", "ASOCIACION", "ASOCIACIÓN"
+    };
+
     public static string GetInitials(string? name)
     {
         if (string.IsNullOrWhiteSpace(name)) return "?";
@@ -37,6 +54,48 @@ public static class TeamDisplayHelper
             return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpperInvariant();
 
         return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}";
+    }
+
+    /// <summary>
+    /// Compact label for tight standings columns. Ignores API 3-letter
+    /// ShortName fallbacks like "LA " and keeps the distinctive words.
+    /// </summary>
+    public static string GetCompactName(string? name, string? shortName = null)
+    {
+        var full = (name ?? string.Empty).Trim();
+        if (full.Length == 0) return "—";
+
+        if (IsUsefulShortName(full, shortName))
+            return shortName!.Trim();
+
+        var parts = full
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(p => !CompactSkipTokens.Contains(p))
+            .Where(p => !p.All(char.IsDigit))
+            .ToList();
+
+        if (parts.Count == 0) return full;
+        return string.Join(" ", parts);
+    }
+
+    private static bool IsUsefulShortName(string fullName, string? shortName)
+    {
+        if (string.IsNullOrWhiteSpace(shortName)) return false;
+
+        var compact = shortName.Trim();
+        if (compact.Length < 3) return false;
+        if (CompactSkipTokens.Contains(compact)) return false;
+        if (compact.Equals(fullName, StringComparison.OrdinalIgnoreCase)) return false;
+
+        // Public API fills empty ShortName with the first 3 characters ("LA ").
+        var fallback = fullName.Substring(0, Math.Min(fullName.Length, 3));
+        if (compact.Equals(fallback, StringComparison.OrdinalIgnoreCase) ||
+            compact.Equals(fallback.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public static bool IsFinished(string? status)
