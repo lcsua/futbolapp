@@ -1,6 +1,8 @@
 @model PublicWeb.Models.Public.SeasonGroupedViewModel<PublicWeb.Models.Public.StandingsRowViewModel>
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    ViewBag.LeagueDetails = true;
+    ViewBag.OverlayGlobalHeader = true;
     var league = ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
     var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
     var leagueSlug = league?.Slug ?? string.Empty;

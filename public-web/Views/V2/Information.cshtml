@@ -1,6 +1,8 @@
 @model PublicWeb.Models.Public.LeagueViewModel
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    ViewBag.LeagueDetails = true;
+    ViewBag.OverlayGlobalHeader = true;
     var league = Model;
     var leagueSlug = league.Slug;
     var docs = ViewBag.LeagueDocuments as PublicWeb.Models.Public.LeagueDocumentsViewModel;

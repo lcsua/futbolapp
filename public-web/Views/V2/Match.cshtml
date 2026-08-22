@@ -1,6 +1,8 @@
 @model PublicWeb.Models.Public.MatchViewModel
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    ViewBag.LeagueDetails = true;
+    ViewBag.OverlayGlobalHeader = true;
     var league = ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
     var leagueSlug = ViewBag.LeagueSlug as string ?? Model.LeagueSlug ?? string.Empty;
     var backHref = ViewBag.BackHref as string ?? Url.Content("~/ligas");

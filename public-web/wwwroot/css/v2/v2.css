@@ -2944,6 +2944,7 @@ a.v2-standings-preview__team:focus-visible .v2-standings-preview__name {
 }
 
 .v2-standings-preview__name {
+  color: var(--v2-text);
   font-size: 0.875rem;
   font-weight: 650;
   line-height: 1.25;
@@ -2994,6 +2995,10 @@ a.v2-standings-preview__team:focus-visible .v2-standings-preview__name {
   }
 }
 
+.v2-app a.v2-team-chip {
+  color: var(--v2-text);
+}
+
 .v2-team-chip {
   display: flex;
   align-items: center;
@@ -3020,7 +3025,9 @@ a.v2-standings-preview__team:focus-visible .v2-standings-preview__name {
 }
 
 .v2-team-chip:hover,
-.v2-team-chip:focus-visible {
+.v2-team-chip:focus-visible,
+.v2-app a.v2-team-chip:hover,
+.v2-app a.v2-team-chip:focus-visible {
   border-color: color-mix(in srgb, var(--v2-primary) 35%, var(--border));
   color: var(--v2-primary);
 }
@@ -4474,6 +4481,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-home-match__name {
+  color: var(--v2-text);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.15;
