@@ -29,18 +29,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@title</title>
 
-    <script>
-        (function () {
-            try {
-                var t = localStorage.getItem('miliga-v2-theme');
-                if (t !== 'green' && t !== 'blue') t = 'blue';
-                document.documentElement.setAttribute('data-v2-theme-boot', t);
-            } catch (e) {
-                document.documentElement.setAttribute('data-v2-theme-boot', 'blue');
-            }
-        })();
-    </script>
-
     <meta name="description" content="@description" />
     @if (noIndex)
     {
@@ -61,7 +49,7 @@
     <meta name="twitter:description" content="@description" />
     <meta name="twitter:image" content="@ogImage" />
 
-    <meta id="v2-theme-color" name="theme-color" content="#2563EB" />
+    <meta name="theme-color" content="#0F172A" />
 
     <link id="miliga-favicon" rel="icon" href="~/branding/favicon.ico" asp-append-version="true" sizes="any" />
     <link id="miliga-favicon-32" rel="icon" type="image/png" sizes="32x32" href="~/branding/favicon-32x32.png" asp-append-version="true" />
@@ -103,29 +91,7 @@
     }
 </head>
 <body>
-<div class="v2-app@(ViewBag.OverlayGlobalHeader == true ? " v2-app--hero-header" : null)" id="v2-app-root" data-v2-theme="blue">
-    <script>
-        (function () {
-            var root = document.getElementById('v2-app-root');
-            if (!root) return;
-            var t = document.documentElement.getAttribute('data-v2-theme-boot') || 'blue';
-            root.setAttribute('data-v2-theme', t);
-            var pathBase = document.documentElement.getAttribute('data-path-base') || '';
-            var base = (pathBase.replace(/\/$/, '') || '') + '/branding/' + t;
-            root.querySelectorAll('[data-v2-brand="logo-nav"]').forEach(function (img) {
-                img.setAttribute('src', base + '/logo-dark.svg');
-            });
-            root.querySelectorAll('[data-v2-brand="icon"]').forEach(function (img) {
-                img.setAttribute('src', base + '/icon.svg');
-            });
-            root.querySelectorAll('[data-v2-brand="icon-192"]').forEach(function (img) {
-                img.setAttribute('src', base + '/icon-192.png');
-            });
-            var tc = document.getElementById('v2-theme-color');
-            if (tc) tc.setAttribute('content', t === 'green' ? '#16A34A' : '#2563EB');
-        })();
-    </script>
-
+<div class="v2-app@(ViewBag.OverlayGlobalHeader == true ? " v2-app--hero-header" : null)" id="v2-app-root">
     @await Html.PartialAsync("~/Views/Shared/V2/_V2Header.cshtml")
 
     <main class="v2-main@(ViewBag.LeagueDetails == true ? " v2-league-details" : null)">

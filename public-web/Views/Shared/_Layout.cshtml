@@ -5,19 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Mi Liga</title>
 
-    @* Prevent FOUC: restore theme before CSS paints *@
-    <script>
-        (function () {
-            try {
-                var t = localStorage.getItem('miliga-theme');
-                if (t !== 'green' && t !== 'blue') t = 'blue';
-                document.documentElement.setAttribute('data-theme', t);
-            } catch (e) {
-                document.documentElement.setAttribute('data-theme', 'blue');
-            }
-        })();
-    </script>
-    
     <!-- SEO and OpenGraph -->
     <meta name="description" content="@(ViewData["Description"] ?? "Gestioná tu liga de fútbol fácilmente con resultados, tabla y fixture automático.")" />
     <meta property="og:title" content="@ViewData["Title"] - Mi Liga" />
@@ -25,7 +12,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://miliga.com.ar" />
     <meta property="og:site_name" content="Mi Liga" />
-    <meta id="miliga-theme-color" name="theme-color" content="#2563EB" />
+    <meta name="theme-color" content="#0F172A" />
 
     <link id="miliga-favicon" rel="icon" href="~/branding/favicon.ico" asp-append-version="true" sizes="any" />
     <link id="miliga-favicon-32" rel="icon" type="image/png" sizes="32x32" href="~/branding/favicon-32x32.png" asp-append-version="true" />
@@ -86,44 +73,6 @@
                         </li>
                     </ul>
                     <ul class="navbar-nav align-items-lg-center gap-lg-2">
-                        <li class="nav-item dropdown miliga-theme-toggle">
-                            <button class="btn btn-sm btn-outline-light miliga-theme-trigger" type="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false" title="Apariencia"
-                                    aria-label="Elegir apariencia del sitio">
-                                <svg class="miliga-theme-trigger-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                    <path d="M12 3a9 9 0 1 0 0 18 3.5 3.5 0 0 0 0-7 2.5 2.5 0 0 1 0-5A9 9 0 0 0 12 3Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
-                                    <circle cx="7.5" cy="10" r="1.1" fill="currentColor"/>
-                                    <circle cx="10.5" cy="7" r="1.1" fill="currentColor"/>
-                                    <circle cx="14.5" cy="7.5" r="1.1" fill="currentColor"/>
-                                </svg>
-                                <span class="miliga-theme-trigger-label">Apariencia</span>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end miliga-theme-menu shadow border-0" role="menu" aria-label="Apariencia">
-                                <li><h6 class="dropdown-header">Apariencia</h6></li>
-                                <li>
-                                    <button type="button" class="dropdown-item miliga-theme-option"
-                                            role="menuitemradio" data-theme-option="blue" aria-checked="false">
-                                        <span class="miliga-theme-swatch miliga-theme-swatch--blue" aria-hidden="true"></span>
-                                        <span class="miliga-theme-option-text">
-                                            <span class="miliga-theme-option-title">Clásico</span>
-                                            <span class="miliga-theme-option-desc">Azul</span>
-                                        </span>
-                                        <span class="miliga-theme-check" aria-hidden="true">✓</span>
-                                    </button>
-                                </li>
-                                <li>
-                                    <button type="button" class="dropdown-item miliga-theme-option"
-                                            role="menuitemradio" data-theme-option="green" aria-checked="false">
-                                        <span class="miliga-theme-swatch miliga-theme-swatch--green" aria-hidden="true"></span>
-                                        <span class="miliga-theme-option-text">
-                                            <span class="miliga-theme-option-title">Césped</span>
-                                            <span class="miliga-theme-option-desc">Verde</span>
-                                        </span>
-                                        <span class="miliga-theme-check" aria-hidden="true">✓</span>
-                                    </button>
-                                </li>
-                            </ul>
-                        </li>
                         <li class="nav-item">
                             <a class="btn btn-outline-light btn-sm" href="@Url.Content("~/login")">Iniciar sesión</a>
                         </li>

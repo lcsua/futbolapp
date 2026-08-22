@@ -12,11 +12,12 @@ body {
 }
 
 .v2-app {
-  --v2-primary: #2563EB;
-  --v2-primary-dark: #1D4ED8;
-  --v2-accent: #38BDF8;
-  --v2-navy: #0B1220;
-  --v2-background: #F1F5F9;
+  --v2-brand: #2563EB;
+  --v2-primary: #16A34A;
+  --v2-primary-dark: #15803D;
+  --v2-accent: #4ADE80;
+  --v2-navy: #0F172A;
+  --v2-background: #F5F7FA;
   --v2-surface: #FFFFFF;
   --v2-text: #0F172A;
   --v2-text-secondary: #64748B;
@@ -94,17 +95,15 @@ body {
   overflow-x: clip;
 }
 
-.v2-app[data-v2-theme="green"] {
+/* Leftover dual-theme forks: keep selectors so old markup/attrs cannot diverge. */
+.v2-app[data-v2-theme="green"],
+.v2-app[data-v2-theme="blue"] {
+  --v2-brand: #2563EB;
   --v2-primary: #16A34A;
   --v2-primary-dark: #15803D;
   --v2-accent: #4ADE80;
   --v2-navy: #0F172A;
-  --v2-background: #F8FAFC;
-}
-
-.v2-app[data-v2-theme="blue"] {
-  --v2-navy: #0B1220;
-  --v2-background: #F1F5F9;
+  --v2-background: #F5F7FA;
 }
 
 /* League Details: green as the interactive accent. Global header stays on the site theme. */
@@ -147,7 +146,7 @@ body {
 .v2-app a:focus-visible,
 .v2-app button:focus-visible,
 .v2-app select:focus-visible {
-  outline: 2px solid var(--v2-accent);
+  outline: 2px solid var(--v2-brand);
   outline-offset: 2px;
 }
 
@@ -278,7 +277,7 @@ body {
 .v2-nav a:hover { color: #fff; }
 .v2-nav a.is-active {
   color: #fff;
-  border-bottom-color: var(--v2-accent);
+  border-bottom-color: var(--v2-brand);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -288,6 +287,7 @@ body {
   gap: var(--space-2);
 }
 
+/* Leftover dual-theme controls — markup removed; delete in a later CSS cleanup. */
 .v2-theme-select {
   appearance: none;
   -webkit-appearance: none;
@@ -404,7 +404,7 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.v2-mobile-nav a.is-active { color: var(--v2-accent); }
+.v2-mobile-nav a.is-active { color: var(--v2-brand); }
 
 .v2-preview-link-mobile {
   color: rgba(255, 255, 255, 0.42) !important;
@@ -467,19 +467,6 @@ body {
 .v2-header--overlay .v2-brand,
 .v2-header--overlay .v2-nav {
   display: none;
-}
-
-.v2-header--overlay .v2-theme-toggle,
-.v2-header--overlay .v2-theme-select {
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
-
-.v2-header--overlay .v2-theme-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8l3.5-3.5' stroke='%23FFFFFF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 .v2-header--overlay .v2-menu-btn {

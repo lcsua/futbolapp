@@ -5,21 +5,23 @@
 /* -------------------------------------------------------------------------- */
 :root,
 [data-theme="blue"] {
-  --primary: #2563EB;
-  --primary-dark: #1D4ED8;
-  --primary-rgb: 37, 99, 235;
-  --navy: #0B1220;
-  --navy-light: #111827;
-  --navy-rgb: 11, 18, 32;
-  --accent: #38BDF8;
-  --accent-rgb: 56, 189, 248;
-  --background: #F1F5F9;
+  --brand: #2563EB;
+  --primary: #16A34A;
+  --primary-dark: #15803D;
+  --primary-rgb: 22, 163, 74;
+  --navy: #0F172A;
+  --navy-light: #1E293B;
+  --navy-rgb: 15, 23, 42;
+  --accent: #4ADE80;
+  --accent-rgb: 74, 222, 128;
+  --background: #F5F7FA;
   --surface: #FFFFFF;
   --text: #0F172A;
   --text-secondary: #64748B;
   --warning: #F59E0B;
   --danger: #EF4444;
   --border: #E2E8F0;
+  --gold: #D4AF37;
   --brand-folder: blue;
 
   /* Bootstrap 5.3 theme hooks */
@@ -36,23 +38,26 @@
 /* -------------------------------------------------------------------------- */
 /* Theme 1: Verde + Azul Noche                                               */
 /* -------------------------------------------------------------------------- */
+/* Leftover dual-theme fork: same official tokens so old attrs cannot diverge. */
 [data-theme="green"] {
+  --brand: #2563EB;
   --primary: #16A34A;
   --primary-dark: #15803D;
   --primary-rgb: 22, 163, 74;
   --navy: #0F172A;
   --navy-light: #1E293B;
   --navy-rgb: 15, 23, 42;
-  --accent: #22C55E;
-  --accent-rgb: 34, 197, 94;
-  --background: #F8FAFC;
+  --accent: #4ADE80;
+  --accent-rgb: 74, 222, 128;
+  --background: #F5F7FA;
   --surface: #FFFFFF;
   --text: #0F172A;
   --text-secondary: #64748B;
   --warning: #F59E0B;
   --danger: #EF4444;
   --border: #E2E8F0;
-  --brand-folder: green;
+  --gold: #D4AF37;
+  --brand-folder: blue;
 
   --bs-primary: var(--primary);
   --bs-primary-rgb: var(--primary-rgb);
