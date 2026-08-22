@@ -10,32 +10,93 @@
     var posClass = standing?.Position == 1 ? "is-champion" : null;
     var leagueSlug = league?.Slug ?? ViewBag.LeagueSlug as string ?? "";
     var teamSlug = Model.Team.Slug;
+    var seasonBits = new List<string>();
+    if (Model.Season != null) seasonBits.Add(Model.Season.Name);
+    if (!string.IsNullOrWhiteSpace(standing?.DivisionName))
+    {
+        var division = standing.DivisionName.Contains("divisi", StringComparison.OrdinalIgnoreCase)
+            ? standing.DivisionName
+            : $"División {standing.DivisionName}";
+        seasonBits.Add(division);
+    }
 }
-<header class="v2-team-header v2-team-hero">
-    <div class="v2-team-header__identity v2-team-hero__identity">
+<header class="v2-team-hero">
+    <div class="v2-team-hero__inner">
+        @if (league != null)
+        {
+            <a class="v2-team-hero__back" href="@Url.Content($"~/ligas/{leagueSlug}")">
+                <span aria-hidden="true">‹</span> @league.Name
+            </a>
+        }
+        else
+        {
+            <a class="v2-team-hero__back" href="@Url.Content("~/ligas")">
+                <span aria-hidden="true">‹</span> Ligas
+            </a>
+        }
+
         @{
             ViewData["BadgeSize"] = "lg";
             ViewData["BadgeDecorative"] = false;
             ViewData["PreferFullLogo"] = true;
+            ViewData["RequireRealLogo"] = true;
+            ViewData["BadgeEager"] = true;
         }
         @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Team)
-        <div class="v2-team-header__copy v2-team-hero__copy">
-            <h1 class="v2-team-header__name v2-team-hero__name">@Model.Team.Name</h1>
+        @{
+            ViewData.Remove("BadgeSize");
+            ViewData.Remove("BadgeDecorative");
+            ViewData.Remove("PreferFullLogo");
+            ViewData.Remove("RequireRealLogo");
+            ViewData.Remove("BadgeEager");
+        }
+
+        <div class="v2-team-hero__copy">
+            <h1 class="v2-team-hero__name">@Model.Team.Name</h1>
             @if (league != null)
             {
-                <p class="v2-team-header__league v2-team-hero__league">@league.Name</p>
+                <p class="v2-team-hero__league">@league.Name</p>
             }
-            <p class="v2-team-header__sub v2-team-hero__sub">
-                @{
-                    var bits = new List<string>();
-                    if (Model.Season != null) bits.Add(Model.Season.Name);
-                    if (!string.IsNullOrWhiteSpace(standing?.DivisionName)) bits.Add(standing.DivisionName);
-                }
-                @string.Join(" · ", bits)
-            </p>
+            @if (seasonBits.Count > 0)
+            {
+                <p class="v2-team-hero__sub">@string.Join(" · ", seasonBits)</p>
+            }
+        </div>
+
+        <div class="v2-team-hero__aside">
+            @if (standing != null)
+            {
+                <div class="v2-hero-stats" role="list" aria-label="Resumen de temporada">
+                    <div class="v2-hero-stat @posClass" role="listitem">
+                        <span class="v2-hero-stat__value">@standing.Position°</span>
+                        <span class="v2-hero-stat__label"><span class="v2-lbl-full">Posición</span><span class="v2-lbl-short">Pos</span></span>
+                    </div>
+                    <div class="v2-hero-stat" role="listitem">
+                        <span class="v2-hero-stat__value">@standing.Points</span>
+                        <span class="v2-hero-stat__label"><span class="v2-lbl-full">Puntos</span><span class="v2-lbl-short">Pts</span></span>
+                    </div>
+                    <div class="v2-hero-stat" role="listitem">
+                        <span class="v2-hero-stat__value">@standing.Played</span>
+                        <span class="v2-hero-stat__label">PJ</span>
+                    </div>
+                    <div class="v2-hero-stat" role="listitem">
+                        <span class="v2-hero-stat__value">@dg</span>
+                        <span class="v2-hero-stat__label">DG</span>
+                    </div>
+                </div>
+            }
+
             @if (!string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(teamSlug))
             {
-                <div class="v2-team-header__actions">
+                <div class="v2-team-hero__actions">
+                    @{
+                        ViewData["FollowScopeType"] = "Team";
+                        ViewData["FollowScopeId"] = Model.Team.Id;
+                        ViewData["FollowLabel"] = "Seguir equipo";
+                        ViewData["FollowFollowingLabel"] = "Siguiendo";
+                        ViewData["FollowCompact"] = true;
+                    }
+                    @await Html.PartialAsync("~/Views/Shared/V2/_FollowButton.cshtml")
                     @{
                         ViewData["ShareTitle"] = Model.Team.Name;
                         ViewData["ShareText"] = league != null
@@ -45,38 +106,8 @@
                         ViewData["ShareCompact"] = true;
                     }
                     @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
-                    @{
-                        ViewData["FollowScopeType"] = "Team";
-                        ViewData["FollowScopeId"] = Model.Team.Id;
-                        ViewData["FollowLabel"] = "Seguir equipo";
-                        ViewData["FollowFollowingLabel"] = "Siguiendo";
-                        ViewData["FollowCompact"] = true;
-                    }
-                    @await Html.PartialAsync("~/Views/Shared/V2/_FollowButton.cshtml")
                 </div>
             }
         </div>
     </div>
-
-    @if (standing != null)
-    {
-        <div class="v2-hero-stats" role="list" aria-label="Resumen de temporada">
-            <div class="v2-hero-stat @posClass" role="listitem">
-                <span class="v2-hero-stat__value">@standing.Position°</span>
-                <span class="v2-hero-stat__label"><span class="v2-lbl-full">Posición</span><span class="v2-lbl-short">Pos</span></span>
-            </div>
-            <div class="v2-hero-stat" role="listitem">
-                <span class="v2-hero-stat__value">@standing.Points</span>
-                <span class="v2-hero-stat__label"><span class="v2-lbl-full">Puntos</span><span class="v2-lbl-short">Pts</span></span>
-            </div>
-            <div class="v2-hero-stat" role="listitem">
-                <span class="v2-hero-stat__value">@standing.Played</span>
-                <span class="v2-hero-stat__label">PJ</span>
-            </div>
-            <div class="v2-hero-stat" role="listitem">
-                <span class="v2-hero-stat__value">@dg</span>
-                <span class="v2-hero-stat__label">DG</span>
-            </div>
-        </div>
-    }
 </header>

@@ -1,6 +1,7 @@
 @model PublicWeb.Models.Public.TeamDetailViewModel
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    ViewBag.OverlayGlobalHeader = true;
     var league = Model.League ?? ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
     var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
     var summary = ViewBag.V2Summary as PublicWeb.Models.Public.TeamDetailViewModel ?? Model;
