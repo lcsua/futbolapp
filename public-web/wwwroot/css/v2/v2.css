@@ -500,7 +500,7 @@ body {
 }
 
 .v2-app--hero-header .v2-league-hero {
-  padding-top: calc(2.85rem + env(safe-area-inset-top, 0px));
+  padding-top: calc(2.35rem + env(safe-area-inset-top, 0px));
 }
 
 @media (min-width: 768px) {
@@ -508,7 +508,7 @@ body {
   .v2-header--overlay .v2-mobile-nav { display: none; }
   .v2-header--overlay .v2-mobile-nav.is-open { display: block; }
   .v2-app--hero-header .v2-league-hero {
-    padding-top: calc(3rem + env(safe-area-inset-top, 0px));
+    padding-top: calc(2.55rem + env(safe-area-inset-top, 0px));
   }
 }
 
@@ -3950,7 +3950,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   max-width: 100vw;
   margin-inline: calc(50% - 50vw);
   margin-bottom: var(--space-2);
-  padding: 0.65rem 0 0.8rem;
+  padding: 0.5rem 0 0.55rem;
   color: #fff;
   background-color: var(--v2-navy);
   background-image:
@@ -3966,7 +3966,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
       var(--hero-overlay),
       url("../../assets/miliga-ui/backgrounds/league-hero-desktop.webp");
     background-position: center 42%;
-    padding: 1.15rem 0 1.35rem;
+    padding: 0.95rem 0 1.05rem;
   }
 }
 
@@ -3984,13 +3984,13 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.26rem;
   text-align: center;
 }
 
 .v2-league-hero__logo {
-  width: 4.25rem;
-  height: 4.25rem;
+  width: 3.6rem;
+  height: 3.6rem;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.4);
   background: #fff;
@@ -4007,7 +4007,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   height: 100%;
   object-fit: contain;
   object-position: center;
-  padding: 0.3rem;
+  padding: 0.22rem;
 }
 
 .v2-league-hero__initials {
@@ -4031,7 +4031,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.2rem;
   min-width: 0;
   width: 100%;
 }
@@ -4048,32 +4048,32 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-league-hero__lead {
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.14em;
-  line-height: 1.2;
+  line-height: 1.15;
   opacity: 0.88;
 }
 
 .v2-league-hero__title {
-  font-size: clamp(1.15rem, 5vw, 1.55rem);
+  font-size: clamp(1.06rem, 4.5vw, 1.38rem);
   font-weight: var(--font-weight-extrabold);
   letter-spacing: var(--letter-tight);
-  line-height: 1.08;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  line-height: 1.06;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .v2-league-hero__season {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.28rem;
   margin: 0;
-  padding: 0.2rem 0.6rem;
+  padding: 0.12rem 0.5rem;
   border-radius: 999px;
   background: var(--v2-primary);
   color: #fff;
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -4081,18 +4081,18 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-league-hero__season .v2-ui-icon {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
 .v2-league-hero__location {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   margin: 0;
   color: rgba(255, 255, 255, 0.88);
-  font-size: 0.75rem;
-  line-height: 1.3;
+  font-size: 0.7rem;
+  line-height: 1.2;
   max-width: 100%;
 }
 
@@ -4100,8 +4100,8 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.35rem 0.85rem;
-  margin: 0.15rem 0 0;
+  gap: 0.15rem 0.55rem;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -4109,24 +4109,24 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 .v2-league-hero__stats li {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.28rem;
+  gap: 0.2rem;
   color: #fff;
 }
 
 .v2-league-hero__stats .v2-ui-icon {
-  width: 0.85rem;
-  height: 0.85rem;
+  width: 0.75rem;
+  height: 0.75rem;
   align-self: center;
 }
 
 .v2-league-hero__stat-num {
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.01em;
 }
 
 .v2-league-hero__stat-lbl {
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -4138,7 +4138,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   flex-wrap: nowrap;
   align-items: stretch;
   justify-content: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
   width: 100%;
 }
 
@@ -4151,9 +4151,9 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 .v2-league-hero .v2-follow-btn,
 .v2-league-hero .v2-share-btn {
   width: 100%;
-  min-height: 2.15rem;
-  padding: 0.35rem 0.55rem;
-  font-size: 0.72rem;
+  min-height: 1.95rem;
+  padding: 0.28rem 0.5rem;
+  font-size: 0.7rem;
 }
 
 .v2-league-hero .v2-follow-btn {
@@ -4205,7 +4205,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
 @media (min-width: 992px) {
   .v2-league-hero {
-    padding: 1.35rem 0 1.5rem;
+    padding: 1.1rem 0 1.2rem;
   }
 
   .v2-league-hero__inner {
@@ -4214,12 +4214,12 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
     align-items: center;
     text-align: left;
     column-gap: 1.25rem;
-    row-gap: 0.5rem;
+    row-gap: 0.35rem;
   }
 
   .v2-league-hero__logo {
-    width: 6.75rem;
-    height: 6.75rem;
+    width: 6.25rem;
+    height: 6.25rem;
   }
 
   .v2-league-hero__initials { font-size: 1.65rem; }
@@ -4229,13 +4229,13 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   }
 
   .v2-league-hero__title {
-    font-size: clamp(1.55rem, 2.2vw, 2.15rem);
+    font-size: clamp(1.5rem, 2.1vw, 2.05rem);
   }
 
   .v2-league-hero__stats {
     justify-content: flex-start;
-    gap: 1.25rem;
-    margin-top: 0.45rem;
+    gap: 1.1rem;
+    margin-top: 0.25rem;
   }
 
   .v2-league-hero__stats li {
@@ -4273,8 +4273,8 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
 @media (max-width: 374.98px) {
   .v2-league-hero__logo {
-    width: 3.75rem;
-    height: 3.75rem;
+    width: 3.25rem;
+    height: 3.25rem;
   }
 }
 
