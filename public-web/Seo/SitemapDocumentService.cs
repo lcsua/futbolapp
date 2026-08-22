@@ -47,6 +47,16 @@ public sealed class SitemapDocumentService
 
     public string GetRobotsTxt()
     {
+        if (!_urls.AllowIndexing)
+        {
+            return
+                """
+                User-agent: *
+                Disallow: /
+
+                """.Replace("\r\n", "\n");
+        }
+
         var sitemap = _urls.Absolute("/sitemap.xml");
         return
             $"""

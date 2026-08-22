@@ -1,0 +1,148 @@
+name: Deploy Public Web (develop)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'public-web/**'
+      - 'deploy/nginx/develop.miliga.com.ar.conf'
+      - 'deploy/nginx/develop.miliga.com.ar.http.conf'
+      - '.github/workflows/deploy-public-web-dev.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore dependencies
+      working-directory: ./public-web
+      run: dotnet restore
+
+    - name: Build
+      working-directory: ./public-web
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Publish
+      working-directory: ./public-web
+      run: >
+        dotnet publish --configuration Release --runtime linux-x64 --self-contained true
+        --output ./publish -p:AssemblyName=PublicWebDev
+
+    - name: Copy files via SSH
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        source: "public-web/publish/*"
+        target: "/home/lucas/apps/futbolnet/web-dev"
+        strip_components: 2
+
+    - name: Copy nginx templates via SSH
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        source: "deploy/nginx/*"
+        target: "/home/lucas/apps/futbolnet/deploy-dev-nginx"
+        strip_components: 2
+
+    - name: Start Public Web (develop)
+      uses: appleboy/ssh-action@v1.0.3
+      env:
+        SUDO_PASSWORD: ${{ secrets.SSH_SUDO_PASSWORD }}
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        envs: SUDO_PASSWORD
+        script: |
+          set -euo pipefail
+          chmod +x /home/lucas/apps/futbolnet/web-dev/PublicWebDev
+
+          if [ -z "$SUDO_PASSWORD" ]; then
+            echo "SSH_SUDO_PASSWORD is required to install the develop systemd unit and nginx vhost."
+            exit 1
+          fi
+
+          service_file="$(mktemp)"
+          cat > "$service_file" <<'EOF'
+          [Unit]
+          Description=FutbolNet Public Web (develop)
+          After=network.target
+
+          [Service]
+          WorkingDirectory=/home/lucas/apps/futbolnet/web-dev
+          ExecStart=/home/lucas/apps/futbolnet/web-dev/PublicWebDev
+          Restart=always
+          RestartSec=10
+          KillSignal=SIGINT
+          SyslogIdentifier=futbolnet-web-dev
+          User=lucas
+          Environment=ASPNETCORE_ENVIRONMENT=Production
+          Environment=ASPNETCORE_URLS=http://127.0.0.1:5003
+          Environment=BackendApi__BaseUrl=http://127.0.0.1:5001/api/public/
+          Environment=Seo__PublicBaseUrl=https://develop.miliga.com.ar
+          Environment=Seo__AllowIndexing=false
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          sudo_run() {
+            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' "$@"
+          }
+
+          sudo_run mv "$service_file" /etc/systemd/system/futbolnet-web-dev.service
+          sudo_run mkdir -p /var/www/letsencrypt /etc/nginx/sites-available /etc/nginx/sites-enabled
+
+          http_conf="/home/lucas/apps/futbolnet/deploy-dev-nginx/develop.miliga.com.ar.http.conf"
+          tls_conf="/home/lucas/apps/futbolnet/deploy-dev-nginx/develop.miliga.com.ar.conf"
+          site="/etc/nginx/sites-available/futbolnet-dev"
+          cert="/etc/letsencrypt/live/develop.miliga.com.ar/fullchain.pem"
+
+          if [ ! -f "$cert" ]; then
+            sudo_run cp "$http_conf" "$site"
+            sudo_run ln -sfn "$site" /etc/nginx/sites-enabled/futbolnet-dev
+            sudo_run nginx -t
+            sudo_run systemctl reload nginx
+            sudo_run certbot certonly --webroot -w /var/www/letsencrypt \
+              -d develop.miliga.com.ar \
+              --non-interactive --agree-tos --register-unsafely-without-email
+          fi
+
+          sudo_run cp "$tls_conf" "$site"
+          sudo_run ln -sfn "$site" /etc/nginx/sites-enabled/futbolnet-dev
+          sudo_run nginx -t
+          sudo_run systemctl reload nginx
+          sudo_run systemctl daemon-reload
+          sudo_run systemctl enable futbolnet-web-dev
+          sudo_run systemctl restart futbolnet-web-dev
+          sudo_run systemctl is-active --quiet futbolnet-web-dev
+
+          assert_contains() {
+            local url="$1"
+            local needle="$2"
+            local body
+            body="$(curl -fsS "$url")"
+            printf '%s' "$body" | grep -F -- "$needle" >/dev/null
+          }
+
+          sleep 5
+          curl -fsS http://127.0.0.1:5001/api/public/liga >/dev/null
+          curl -fsS http://127.0.0.1:5003/ >/dev/null
+          assert_contains "http://127.0.0.1:5003/robots.txt" "Disallow: /"
+          curl -fsS https://develop.miliga.com.ar/ >/dev/null
+          headers="$(curl -fsSI https://develop.miliga.com.ar/uploads/leagues/70f8835d-3f26-4809-82f0-754a8643d263/documents/a502262536114ae093e972df50c68866.png)"
+          printf '%s' "$headers" | grep -i "image/png" >/dev/null

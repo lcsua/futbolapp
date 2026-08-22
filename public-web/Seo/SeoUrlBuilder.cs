@@ -13,6 +13,8 @@ public sealed class SeoUrlBuilder
 
     public string PublicBaseUrl => _options.PublicBaseUrl.TrimEnd('/');
 
+    public bool AllowIndexing => _options.AllowIndexing;
+
     public string Absolute(string? pathAndQuery)
     {
         var path = string.IsNullOrWhiteSpace(pathAndQuery) ? "/" : pathAndQuery.Trim();

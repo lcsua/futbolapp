@@ -18,7 +18,8 @@
     var canonical = seoUrls.Absolute(canonicalPath);
     var ogImage = seoUrls.AbsoluteMedia(ViewData["OgImage"] as string);
     var ogType = ViewData["OgType"] as string ?? "website";
-    var noIndex = ViewData["NoIndex"] as bool? == true;
+    var allowIndexing = seoOptions.AllowIndexing;
+    var noIndex = !allowIndexing || ViewData["NoIndex"] as bool? == true;
     var crumbs = ViewBag.SeoBreadcrumbs as IReadOnlyList<PublicWeb.Seo.SeoBreadcrumbItem>;
     var breadcrumbJson = PublicWeb.Seo.SeoJsonLd.BreadcrumbList(crumbs, seoUrls);
     var siteJson = PublicWeb.Seo.SeoJsonLd.WebsiteAndOrganization(seoUrls, seoOptions);
@@ -43,7 +44,7 @@
     <meta name="description" content="@description" />
     @if (noIndex)
     {
-        <meta name="robots" content="noindex, follow" />
+        <meta name="robots" content="@(allowIndexing ? "noindex, follow" : "noindex, nofollow")" />
     }
     <link rel="canonical" href="@canonical" />
 
@@ -68,6 +69,8 @@
     <link id="miliga-apple-touch" rel="apple-touch-icon" sizes="180x180" href="~/branding/apple-touch-icon.png" asp-append-version="true" />
     <link rel="manifest" href="~/branding/site.webmanifest" asp-append-version="true" />
 
+    @if (allowIndexing)
+    {
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-RDP3H0YFV9"></script>
     <script>
@@ -85,6 +88,7 @@
             y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
         })(window, document, "clarity", "script", "xyv8aibxjo");
     </script>
+    }
 
     <link rel="icon" href="~/branding/blue/favicon.ico" asp-append-version="true" sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

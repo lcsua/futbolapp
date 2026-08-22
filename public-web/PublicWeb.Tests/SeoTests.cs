@@ -126,6 +126,31 @@ public class RobotsTxtTests
         Assert.DoesNotContain("Disallow: /ligas", robots);
     }
 
+    [Fact]
+    public void Robots_WhenIndexingDisabled_DisallowsAll()
+    {
+        var opts = Microsoft.Extensions.Options.Options.Create(new SeoOptions
+        {
+            PublicBaseUrl = "https://develop.miliga.com.ar",
+            AllowIndexing = false
+        });
+        var urls = new SeoUrlBuilder(opts);
+        var svc = new SitemapDocumentService(
+            new FakeHttpClientFactory(),
+            new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()),
+            urls,
+            new PublicWeb.Services.Public.ProfessionalFootballPublicService(
+                new FakeHttpClientFactory(),
+                new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()),
+                Microsoft.Extensions.Logging.Abstractions.NullLogger<PublicWeb.Services.Public.ProfessionalFootballPublicService>.Instance),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<SitemapDocumentService>.Instance);
+
+        var robots = svc.GetRobotsTxt();
+        Assert.Contains("User-agent: *", robots);
+        Assert.Contains("Disallow: /", robots);
+        Assert.DoesNotContain("Sitemap:", robots);
+    }
+
     private sealed class FakeHttpClientFactory : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => new(new FakeHandler()) { BaseAddress = new Uri("http://127.0.0.1/api/public/") };
