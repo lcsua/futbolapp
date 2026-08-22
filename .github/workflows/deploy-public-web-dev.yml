@@ -112,7 +112,8 @@ jobs:
           site="/etc/nginx/sites-available/futbolnet-dev"
           cert="/etc/letsencrypt/live/develop.miliga.com.ar/fullchain.pem"
 
-          if [ ! -f "$cert" ]; then
+          # live/ is root-only; a non-sudo test always looks missing and re-runs certbot.
+          if ! sudo_run test -f "$cert"; then
             sudo_run cp "$http_conf" "$site"
             sudo_run ln -sfn "$site" /etc/nginx/sites-enabled/futbolnet-dev
             sudo_run nginx -t
