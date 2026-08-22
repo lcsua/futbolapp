@@ -3,80 +3,113 @@
     var league = Model ?? ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
     var seasonName = ViewBag.SeasonName as string;
     var leagueSlug = ViewBag.LeagueSlug as string ?? league?.Slug ?? "";
-    var season = ViewBag.SeasonSlug as string;
-    var qs = string.IsNullOrWhiteSpace(season) ? "" : $"?season={Uri.EscapeDataString(season)}";
-    var activeTab = ViewBag.V2LeagueTab as string ?? "";
-    var isInfoPage = string.Equals(activeTab, "informacion", StringComparison.OrdinalIgnoreCase);
-    var showLocation = !string.IsNullOrWhiteSpace(league?.Country);
     var hasLogo = !string.IsNullOrWhiteSpace(league?.LogoUrl);
     var initials = PublicWeb.Helpers.TeamDisplayHelper.GetInitials(league?.Name);
     var h1 = ViewBag.SeoH1 as string ?? league?.Name ?? "Liga";
     var logoAlt = league != null ? $"Logo {league.Name}" : "Logo de la liga";
+    var stats = ViewBag.LeagueHeroStats as PublicWeb.Models.Public.LeagueHeroStatsViewModel;
+    var location = league?.Country;
+    var showLocation = !string.IsNullOrWhiteSpace(location);
 
-    var metaParts = new List<string>();
-    if (!string.IsNullOrWhiteSpace(seasonName)) metaParts.Add(seasonName);
-    if (showLocation) metaParts.Add(league!.Country);
-    var metaLine = string.Join(" · ", metaParts);
+    string DivisionLabel(int n) => n == 1 ? "división" : "divisiones";
+    string TeamLabel(int n) => n == 1 ? "equipo" : "equipos";
 }
-<header class="v2-league-header">
-    <div class="v2-league-header__identity">
-        @if (league != null)
-        {
-            <div class="v2-league-header__logo @(hasLogo ? "has-logo" : "is-fallback")"
-                 data-v2-team-badge>
-                @if (hasLogo)
-                {
-                    <img src="@league.LogoUrl"
-                         alt="@logoAlt"
-                         width="120"
-                         height="120"
-                         loading="eager"
-                         decoding="async"
-                         data-v2-team-logo />
-                    <span class="v2-league-header__initials" data-v2-team-initials>@initials</span>
-                }
-                else
-                {
-                    <span class="v2-league-header__initials" aria-hidden="true">@initials</span>
-                }
-            </div>
-        }
-        <div class="v2-league-header__copy">
-            <h1 class="v2-league-header__name">@h1</h1>
-            @if (!string.IsNullOrWhiteSpace(metaLine))
+<header class="v2-league-hero">
+    <div class="v2-league-hero__inner">
+        <div class="v2-league-hero__identity">
+            @if (league != null)
             {
-                <p class="v2-league-header__meta">@metaLine</p>
-            }
-            @if (!string.IsNullOrWhiteSpace(leagueSlug))
-            {
-                <div class="v2-league-header__actions">
-                    <a class="v2-league-info-btn @(isInfoPage ? "is-active" : null)"
-                       href="@Url.Content($"~/ligas/{leagueSlug}/informacion")@qs"
-                       aria-current="@(isInfoPage ? "page" : null)">
-                        <svg class="v2-league-info-btn__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-                            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.75" />
-                            <path d="M12 11v5.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
-                            <circle cx="12" cy="8" r="1.1" fill="currentColor" />
-                        </svg>
-                        <span>Información de la liga</span>
-                    </a>
-                    @{
-                        ViewData["ShareTitle"] = league?.Name ?? h1;
-                        ViewData["ShareText"] = league != null
-                            ? $"Seguí {league.Name} en MiLiga"
-                            : "Seguí esta liga en MiLiga";
-                        ViewData["SharePath"] = $"/ligas/{leagueSlug}";
+                <div class="v2-league-hero__logo @(hasLogo ? "has-logo" : "is-fallback")"
+                     data-v2-team-badge>
+                    @if (hasLogo)
+                    {
+                        <img src="@league.LogoUrl"
+                             alt="@logoAlt"
+                             width="120"
+                             height="120"
+                             loading="eager"
+                             fetchpriority="high"
+                             decoding="async"
+                             data-v2-team-logo />
+                        <span class="v2-league-hero__initials" data-v2-team-initials>@initials</span>
                     }
-                    @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
-                    @{
-                        ViewData["FollowScopeType"] = "League";
-                        ViewData["FollowScopeId"] = league?.Id ?? Guid.Empty;
-                        ViewData["FollowLabel"] = "Seguir liga";
-                        ViewData["FollowFollowingLabel"] = "Siguiendo";
+                    else
+                    {
+                        <span class="v2-league-hero__initials" aria-hidden="true">@initials</span>
                     }
-                    @await Html.PartialAsync("~/Views/Shared/V2/_FollowButton.cshtml")
                 </div>
             }
+            <div class="v2-league-hero__copy">
+                <h1 class="v2-league-hero__name">@h1</h1>
+                @if (!string.IsNullOrWhiteSpace(seasonName))
+                {
+                    <p class="v2-league-hero__season">
+                        <span class="v2-ui-icon v2-ui-icon--trophy" aria-hidden="true"></span>
+                        <span>@seasonName</span>
+                    </p>
+                }
+                @if (showLocation)
+                {
+                    <p class="v2-league-hero__location">
+                        <span class="v2-ui-icon v2-ui-icon--location v2-ui-icon--sm" aria-hidden="true"></span>
+                        <span>@location</span>
+                    </p>
+                }
+            </div>
         </div>
+
+        @if (stats != null && (stats.DivisionCount.HasValue || stats.TeamCount.HasValue || stats.CurrentRound.HasValue))
+        {
+            <ul class="v2-league-hero__stats">
+                @if (stats.DivisionCount.HasValue)
+                {
+                    <li>
+                        <span class="v2-ui-icon v2-ui-icon--teams" aria-hidden="true"></span>
+                        <span>@stats.DivisionCount.Value @DivisionLabel(stats.DivisionCount.Value)</span>
+                    </li>
+                }
+                @if (stats.TeamCount.HasValue)
+                {
+                    <li>
+                        <span class="v2-ui-icon v2-ui-icon--division" aria-hidden="true"></span>
+                        <span>@stats.TeamCount.Value @TeamLabel(stats.TeamCount.Value)</span>
+                    </li>
+                }
+                @if (stats.CurrentRound.HasValue)
+                {
+                    <li>
+                        <span class="v2-ui-icon v2-ui-icon--calendar" aria-hidden="true"></span>
+                        <span>
+                            Fecha @stats.CurrentRound.Value
+                            @if (string.Equals(stats.CurrentRoundStatus, "En curso", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <span>en curso</span>
+                            }
+                        </span>
+                    </li>
+                }
+            </ul>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(leagueSlug))
+        {
+            <div class="v2-league-hero__actions">
+                @{
+                    ViewData["FollowScopeType"] = "League";
+                    ViewData["FollowScopeId"] = league?.Id ?? Guid.Empty;
+                    ViewData["FollowLabel"] = "Seguir liga";
+                    ViewData["FollowFollowingLabel"] = "Siguiendo";
+                }
+                @await Html.PartialAsync("~/Views/Shared/V2/_FollowButton.cshtml")
+                @{
+                    ViewData["ShareTitle"] = league?.Name ?? h1;
+                    ViewData["ShareText"] = league != null
+                        ? $"Seguí {league.Name} en MiLiga"
+                        : "Seguí esta liga en MiLiga";
+                    ViewData["SharePath"] = $"/ligas/{leagueSlug}";
+                }
+                @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
+            </div>
+        }
     </div>
 </header>

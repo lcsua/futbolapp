@@ -204,6 +204,15 @@ public static class TeamDisplayHelper
         return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(raw);
     }
 
+    /// <summary>Sábado 22 de agosto</summary>
+    public static string FormatWeekdayDayDeMonth(DateTime kickoff)
+    {
+        if (kickoff == default) return "—";
+        var weekday = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(kickoff.ToString("dddd", EsAr));
+        var month = kickoff.ToString("MMMM", EsAr);
+        return $"{weekday} {kickoff.Day} de {month}";
+    }
+
     /// <summary>
     /// Normalizes field labels so codes like "A" read as "Cancha A",
     /// without duplicating the prefix when already present.

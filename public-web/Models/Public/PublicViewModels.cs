@@ -188,6 +188,31 @@ public class LeagueHomeViewModel
     public List<DivisionViewModel> Divisions { get; set; } = new();
     public List<LeagueHomeDivisionLeaderViewModel> DivisionLeaders { get; set; } = new();
     public LeagueHomeNextFechaViewModel? NextFecha { get; set; }
+    public LeagueHeroStatsViewModel Stats { get; set; } = new();
+    public List<LeagueHomeDivisionPanelViewModel> DivisionPanels { get; set; } = new();
+    public string SelectedDivisionSlug { get; set; } = string.Empty;
+}
+
+/// <summary>Optional hero metrics composed from data already loaded for the page.</summary>
+public class LeagueHeroStatsViewModel
+{
+    public int? DivisionCount { get; set; }
+    public int? TeamCount { get; set; }
+    public int? CurrentRound { get; set; }
+    public string? CurrentRoundStatus { get; set; }
+}
+
+public class LeagueHomeDivisionPanelViewModel
+{
+    public string DivisionName { get; set; } = string.Empty;
+    public string DivisionSlug { get; set; } = string.Empty;
+    public int? Round { get; set; }
+    public DateTime? DisplayDate { get; set; }
+    public string? FechaStatus { get; set; }
+    public List<MatchViewModel> Matches { get; set; } = new();
+    public int MatchCount { get; set; }
+    public List<StandingsRowViewModel> StandingsPreview { get; set; } = new();
+    public List<TeamViewModel> Teams { get; set; } = new();
 }
 
 public class LeagueHomeNextFechaViewModel

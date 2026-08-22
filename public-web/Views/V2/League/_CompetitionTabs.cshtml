@@ -11,15 +11,33 @@
     <nav class="v2-tabs v2-league-tabs" aria-label="Secciones de la liga">
         <a class="v2-tabs__link @(active == "resumen" ? "is-active" : null)"
            href="@Url.Content($"~/ligas/{leagueSlug}")@qs"
-           aria-current="@(active == "resumen" ? "page" : null)">Resumen</a>
+           aria-current="@(active == "resumen" ? "page" : null)">
+            <span class="v2-ui-icon v2-ui-icon--home" aria-hidden="true"></span>
+            <span>Resumen</span>
+        </a>
         <a class="v2-tabs__link @(active == "fixture" ? "is-active" : null)"
            href="@Url.Content($"~/ligas/{leagueSlug}/fixture")@qs"
-           aria-current="@(active == "fixture" ? "page" : null)">Fixture</a>
+           aria-current="@(active == "fixture" ? "page" : null)">
+            <span class="v2-ui-icon v2-ui-icon--calendar" aria-hidden="true"></span>
+            <span>Fixture</span>
+        </a>
         <a class="v2-tabs__link @(active == "posiciones" ? "is-active" : null)"
            href="@Url.Content($"~/ligas/{leagueSlug}/posiciones")@qs"
-           aria-current="@(active == "posiciones" ? "page" : null)">Posiciones</a>
+           aria-current="@(active == "posiciones" ? "page" : null)">
+            <span class="v2-ui-icon v2-ui-icon--trophy" aria-hidden="true"></span>
+            <span>Posiciones</span>
+        </a>
         <a class="v2-tabs__link @(active == "resultados" ? "is-active" : null)"
            href="@Url.Content($"~/ligas/{leagueSlug}/resultados")@qs"
-           aria-current="@(active == "resultados" ? "page" : null)">Resultados</a>
+           aria-current="@(active == "resultados" ? "page" : null)">
+            <span class="v2-ui-icon v2-ui-icon--results" aria-hidden="true"></span>
+            <span>Resultados</span>
+        </a>
+        <a class="v2-tabs__link @(active == "informacion" ? "is-active" : null)"
+           href="@Url.Content($"~/ligas/{leagueSlug}/informacion")@qs"
+           aria-current="@(active == "informacion" ? "page" : null)">
+            <span class="v2-ui-icon v2-ui-icon--info" aria-hidden="true"></span>
+            <span>Información</span>
+        </a>
     </nav>
 }

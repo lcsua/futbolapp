@@ -25,7 +25,7 @@ public class V2LeagueController : Controller
 
     /// <summary>League home / Resumen — must be registered before Team ({slug}/{teamSlug}).</summary>
     [HttpGet("{slug}")]
-    public async Task<IActionResult> Home(string slug, [FromQuery] string? season)
+    public async Task<IActionResult> Home(string slug, [FromQuery] string? season, [FromQuery] string? division)
     {
         var league = await _leagueService.GetLeagueBySlugAsync(slug);
         if (league == null) return NotFound();
@@ -45,37 +45,14 @@ public class V2LeagueController : Controller
         var calendar = await calendarTask;
         var standings = await standingsTask;
 
-        var divisionLeaders = (standings?.Divisions ?? new List<DivisionGroupViewModel<StandingsRowViewModel>>())
-            .Select(d =>
-            {
-                var leader = (d.Data ?? new List<StandingsRowViewModel>())
-                    .OrderBy(r => r.Position)
-                    .ThenByDescending(r => r.Points)
-                    .FirstOrDefault();
-                if (leader?.Team == null || string.IsNullOrWhiteSpace(leader.Team.Name))
-                    return null;
-
-                return new LeagueHomeDivisionLeaderViewModel
-                {
-                    DivisionName = d.DivisionName,
-                    DivisionSlug = d.DivisionSlug,
-                    Team = leader.Team,
-                    Points = leader.Points
-                };
-            })
-            .Where(x => x != null)
-            .Cast<LeagueHomeDivisionLeaderViewModel>()
-            .ToList();
-
-        var model = new LeagueHomeViewModel
-        {
-            League = league,
-            SeasonName = calendar?.SeasonName ?? standings?.SeasonName ?? selectedSeason?.Name ?? string.Empty,
-            SeasonSlug = calendar?.SeasonSlug ?? standings?.SeasonSlug ?? selectedSeason?.Slug ?? string.Empty,
-            Divisions = selectedSeason?.Divisions ?? new List<DivisionViewModel>(),
-            DivisionLeaders = divisionLeaders,
-            NextFecha = ResolveHomeNextFecha(calendar)
-        };
+        var model = LeagueHomeComposer.Compose(
+            league,
+            calendar?.SeasonName ?? standings?.SeasonName ?? selectedSeason?.Name ?? string.Empty,
+            calendar?.SeasonSlug ?? standings?.SeasonSlug ?? selectedSeason?.Slug ?? string.Empty,
+            selectedSeason?.Divisions ?? new List<DivisionViewModel>(),
+            standings,
+            calendar,
+            division);
 
         ViewBag.League = league;
         ViewBag.Seasons = meta;
@@ -85,6 +62,7 @@ public class V2LeagueController : Controller
         ViewBag.SeasonSlug = model.SeasonSlug;
         ViewBag.LeagueSlug = league.Slug;
         ViewBag.PageLabel = "Resumen";
+        ViewBag.LeagueHeroStats = model.Stats;
 
         return View("~/Views/V2/LeagueHome.cshtml", model);
     }
@@ -113,6 +91,8 @@ public class V2LeagueController : Controller
         ViewBag.SeasonSlug = selectedSeason?.Slug;
         ViewBag.LeagueSlug = league.Slug;
         ViewBag.PageLabel = "Información";
+        ViewBag.LeagueHeroStats = LeagueHomeComposer.BuildHeroStats(
+            selectedSeason?.Divisions?.Count ?? 0, null, null);
 
         return View("~/Views/V2/Information.cshtml", league);
     }
@@ -138,6 +118,7 @@ public class V2LeagueController : Controller
         ViewBag.Round = round;
         ViewBag.V2ActiveNav = "ligas";
         ViewBag.V2LeagueTab = "resultados";
+        ApplyHeroStatsFromMeta(meta, results?.SeasonSlug, standings: null, calendar: null);
 
         return View("~/Views/V2/Results.cshtml", results);
     }
@@ -160,6 +141,7 @@ public class V2LeagueController : Controller
         ViewBag.Division = string.IsNullOrWhiteSpace(division) ? "all" : division;
         ViewBag.V2ActiveNav = "ligas";
         ViewBag.V2LeagueTab = "posiciones";
+        ApplyHeroStatsFromMeta(meta, standings?.SeasonSlug, standings, calendar: null);
 
         return View("~/Views/V2/Standings.cshtml", standings);
     }
@@ -188,6 +170,7 @@ public class V2LeagueController : Controller
         ViewBag.SeasonName = calendar?.SeasonName;
         ViewBag.SeasonSlug = calendar?.SeasonSlug;
         ViewBag.LeagueSlug = league.Slug;
+        ApplyHeroStatsFromMeta(meta, calendar?.SeasonSlug, standings: null, calendar);
 
         return View("~/Views/V2/Fixture.cshtml", calendar);
     }
@@ -357,34 +340,22 @@ public class V2LeagueController : Controller
         return t is "partidos" or "estadisticas" ? t : "resumen";
     }
 
-    private static LeagueHomeNextFechaViewModel? ResolveHomeNextFecha(
+    private void ApplyHeroStatsFromMeta(
+        List<SeasonViewModel> meta,
+        string? seasonSlug,
+        SeasonGroupedViewModel<StandingsRowViewModel>? standings,
         SeasonGroupedViewModel<MatchdayGroupViewModel>? calendar)
     {
-        if (calendar?.Divisions == null) return null;
-
-        var round = FixtureCalendarHelper.ResolveLeagueNextFecha(calendar);
-        if (!round.HasValue) return null;
-
-        var matches = calendar.Divisions
-            .SelectMany(d => d.Data ?? new List<MatchdayGroupViewModel>())
-            .Where(md => md.Round == round.Value)
-            .SelectMany(md => md.Matches ?? new List<MatchViewModel>())
-            .ToList();
-        if (matches.Count == 0) return null;
-
-        DateTime? display = matches
-            .Where(m => m.Kickoff != default)
-            .GroupBy(m => m.Kickoff.Date)
-            .OrderByDescending(g => g.Count())
-            .Select(g => (DateTime?)g.Key)
-            .FirstOrDefault();
-
-        return new LeagueHomeNextFechaViewModel
-        {
-            Round = round.Value,
-            DisplayDate = display,
-            MatchCount = matches.Count
-        };
+        var selectedSeason = meta.FirstOrDefault(s =>
+                                !string.IsNullOrWhiteSpace(seasonSlug)
+                                && string.Equals(s.Slug, seasonSlug, StringComparison.OrdinalIgnoreCase))
+            ?? meta.FirstOrDefault(s => s.IsActive)
+            ?? meta.FirstOrDefault();
+        var divisionCount = selectedSeason?.Divisions?.Count ?? 0;
+        ViewBag.LeagueHeroStats = LeagueHomeComposer.BuildHeroStats(
+            divisionCount,
+            LeagueHomeComposer.CountUniqueTeams(standings),
+            calendar);
     }
 
     private static bool IsReservedTeamSlug(string teamSlug) =>

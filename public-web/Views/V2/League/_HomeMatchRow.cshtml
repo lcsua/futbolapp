@@ -1,0 +1,67 @@
+@model PublicWeb.Models.Public.MatchViewModel
+@{
+    var leagueSlug = ViewData["LeagueSlug"] as string ?? Model.LeagueSlug ?? "";
+    var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(Model.Kickoff);
+    var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
+    ViewData["BadgeSize"] = "sm";
+
+    string? TeamUrl(PublicWeb.Models.Public.TeamViewModel team) =>
+        !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(team.Slug)
+            ? Url.Content($"~/ligas/{leagueSlug}/{team.Slug}")
+            : null;
+    var homeUrl = TeamUrl(Model.HomeTeam);
+    var awayUrl = TeamUrl(Model.AwayTeam);
+}
+<article class="v2-home-match">
+    <a class="v2-home-match__meta" href="@Url.Content($"~/partido/{Model.Id}")">
+        @if (time != null)
+        {
+            <span class="v2-home-match__time v2-nums">
+                <span class="v2-ui-icon v2-ui-icon--clock v2-ui-icon--sm" aria-hidden="true"></span>
+                @time
+            </span>
+        }
+        @if (!string.IsNullOrWhiteSpace(venue))
+        {
+            <span class="v2-home-match__venue">
+                <span class="v2-ui-icon v2-ui-icon--field v2-ui-icon--sm" aria-hidden="true"></span>
+                @venue
+            </span>
+        }
+        @if (time == null && string.IsNullOrWhiteSpace(venue))
+        {
+            <span class="v2-home-match__pending">Horario a confirmar</span>
+        }
+    </a>
+    <div class="v2-home-match__teams">
+        @if (homeUrl != null)
+        {
+            <a class="v2-home-match__team" href="@homeUrl">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                <span class="v2-home-match__name">@Model.HomeTeam.Name</span>
+            </a>
+        }
+        else
+        {
+            <div class="v2-home-match__team">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                <span class="v2-home-match__name">@Model.HomeTeam.Name</span>
+            </div>
+        }
+        <span class="v2-home-match__vs" aria-hidden="true">VS</span>
+        @if (awayUrl != null)
+        {
+            <a class="v2-home-match__team v2-home-match__team--away" href="@awayUrl">
+                <span class="v2-home-match__name">@Model.AwayTeam.Name</span>
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+            </a>
+        }
+        else
+        {
+            <div class="v2-home-match__team v2-home-match__team--away">
+                <span class="v2-home-match__name">@Model.AwayTeam.Name</span>
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+            </div>
+        }
+    </div>
+</article>
