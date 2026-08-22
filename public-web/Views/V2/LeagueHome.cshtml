@@ -3,6 +3,7 @@
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
     ViewBag.LeagueDetails = true;
+    ViewBag.OverlayGlobalHeader = true;
     var league = Model.League;
     var leagueSlug = league.Slug;
     var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;

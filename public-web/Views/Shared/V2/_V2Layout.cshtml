@@ -103,7 +103,7 @@
     }
 </head>
 <body>
-<div class="v2-app" id="v2-app-root" data-v2-theme="blue">
+<div class="v2-app@(ViewBag.OverlayGlobalHeader == true ? " v2-app--hero-header" : null)" id="v2-app-root" data-v2-theme="blue">
     <script>
         (function () {
             var root = document.getElementById('v2-app-root');

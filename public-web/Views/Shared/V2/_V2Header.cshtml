@@ -1,7 +1,7 @@
 @{
     var active = ViewBag.V2ActiveNav as string ?? "";
 }
-<header class="v2-header">
+<header class="v2-header@(ViewBag.OverlayGlobalHeader == true ? " v2-header--overlay" : null)">
     <div class="v2-shell v2-header__inner">
         <a class="v2-brand" href="@Url.Content("~/")" aria-label="Mi Liga">
             <img class="v2-brand__logo"

@@ -439,6 +439,79 @@ body {
   .v2-preview-link { display: inline; }
 }
 
+/* League home: float existing header controls over the hero. */
+.v2-app--hero-header {
+  position: relative;
+}
+
+.v2-header--overlay {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 40;
+  background: transparent;
+  pointer-events: none;
+}
+
+.v2-header--overlay .v2-header__inner,
+.v2-header--overlay .v2-mobile-nav {
+  pointer-events: auto;
+}
+
+.v2-header--overlay .v2-header__inner {
+  justify-content: flex-end;
+  min-height: 0;
+  padding-top: max(0.65rem, env(safe-area-inset-top, 0px));
+  padding-bottom: 0.35rem;
+}
+
+.v2-header--overlay .v2-brand,
+.v2-header--overlay .v2-nav {
+  display: none;
+}
+
+.v2-header--overlay .v2-theme-toggle,
+.v2-header--overlay .v2-theme-select {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.v2-header--overlay .v2-theme-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8l3.5-3.5' stroke='%23FFFFFF' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.v2-header--overlay .v2-menu-btn {
+  display: inline-flex;
+  color: #fff;
+}
+
+.v2-header--overlay .v2-mobile-nav.is-open {
+  display: block;
+  margin-top: 0.35rem;
+  margin-bottom: 0.5rem;
+  padding: 0.35rem 1rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.v2-app--hero-header .v2-league-hero {
+  padding-top: calc(2.85rem + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 768px) {
+  .v2-header--overlay .v2-menu-btn { display: inline-flex; }
+  .v2-header--overlay .v2-mobile-nav { display: none; }
+  .v2-header--overlay .v2-mobile-nav.is-open { display: block; }
+  .v2-app--hero-header .v2-league-hero {
+    padding-top: calc(3rem + env(safe-area-inset-top, 0px));
+  }
+}
+
 .v2-main {
   flex: 1;
   padding: var(--space-6) 0 var(--space-9);
