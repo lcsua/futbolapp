@@ -128,7 +128,7 @@
 
     @await Html.PartialAsync("~/Views/Shared/V2/_V2Header.cshtml")
 
-    <main class="v2-main">
+    <main class="v2-main@(ViewBag.LeagueDetails == true ? " v2-league-details" : null)">
         <div class="v2-shell">
             @RenderBody()
         </div>

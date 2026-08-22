@@ -1,5 +1,6 @@
 @model PublicWeb.Models.Public.LeagueViewModel?
 @{
+    ViewBag.LeagueDetails = true;
     var league = Model ?? ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
     var seasonName = ViewBag.SeasonName as string;
     var leagueSlug = ViewBag.LeagueSlug as string ?? league?.Slug ?? "";
@@ -11,85 +12,94 @@
     var location = league?.Country;
     var showLocation = !string.IsNullOrWhiteSpace(location);
 
+    var nameLead = (string?)null;
+    var nameMain = h1;
+    if (nameMain.StartsWith("Liga de ", StringComparison.OrdinalIgnoreCase))
+    {
+        nameLead = "Liga de";
+        nameMain = nameMain["Liga de ".Length..].Trim();
+    }
+
     string DivisionLabel(int n) => n == 1 ? "división" : "divisiones";
     string TeamLabel(int n) => n == 1 ? "equipo" : "equipos";
 }
 <header class="v2-league-hero">
     <div class="v2-league-hero__inner">
-        <div class="v2-league-hero__identity">
-            @if (league != null)
-            {
-                <div class="v2-league-hero__logo @(hasLogo ? "has-logo" : "is-fallback")"
-                     data-v2-team-badge>
-                    @if (hasLogo)
-                    {
-                        <img src="@league.LogoUrl"
-                             alt="@logoAlt"
-                             width="120"
-                             height="120"
-                             loading="eager"
-                             fetchpriority="high"
-                             decoding="async"
-                             data-v2-team-logo />
-                        <span class="v2-league-hero__initials" data-v2-team-initials>@initials</span>
-                    }
-                    else
-                    {
-                        <span class="v2-league-hero__initials" aria-hidden="true">@initials</span>
-                    }
-                </div>
-            }
-            <div class="v2-league-hero__copy">
-                <h1 class="v2-league-hero__name">@h1</h1>
-                @if (!string.IsNullOrWhiteSpace(seasonName))
-                {
-                    <p class="v2-league-hero__season">
-                        <span class="v2-ui-icon v2-ui-icon--trophy" aria-hidden="true"></span>
-                        <span>@seasonName</span>
-                    </p>
-                }
-                @if (showLocation)
-                {
-                    <p class="v2-league-hero__location">
-                        <span class="v2-ui-icon v2-ui-icon--location v2-ui-icon--sm" aria-hidden="true"></span>
-                        <span>@location</span>
-                    </p>
-                }
-            </div>
-        </div>
-
-        @if (stats != null && (stats.DivisionCount.HasValue || stats.TeamCount.HasValue || stats.CurrentRound.HasValue))
+        @if (league != null)
         {
-            <ul class="v2-league-hero__stats">
-                @if (stats.DivisionCount.HasValue)
+            <div class="v2-league-hero__logo @(hasLogo ? "has-logo" : "is-fallback")">
+                @if (hasLogo)
                 {
-                    <li>
-                        <span class="v2-ui-icon v2-ui-icon--teams" aria-hidden="true"></span>
-                        <span>@stats.DivisionCount.Value @DivisionLabel(stats.DivisionCount.Value)</span>
-                    </li>
+                    <img src="@league.LogoUrl"
+                         alt="@logoAlt"
+                         width="96"
+                         height="96"
+                         loading="eager"
+                         fetchpriority="high"
+                         decoding="async"
+                         onerror="this.parentElement.classList.remove('has-logo'); this.parentElement.classList.add('is-fallback'); this.remove();" />
                 }
-                @if (stats.TeamCount.HasValue)
-                {
-                    <li>
-                        <span class="v2-ui-icon v2-ui-icon--division" aria-hidden="true"></span>
-                        <span>@stats.TeamCount.Value @TeamLabel(stats.TeamCount.Value)</span>
-                    </li>
-                }
-                @if (stats.CurrentRound.HasValue)
-                {
-                    <li>
-                        <span class="v2-ui-icon v2-ui-icon--calendar" aria-hidden="true"></span>
-                        <span>
-                            Fecha @stats.CurrentRound.Value
-                            @if (string.Equals(stats.CurrentRoundStatus, "En curso", StringComparison.OrdinalIgnoreCase))
-                            {
-                                <span>en curso</span>
-                            }
-                        </span>
-                    </li>
-                }
-            </ul>
+                <span class="v2-league-hero__initials" aria-hidden="true">@initials</span>
+            </div>
         }
+
+        <div class="v2-league-hero__copy">
+            <h1 class="v2-league-hero__name">
+                @if (!string.IsNullOrWhiteSpace(nameLead))
+                {
+                    <span class="v2-league-hero__lead">@nameLead</span>
+                }
+                <span class="v2-league-hero__title">@nameMain</span>
+            </h1>
+            @if (!string.IsNullOrWhiteSpace(seasonName))
+            {
+                <p class="v2-league-hero__season">
+                    <span class="v2-ui-icon v2-ui-icon--trophy" aria-hidden="true"></span>
+                    <span>@seasonName</span>
+                </p>
+            }
+            @if (showLocation)
+            {
+                <p class="v2-league-hero__location">
+                    <span class="v2-ui-icon v2-ui-icon--location v2-ui-icon--sm" aria-hidden="true"></span>
+                    <span>@location</span>
+                </p>
+            }
+
+            @if (stats != null && (stats.DivisionCount.HasValue || stats.TeamCount.HasValue || stats.CurrentRound.HasValue))
+            {
+                <ul class="v2-league-hero__stats">
+                    @if (stats.DivisionCount.HasValue)
+                    {
+                        <li>
+                            <span class="v2-ui-icon v2-ui-icon--teams" aria-hidden="true"></span>
+                            <span class="v2-league-hero__stat-num v2-nums">@stats.DivisionCount.Value</span>
+                            <span class="v2-league-hero__stat-lbl">@DivisionLabel(stats.DivisionCount.Value)</span>
+                        </li>
+                    }
+                    @if (stats.TeamCount.HasValue)
+                    {
+                        <li>
+                            <span class="v2-ui-icon v2-ui-icon--division" aria-hidden="true"></span>
+                            <span class="v2-league-hero__stat-num v2-nums">@stats.TeamCount.Value</span>
+                            <span class="v2-league-hero__stat-lbl">@TeamLabel(stats.TeamCount.Value)</span>
+                        </li>
+                    }
+                    @if (stats.CurrentRound.HasValue)
+                    {
+                        <li>
+                            <span class="v2-ui-icon v2-ui-icon--calendar" aria-hidden="true"></span>
+                            <span class="v2-league-hero__stat-num v2-nums">@stats.CurrentRound.Value</span>
+                            <span class="v2-league-hero__stat-lbl">
+                                @(string.Equals(stats.CurrentRoundStatus, "En curso", StringComparison.OrdinalIgnoreCase)
+                                    ? "Fecha en curso"
+                                    : "Fecha")
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
 
         @if (!string.IsNullOrWhiteSpace(leagueSlug))
         {

@@ -1,4 +1,5 @@
 @{
+    ViewBag.LeagueDetails = true;
     var leagueSlug = ViewBag.LeagueSlug as string
         ?? (ViewBag.League as PublicWeb.Models.Public.LeagueViewModel)?.Slug
         ?? "";

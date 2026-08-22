@@ -1,6 +1,8 @@
+@using System.Linq
 @model PublicWeb.Models.Public.LeagueHomeViewModel
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    ViewBag.LeagueDetails = true;
     var league = Model.League;
     var leagueSlug = league.Slug;
     var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
@@ -43,7 +45,7 @@
 
 @if (seasons != null && seasons.Count > 1)
 {
-    <form method="get" class="v2-filter-bar" aria-label="Filtro de temporada">
+    <form method="get" class="v2-filter-bar v2-filter-bar--compact" aria-label="Filtro de temporada">
         <div class="v2-filter-bar__group">
             <label for="v2-filter-season">Temporada</label>
             <select id="v2-filter-season" name="season" class="v2-select" onchange="this.form.submit()">
@@ -67,15 +69,13 @@
 {
     <div class="v2-home-board">
         <style>
-            .v2-home-board [data-home-panel] { display: none; }
-            .v2-home-board [data-home-panel].is-default { display: flex; }
-            .v2-home-board:has(.v2-home-board__radio:checked) [data-home-panel].is-default { display: none; }
+            .v2-home-board > [data-home-pane] { display: none; }
             @foreach (var panel in panels)
             {
                 var inputId = PublicWeb.Helpers.LeagueHomeComposer.CssId("home-div-", panel.DivisionSlug);
                 <text>
-                .v2-home-board:has(#@inputId:checked) [data-home-panel="@panel.DivisionSlug"] { display: flex; }
-                .v2-home-board:has(#@inputId:checked) [data-home-chip="@panel.DivisionSlug"] {
+                #@inputId:checked ~ [data-home-pane="@panel.DivisionSlug"] { display: grid; }
+                #@inputId:checked ~ .v2-home-divisions [data-home-chip="@panel.DivisionSlug"] {
                     background: var(--v2-primary);
                     border-color: var(--v2-primary);
                     color: #fff;
@@ -84,19 +84,24 @@
             }
         </style>
 
+        @foreach (var panel in panels)
+        {
+            var inputId = PublicWeb.Helpers.LeagueHomeComposer.CssId("home-div-", panel.DivisionSlug);
+            var isSelected = string.Equals(panel.DivisionSlug, selectedSlug, StringComparison.OrdinalIgnoreCase);
+            <input class="v2-home-board__radio visually-hidden"
+                   type="radio"
+                   name="home-division"
+                   id="@inputId"
+                   value="@panel.DivisionSlug"
+                   @(isSelected ? "checked" : null) />
+        }
+
         <section class="v2-home-divisions" aria-label="Divisiones">
             <h2 class="v2-home-kicker">Divisiones</h2>
             <div class="v2-home-chips" role="radiogroup" aria-label="Elegir división">
                 @foreach (var panel in panels)
                 {
                     var inputId = PublicWeb.Helpers.LeagueHomeComposer.CssId("home-div-", panel.DivisionSlug);
-                    var isSelected = string.Equals(panel.DivisionSlug, selectedSlug, StringComparison.OrdinalIgnoreCase);
-                    <input class="v2-home-board__radio visually-hidden"
-                           type="radio"
-                           name="home-division"
-                           id="@inputId"
-                           value="@panel.DivisionSlug"
-                           @(isSelected ? "checked" : null) />
                     <label class="v2-chip v2-home-chip"
                            data-home-chip="@panel.DivisionSlug"
                            for="@inputId">@panel.DivisionName</label>
@@ -104,70 +109,62 @@
             </div>
             <p class="v2-home-divisions__hint">
                 <span class="v2-ui-icon v2-ui-icon--status-info v2-ui-icon--sm" aria-hidden="true"></span>
-                El contenido de abajo se actualiza según la división elegida.
+                El contenido del resumen se actualiza según la división seleccionada.
             </p>
         </section>
 
-        <div class="v2-home-grid">
-            <div class="v2-home-grid__main">
-                @foreach (var panel in panels)
-                {
-                    var isDefault = string.Equals(panel.DivisionSlug, selectedSlug, StringComparison.OrdinalIgnoreCase);
-                    var fixtureHref = WithSeason(Url.Content($"~/ligas/{leagueSlug}/fixture")!, $"division={Uri.EscapeDataString(panel.DivisionSlug)}");
-                    <section class="v2-home-card @(isDefault ? "is-default" : null)"
-                             data-home-panel="@panel.DivisionSlug"
-                             aria-labelledby="home-next-@panel.DivisionSlug">
-                        <header class="v2-home-card__head">
-                            <h2 id="home-next-@panel.DivisionSlug" class="v2-home-card__title">
-                                <span class="v2-ui-icon v2-ui-icon--calendar" aria-hidden="true"></span>
-                                @(string.Equals(panel.FechaStatus, "Finalizada", StringComparison.OrdinalIgnoreCase)
-                                    ? "Última fecha"
-                                    : "Próxima fecha")
-                            </h2>
-                            <a class="v2-home-card__link" href="@fixtureHref">
-                                Ver fixture
-                                <span class="v2-ui-icon v2-ui-icon--arrow" aria-hidden="true"></span>
-                            </a>
-                        </header>
-                        <p class="v2-home-card__sub">
-                            @if (panel.Round.HasValue)
-                            {
-                                <span>Fecha @panel.Round.Value</span>
-                            }
-                            @if (panel.DisplayDate.HasValue)
-                            {
-                                <span aria-hidden="true">·</span>
-                                <span>@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayDeMonth(panel.DisplayDate.Value)</span>
-                            }
-                        </p>
-                        @if (panel.Matches.Count > 0)
+        @foreach (var panel in panels)
+        {
+            var fixtureHref = WithSeason(Url.Content($"~/ligas/{leagueSlug}/fixture")!, $"division={Uri.EscapeDataString(panel.DivisionSlug)}");
+            var standingsHref = WithSeason(Url.Content($"~/ligas/{leagueSlug}/posiciones")!, $"division={Uri.EscapeDataString(panel.DivisionSlug)}");
+            <div class="v2-home-grid"
+                 data-home-pane="@panel.DivisionSlug">
+                <section class="v2-home-card"
+                         aria-labelledby="home-next-@panel.DivisionSlug">
+                    <header class="v2-home-card__head">
+                        <h2 id="home-next-@panel.DivisionSlug" class="v2-home-card__title">
+                            <span class="v2-ui-icon v2-ui-icon--calendar" aria-hidden="true"></span>
+                            @(string.Equals(panel.FechaStatus, "Finalizada", StringComparison.OrdinalIgnoreCase)
+                                ? "Última fecha"
+                                : "Próxima fecha")
+                        </h2>
+                        <a class="v2-home-card__link" href="@fixtureHref">
+                            Ver fixture
+                            <span class="v2-ui-icon v2-ui-icon--arrow" aria-hidden="true"></span>
+                        </a>
+                    </header>
+                    <p class="v2-home-card__sub">
+                        @if (panel.Round.HasValue)
                         {
-                            <div class="v2-home-card__body">
-                                @foreach (var match in panel.Matches)
-                                {
-                                    @await Html.PartialAsync("~/Views/V2/League/_HomeMatchRow.cshtml", match)
-                                }
-                            </div>
-                            <a class="v2-home-card__more" href="@fixtureHref">
-                                Ver todos los partidos
-                                <span class="v2-ui-icon v2-ui-icon--arrow" aria-hidden="true"></span>
-                            </a>
+                            <span>Fecha @panel.Round.Value</span>
                         }
-                        else
+                        @if (panel.DisplayDate.HasValue)
                         {
-                            <div class="v2-empty">Todavía no hay partidos cargados para esta división.</div>
+                            <span aria-hidden="true">·</span>
+                            <span>@PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayDeMonth(panel.DisplayDate.Value)</span>
                         }
-                    </section>
-                }
-            </div>
+                    </p>
+                    @if (panel.Matches.Count > 0)
+                    {
+                        <div class="v2-home-card__body">
+                            @foreach (var match in panel.Matches)
+                            {
+                                @await Html.PartialAsync("~/Views/V2/League/_HomeMatchRow.cshtml", match)
+                            }
+                        </div>
+                        <a class="v2-home-card__more" href="@fixtureHref">
+                            Ver todos los partidos
+                            <span class="v2-ui-icon v2-ui-icon--arrow" aria-hidden="true"></span>
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="v2-empty">Todavía no hay partidos cargados para esta división.</div>
+                    }
+                </section>
 
-            <div class="v2-home-grid__side">
-                @foreach (var panel in panels)
-                {
-                    var isDefault = string.Equals(panel.DivisionSlug, selectedSlug, StringComparison.OrdinalIgnoreCase);
-                    var standingsHref = WithSeason(Url.Content($"~/ligas/{leagueSlug}/posiciones")!, $"division={Uri.EscapeDataString(panel.DivisionSlug)}");
-                    <section class="v2-home-card @(isDefault ? "is-default" : null)"
-                             data-home-panel="@panel.DivisionSlug"
+                <div class="v2-home-grid__side">
+                    <section class="v2-home-card"
                              aria-labelledby="home-table-@panel.DivisionSlug">
                         <header class="v2-home-card__head">
                             <h2 id="home-table-@panel.DivisionSlug" class="v2-home-card__title">
@@ -175,7 +172,7 @@
                                 <span>Posiciones · @panel.DivisionName</span>
                             </h2>
                             <a class="v2-home-card__link" href="@standingsHref">
-                                Ver tabla completa
+                                Ver tabla
                                 <span class="v2-ui-icon v2-ui-icon--arrow" aria-hidden="true"></span>
                             </a>
                         </header>
@@ -190,31 +187,35 @@
                                     DivisionSlug = panel.DivisionSlug,
                                     Rows = panel.StandingsPreview
                                 })
+                            <a class="v2-home-card__more" href="@standingsHref">
+                                Ver tabla completa
+                                <span class="v2-ui-icon v2-ui-icon--arrow" aria-hidden="true"></span>
+                            </a>
                         }
                         else
                         {
                             <div class="v2-empty">Todavía no hay posiciones para esta división.</div>
                         }
                     </section>
-                }
 
-                @foreach (var panel in panels)
-                {
-                    var isDefault = string.Equals(panel.DivisionSlug, selectedSlug, StringComparison.OrdinalIgnoreCase);
-                    <section class="v2-home-card v2-home-card--teams @(isDefault ? "is-default" : null)"
-                             data-home-panel="@panel.DivisionSlug"
+                    <section class="v2-home-card v2-home-card--teams"
                              aria-labelledby="home-teams-@panel.DivisionSlug">
                         <header class="v2-home-card__head">
                             <h2 id="home-teams-@panel.DivisionSlug" class="v2-home-card__title">
                                 <span class="v2-ui-icon v2-ui-icon--teams" aria-hidden="true"></span>
                                 Equipos
                             </h2>
+                            <a class="v2-home-card__link" href="@standingsHref">
+                                Ver todos
+                                <span class="v2-ui-icon v2-ui-icon--arrow" aria-hidden="true"></span>
+                            </a>
                         </header>
                         @if (panel.Teams.Count > 0)
                         {
+                            var previewTeams = panel.Teams.Take(8).ToList();
                             <div class="v2-team-carousel" data-v2-team-carousel>
                                 <ul class="v2-team-carousel__track" data-v2-carousel-track>
-                                    @foreach (var team in panel.Teams)
+                                    @foreach (var team in previewTeams)
                                     {
                                         var teamHref = !string.IsNullOrWhiteSpace(team.Slug)
                                             ? Url.Content($"~/ligas/{leagueSlug}/{team.Slug}")
@@ -239,17 +240,6 @@
                                         </li>
                                     }
                                 </ul>
-                                @if (panel.Teams.Count > 6)
-                                {
-                                    <div class="v2-team-carousel__controls">
-                                        <button type="button" class="v2-team-carousel__btn" data-v2-carousel-prev aria-label="Equipos anteriores">
-                                            <span aria-hidden="true">‹</span>
-                                        </button>
-                                        <button type="button" class="v2-team-carousel__btn" data-v2-carousel-next aria-label="Equipos siguientes">
-                                            <span class="v2-ui-icon v2-ui-icon--chevron" aria-hidden="true"></span>
-                                        </button>
-                                    </div>
-                                }
                             </div>
                         }
                         else
@@ -257,9 +247,9 @@
                             <div class="v2-empty">Todavía no hay equipos en esta división.</div>
                         }
                     </section>
-                }
+                </div>
             </div>
-        </div>
+        }
     </div>
 }
 else
