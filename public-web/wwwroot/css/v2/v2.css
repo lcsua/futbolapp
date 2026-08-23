@@ -486,18 +486,24 @@ body {
   -webkit-backdrop-filter: blur(10px);
 }
 
-.v2-app--hero-header .v2-league-hero,
-.v2-app--hero-header .v2-team-hero {
+.v2-app--hero-header .v2-league-hero {
   padding-top: calc(2.35rem + env(safe-area-inset-top, 0px));
+}
+
+.v2-app--hero-header .v2-team-hero {
+  padding-top: calc(1.95rem + env(safe-area-inset-top, 0px));
 }
 
 @media (min-width: 768px) {
   .v2-header--overlay .v2-menu-btn { display: inline-flex; }
   .v2-header--overlay .v2-mobile-nav { display: none; }
   .v2-header--overlay .v2-mobile-nav.is-open { display: block; }
-  .v2-app--hero-header .v2-league-hero,
-  .v2-app--hero-header .v2-team-hero {
+  .v2-app--hero-header .v2-league-hero {
     padding-top: calc(2.55rem + env(safe-area-inset-top, 0px));
+  }
+
+  .v2-app--hero-header .v2-team-hero {
+    padding-top: calc(2.15rem + env(safe-area-inset-top, 0px));
   }
 }
 
@@ -4321,7 +4327,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   max-width: 100vw;
   margin-inline: calc(50% - 50vw);
   margin-bottom: var(--space-2);
-  padding: 0.45rem 0 0.7rem;
+  padding: 0.3rem 0 0.5rem;
   color: #fff;
   background-color: var(--v2-navy);
   background-image:
@@ -4340,7 +4346,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
       var(--hero-overlay),
       url("../../assets/miliga-ui/backgrounds/team-hero-desktop.png");
     background-position: center 48%;
-    padding: 0.85rem 0 1.05rem;
+    padding: 0.65rem 0 0.8rem;
   }
 }
 
@@ -4358,7 +4364,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.2rem;
   text-align: center;
 }
 
@@ -4366,13 +4372,13 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
   max-width: calc(100% - 3.2rem);
-  margin-bottom: 0.1rem;
-  color: rgba(255, 255, 255, 0.72) !important;
-  font-size: 0.75rem;
+  margin: 0 0 0.02rem;
+  color: rgba(255, 255, 255, 0.62) !important;
+  font-size: 0.68rem;
   font-weight: var(--font-weight-medium);
-  line-height: 1.2;
+  line-height: 1.15;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
@@ -4382,12 +4388,12 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-team-hero .v2-team-badge--lg {
-  width: 3.75rem;
-  height: 3.75rem;
+  width: 3.35rem;
+  height: 3.35rem;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.4);
   background: #fff;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
 }
 
 .v2-team-hero .v2-team-badge--lg img {
@@ -4398,7 +4404,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.12rem;
+  gap: 0.06rem;
   min-width: 0;
   width: 100%;
 }
@@ -4406,46 +4412,55 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 .v2-team-hero__name {
   margin: 0;
   color: #fff;
-  font-size: clamp(1.15rem, 5.2vw, 1.45rem);
+  font-size: clamp(1.02rem, 4.4vw, 1.28rem);
   font-weight: var(--font-weight-extrabold);
   letter-spacing: var(--letter-tight);
-  line-height: 1.08;
+  line-height: 1.05;
   text-transform: uppercase;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
-.v2-team-hero__league,
-.v2-team-hero__sub {
+.v2-team-hero__meta {
   margin: 0;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 0.72rem;
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.25;
-}
-
-.v2-team-hero__sub {
+  max-width: 22rem;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 0.68rem;
   font-weight: var(--font-weight-medium);
-  opacity: 0.9;
+  line-height: 1.2;
 }
 
 .v2-team-hero__aside {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.28rem;
   width: 100%;
 }
 
 .v2-team-hero .v2-hero-stats {
-  width: 100%;
-  gap: 0.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  gap: 0.1rem 0.7rem;
+}
+
+.v2-team-hero .v2-hero-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.18rem;
 }
 
 .v2-team-hero .v2-hero-stat__value {
   color: #fff;
-  font-size: 1.05rem;
+  font-size: 0.82rem;
+  line-height: 1.1;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
@@ -4454,9 +4469,14 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-team-hero .v2-hero-stat__label {
-  margin-top: 0.1rem;
-  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
 }
+
+.v2-team-hero .v2-lbl-full { display: none; }
+.v2-team-hero .v2-lbl-short { display: inline; }
 
 .v2-team-hero__actions {
   display: flex;
@@ -4476,9 +4496,9 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 .v2-team-hero .v2-follow-btn,
 .v2-team-hero .v2-share-btn {
   width: 100%;
-  min-height: 1.95rem;
-  padding: 0.28rem 0.5rem;
-  font-size: 0.7rem;
+  min-height: 1.65rem;
+  padding: 0.18rem 0.45rem;
+  font-size: 0.68rem;
 }
 
 .v2-team-hero .v2-follow-btn {
@@ -4516,7 +4536,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
 @media (min-width: 992px) {
   .v2-team-hero {
-    padding: 1.05rem 0 1.2rem;
+    padding: 0.75rem 0 0.85rem;
   }
 
   .v2-team-hero__inner {
@@ -4528,15 +4548,15 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
     align-items: center;
     text-align: left;
     column-gap: 1.2rem;
-    row-gap: 0.45rem;
+    row-gap: 0.28rem;
   }
 
   .v2-team-hero__back { grid-area: back; }
 
   .v2-team-hero .v2-team-badge--lg {
     grid-area: logo;
-    width: 6.25rem;
-    height: 6.25rem;
+    width: 5.25rem;
+    height: 5.25rem;
   }
 
   .v2-team-hero__copy {
@@ -4545,18 +4565,26 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   }
 
   .v2-team-hero__name {
-    font-size: clamp(1.55rem, 2.2vw, 2.1rem);
+    font-size: clamp(1.35rem, 1.9vw, 1.85rem);
   }
 
-  .v2-team-hero__league { font-size: 0.9rem; }
-  .v2-team-hero__sub { font-size: 0.8rem; }
+  .v2-team-hero__meta {
+    max-width: none;
+    font-size: 0.78rem;
+  }
 
   .v2-team-hero__aside {
     grid-area: aside;
     align-items: stretch;
+    gap: 0.32rem;
   }
 
-  .v2-team-hero .v2-hero-stat__value { font-size: 1.25rem; }
+  .v2-team-hero .v2-hero-stats {
+    justify-content: flex-start;
+    gap: 0.15rem 0.85rem;
+  }
+
+  .v2-team-hero .v2-hero-stat__value { font-size: 0.95rem; }
 
   .v2-team-hero__actions {
     flex-direction: column;
@@ -4577,8 +4605,8 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
 @media (max-width: 374.98px) {
   .v2-team-hero .v2-team-badge--lg {
-    width: 3.25rem;
-    height: 3.25rem;
+    width: 3rem;
+    height: 3rem;
   }
 }
 

@@ -10,14 +10,15 @@
     var posClass = standing?.Position == 1 ? "is-champion" : null;
     var leagueSlug = league?.Slug ?? ViewBag.LeagueSlug as string ?? "";
     var teamSlug = Model.Team.Slug;
-    var seasonBits = new List<string>();
-    if (Model.Season != null) seasonBits.Add(Model.Season.Name);
+    var metaBits = new List<string>();
+    if (league != null) metaBits.Add(league.Name);
+    if (Model.Season != null) metaBits.Add(Model.Season.Name);
     if (!string.IsNullOrWhiteSpace(standing?.DivisionName))
     {
         var division = standing.DivisionName.Contains("divisi", StringComparison.OrdinalIgnoreCase)
             ? standing.DivisionName
             : $"División {standing.DivisionName}";
-        seasonBits.Add(division);
+        metaBits.Add(division);
     }
 }
 <header class="v2-team-hero">
@@ -53,13 +54,9 @@
 
         <div class="v2-team-hero__copy">
             <h1 class="v2-team-hero__name">@Model.Team.Name</h1>
-            @if (league != null)
+            @if (metaBits.Count > 0)
             {
-                <p class="v2-team-hero__league">@league.Name</p>
-            }
-            @if (seasonBits.Count > 0)
-            {
-                <p class="v2-team-hero__sub">@string.Join(" · ", seasonBits)</p>
+                <p class="v2-team-hero__meta">@string.Join(" · ", metaBits)</p>
             }
         </div>
 
