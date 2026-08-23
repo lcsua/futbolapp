@@ -452,16 +452,17 @@ body {
   pointer-events: none;
 }
 
-.v2-header--overlay .v2-header__inner,
-.v2-header--overlay .v2-mobile-nav {
-  pointer-events: auto;
-}
-
 .v2-header--overlay .v2-header__inner {
   justify-content: flex-end;
   min-height: 0;
   padding-top: max(0.65rem, env(safe-area-inset-top, 0px));
   padding-bottom: 0.35rem;
+  pointer-events: none;
+}
+
+.v2-header--overlay .v2-menu-btn,
+.v2-header--overlay .v2-mobile-nav {
+  pointer-events: auto;
 }
 
 .v2-header--overlay .v2-brand,
@@ -4499,6 +4500,36 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   min-height: 1.65rem;
   padding: 0.18rem 0.45rem;
   font-size: 0.68rem;
+}
+
+@media (max-width: 991.98px) {
+  .v2-team-hero__inner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "back back"
+      "logo copy"
+      "aside aside";
+    align-items: center;
+    text-align: left;
+    column-gap: 0.65rem;
+    row-gap: 0.22rem;
+  }
+
+  .v2-team-hero__back { grid-area: back; }
+
+  .v2-team-hero .v2-team-badge--lg { grid-area: logo; }
+
+  .v2-team-hero__copy {
+    grid-area: copy;
+    align-items: flex-start;
+  }
+
+  .v2-team-hero__meta { max-width: none; }
+
+  .v2-team-hero__aside { grid-area: aside; }
+
+  .v2-team-hero .v2-hero-stats { justify-content: flex-start; }
 }
 
 .v2-team-hero .v2-follow-btn {
