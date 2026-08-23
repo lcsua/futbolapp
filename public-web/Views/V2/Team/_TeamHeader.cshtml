@@ -20,8 +20,19 @@
             : $"División {standing.DivisionName}";
         metaBits.Add(division);
     }
+    var ambientSrc = Model.Team.LogoUrl;
+    var hasAmbient = !string.IsNullOrWhiteSpace(ambientSrc)
+        && !ambientSrc.Contains("default-team", StringComparison.OrdinalIgnoreCase);
 }
-<header class="v2-team-hero">
+<header class="v2-team-hero@(hasAmbient ? " has-ambient" : null)">
+    @if (hasAmbient)
+    {
+        <img class="v2-team-hero__ambient"
+             src="@ambientSrc"
+             alt=""
+             aria-hidden="true"
+             decoding="async" />
+    }
     <div class="v2-team-hero__inner">
         @if (league != null)
         {
