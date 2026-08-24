@@ -4777,13 +4777,6 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   margin-top: 0;
 }
 
-.v2-home-grid__side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  min-width: 0;
-}
-
 @media (min-width: 992px) {
   .v2-home-divisions {
     display: flex;
@@ -4810,19 +4803,24 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
   .v2-home-grid {
     grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
+    grid-template-areas:
+      "next table"
+      "teams teams";
     gap: var(--space-4);
     align-items: stretch;
+    align-content: start;
   }
 
-  .v2-home-grid > .v2-home-card,
-  .v2-home-grid__side {
-    min-height: 100%;
-    align-self: stretch;
+  .v2-home-grid > .v2-home-card:first-child {
+    grid-area: next;
+  }
+
+  .v2-home-card--table {
+    grid-area: table;
   }
 
   .v2-home-card--teams {
-    flex: 1 1 0;
-    min-height: 0;
+    grid-area: teams;
   }
 }
 
@@ -4903,13 +4901,6 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 .v2-home-card__body {
   display: flex;
   flex-direction: column;
-}
-
-.v2-home-card .v2-empty {
-  flex: 1 1 auto;
-  display: grid;
-  place-items: center;
-  min-height: 4.5rem;
 }
 
 .v2-home-match {
@@ -5007,11 +4998,12 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   padding: 0.28rem 0.15rem 0.35rem;
 }
 
+.v2-home-card--teams {
+  overflow: hidden;
+}
+
 .v2-home-card--teams .v2-team-carousel {
   margin-top: 0;
-  flex: 1 1 auto;
-  display: flex;
-  min-height: 0;
 }
 
 .v2-home-card--teams .v2-team-carousel__track {
@@ -5021,6 +5013,7 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   grid-auto-columns: calc((100% - 0.7rem) / 3);
   gap: 0.55rem 0.35rem;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   width: 100%;
 }
@@ -5037,22 +5030,14 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 }
 
 @media (min-width: 992px) {
-  .v2-home-grid > .v2-home-card,
-  .v2-home-grid__side {
-    height: 100%;
-  }
-
-  .v2-home-card--teams .v2-team-carousel {
-    align-items: center;
-  }
-
   .v2-home-card--teams .v2-team-carousel__track {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(6.25rem, 1fr));
     grid-template-rows: none;
     grid-auto-flow: row;
     grid-auto-columns: unset;
-    overflow: visible;
-    gap: 0.85rem 0.5rem;
+    overflow: hidden;
+    gap: 0.75rem 0.65rem;
+    padding-bottom: 0.15rem;
   }
 
   .v2-home-card--teams .v2-team-carousel__card .v2-team-badge--md {
