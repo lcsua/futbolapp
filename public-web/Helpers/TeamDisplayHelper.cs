@@ -30,6 +30,15 @@ public static class TeamDisplayHelper
         "SOCIAL", "ASOC", "ASOCIACION", "ASOCIACIÓN"
     };
 
+    public static bool HasRealLogo(TeamViewModel? team)
+    {
+        var src = !string.IsNullOrWhiteSpace(team?.LogoThumbUrl)
+            ? team!.LogoThumbUrl
+            : team?.LogoUrl;
+        return !string.IsNullOrWhiteSpace(src)
+            && !src.Contains("default-team", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static string GetInitials(string? name)
     {
         if (string.IsNullOrWhiteSpace(name)) return "?";

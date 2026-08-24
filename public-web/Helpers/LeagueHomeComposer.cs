@@ -148,8 +148,11 @@ public static class LeagueHomeComposer
             MatchCount = matches.Count,
             StandingsPreview = rows.Take(StandingsPreviewCount).ToList(),
             Teams = rows
-                .Select(r => r.Team)
-                .Where(t => t != null && !string.IsNullOrWhiteSpace(t.Name))
+                .Select((r, index) => (Team: r.Team, Index: index))
+                .Where(x => x.Team != null && !string.IsNullOrWhiteSpace(x.Team.Name))
+                .OrderByDescending(x => TeamDisplayHelper.HasRealLogo(x.Team))
+                .ThenBy(x => x.Index)
+                .Select(x => x.Team!)
                 .ToList()
         };
     }

@@ -94,6 +94,62 @@ public class LeagueHomeComposerTests
     }
 
     [Fact]
+    public void Compose_OrdersHomeTeamsWithRealCrestsFirst()
+    {
+        var standings = new SeasonGroupedViewModel<StandingsRowViewModel>
+        {
+            Divisions =
+            {
+                new DivisionGroupViewModel<StandingsRowViewModel>
+                {
+                    DivisionName = "A",
+                    DivisionSlug = "a",
+                    Data =
+                    {
+                        Row(1, "Sin Escudo", 9),
+                        new StandingsRowViewModel
+                        {
+                            Position = 2,
+                            Points = 6,
+                            Team = new TeamViewModel
+                            {
+                                Id = Guid.NewGuid(),
+                                Name = "Con Escudo",
+                                Slug = "con-escudo",
+                                LogoUrl = "/uploads/teams/crest.png"
+                            }
+                        },
+                        new StandingsRowViewModel
+                        {
+                            Position = 3,
+                            Points = 3,
+                            Team = new TeamViewModel
+                            {
+                                Id = Guid.NewGuid(),
+                                Name = "Placeholder",
+                                Slug = "placeholder",
+                                LogoUrl = "/assets/default-team.png"
+                            }
+                        },
+                    }
+                }
+            }
+        };
+
+        var home = LeagueHomeComposer.Compose(
+            new LeagueViewModel { Name = "Liga", Slug = "liga" },
+            "Apertura",
+            "apertura",
+            new[] { new DivisionViewModel { Name = "A", Slug = "a" } },
+            standings,
+            null,
+            null);
+
+        var names = Assert.Single(home.DivisionPanels).Teams.Select(t => t.Name).ToList();
+        Assert.Equal(new[] { "Con Escudo", "Sin Escudo", "Placeholder" }, names);
+    }
+
+    [Fact]
     public void CountUniqueTeams_DeduplicatesById()
     {
         var id = Guid.NewGuid();
