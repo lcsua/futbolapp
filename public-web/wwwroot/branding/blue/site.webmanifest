@@ -1,7 +1,9 @@
 {
   "name": "Mi Liga",
   "short_name": "Mi Liga",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#2563EB",

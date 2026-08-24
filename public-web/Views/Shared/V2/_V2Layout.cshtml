@@ -55,12 +55,16 @@
     <meta name="twitter:image" content="@ogImage" />
 
     <meta name="theme-color" content="#0F172A" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Mi Liga" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
     <link id="miliga-favicon" rel="icon" href="~/branding/favicon.ico" asp-append-version="true" sizes="any" />
     <link id="miliga-favicon-32" rel="icon" type="image/png" sizes="32x32" href="~/branding/favicon-32x32.png" asp-append-version="true" />
     <link id="miliga-favicon-16" rel="icon" type="image/png" sizes="16x16" href="~/branding/favicon-16x16.png" asp-append-version="true" />
     <link id="miliga-apple-touch" rel="apple-touch-icon" sizes="180x180" href="~/branding/apple-touch-icon.png" asp-append-version="true" />
-    <link rel="manifest" href="~/branding/site.webmanifest" asp-append-version="true" />
+    <link rel="manifest" href="~/manifest.webmanifest" asp-append-version="true" />
 
     @if (allowIndexing)
     {
@@ -98,8 +102,19 @@
                 if (params.has('inicio') || params.has('todas')) return;
                 if (/bot|crawl|spider|slurp|googlebot|bingbot|yandex|facebookexternalhit/i.test(navigator.userAgent)) return;
                 var path = localStorage.getItem('miliga-home-league') || localStorage.getItem('miliga-last-league');
+                if (!path) {
+                  var cookies = document.cookie ? document.cookie.split('; ') : [];
+                  for (var i = 0; i < cookies.length; i++) {
+                    var parts = cookies[i].split('=');
+                    if (parts[0] === 'miliga-home-league' || (!path && parts[0] === 'miliga-last-league')) {
+                      path = decodeURIComponent(parts.slice(1).join('='));
+                      if (parts[0] === 'miliga-home-league') break;
+                    }
+                  }
+                }
                 if (!path || !/^(argentina\/)?[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path)) return;
                 var base = (document.documentElement.getAttribute('data-path-base') || '').replace(/\/$/, '');
+                if (base && location.pathname.indexOf(base + '/') !== 0 && location.pathname !== base) base = '';
                 location.replace(base + '/ligas/' + path);
               } catch (e) {}
             })();

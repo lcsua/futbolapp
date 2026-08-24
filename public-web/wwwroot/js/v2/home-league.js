@@ -5,11 +5,19 @@
   const LABEL_OFF = 'Fijar inicio';
   const LABEL_ON = 'Liga de inicio';
 
-  function pathBase() {
+  function configuredPathBase() {
     return (document.documentElement.getAttribute('data-path-base') || '').replace(/\/$/, '');
   }
 
-  function read(key) {
+  function publicBase() {
+    const base = configuredPathBase();
+    if (!base) return '';
+    const path = location.pathname;
+    if (path === base || path.startsWith(`${base}/`)) return base;
+    return '';
+  }
+
+  function readStorage(key) {
     try {
       return localStorage.getItem(key) || '';
     } catch {
@@ -17,13 +25,42 @@
     }
   }
 
-  function write(key, value) {
+  function writeStorage(key, value) {
     try {
       if (value) localStorage.setItem(key, value);
       else localStorage.removeItem(key);
     } catch {
       /* ignore quota / private mode */
     }
+  }
+
+  function readCookie(name) {
+    const prefix = `${name}=`;
+    const parts = document.cookie ? document.cookie.split('; ') : [];
+    for (const part of parts) {
+      if (part.startsWith(prefix)) {
+        return decodeURIComponent(part.slice(prefix.length));
+      }
+    }
+    return '';
+  }
+
+  function writeCookie(name, value) {
+    const secure = location.protocol === 'https:' ? '; Secure' : '';
+    if (value) {
+      document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+      return;
+    }
+    document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+  }
+
+  function read(key) {
+    return readStorage(key) || readCookie(key);
+  }
+
+  function write(key, value) {
+    writeStorage(key, value);
+    writeCookie(key, value);
   }
 
   function isValidPath(value) {
@@ -38,7 +75,7 @@
   }
 
   function leagueHref(path) {
-    return `${pathBase()}/ligas/${path}`;
+    return `${publicBase()}/ligas/${path}`;
   }
 
   function rememberCurrent() {

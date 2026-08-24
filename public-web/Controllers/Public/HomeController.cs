@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using PublicWeb.Helpers;
 
 namespace PublicWeb.Controllers.Public;
 
@@ -13,10 +14,19 @@ public class HomeController : Controller
     }
 
     [HttpGet("")]
-    [ResponseCache(Duration = 1800)] // 30 mins
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public IActionResult Index()
     {
         ViewBag.V2ActiveNav = "home";
+        if (!Request.Query.ContainsKey("inicio") && !Request.Query.ContainsKey("todas"))
+        {
+            var target = HomeLeaguePreference.Resolve(
+                Request.Cookies[HomeLeaguePreference.PinnedCookie],
+                Request.Cookies[HomeLeaguePreference.LastCookie]);
+            if (target != null)
+                return Redirect(HomeLeaguePreference.ToPublicUrl(target));
+        }
+
         PublicWeb.Seo.SeoPageApplicator.Apply(PublicWeb.Seo.SeoCopy.Home(), ViewData, ViewBag);
         return View("~/Views/V2/Home.cshtml");
     }
