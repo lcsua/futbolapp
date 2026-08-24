@@ -4316,15 +4316,11 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
 /* ─── Team hero ─── */
 .v2-team-hero {
-  --hero-base: linear-gradient(
-    135deg,
-    var(--v2-navy) 0%,
-    color-mix(in srgb, var(--v2-primary) 22%, var(--v2-navy)) 100%
-  );
   --hero-overlay: linear-gradient(
     180deg,
-    rgba(15, 23, 42, 0.16) 0%,
-    rgba(15, 23, 42, 0.52) 100%
+    rgba(11, 18, 32, 0.46) 0%,
+    rgba(11, 18, 32, 0.58) 48%,
+    rgba(8, 16, 28, 0.70) 100%
   );
   position: relative;
   isolation: isolate;
@@ -4336,66 +4332,27 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   padding: 0.3rem 0 0.5rem;
   color: #fff;
   background-color: var(--v2-navy);
-  background-image: var(--hero-base);
+  background-image:
+    var(--hero-overlay),
+    url("../../assets/miliga-ui/backgrounds/team-hero.png");
+  background-size: cover;
+  background-position: center 42%;
   display: block;
   gap: 0;
   border-bottom: 0;
 }
 
-.v2-team-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: var(--hero-overlay);
-}
-
-.v2-team-hero__ambient {
-  position: absolute;
-  z-index: 0;
-  top: 50%;
-  left: 62%;
-  width: 78vw;
-  height: 78vw;
-  max-width: none;
-  pointer-events: none;
-  user-select: none;
-  object-fit: cover;
-  object-position: center;
-  opacity: 0.2;
-  filter: blur(34px) saturate(1.4);
-  transform: translate(-20%, -58%) scale(1.15);
-}
-
 @media (min-width: 768px) {
   .v2-team-hero {
     padding: 0.65rem 0 0.8rem;
-  }
-
-  .v2-team-hero__ambient {
-    width: 52vw;
-    height: 52vw;
-    left: 68%;
-    opacity: 0.24;
-    filter: blur(40px) saturate(1.5);
-    transform: translate(-18%, -62%) scale(1.25);
-  }
-}
-
-@media (min-width: 992px) {
-  .v2-team-hero__ambient {
-    width: 44vw;
-    height: 44vw;
-    left: 72%;
-    opacity: 0.26;
-    filter: blur(44px) saturate(1.55);
-    transform: translate(-12%, -64%) scale(1.32);
+    background-position: center 40%;
   }
 }
 
 @media (prefers-reduced-data: reduce) {
-  .v2-team-hero__ambient { display: none; }
+  .v2-team-hero {
+    background-image: var(--hero-overlay);
+  }
 }
 
 .v2-team-hero__inner {
