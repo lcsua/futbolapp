@@ -38,17 +38,21 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
         public int UpdatedCount { get; }
         public int CreatedCount { get; }
         public int SkippedCount { get; }
+        /// <summary>CSV pairs not found in an existing round; not inserted to avoid duplicate matches.</summary>
+        public int NotCreatedCount { get; }
         public List<string> Warnings { get; }
 
         public ImportMatchResultsResponse(
             int updatedCount,
             int createdCount,
             List<string>? warnings = null,
-            int skippedCount = 0)
+            int skippedCount = 0,
+            int notCreatedCount = 0)
         {
             UpdatedCount = updatedCount;
             CreatedCount = createdCount;
             SkippedCount = skippedCount;
+            NotCreatedCount = notCreatedCount;
             Warnings = warnings ?? new List<string>();
         }
     }

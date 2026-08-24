@@ -310,7 +310,11 @@ export function MatchesPage() {
       )}
 
       {importResultsMsg && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setImportResultsMsg(null)}>
+        <Alert
+          severity={importResultsMsg.includes('no creado') ? 'warning' : 'success'}
+          sx={{ mb: 2, whiteSpace: 'pre-wrap' }}
+          onClose={() => setImportResultsMsg(null)}
+        >
           {importResultsMsg}
         </Alert>
       )}
@@ -380,13 +384,14 @@ export function MatchesPage() {
           seasonId={seasonId}
           filterDivisionId={divisionId}
           divisions={divisions}
-          onImported={({ updatedCount, createdCount, skippedCount, warnings }) => {
+          onImported={({ updatedCount, createdCount, skippedCount, notCreatedCount, warnings }) => {
             const parts = [
               updatedCount ? `${updatedCount} actualizado(s)` : null,
               createdCount ? `${createdCount} creado(s)` : null,
               skippedCount ? `${skippedCount} omitido(s) (ya tenían resultado)` : null,
+              notCreatedCount ? `${notCreatedCount} no creado(s) (la fecha ya tiene fixture)` : null,
             ].filter(Boolean)
-            const warn = warnings.length ? ` Advertencias: ${warnings.length}.` : ''
+            const warn = warnings.length ? `\n${warnings.join('\n')}` : ''
             setImportResultsMsg(
               parts.length ? `Resultados: ${parts.join(', ')}.${warn}` : `Import OK.${warn}`
             )

@@ -197,7 +197,13 @@ export const matchesService = {
     },
     signal?: AbortSignal
   ) =>
-    apiClient.post<{ updatedCount: number; createdCount: number; skippedCount: number; warnings: string[] }>(
+    apiClient.post<{
+      updatedCount: number
+      createdCount: number
+      skippedCount: number
+      notCreatedCount?: number
+      warnings: string[]
+    }>(
       `/api/leagues/${leagueId}/matches/import-results`,
       body,
       signal

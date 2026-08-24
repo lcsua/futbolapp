@@ -68,6 +68,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             var updated = 0;
             var created = 0;
             var skipped = 0;
+            var notCreated = 0;
             var warnings = new List<string>();
             var learned = new HashSet<(Guid TeamId, string Normalized)>();
 
@@ -171,23 +172,54 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
 
                 if (toCreate.Count > 0)
                 {
-                    var newRound = csvRound ?? (maxRound + 1);
-                    foreach (var (homeTds, awayTds, item) in toCreate)
+                    // Never insert extra matches into a round that already has a fixture.
+                    // Pending games in that round are updated above; only empty rounds may be created.
+                    if (!CanCreateMissingPairs(csvRound, scopedFixtures.Count))
                     {
-                        var fixture = new Fixture(league, season, divisionSeason, homeTds, awayTds, newRound);
-                        await _fixtureRepository.AddAsync(fixture, cancellationToken);
-                        await _unitOfWork.SaveChangesAsync(cancellationToken);
+                        notCreated += toCreate.Count;
+                        var examples = toCreate
+                            .Take(3)
+                            .Select(x =>
+                            {
+                                var home = string.IsNullOrWhiteSpace(x.Item.HomeCsvName) ? "local" : x.Item.HomeCsvName;
+                                var away = string.IsNullOrWhiteSpace(x.Item.AwayCsvName) ? "visitante" : x.Item.AwayCsvName;
+                                return $"{home} vs {away}";
+                            });
+                        var more = toCreate.Count > 3 ? $" y {toCreate.Count - 3} más" : string.Empty;
+                        warnings.Add(
+                            $"{division.Name} fecha {csvRound}: {toCreate.Count} partido(s) no coinciden con el fixture de esa fecha y no se crearon (la fecha ya tiene partidos). Revisá la columna fecha del CSV. Ej: {string.Join("; ", examples)}{more}.");
+                    }
+                    else
+                    {
+                        var newRound = csvRound ?? (maxRound + 1);
+                        foreach (var (homeTds, awayTds, item) in toCreate)
+                        {
+                            var fixture = new Fixture(league, season, divisionSeason, homeTds, awayTds, newRound);
+                            await _fixtureRepository.AddAsync(fixture, cancellationToken);
+                            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                        await ApplyResultAsync(fixture, item.HomeScore, item.AwayScore, item.Status, swap: false, cancellationToken);
-                        created++;
+                            await ApplyResultAsync(fixture, item.HomeScore, item.AwayScore, item.Status, swap: false, cancellationToken);
+                            created++;
 
-                        fixtureByPair[(homeTds.Id, awayTds.Id)] = fixture;
+                            fixtureByPair[(homeTds.Id, awayTds.Id)] = fixture;
+                        }
                     }
                 }
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-            return new ImportMatchResultsResponse(updated, created, warnings, skipped);
+            return new ImportMatchResultsResponse(updated, created, warnings, skipped, notCreated);
+        }
+
+        /// <summary>
+        /// Missing CSV pairs may only create fixtures when the target round is empty (or unspecified).
+        /// A round that already has matches is update-only: pending results load, existing results stay.
+        /// </summary>
+        internal static bool CanCreateMissingPairs(int? csvRound, int fixturesInTargetRound)
+        {
+            if (csvRound is > 0 && fixturesInTargetRound > 0)
+                return false;
+            return true;
         }
 
         private static bool AlreadyHasLoadedResult(Fixture fixture)

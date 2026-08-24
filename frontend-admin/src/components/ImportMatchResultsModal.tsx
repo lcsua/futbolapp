@@ -61,6 +61,7 @@ export type ImportMatchResultsModalProps = {
     updatedCount: number
     createdCount: number
     skippedCount: number
+    notCreatedCount: number
     warnings: string[]
   }) => void
 }
@@ -266,6 +267,7 @@ export function ImportMatchResultsModal({
         updatedCount: res.updatedCount,
         createdCount: res.createdCount,
         skippedCount: res.skippedCount ?? 0,
+        notCreatedCount: res.notCreatedCount ?? 0,
         warnings: [...(res.warnings ?? []), ...(infoMsg ? [infoMsg] : [])],
       })
       reset()
@@ -396,9 +398,9 @@ export function ImportMatchResultsModal({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Subí un CSV con columnas: <strong>fecha, division, Equipo 1, goles equipo 1, equipo 2, goles equipo 2,
           estado</strong>. Estados: Finalizado, Partido Suspendido, Libre. Los libres se omiten; los suspendidos se
-          guardan como Suspendido (no suman en la tabla) hasta que se resuelvan a mano. Si el partido de esa fecha y
-          división ya tiene resultado (o no está Pendiente), se omite y no se pisa. Si no existe el fixture, se crea
-          en esa fecha.
+          guardan como Suspendido (no suman en la tabla) hasta que se resuelvan a mano. En una fecha que ya tiene
+          fixture, solo se cargan partidos <strong>pendientes</strong>; si ya tienen resultado no se pisan, y no se
+          crean cruces nuevos. Si la fecha todavía no tiene partidos, se crea el fixture.
         </Typography>
 
         <FormControl fullWidth size="small" sx={{ mb: 2 }} disabled={!!plans || importMutation.isPending}>
