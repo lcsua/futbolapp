@@ -193,7 +193,7 @@ public class LeagueHomeViewModel
     public string SelectedDivisionSlug { get; set; } = string.Empty;
 }
 
-/// <summary>Optional hero metrics composed from data already loaded for the page.</summary>
+/// <summary>Season-wide hero metrics. Same on every league tab; not filtered by division.</summary>
 public class LeagueHeroStatsViewModel
 {
     public int? DivisionCount { get; set; }

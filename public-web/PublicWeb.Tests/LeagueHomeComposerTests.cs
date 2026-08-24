@@ -180,6 +180,28 @@ public class LeagueHomeComposerTests
         Assert.Equal(2, LeagueHomeComposer.CountUniqueTeams(standings));
     }
 
+    [Fact]
+    public void BuildHeroStats_SeasonWideCountsDifferFromASingleDivisionSlice()
+    {
+        var all = Standings();
+        var oneDivision = new SeasonGroupedViewModel<StandingsRowViewModel>
+        {
+            Divisions = { all.Divisions[0] }
+        };
+        var calendar = Calendar();
+
+        var seasonWide = LeagueHomeComposer.BuildHeroStats(
+            2, LeagueHomeComposer.CountUniqueTeams(all), calendar);
+        var filtered = LeagueHomeComposer.BuildHeroStats(
+            1, LeagueHomeComposer.CountUniqueTeams(oneDivision), calendar);
+
+        Assert.Equal(2, seasonWide.DivisionCount);
+        Assert.Equal(4, seasonWide.TeamCount);
+        Assert.Equal(2, seasonWide.CurrentRound);
+        Assert.True(filtered.TeamCount < seasonWide.TeamCount);
+        Assert.Equal(1, filtered.DivisionCount);
+    }
+
     [Theory]
     [InlineData("senior", "home-div-senior")]
     [InlineData("45-a", "home-div-d45-a")]
