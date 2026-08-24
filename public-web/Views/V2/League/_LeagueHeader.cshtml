@@ -119,6 +119,16 @@
                     ViewData["SharePath"] = $"/ligas/{leagueSlug}";
                 }
                 @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
+                <div class="v2-home-pin" data-home-league-pin="@leagueSlug">
+                    <button type="button"
+                            class="v2-home-pin-btn"
+                            data-home-league-pin-trigger
+                            aria-pressed="false"
+                            aria-label="Usar esta liga al abrir Mi Liga">
+                        <span class="v2-ui-icon v2-ui-icon--home v2-home-pin-btn__icon" aria-hidden="true"></span>
+                        <span class="v2-home-pin-btn__label" data-home-league-pin-label>Fijar inicio</span>
+                    </button>
+                </div>
             </div>
         }
     </div>

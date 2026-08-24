@@ -1,5 +1,10 @@
 <!DOCTYPE html>
-<html lang="es" data-path-base="@(Context.Request.PathBase.HasValue ? Context.Request.PathBase.Value : "")">
+@{
+    var homeLeagueSlug = ViewBag.LeagueSlug as string;
+}
+<html lang="es"
+      data-path-base="@(Context.Request.PathBase.HasValue ? Context.Request.PathBase.Value : "")"
+      data-home-league="@homeLeagueSlug">
 @{
     var seoUrls = Context.RequestServices.GetRequiredService<PublicWeb.Seo.SeoUrlBuilder>();
     var seoOptions = Context.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<PublicWeb.Seo.SeoOptions>>().Value;
@@ -84,6 +89,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/v2/v2.css" asp-append-version="true" />
 
+    @if (string.Equals(ViewBag.V2ActiveNav as string, "home", StringComparison.Ordinal))
+    {
+        <script>
+            (function () {
+              try {
+                var params = new URLSearchParams(location.search);
+                if (params.has('inicio') || params.has('todas')) return;
+                if (/bot|crawl|spider|slurp|googlebot|bingbot|yandex|facebookexternalhit/i.test(navigator.userAgent)) return;
+                var path = localStorage.getItem('miliga-home-league') || localStorage.getItem('miliga-last-league');
+                if (!path || !/^(argentina\/)?[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path)) return;
+                var base = (document.documentElement.getAttribute('data-path-base') || '').replace(/\/$/, '');
+                location.replace(base + '/ligas/' + path);
+              } catch (e) {}
+            })();
+        </script>
+    }
+
     <script type="application/ld+json">@Html.Raw(siteJson)</script>
     @if (!string.IsNullOrWhiteSpace(breadcrumbJson))
     {
@@ -107,6 +129,7 @@
 <script src="~/js/v2/team-badge.js" asp-append-version="true"></script>
 <script src="~/js/v2/share.js" asp-append-version="true"></script>
 <script src="~/js/v2/follow.js" asp-append-version="true"></script>
+<script src="~/js/v2/home-league.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -3915,9 +3915,44 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-follow-btn__icon.v2-ui-icon,
-.v2-share-btn__icon.v2-ui-icon {
+.v2-share-btn__icon.v2-ui-icon,
+.v2-home-pin-btn__icon.v2-ui-icon {
   width: var(--v2-icon-action);
   height: var(--v2-icon-action);
+}
+
+.v2-home-pin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--v2-surface);
+  color: var(--v2-text);
+  font: inherit;
+  font-size: var(--font-size-secondary);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color var(--v2-transition),
+    color var(--v2-transition),
+    background-color var(--v2-transition);
+}
+
+.v2-home-pin-btn:hover,
+.v2-home-pin-btn:focus-visible {
+  border-color: color-mix(in srgb, var(--v2-primary) 35%, var(--border));
+  outline: none;
+}
+
+.v2-home-pin-btn.is-pinned {
+  border-color: color-mix(in srgb, var(--v2-primary) 45%, var(--border));
+  background: color-mix(in srgb, var(--v2-primary) 12%, var(--v2-surface));
 }
 
 /* ─── League hero ─── */
@@ -4147,13 +4182,15 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-league-hero__actions .v2-follow,
-.v2-league-hero__actions .v2-share {
+.v2-league-hero__actions .v2-share,
+.v2-league-hero__actions .v2-home-pin {
   flex: 1 1 0;
   min-width: 0;
 }
 
 .v2-league-hero .v2-follow-btn,
-.v2-league-hero .v2-share-btn {
+.v2-league-hero .v2-share-btn,
+.v2-league-hero .v2-home-pin-btn {
   width: 100%;
   min-height: 1.95rem;
   padding: 0.28rem 0.5rem;
@@ -4183,22 +4220,33 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   color: #fff;
 }
 
-.v2-league-hero .v2-share-btn {
+.v2-league-hero .v2-share-btn,
+.v2-league-hero .v2-home-pin-btn {
   border: 1px solid rgba(255, 255, 255, 0.78);
   background: transparent;
   color: #fff;
 }
 
 .v2-league-hero .v2-share-btn__icon,
-.v2-league-hero .v2-share-btn .v2-ui-icon {
+.v2-league-hero .v2-share-btn .v2-ui-icon,
+.v2-league-hero .v2-home-pin-btn__icon,
+.v2-league-hero .v2-home-pin-btn .v2-ui-icon {
   color: #fff;
   background-color: #fff;
 }
 
 .v2-league-hero .v2-share-btn:hover,
-.v2-league-hero .v2-share-btn:focus-visible {
+.v2-league-hero .v2-share-btn:focus-visible,
+.v2-league-hero .v2-home-pin-btn:hover,
+.v2-league-hero .v2-home-pin-btn:focus-visible {
   border-color: var(--v2-gold);
   background: color-mix(in srgb, var(--v2-gold) 16%, transparent);
+  color: #fff;
+}
+
+.v2-league-hero .v2-home-pin-btn.is-pinned {
+  border-color: var(--v2-gold);
+  background: color-mix(in srgb, var(--v2-gold) 22%, transparent);
   color: #fff;
 }
 
@@ -4296,7 +4344,8 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   }
 
   .v2-league-hero__actions .v2-follow,
-  .v2-league-hero__actions .v2-share {
+  .v2-league-hero__actions .v2-share,
+  .v2-league-hero__actions .v2-home-pin {
     flex: 0 0 auto;
   }
 
