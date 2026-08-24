@@ -10,6 +10,7 @@ using FootballManager.Application.UseCases.Matches.ImportMatchSchedule;
 using FootballManager.Application.UseCases.Matches.SwapDivisionHomeAway;
 using FootballManager.Application.UseCases.Matches.AddMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatchIncident;
+using FootballManager.Application.UseCases.Matches.DeleteMatch;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -28,6 +29,7 @@ namespace FootballManager.Api.Controllers
         private readonly ISwapDivisionHomeAwayUseCase _swapDivisionHomeAwayUseCase;
         private readonly IAddMatchIncidentUseCase _addMatchIncidentUseCase;
         private readonly IDeleteMatchIncidentUseCase _deleteMatchIncidentUseCase;
+        private readonly IDeleteMatchUseCase _deleteMatchUseCase;
 
         public MatchesController(
             IGetMatchesUseCase getMatchesUseCase,
@@ -38,7 +40,8 @@ namespace FootballManager.Api.Controllers
             IImportMatchScheduleUseCase importMatchScheduleUseCase,
             ISwapDivisionHomeAwayUseCase swapDivisionHomeAwayUseCase,
             IAddMatchIncidentUseCase addMatchIncidentUseCase,
-            IDeleteMatchIncidentUseCase deleteMatchIncidentUseCase)
+            IDeleteMatchIncidentUseCase deleteMatchIncidentUseCase,
+            IDeleteMatchUseCase deleteMatchUseCase)
         {
             _getMatchesUseCase = getMatchesUseCase ?? throw new ArgumentNullException(nameof(getMatchesUseCase));
             _getMatchByIdUseCase = getMatchByIdUseCase ?? throw new ArgumentNullException(nameof(getMatchByIdUseCase));
@@ -49,6 +52,7 @@ namespace FootballManager.Api.Controllers
             _swapDivisionHomeAwayUseCase = swapDivisionHomeAwayUseCase ?? throw new ArgumentNullException(nameof(swapDivisionHomeAwayUseCase));
             _addMatchIncidentUseCase = addMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(addMatchIncidentUseCase));
             _deleteMatchIncidentUseCase = deleteMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(deleteMatchIncidentUseCase));
+            _deleteMatchUseCase = deleteMatchUseCase ?? throw new ArgumentNullException(nameof(deleteMatchUseCase));
         }
 
         [HttpGet]
@@ -178,6 +182,19 @@ namespace FootballManager.Api.Controllers
             }, cancellationToken);
 
             return Ok(response);
+        }
+
+        [HttpDelete("{matchId}")]
+        public async Task<IActionResult> DeleteMatch(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid matchId,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            await _deleteMatchUseCase.ExecuteAsync(leagueId, matchId, userId, cancellationToken);
+            return NoContent();
         }
 
         [HttpPost("{matchId}/incidents")]

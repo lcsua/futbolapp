@@ -177,6 +177,9 @@ export const matchesService = {
       signal
     ),
 
+  deleteMatch: (leagueId: string, matchId: string, signal?: AbortSignal) =>
+    apiClient.delete(`/api/leagues/${leagueId}/matches/${matchId}`, signal),
+
   importResults: (
     leagueId: string,
     body: {

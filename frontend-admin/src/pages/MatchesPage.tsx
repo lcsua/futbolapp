@@ -18,6 +18,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -170,6 +171,30 @@ export function MatchesPage() {
       return
     }
     clearRoundMutation.mutate()
+  }
+
+  const deleteMatchMutation = useMutation({
+    mutationFn: (matchId: string) => matchesService.deleteMatch(leagueId!, matchId),
+    onSuccess: () => {
+      setClearError(null)
+      setImportResultsMsg('Partido eliminado del fixture.')
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
+    },
+    onError: (err) => {
+      setClearError(err instanceof Error ? err.message : 'No se pudo eliminar el partido')
+    },
+  })
+
+  const handleDeleteMatch = (match: MatchListItem) => {
+    if (seasonClosed) return
+    if (
+      !window.confirm(
+        `¿Eliminar el partido ${match.homeTeamName} vs ${match.awayTeamName} (fecha ${match.roundNumber})?\nSe borra el partido y su resultado. Esta acción no se puede deshacer.`,
+      )
+    ) {
+      return
+    }
+    deleteMatchMutation.mutate(match.id)
   }
 
   if (!leagueId) {
@@ -343,6 +368,9 @@ export function MatchesPage() {
                     match={m}
                     matchDetailPath={leagueIdInPath ? `/leagues/${leagueIdInPath}/matches/${m.id}` : `/matches/${m.id}`}
                     onEditResult={() => setResultModalMatch(m)}
+                    onDelete={() => handleDeleteMatch(m)}
+                    canDelete={!seasonClosed}
+                    isDeleting={deleteMatchMutation.isPending && deleteMatchMutation.variables === m.id}
                   />
                 ))}
               </Box>
@@ -425,10 +453,16 @@ function MatchCard({
   match,
   matchDetailPath,
   onEditResult,
+  onDelete,
+  canDelete,
+  isDeleting,
 }: {
   match: MatchListItem
   matchDetailPath: string
   onEditResult: () => void
+  onDelete: () => void
+  canDelete: boolean
+  isDeleting: boolean
 }) {
   const { t } = useTranslation()
   return (
@@ -438,7 +472,7 @@ function MatchCard({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        height: 130,
+        minHeight: 130,
         padding: 2,
       }}
     >
@@ -487,15 +521,25 @@ function MatchCard({
         <Typography variant="caption" color="text.secondary" display="block">
           {(match.fieldName || '—')} · {(match.kickoffTime || '—')}
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
+        <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
           <Button size="small" startIcon={<EditIcon />} onClick={onEditResult}>
             {t('matches.editResult')}
           </Button>
           <Button size="small" component={RouterLink} to={matchDetailPath} startIcon={<VisibilityIcon />}>
             {t('matches.viewDetails')}
           </Button>
+          <Button
+            size="small"
+            color="error"
+            startIcon={<DeleteOutlineIcon />}
+            onClick={onDelete}
+            disabled={!canDelete || isDeleting}
+          >
+            {isDeleting ? t('matches.deleting') : t('matches.deleteMatch')}
+          </Button>
         </Box>
       </CardContent>
     </Card>
   )
 }
+

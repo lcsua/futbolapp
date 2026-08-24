@@ -17,4 +17,5 @@ public interface IFixtureRepository
     Task RemoveByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default);
     Task RemoveByDivisionIdAsync(Guid divisionId, CancellationToken cancellationToken = default);
     Task AddAsync(Fixture fixture, CancellationToken cancellationToken = default);
+    void Remove(Fixture fixture);
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, Link as RouterLink } from 'react-router-dom'
+import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom'
 import {
   Alert,
   Box,
@@ -38,7 +38,9 @@ export function MatchDetailPage() {
   const leagueIdFromContext = useLeagueId()
   const leagueId = leagueIdInPath ?? leagueIdFromContext
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [incidentModalOpen, setIncidentModalOpen] = useState(false)
+  const backPath = leagueIdInPath ? `/leagues/${leagueIdInPath}/matches` : '/matches'
 
   const { data: match, isLoading, error } = useQuery({
     queryKey: ['leagues', leagueId, 'matches', matchId],
@@ -54,7 +56,13 @@ export function MatchDetailPage() {
     },
   })
 
-  const backPath = leagueIdInPath ? `/leagues/${leagueIdInPath}/matches` : '/matches'
+  const deleteMatchMutation = useMutation({
+    mutationFn: () => matchesService.deleteMatch(leagueId!, matchId!),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
+      navigate(backPath)
+    },
+  })
 
   if (!leagueId || !matchId) {
     return (
@@ -124,6 +132,34 @@ export function MatchDetailPage() {
       >
         Agregar incidencia
       </Button>
+
+      <Button
+        variant="outlined"
+        color="error"
+        startIcon={<DeleteIcon />}
+        disabled={!match.seasonIsActive || deleteMatchMutation.isPending}
+        onClick={() => {
+          if (
+            !window.confirm(
+              `¿Eliminar el partido ${match.homeTeamName} vs ${match.awayTeamName} (fecha ${match.roundNumber})?\nSe borra el partido y su resultado. Esta acción no se puede deshacer.`,
+            )
+          ) {
+            return
+          }
+          deleteMatchMutation.mutate()
+        }}
+        sx={{ mt: 2, ml: 1 }}
+      >
+        {deleteMatchMutation.isPending ? 'Eliminando…' : 'Eliminar partido'}
+      </Button>
+
+      {deleteMatchMutation.isError && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {deleteMatchMutation.error instanceof Error
+            ? deleteMatchMutation.error.message
+            : 'No se pudo eliminar el partido'}
+        </Alert>
+      )}
 
       <IncidentModal
         open={incidentModalOpen}

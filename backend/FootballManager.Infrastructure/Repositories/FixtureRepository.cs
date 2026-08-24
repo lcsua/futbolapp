@@ -115,5 +115,10 @@ namespace FootballManager.Infrastructure.Repositories
         {
             await _context.Fixtures.AddAsync(fixture, cancellationToken);
         }
+
+        public void Remove(Fixture fixture)
+        {
+            _context.Fixtures.Remove(fixture);
+        }
     }
 }

@@ -211,6 +211,8 @@
       "roundTitle": "Round {{round}} — {{division}}",
       "editResult": "Edit Result",
       "viewDetails": "View Details",
+      "deleteMatch": "Delete",
+      "deleting": "Deleting…",
       "noLeague": "No league selected.",
       "goToLeagues": "Go to Leagues"
     }
