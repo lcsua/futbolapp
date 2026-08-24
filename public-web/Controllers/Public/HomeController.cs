@@ -31,6 +31,16 @@ public class HomeController : Controller
         return View("~/Views/V2/Home.cshtml");
     }
 
+    [HttpPost("liga-inicio")]
+    public IActionResult SetDefaultLeague([FromBody] HomeLeaguePreferenceRequest? body)
+    {
+        var slug = body?.Slug?.Trim();
+        HomeLeaguePreference.SetCookie(Response, Request, HomeLeaguePreference.PinnedCookie, slug);
+        if (HomeLeaguePreference.IsValidPath(slug))
+            HomeLeaguePreference.SetCookie(Response, Request, HomeLeaguePreference.LastCookie, slug);
+        return Ok();
+    }
+
     [HttpGet("precios")]
     [ResponseCache(Duration = 1800)]
     public IActionResult Pricing()

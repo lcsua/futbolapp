@@ -2,7 +2,7 @@
   "name": "Mi Liga",
   "short_name": "Mi Liga",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/?src=pwa",
   "scope": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",

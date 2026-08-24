@@ -34,4 +34,14 @@ public class HomeLeaguePreferenceTests
     {
         Assert.Equal("/ligas/veteranos-de-perico", HomeLeaguePreference.ToPublicUrl("veteranos-de-perico"));
     }
+
+    [Theory]
+    [InlineData("miliga.com.ar", "miliga.com.ar")]
+    [InlineData("www.miliga.com.ar", "miliga.com.ar")]
+    [InlineData("develop.miliga.com.ar", null)]
+    [InlineData("localhost", null)]
+    public void CookieDomain_SharesApexAndWwwOnly(string host, string? expected)
+    {
+        Assert.Equal(expected, HomeLeaguePreference.CookieDomain(host));
+    }
 }

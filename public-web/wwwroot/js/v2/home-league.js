@@ -34,43 +34,18 @@
     }
   }
 
-  function readCookie(name) {
-    const prefix = `${name}=`;
-    const parts = document.cookie ? document.cookie.split('; ') : [];
-    for (const part of parts) {
-      if (part.startsWith(prefix)) {
-        return decodeURIComponent(part.slice(prefix.length));
-      }
-    }
-    return '';
-  }
-
-  function writeCookie(name, value) {
-    const secure = location.protocol === 'https:' ? '; Secure' : '';
-    if (value) {
-      document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
-      return;
-    }
-    document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
-  }
-
-  function read(key) {
-    return readStorage(key) || readCookie(key);
-  }
-
-  function write(key, value) {
-    writeStorage(key, value);
-    writeCookie(key, value);
-  }
-
   function isValidPath(value) {
     return typeof value === 'string' && PATH_RE.test(value);
   }
 
+  function serverPinned() {
+    return document.documentElement.getAttribute('data-pinned-home-league') || '';
+  }
+
   function homeTarget() {
-    const pinned = read(PINNED_KEY);
+    const pinned = readStorage(PINNED_KEY) || serverPinned();
     if (isValidPath(pinned)) return pinned;
-    const last = read(LAST_KEY);
+    const last = readStorage(LAST_KEY) || document.documentElement.getAttribute('data-home-league') || '';
     return isValidPath(last) ? last : '';
   }
 
@@ -78,10 +53,19 @@
     return `${publicBase()}/ligas/${path}`;
   }
 
+  function persistPinned(slug) {
+    return fetch(`${publicBase()}/liga-inicio`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ slug: slug || '' })
+    }).catch(() => {});
+  }
+
   function rememberCurrent() {
     const path = document.documentElement.getAttribute('data-home-league') || '';
     if (!isValidPath(path)) return;
-    write(LAST_KEY, path);
+    writeStorage(LAST_KEY, path);
   }
 
   function applyHomeLinks() {
@@ -106,23 +90,36 @@
     if (label) label.textContent = pinned ? LABEL_ON : LABEL_OFF;
   }
 
+  function isPinned(path) {
+    return readStorage(PINNED_KEY) === path || serverPinned() === path;
+  }
+
   function bindPin(root) {
     const path = root.getAttribute('data-home-league-pin') || '';
     if (!isValidPath(path)) return;
-    setPinUi(root, read(PINNED_KEY) === path);
+    setPinUi(root, isPinned(path));
     const btn = root.querySelector('[data-home-league-pin-trigger]');
     if (!btn || btn.dataset.bound === '1') return;
     btn.dataset.bound = '1';
     btn.addEventListener('click', () => {
-      const pinnedNow = read(PINNED_KEY) === path;
-      write(PINNED_KEY, pinnedNow ? '' : path);
-      if (!pinnedNow) write(LAST_KEY, path);
-      setPinUi(root, !pinnedNow);
+      const next = !isPinned(path);
+      writeStorage(PINNED_KEY, next ? path : '');
+      if (next) writeStorage(LAST_KEY, path);
+      document.documentElement.setAttribute('data-pinned-home-league', next ? path : '');
+      setPinUi(root, next);
       applyHomeLinks();
+      persistPinned(next ? path : '');
     });
+  }
+
+  function registerWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    const scope = publicBase() ? `${publicBase()}/` : '/';
+    navigator.serviceWorker.register(`${publicBase()}/sw.js`, { scope }).catch(() => {});
   }
 
   rememberCurrent();
   applyHomeLinks();
   document.querySelectorAll('[data-home-league-pin]').forEach(bindPin);
+  registerWorker();
 })();

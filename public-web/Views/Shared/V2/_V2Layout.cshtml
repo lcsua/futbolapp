@@ -1,10 +1,20 @@
 <!DOCTYPE html>
 @{
     var homeLeagueSlug = ViewBag.LeagueSlug as string;
+    var pinnedHomeLeague = Context.Request.Cookies[PublicWeb.Helpers.HomeLeaguePreference.PinnedCookie];
+    if (PublicWeb.Helpers.HomeLeaguePreference.IsValidPath(homeLeagueSlug))
+    {
+        PublicWeb.Helpers.HomeLeaguePreference.SetCookie(
+            Context.Response,
+            Context.Request,
+            PublicWeb.Helpers.HomeLeaguePreference.LastCookie,
+            homeLeagueSlug);
+    }
 }
 <html lang="es"
       data-path-base="@(Context.Request.PathBase.HasValue ? Context.Request.PathBase.Value : "")"
-      data-home-league="@homeLeagueSlug">
+      data-home-league="@homeLeagueSlug"
+      data-pinned-home-league="@pinnedHomeLeague">
 @{
     var seoUrls = Context.RequestServices.GetRequiredService<PublicWeb.Seo.SeoUrlBuilder>();
     var seoOptions = Context.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<PublicWeb.Seo.SeoOptions>>().Value;
