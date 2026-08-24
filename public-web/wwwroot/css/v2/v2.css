@@ -2834,20 +2834,6 @@ a.v2-standings-table__team-link:focus-visible {
   margin: 0;
 }
 
-.v2-home-grid {
-  display: grid;
-  gap: var(--space-6);
-  margin-top: var(--space-5);
-}
-
-@media (min-width: 900px) {
-  .v2-home-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-6) var(--space-5);
-    align-items: start;
-  }
-}
-
 .v2-chip-list {
   list-style: none;
   margin: 0.65rem 0 0;
@@ -4768,6 +4754,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   white-space: nowrap;
   padding: 0.32rem 0.7rem;
   font-size: 0.75rem;
+  border-radius: 999px;
 }
 
 .v2-home-divisions {
@@ -4798,10 +4785,44 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 @media (min-width: 992px) {
+  .v2-home-divisions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem 0.85rem;
+    margin: 0 0 var(--space-4);
+  }
+
+  .v2-home-kicker {
+    margin: 0;
+  }
+
+  .v2-home-chips {
+    flex: 1 1 16rem;
+    flex-wrap: wrap;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .v2-home-divisions__hint {
+    display: none;
+  }
+
   .v2-home-grid {
-    grid-template-columns: minmax(0, 1.2fr) minmax(18.5rem, 0.8fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
     gap: var(--space-4);
-    align-items: start;
+    align-items: stretch;
+  }
+
+  .v2-home-grid > .v2-home-card,
+  .v2-home-grid__side {
+    min-height: 100%;
+    align-self: stretch;
+  }
+
+  .v2-home-card--teams {
+    flex: 1 1 0;
+    min-height: 0;
   }
 }
 
@@ -4882,6 +4903,13 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 .v2-home-card__body {
   display: flex;
   flex-direction: column;
+}
+
+.v2-home-card .v2-empty {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  min-height: 4.5rem;
 }
 
 .v2-home-match {
@@ -4981,6 +5009,9 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 
 .v2-home-card--teams .v2-team-carousel {
   margin-top: 0;
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
 }
 
 .v2-home-card--teams .v2-team-carousel__track {
@@ -4991,6 +5022,7 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   gap: 0.55rem 0.35rem;
   overflow-x: auto;
   scrollbar-width: none;
+  width: 100%;
 }
 
 .v2-home-card--teams .v2-team-carousel__track::-webkit-scrollbar { display: none; }
@@ -5000,10 +5032,36 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   max-width: none;
 }
 
+.v2-home-card--teams .v2-team-carousel__name {
+  font-size: 0.68rem;
+}
+
 @media (min-width: 992px) {
+  .v2-home-grid > .v2-home-card,
+  .v2-home-grid__side {
+    height: 100%;
+  }
+
+  .v2-home-card--teams .v2-team-carousel {
+    align-items: center;
+  }
+
   .v2-home-card--teams .v2-team-carousel__track {
-    grid-template-rows: auto;
-    grid-auto-columns: calc((100% - 1.05rem) / 4);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: none;
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    overflow: visible;
+    gap: 0.85rem 0.5rem;
+  }
+
+  .v2-home-card--teams .v2-team-carousel__card .v2-team-badge--md {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .v2-home-card__more {
+    display: none;
   }
 }
 
