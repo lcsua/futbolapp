@@ -11,6 +11,7 @@ namespace FootballManager.Application.Interfaces.Repositories
         Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
         Task<User?> GetByEmailAndPasswordAsync(string email, string password, CancellationToken cancellationToken = default);
         Task AddAsync(User user, CancellationToken cancellationToken = default);
+        Task<string> HashPasswordAsync(string password, CancellationToken cancellationToken = default);
         Task SetPasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default);
     }
 }

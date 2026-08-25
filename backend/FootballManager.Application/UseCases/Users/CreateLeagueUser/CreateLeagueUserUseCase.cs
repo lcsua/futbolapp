@@ -83,11 +83,10 @@ namespace FootballManager.Application.UseCases.Users.CreateLeagueUser
                 if (string.IsNullOrWhiteSpace(request.FullName))
                     throw new ArgumentException("Full name required.");
 
-                user = new User(request.FullName.Trim(), email);
+                var passwordHash = await _userRepository.HashPasswordAsync(request.Password.Trim(), cancellationToken);
+                user = new User(request.FullName.Trim(), email, passwordHash);
                 user.AssignRole(UserRole.USER);
                 await _userRepository.AddAsync(user, cancellationToken);
-                await _unitOfWork.SaveChangesAsync(cancellationToken);
-                await _userRepository.SetPasswordAsync(user.Id, request.Password.Trim(), cancellationToken);
                 createdUser = true;
             }
             else

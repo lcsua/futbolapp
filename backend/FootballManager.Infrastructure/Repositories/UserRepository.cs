@@ -52,6 +52,18 @@ namespace FootballManager.Infrastructure.Repositories
             await _context.Users.AddAsync(user, cancellationToken);
         }
 
+        public async Task<string> HashPasswordAsync(string password, CancellationToken cancellationToken = default)
+        {
+            var hash = await _context.Database
+                .SqlQuery<string>($"SELECT crypt({password.Trim()}, gen_salt('bf')) AS \"Value\"")
+                .FirstAsync(cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(hash))
+                throw new InvalidOperationException("Could not hash password.");
+
+            return hash;
+        }
+
         public async Task SetPasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default)
         {
             await _context.Database.ExecuteSqlRawAsync(
