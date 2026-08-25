@@ -11,15 +11,23 @@ import {
 import AddIcon from '@mui/icons-material/Add'
 import { useQuery } from '@tanstack/react-query'
 import { leaguesService } from '../api/leagues'
+import { authApi } from '../api/auth'
 import { useLeagueContext } from '../contexts/LeagueContext'
+import { usePermissions } from '../contexts/PermissionContext'
 
 export function LeaguesListPage() {
   const navigate = useNavigate()
   const { setActiveLeague } = useLeagueContext()
+  const { hasPermission } = usePermissions()
   const { data: leagues, isLoading, isError, error } = useQuery({
     queryKey: ['leagues'],
     queryFn: ({ signal }) => leaguesService.getMyLeagues(signal),
   })
+  const { data: capabilities } = useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: ({ signal }) => authApi.me(signal),
+  })
+  const canCreateLeague = capabilities?.canCreateLeague === true
 
   if (isLoading) {
     return (
@@ -43,6 +51,7 @@ export function LeaguesListPage() {
         <Typography variant="h5" component="h2" fontWeight={600}>
           Leagues
         </Typography>
+        {canCreateLeague ? (
         <Button
           component={RouterLink}
           to="/leagues/new"
@@ -51,6 +60,7 @@ export function LeaguesListPage() {
         >
           Create league
         </Button>
+        ) : null}
       </Box>
 
       {!leagues?.length ? (
@@ -84,9 +94,12 @@ export function LeaguesListPage() {
                 </Typography>
               ) : null}
               <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {canCreateLeague || hasPermission('leagues') ? (
                 <Button component={RouterLink} to={`/leagues/${league.id}/edit`} size="small" variant="outlined">
                   Edit
                 </Button>
+                ) : null}
+                {canCreateLeague || hasPermission('seasons') ? (
                 <Button
                   size="small"
                   variant="outlined"
@@ -97,6 +110,8 @@ export function LeaguesListPage() {
                 >
                   Seasons
                 </Button>
+                ) : null}
+                {canCreateLeague || hasPermission('divisions') ? (
                 <Button
                   size="small"
                   variant="outlined"
@@ -107,6 +122,8 @@ export function LeaguesListPage() {
                 >
                   Divisions
                 </Button>
+                ) : null}
+                {canCreateLeague || hasPermission('teams') ? (
                 <Button
                   size="small"
                   variant="outlined"
@@ -116,6 +133,27 @@ export function LeaguesListPage() {
                   }}
                 >
                   Teams
+                </Button>
+                ) : null}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    setActiveLeague(league)
+                    navigate('/matches')
+                  }}
+                >
+                  Partidos
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    setActiveLeague(league)
+                    navigate('/standings')
+                  }}
+                >
+                  Posiciones
                 </Button>
               </Box>
             </CardContent>

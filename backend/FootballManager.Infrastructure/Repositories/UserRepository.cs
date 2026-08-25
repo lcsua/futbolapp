@@ -27,7 +27,7 @@ namespace FootballManager.Infrastructure.Repositories
         public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         {
             return await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.Trim().ToLower(), cancellationToken);
         }
 
         public async Task<User?> GetByEmailAndPasswordAsync(string email, string password, CancellationToken cancellationToken = default)
@@ -50,6 +50,21 @@ namespace FootballManager.Infrastructure.Repositories
         public async Task AddAsync(User user, CancellationToken cancellationToken = default)
         {
             await _context.Users.AddAsync(user, cancellationToken);
+        }
+
+        public async Task SetPasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default)
+        {
+            await _context.Database.ExecuteSqlRawAsync(
+                @"UPDATE users
+                  SET password_hash = crypt(@password, gen_salt('bf')),
+                      updated_at = NOW()
+                  WHERE id = @id",
+                new object[]
+                {
+                    new NpgsqlParameter("password", password.Trim()),
+                    new NpgsqlParameter("id", userId)
+                },
+                cancellationToken);
         }
     }
 }

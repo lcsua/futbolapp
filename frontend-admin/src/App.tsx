@@ -1,9 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { LeagueProvider } from './contexts/LeagueContext'
+import { PermissionProvider } from './contexts/PermissionContext'
 import { AppLayout } from './components/AppLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LeagueScopedRoute } from './components/LeagueScopedRoute'
+import { PermissionRoute } from './components/PermissionRoute'
 import { LeaguesListPage } from './pages/LeaguesListPage'
 import { CreateLeaguePage } from './pages/CreateLeaguePage'
 import { EditLeaguePage } from './pages/EditLeaguePage'
@@ -34,6 +36,8 @@ import { MatchDetailPage } from './pages/MatchDetailPage'
 import { StandingsPage } from './pages/StandingsPage'
 import { TeamPlayersPage } from './pages/TeamPlayersPage'
 import { LoginPage } from './pages/LoginPage'
+import { UsersPage } from './pages/UsersPage'
+import { RolesPage } from './pages/RolesPage'
 
 export default function App() {
   return (
@@ -45,7 +49,9 @@ export default function App() {
           element={
             <ProtectedRoute>
               <LeagueProvider>
-                <AppLayout />
+                <PermissionProvider>
+                  <AppLayout />
+                </PermissionProvider>
               </LeagueProvider>
             </ProtectedRoute>
           }
@@ -115,6 +121,12 @@ export default function App() {
             <Route path="matches" element={<MatchesPage />} />
             <Route path="matches/:matchId" element={<MatchDetailPage />} />
             <Route path="standings" element={<StandingsPage />} />
+            <Route element={<PermissionRoute permission="users" />}>
+              <Route path="users" element={<UsersPage />} />
+            </Route>
+            <Route element={<PermissionRoute permission="roles" />}>
+              <Route path="roles" element={<RolesPage />} />
+            </Route>
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

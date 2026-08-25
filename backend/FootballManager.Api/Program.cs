@@ -2,6 +2,7 @@
 using FootballManager.Application.Interfaces;
 using FootballManager.Infrastructure;
 using FootballManager.Api.Auth;
+using FootballManager.Api.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.FileProviders;
 using System.Threading.RateLimiting;
@@ -12,7 +13,11 @@ builder.Services.AddSingleton<IDevTokenStore, DevTokenStore>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddMemoryCache();
-builder.Services.AddControllers();
+builder.Services.AddScoped<LeaguePermissionFilter>();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<LeaguePermissionFilter>();
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

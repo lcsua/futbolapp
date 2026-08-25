@@ -23,7 +23,11 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
                 .HasColumnName("assigned_role")
                 .HasConversion<string>();
 
+            builder.Property(e => e.RoleId).HasColumnName("role_id");
+
             builder.Property(e => e.CreatedAt).HasColumnName("created_at");
+            builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            builder.Property(e => e.DeletedAt).HasColumnName("deleted_at");
 
             builder.HasIndex(e => new { e.UserId, e.LeagueId }).IsUnique();
 
@@ -36,6 +40,11 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
                 .WithMany(e => e.UserLeagues)
                 .HasForeignKey(e => e.LeagueId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(e => e.Role)
+                .WithMany()
+                .HasForeignKey(e => e.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

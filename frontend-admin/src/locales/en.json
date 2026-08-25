@@ -18,13 +18,72 @@
       "standings": "Standings",
       "competitionRules": "Competition rules",
       "matchRules": "Match rules",
-      "competitionSettings": "Competition settings"
+      "competitionSettings": "Competition settings",
+      "administration": "Administration",
+      "users": "Users",
+      "roles": "Roles"
     },
     "common": {
       "save": "Save",
       "saveError": "Failed to save",
       "logout": "Log out",
       "cancel": "Cancel"
+    },
+    "users": {
+      "title": "League users",
+      "create": "New user",
+      "fullName": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "At least 6 characters. If the email already exists, the user is linked to this league and the password is ignored.",
+      "role": "Role",
+      "actions": "Actions",
+      "remove": "Remove from league",
+      "removeConfirm": "Remove this user from the league?",
+      "hint": "Users are linked to the active league. The Carga role can only access Matches and Standings.",
+      "noLeague": "No league selected.",
+      "goToLeagues": "Go to Leagues",
+      "loadError": "Failed to load users",
+      "createError": "Could not create the user"
+    },
+    "roles": {
+      "title": "Roles and permissions",
+      "create": "New role",
+      "edit": "Edit role",
+      "name": "Name",
+      "description": "Description",
+      "permissions": "Permissions",
+      "system": "System",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this role?",
+      "adminLocked": "The Administrator role always has all permissions.",
+      "saveError": "Could not save the role",
+      "loadError": "Failed to load roles",
+      "noLeague": "No league selected.",
+      "goToLeagues": "Go to Leagues"
+    },
+    "permissionModules": {
+      "organization": "Organization",
+      "competition": "Competition",
+      "settings": "Settings",
+      "admin": "Administration"
+    },
+    "permissions": {
+      "leagues": "Leagues",
+      "seasons": "Seasons",
+      "season_setup": "Season setup",
+      "divisions": "Divisions",
+      "teams": "Teams",
+      "clubs": "Clubs",
+      "fields": "Fields",
+      "fixtures": "Fixtures",
+      "matches": "Matches",
+      "standings": "Standings",
+      "competition_rules": "Competition rules",
+      "match_rules": "Match rules",
+      "users": "Users",
+      "roles": "Roles",
+      "documents": "Documents"
     },
     "matchRules": {
       "title": "Match rules",

@@ -38,5 +38,19 @@ namespace FootballManager.Domain.Entities
             Role = role;
             UpdateTimestamp();
         }
+
+        public void SetPasswordHash(string passwordHash)
+        {
+            PasswordHash = !string.IsNullOrWhiteSpace(passwordHash)
+                ? passwordHash
+                : throw new ArgumentException("Password hash required.", nameof(passwordHash));
+            UpdateTimestamp();
+        }
+
+        public void Deactivate()
+        {
+            IsActive = false;
+            UpdateTimestamp();
+        }
     }
 }

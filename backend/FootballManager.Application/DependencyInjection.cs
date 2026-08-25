@@ -1,4 +1,15 @@
 using FootballManager.Application.UseCases.Auth.Login;
+using FootballManager.Application.UseCases.Auth.GetCapabilities;
+using FootballManager.Application.UseCases.Users.CreateLeagueUser;
+using FootballManager.Application.UseCases.Users.GetLeagueUsers;
+using FootballManager.Application.UseCases.Users.UpdateLeagueUserRole;
+using FootballManager.Application.UseCases.Users.RemoveLeagueUser;
+using FootballManager.Application.UseCases.Users.GetMyAccess;
+using FootballManager.Application.UseCases.Roles.CreateRole;
+using FootballManager.Application.UseCases.Roles.GetRoles;
+using FootballManager.Application.UseCases.Roles.UpdateRole;
+using FootballManager.Application.UseCases.Roles.DeleteRole;
+using FootballManager.Application.UseCases.Roles.GetPermissionCatalog;
 using FootballManager.Application.UseCases.Leagues.CreateLeague;
 using FootballManager.Application.UseCases.Leagues.CreateSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeague;
@@ -91,8 +102,20 @@ namespace FootballManager.Application
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
             services.AddScoped<IMatchRulesResolver, MatchRulesResolver>();
+            services.AddScoped<ILeaguePermissionService, LeaguePermissionService>();
 
             services.AddScoped<ILoginUseCase, LoginUseCase>();
+            services.AddScoped<IGetAuthCapabilitiesUseCase, GetAuthCapabilitiesUseCase>();
+            services.AddScoped<ICreateLeagueUserUseCase, CreateLeagueUserUseCase>();
+            services.AddScoped<IGetLeagueUsersUseCase, GetLeagueUsersUseCase>();
+            services.AddScoped<IUpdateLeagueUserRoleUseCase, UpdateLeagueUserRoleUseCase>();
+            services.AddScoped<IRemoveLeagueUserUseCase, RemoveLeagueUserUseCase>();
+            services.AddScoped<IGetMyAccessUseCase, GetMyAccessUseCase>();
+            services.AddScoped<ICreateRoleUseCase, CreateRoleUseCase>();
+            services.AddScoped<IGetRolesUseCase, GetRolesUseCase>();
+            services.AddScoped<IUpdateRoleUseCase, UpdateRoleUseCase>();
+            services.AddScoped<IDeleteRoleUseCase, DeleteRoleUseCase>();
+            services.AddScoped<IGetPermissionCatalogUseCase, GetPermissionCatalogUseCase>();
             services.AddScoped<ICreateLeagueUseCase, CreateLeagueUseCase>();
             services.AddScoped<ICreateSeasonUseCase, CreateSeasonUseCase>();
             services.AddScoped<IGetLeagueUseCase, GetLeagueUseCase>();

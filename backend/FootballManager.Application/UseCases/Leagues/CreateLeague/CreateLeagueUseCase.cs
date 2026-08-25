@@ -5,6 +5,7 @@ using FootballManager.Application.Exceptions;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Application.UseCases.Leagues.SeedLeagueDocumentDefaults;
+using FootballManager.Domain.Authorization;
 using FootballManager.Domain.Entities;
 using FootballManager.Domain.Enums;
 
@@ -15,6 +16,7 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
         private readonly ILeagueRepository _leagueRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
         private readonly ISeedLeagueDocumentDefaultsUseCase _seedDocumentDefaultsUseCase;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -22,12 +24,14 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
             ILeagueRepository leagueRepository,
             IUserLeagueRepository userLeagueRepository,
             IUserRepository userRepository,
+            IRoleRepository roleRepository,
             ISeedLeagueDocumentDefaultsUseCase seedDocumentDefaultsUseCase,
             IUnitOfWork unitOfWork)
         {
             _leagueRepository = leagueRepository ?? throw new ArgumentNullException(nameof(leagueRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
             _seedDocumentDefaultsUseCase = seedDocumentDefaultsUseCase ?? throw new ArgumentNullException(nameof(seedDocumentDefaultsUseCase));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
@@ -54,7 +58,10 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
             var league = new League(request.Name, request.Country, slug, request.Description, request.LogoUrl, request.IsPublic, request.IsActive);
             await _leagueRepository.AddAsync(league, cancellationToken);
 
-            var userLeague = new UserLeague(creator, league, UserRole.ADMIN);
+            var adminRole = await _roleRepository.GetByCodeAsync(RoleCodes.Admin, cancellationToken);
+            var userLeague = adminRole != null
+                ? new UserLeague(creator, league, adminRole)
+                : new UserLeague(creator, league, UserRole.ADMIN);
             await _userLeagueRepository.AddAsync(userLeague, cancellationToken);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -18,13 +18,72 @@
       "standings": "Posiciones",
       "competitionRules": "Reglas de competición",
       "matchRules": "Reglas del partido",
-      "competitionSettings": "Configuración"
+      "competitionSettings": "Configuración",
+      "administration": "Administración",
+      "users": "Usuarios",
+      "roles": "Roles"
     },
     "common": {
       "save": "Guardar",
       "saveError": "Error al guardar",
       "logout": "Cerrar sesión",
       "cancel": "Cancelar"
+    },
+    "users": {
+      "title": "Usuarios de la liga",
+      "create": "Nuevo usuario",
+      "fullName": "Nombre completo",
+      "email": "Email",
+      "password": "Contraseña",
+      "passwordHint": "Mínimo 6 caracteres. Si el email ya existe, se asocia a esta liga y se ignora la contraseña.",
+      "role": "Rol",
+      "actions": "Acciones",
+      "remove": "Quitar de la liga",
+      "removeConfirm": "¿Quitar este usuario de la liga?",
+      "hint": "Los usuarios se asocian a la liga activa. El rol Carga solo puede ver Partidos y Posiciones.",
+      "noLeague": "No hay liga seleccionada.",
+      "goToLeagues": "Ir a Ligas",
+      "loadError": "Error al cargar usuarios",
+      "createError": "No se pudo crear el usuario"
+    },
+    "roles": {
+      "title": "Roles y permisos",
+      "create": "Nuevo rol",
+      "edit": "Editar rol",
+      "name": "Nombre",
+      "description": "Descripción",
+      "permissions": "Permisos",
+      "system": "Sistema",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Eliminar este rol?",
+      "adminLocked": "El rol Administrador siempre tiene todos los permisos.",
+      "saveError": "No se pudo guardar el rol",
+      "loadError": "Error al cargar roles",
+      "noLeague": "No hay liga seleccionada.",
+      "goToLeagues": "Ir a Ligas"
+    },
+    "permissionModules": {
+      "organization": "Organización",
+      "competition": "Competición",
+      "settings": "Configuración",
+      "admin": "Administración"
+    },
+    "permissions": {
+      "leagues": "Ligas",
+      "seasons": "Temporadas",
+      "season_setup": "Configuración de temporada",
+      "divisions": "Divisiones",
+      "teams": "Equipos",
+      "clubs": "Clubes",
+      "fields": "Canchas",
+      "fixtures": "Fixture",
+      "matches": "Partidos",
+      "standings": "Posiciones",
+      "competition_rules": "Reglas de competición",
+      "match_rules": "Reglas del partido",
+      "users": "Usuarios",
+      "roles": "Roles",
+      "documents": "Documentos"
     },
     "matchRules": {
       "title": "Reglas de partido",
