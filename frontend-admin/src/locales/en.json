@@ -272,6 +272,12 @@
       "viewDetails": "View Details",
       "deleteMatch": "Delete",
       "deleting": "Deleting…",
+      "deleteConfirmTitle": "Delete match from the fixture",
+      "deleteConfirmMatch": "{{home}} vs {{away}} (round {{round}})",
+      "deleteConfirmFixture": "This match will be removed from the fixture.",
+      "deleteConfirmNoReadd": "You will not be able to add it again, because the fixture is already created.",
+      "deleteConfirmWrongOption": "If you want to edit the result, this is not the right option: use “Edit result”.",
+      "deleteConfirmAction": "Yes, delete from fixture",
       "noLeague": "No league selected.",
       "goToLeagues": "Go to Leagues"
     }

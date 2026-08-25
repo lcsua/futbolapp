@@ -7,6 +7,10 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Typography,
   CircularProgress,
   IconButton,
@@ -15,6 +19,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   matchesService,
   incidentTypeLabel,
@@ -34,12 +39,14 @@ const INCIDENT_CHIP_COLOR: Record<string, 'success' | 'warning' | 'error' | 'def
 }
 
 export function MatchDetailPage() {
+  const { t } = useTranslation()
   const { matchId, leagueId: leagueIdInPath } = useParams<{ matchId: string; leagueId?: string }>()
   const leagueIdFromContext = useLeagueId()
   const leagueId = leagueIdInPath ?? leagueIdFromContext
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [incidentModalOpen, setIncidentModalOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const backPath = leagueIdInPath ? `/leagues/${leagueIdInPath}/matches` : '/matches'
 
   const { data: match, isLoading, error } = useQuery({
@@ -138,20 +145,51 @@ export function MatchDetailPage() {
         color="error"
         startIcon={<DeleteIcon />}
         disabled={!match.seasonIsActive || deleteMatchMutation.isPending}
-        onClick={() => {
-          if (
-            !window.confirm(
-              `¿Eliminar el partido ${match.homeTeamName} vs ${match.awayTeamName} (fecha ${match.roundNumber})?\nSe borra el partido y su resultado. Esta acción no se puede deshacer.`,
-            )
-          ) {
-            return
-          }
-          deleteMatchMutation.mutate()
-        }}
+        onClick={() => setDeleteDialogOpen(true)}
         sx={{ mt: 2, ml: 1 }}
       >
-        {deleteMatchMutation.isPending ? 'Eliminando…' : 'Eliminar partido'}
+        {deleteMatchMutation.isPending ? t('matches.deleting') : t('matches.deleteMatch')}
       </Button>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => !deleteMatchMutation.isPending && setDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('matches.deleteConfirmTitle')}</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {t('matches.deleteConfirmMatch', {
+              home: match.homeTeamName,
+              away: match.awayTeamName,
+              round: match.roundNumber,
+            })}
+          </Alert>
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            {t('matches.deleteConfirmFixture')}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            {t('matches.deleteConfirmNoReadd')}
+          </Typography>
+          <Typography variant="body2">
+            {t('matches.deleteConfirmWrongOption')}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleteMatchMutation.isPending}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={deleteMatchMutation.isPending}
+            onClick={() => deleteMatchMutation.mutate()}
+          >
+            {deleteMatchMutation.isPending ? t('matches.deleting') : t('matches.deleteConfirmAction')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {deleteMatchMutation.isError && (
         <Alert severity="error" sx={{ mt: 2 }}>

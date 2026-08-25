@@ -8,6 +8,10 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
@@ -48,6 +52,7 @@ export function MatchesPage() {
   const [importScheduleOpen, setImportScheduleOpen] = useState(false)
   const [importResultsMsg, setImportResultsMsg] = useState<string | null>(null)
   const [clearError, setClearError] = useState<string | null>(null)
+  const [matchToDelete, setMatchToDelete] = useState<MatchListItem | null>(null)
   const queryClient = useQueryClient()
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
@@ -177,6 +182,7 @@ export function MatchesPage() {
     mutationFn: (matchId: string) => matchesService.deleteMatch(leagueId!, matchId),
     onSuccess: () => {
       setClearError(null)
+      setMatchToDelete(null)
       setImportResultsMsg('Partido eliminado del fixture.')
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
     },
@@ -187,14 +193,7 @@ export function MatchesPage() {
 
   const handleDeleteMatch = (match: MatchListItem) => {
     if (seasonClosed) return
-    if (
-      !window.confirm(
-        `¿Eliminar el partido ${match.homeTeamName} vs ${match.awayTeamName} (fecha ${match.roundNumber})?\nSe borra el partido y su resultado. Esta acción no se puede deshacer.`,
-      )
-    ) {
-      return
-    }
-    deleteMatchMutation.mutate(match.id)
+    setMatchToDelete(match)
   }
 
   if (!leagueId) {
@@ -445,6 +444,50 @@ export function MatchesPage() {
           }}
         />
       )}
+
+      <Dialog
+        open={!!matchToDelete}
+        onClose={() => !deleteMatchMutation.isPending && setMatchToDelete(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('matches.deleteConfirmTitle')}</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {matchToDelete
+              ? t('matches.deleteConfirmMatch', {
+                  home: matchToDelete.homeTeamName,
+                  away: matchToDelete.awayTeamName,
+                  round: matchToDelete.roundNumber,
+                })
+              : null}
+          </Alert>
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            {t('matches.deleteConfirmFixture')}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 1.5 }}>
+            {t('matches.deleteConfirmNoReadd')}
+          </Typography>
+          <Typography variant="body2">
+            {t('matches.deleteConfirmWrongOption')}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMatchToDelete(null)} disabled={deleteMatchMutation.isPending}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={deleteMatchMutation.isPending || !matchToDelete}
+            onClick={() => {
+              if (matchToDelete) deleteMatchMutation.mutate(matchToDelete.id)
+            }}
+          >
+            {deleteMatchMutation.isPending ? t('matches.deleting') : t('matches.deleteConfirmAction')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
