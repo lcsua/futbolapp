@@ -94,6 +94,7 @@
     if (wa) {
       wa.addEventListener('click', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         openWhatsApp(payload(trigger));
         toggleMenu(root, false);
       });
@@ -103,6 +104,7 @@
     if (copy) {
       copy.addEventListener('click', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         void copyLink(root, payload(trigger).url).then(() => toggleMenu(root, false));
       });
     }

@@ -816,6 +816,43 @@ body {
   transition: border-color var(--v2-transition);
 }
 
+a.v2-match-card {
+  text-decoration: none;
+}
+
+.v2-match-card__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.v2-match-card__link:hover,
+.v2-match-card__link:focus-visible {
+  color: inherit;
+  text-decoration: none;
+}
+
+.v2-match-card__share {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  position: relative;
+  z-index: 2;
+}
+
+.v2-match-card__share .v2-share--compact {
+  margin-top: 0;
+  align-self: auto;
+}
+
+.v2-match-card__share .v2-share-menu {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
 .v2-match-card:hover {
   color: inherit !important;
   border-color: color-mix(in srgb, var(--v2-primary) 26%, var(--border));
