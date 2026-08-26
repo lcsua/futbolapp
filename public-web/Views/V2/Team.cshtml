@@ -23,6 +23,21 @@
     var lastMatch = summary.LastResults.FirstOrDefault();
     var nextMatch = summary.NextMatches.FirstOrDefault();
     var standing = Model.Standing ?? summary.Standing;
+    var upcomingSharePath = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(teamSlug)
+        ? $"/ligas/{leagueSlug}/{teamSlug}?share=proximo"
+        : null;
+
+    // WhatsApp/Facebook follow canonical/og:url. Keep the query on this variant so
+    // the preview stays on the match OG instead of bouncing to the generic team page.
+    var shareUpcoming = string.Equals(Context.Request.Query["share"], "proximo", StringComparison.OrdinalIgnoreCase);
+    if (nextMatch != null && shareUpcoming)
+    {
+        ViewData["OgTitle"] = PublicWeb.Helpers.TeamDisplayHelper.FormatUpcomingOgTitle(nextMatch);
+        ViewData["Description"] = PublicWeb.Helpers.TeamDisplayHelper.FormatUpcomingOgDescription(nextMatch, league?.Name);
+        if (upcomingSharePath != null)
+            ViewData["CanonicalPath"] = upcomingSharePath;
+        ViewData["NoIndex"] = true;
+    }
 }
 
 @{
@@ -148,6 +163,8 @@
 
             @if (nextMatch != null)
             {
+                ViewData["UpcomingSharePath"] = upcomingSharePath;
+                ViewData["UpcomingShareLeague"] = league?.Name;
                 @await Html.PartialAsync("~/Views/V2/Team/_FeaturedUpcoming.cshtml", nextMatch)
             }
             else

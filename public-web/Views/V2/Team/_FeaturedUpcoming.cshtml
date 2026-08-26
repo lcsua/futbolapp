@@ -3,48 +3,65 @@
     ViewData["BadgeSize"] = "md";
     var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
     var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(Model.Kickoff);
+    var sharePath = ViewData["UpcomingSharePath"] as string;
+    var shareLeague = ViewData["UpcomingShareLeague"] as string;
+    var shareText = PublicWeb.Helpers.TeamDisplayHelper.FormatUpcomingShareText(Model, shareLeague);
 }
-<a class="v2-match-card v2-match-card--upcoming" href="@Url.Content($"~/partido/{Model.Id}")">
-    <div class="v2-match-card__meta v2-match-card__meta--upcoming">
-        <span class="v2-match-card__meta-desktop">Próximo partido</span>
-        <span class="v2-match-card__meta-mobile">
-            @PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.Kickoff)
-        </span>
-        @if (time != null)
-        {
-            <span class="v2-match-card__kick v2-nums">@time</span>
-        }
-        @if (!string.IsNullOrWhiteSpace(venue))
-        {
-            <span class="v2-match-card__venue">@venue</span>
-        }
-    </div>
+<article class="v2-match-card v2-match-card--upcoming">
+    <a class="v2-match-card__link" href="@Url.Content($"~/partido/{Model.Id}")">
+        <div class="v2-match-card__meta v2-match-card__meta--upcoming">
+            <span class="v2-match-card__meta-desktop">Próximo partido</span>
+            <span class="v2-match-card__meta-mobile">
+                @PublicWeb.Helpers.TeamDisplayHelper.FormatWeekdayDayMonth(Model.Kickoff)
+            </span>
+            @if (time != null)
+            {
+                <span class="v2-match-card__kick v2-nums">@time</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(venue))
+            {
+                <span class="v2-match-card__venue">@venue</span>
+            }
+        </div>
 
-    <div class="v2-match-card__meta-line v2-match-card__meta-line--desktop">
-        <span class="v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)</span>
-        @if (time != null)
-        {
-            <span aria-hidden="true">·</span>
-            <span class="v2-nums">@time</span>
-        }
-        @if (!string.IsNullOrWhiteSpace(venue))
-        {
-            <span aria-hidden="true">·</span>
-            <span>@venue</span>
-        }
-    </div>
+        <div class="v2-match-card__meta-line v2-match-card__meta-line--desktop">
+            <span class="v2-nums">@PublicWeb.Helpers.TeamDisplayHelper.FormatDayMonth(Model.Kickoff)</span>
+            @if (time != null)
+            {
+                <span aria-hidden="true">·</span>
+                <span class="v2-nums">@time</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(venue))
+            {
+                <span aria-hidden="true">·</span>
+                <span>@venue</span>
+            }
+        </div>
 
-    <div class="v2-match-card__board">
-        <div class="v2-match-card__side is-home">
-            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
-            <span class="v2-match-card__name">@Model.HomeTeam.Name</span>
+        <div class="v2-match-card__board">
+            <div class="v2-match-card__side is-home">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
+                <span class="v2-match-card__name">@Model.HomeTeam.Name</span>
+            </div>
+            <div class="v2-match-card__center">
+                <span class="v2-match-card__vs">VS</span>
+            </div>
+            <div class="v2-match-card__side is-away">
+                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
+                <span class="v2-match-card__name">@Model.AwayTeam.Name</span>
+            </div>
         </div>
-        <div class="v2-match-card__center">
-            <span class="v2-match-card__vs">VS</span>
+    </a>
+    @if (!string.IsNullOrWhiteSpace(sharePath))
+    {
+        <div class="v2-match-card__share">
+            @{
+                ViewData["ShareTitle"] = PublicWeb.Helpers.TeamDisplayHelper.FormatUpcomingOgTitle(Model);
+                ViewData["ShareText"] = shareText;
+                ViewData["SharePath"] = sharePath;
+                ViewData["ShareCompact"] = true;
+            }
+            @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
         </div>
-        <div class="v2-match-card__side is-away">
-            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
-            <span class="v2-match-card__name">@Model.AwayTeam.Name</span>
-        </div>
-    </div>
-</a>
+    }
+</article>

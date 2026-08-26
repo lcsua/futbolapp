@@ -27,6 +27,7 @@
     }
     var description = ViewData["Description"] as string
         ?? "Resultados, posiciones, partidos y estadísticas de tu torneo.";
+    var ogTitle = ViewData["OgTitle"] as string ?? title;
     var canonicalPath = ViewData["CanonicalPath"] as string
         ?? Context.Request.Path.Value
         ?? "/";
@@ -51,7 +52,7 @@
     }
     <link rel="canonical" href="@canonical" />
 
-    <meta property="og:title" content="@title" />
+    <meta property="og:title" content="@ogTitle" />
     <meta property="og:description" content="@description" />
     <meta property="og:type" content="@ogType" />
     <meta property="og:url" content="@canonical" />
@@ -60,7 +61,7 @@
     <meta property="og:locale" content="es_AR" />
 
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="@title" />
+    <meta name="twitter:title" content="@ogTitle" />
     <meta name="twitter:description" content="@description" />
     <meta name="twitter:image" content="@ogImage" />
 

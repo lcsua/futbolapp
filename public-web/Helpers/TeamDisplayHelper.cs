@@ -249,4 +249,43 @@ public static class TeamDisplayHelper
 
         return raw;
     }
+
+    public static string FormatUpcomingShareText(MatchViewModel match, string? leagueName)
+    {
+        var vs = $"{match.HomeTeam.Name} vs {match.AwayTeam.Name}";
+        var details = FormatUpcomingShareDetails(match);
+        var lines = new List<string> { "Próximo partido", vs };
+        if (!string.IsNullOrWhiteSpace(details))
+            lines.Add(details);
+        if (!string.IsNullOrWhiteSpace(leagueName))
+            lines.Add(leagueName.Trim());
+        return string.Join("\n", lines);
+    }
+
+    public static string FormatUpcomingOgTitle(MatchViewModel match) =>
+        $"Próximo partido: {match.HomeTeam.Name} vs {match.AwayTeam.Name}";
+
+    public static string FormatUpcomingOgDescription(MatchViewModel match, string? leagueName)
+    {
+        var details = FormatUpcomingShareDetails(match);
+        if (string.IsNullOrWhiteSpace(leagueName))
+            return string.IsNullOrWhiteSpace(details) ? "Mirá el partido en MiLiga." : details;
+        return string.IsNullOrWhiteSpace(details)
+            ? leagueName.Trim()
+            : $"{details} · {leagueName.Trim()}";
+    }
+
+    private static string FormatUpcomingShareDetails(MatchViewModel match)
+    {
+        var parts = new List<string>();
+        if (match.Kickoff != default)
+            parts.Add(FormatDayMonth(match.Kickoff));
+        var time = FormatTimeOrNull(match.Kickoff);
+        if (!string.IsNullOrWhiteSpace(time))
+            parts.Add(time);
+        var venue = FormatFieldLabel(match.FieldName);
+        if (!string.IsNullOrWhiteSpace(venue))
+            parts.Add(venue);
+        return string.Join(" · ", parts);
+    }
 }
