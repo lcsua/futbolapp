@@ -38,6 +38,7 @@ namespace FootballManager.Infrastructure.Persistence
         public DbSet<Standing> Standings { get; set; }
         public DbSet<LeagueDocumentCategory> LeagueDocumentCategories { get; set; }
         public DbSet<LeagueDocument> LeagueDocuments { get; set; }
+        public DbSet<Advertisement> Advertisements { get; set; }
         public DbSet<TeamNameAlias> TeamNameAliases { get; set; }
         public DbSet<PushSubscription> PushSubscriptions { get; set; }
         public DbSet<PushFollow> PushFollows { get; set; }

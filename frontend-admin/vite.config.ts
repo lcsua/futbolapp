@@ -11,6 +11,10 @@ export default defineConfig({
         target: 'http://127.0.0.1:5143',
         changeOrigin: true,
       },
+      '/uploads': {
+        target: 'http://127.0.0.1:5143',
+        changeOrigin: true,
+      },
     },
     allowedHosts: [
       '3c3f-181-177-24-84.ngrok-free.app'

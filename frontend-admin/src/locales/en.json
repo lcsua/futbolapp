@@ -21,7 +21,8 @@
       "competitionSettings": "Competition settings",
       "administration": "Administration",
       "users": "Users",
-      "roles": "Roles"
+      "roles": "Roles",
+      "ads": "Advertising"
     },
     "common": {
       "save": "Save",
@@ -280,6 +281,81 @@
       "deleteConfirmAction": "Yes, delete from fixture",
       "noLeague": "No league selected.",
       "goToLeagues": "Go to Leagues"
+    },
+    "ads": {
+      "title": "{{league}} — Advertising",
+      "create": "New advertisement",
+      "createTitle": "New advertisement",
+      "editTitle": "Edit advertisement",
+      "createAction": "Create advertisement",
+      "edit": "Edit",
+      "delete": "Delete",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "empty": "No advertisements yet. Create one to get started.",
+      "noLeague": "No league selected. Choose a league from the menu.",
+      "goToLeagues": "Go to Leagues",
+      "loadError": "Failed to load advertisements",
+      "created": "Advertisement created. You can now upload the images.",
+      "updated": "Advertisement updated.",
+      "deleted": "Advertisement deleted.",
+      "deleteFailed": "Could not delete the advertisement",
+      "toggled": "Advertisement status updated.",
+      "deleteConfirmTitle": "Delete advertisement",
+      "deleteConfirm": "\"{{name}}\" will be removed and its images will be deleted.",
+      "noPeriod": "No schedule",
+      "from": "From",
+      "until": "Until",
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "scheduled": "Scheduled",
+        "expired": "Expired"
+      },
+      "slots": {
+        "leagueTop": "League top",
+        "leagueMiddle": "Middle section",
+        "resultsFixture": "Results / Fixture"
+      },
+      "fields": {
+        "name": "Name",
+        "advertiser": "Advertiser",
+        "slot": "Placement",
+        "targetUrl": "Target URL",
+        "targetUrlHelp": "Optional. Must start with http:// or https://.",
+        "startsAt": "Start date",
+        "endsAt": "End date",
+        "priority": "Priority",
+        "priorityHelp": "Integer greater than or equal to 0. Higher priority is shown first.",
+        "isActive": "Active",
+        "period": "Schedule"
+      },
+      "images": {
+        "title": "Images",
+        "desktop": "Desktop image",
+        "mobile": "Mobile image",
+        "restrictions": "JPEG, PNG or WebP. Maximum 5 MB.",
+        "empty": "No image",
+        "upload": "Upload",
+        "replace": "Replace",
+        "remove": "Remove",
+        "afterCreate": "Create the advertisement before uploading desktop and mobile images.",
+        "uploaded": "Image updated.",
+        "removed": "Image removed.",
+        "uploadFailed": "Could not upload the image",
+        "deleteFailed": "Could not delete the image",
+        "invalidFormat": "Only JPEG, PNG or WebP images are allowed.",
+        "tooLarge": "The image must be 5 MB or smaller."
+      },
+      "validation": {
+        "nameRequired": "Name is required.",
+        "advertiserRequired": "Advertiser is required.",
+        "priorityInvalid": "Priority must be an integer greater than or equal to 0.",
+        "startsInvalid": "Start date is invalid.",
+        "endsInvalid": "End date is invalid.",
+        "periodInvalid": "End date cannot be earlier than start date.",
+        "targetUrlInvalid": "Target URL must start with http:// or https://."
+      }
     }
   }
 }

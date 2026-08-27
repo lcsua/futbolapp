@@ -91,6 +91,13 @@ using FootballManager.Application.UseCases.Leagues.CreateDocument;
 using FootballManager.Application.UseCases.Leagues.UpdateDocument;
 using FootballManager.Application.UseCases.Leagues.DeleteDocument;
 using FootballManager.Application.UseCases.Leagues.SeedLeagueDocumentDefaults;
+using FootballManager.Application.UseCases.Leagues.GetAdvertisements;
+using FootballManager.Application.UseCases.Leagues.GetAdvertisement;
+using FootballManager.Application.UseCases.Leagues.CreateAdvertisement;
+using FootballManager.Application.UseCases.Leagues.UpdateAdvertisement;
+using FootballManager.Application.UseCases.Leagues.DeleteAdvertisement;
+using FootballManager.Application.UseCases.Leagues.SetAdvertisementImage;
+using FootballManager.Application.UseCases.Leagues.RemoveAdvertisementImage;
 using FootballManager.Application.Interfaces;
 using FootballManager.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -198,6 +205,13 @@ namespace FootballManager.Application
             services.AddScoped<IUpdateDocumentUseCase, UpdateDocumentUseCase>();
             services.AddScoped<IDeleteDocumentUseCase, DeleteDocumentUseCase>();
             services.AddScoped<ISeedLeagueDocumentDefaultsUseCase, SeedLeagueDocumentDefaultsUseCase>();
+            services.AddScoped<IGetAdvertisementsUseCase, GetAdvertisementsUseCase>();
+            services.AddScoped<IGetAdvertisementUseCase, GetAdvertisementUseCase>();
+            services.AddScoped<ICreateAdvertisementUseCase, CreateAdvertisementUseCase>();
+            services.AddScoped<IUpdateAdvertisementUseCase, UpdateAdvertisementUseCase>();
+            services.AddScoped<IDeleteAdvertisementUseCase, DeleteAdvertisementUseCase>();
+            services.AddScoped<ISetAdvertisementImageUseCase, SetAdvertisementImageUseCase>();
+            services.AddScoped<IRemoveAdvertisementImageUseCase, RemoveAdvertisementImageUseCase>();
 
             services.AddSingleton<IFixtureDraftStore, FixtureDraftStore>();
 

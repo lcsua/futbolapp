@@ -31,6 +31,7 @@ import EventIcon from '@mui/icons-material/Event'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import PeopleIcon from '@mui/icons-material/People'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
+import CampaignIcon from '@mui/icons-material/Campaign'
 import { useAuth } from '../contexts/AuthContext'
 import { LeagueSelector } from './LeagueSelector'
 import { useTranslation } from 'react-i18next'
@@ -48,6 +49,7 @@ const NAV_ITEMS = [
   { to: '/clubs', txKey: 'nav.clubs', icon: <ApartmentIcon />, permission: 'clubs' },
   { to: '/teams/bulk', txKey: 'nav.bulkImport', icon: <UploadFileIcon />, permission: 'teams' },
   { to: '/fields', txKey: 'nav.fields', icon: <PlaceIcon />, permission: 'fields' },
+  { to: '/ads', txKey: 'nav.ads', icon: <CampaignIcon />, permission: 'leagues' },
   { to: '/fixtures', txKey: 'nav.fixtures', icon: <EventIcon />, permission: 'fixtures' },
   { to: '/matches', txKey: 'nav.matches', icon: <SportsSoccerIcon />, permission: 'matches' },
   { to: '/standings', txKey: 'nav.standings', icon: <LeaderboardIcon />, permission: 'standings' },
@@ -74,6 +76,7 @@ function permissionForPath(pathname: string): string | null {
   if (path.startsWith('/standings')) return 'standings'
   if (path.startsWith('/fixtures')) return 'fixtures'
   if (path.startsWith('/fields')) return 'fields'
+  if (path.startsWith('/ads')) return 'leagues'
   if (path.startsWith('/clubs')) return 'clubs'
   if (path.startsWith('/teams')) return 'teams'
   if (path.startsWith('/divisions')) return 'divisions'
@@ -108,11 +111,14 @@ export function AppLayout() {
     <Box sx={{ pt: 2 }}>
       <List component="nav" sx={{ px: 1 }}>
         {visibleNavItems.map(({ to, txKey, icon }) => {
+          const scopedPath = location.pathname.replace(/^\/leagues\/[^/]+/, '') || location.pathname
           const selected =
             to === '/'
               ? location.pathname === '/' || location.pathname.startsWith('/leagues')
               : to === '/teams'
                 ? location.pathname === '/teams' || (location.pathname.startsWith('/teams/') && location.pathname !== '/teams/bulk')
+                : to === '/ads'
+                  ? scopedPath === '/ads' || scopedPath.startsWith('/ads/')
                 : location.pathname === to || location.pathname.startsWith(to + '/')
           return (
           <ListItemButton

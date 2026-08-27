@@ -21,7 +21,8 @@
       "competitionSettings": "Configuración",
       "administration": "Administración",
       "users": "Usuarios",
-      "roles": "Roles"
+      "roles": "Roles",
+      "ads": "Publicidad"
     },
     "common": {
       "save": "Guardar",
@@ -280,6 +281,81 @@
       "deleteConfirmAction": "Sí, eliminar del fixture",
       "noLeague": "No hay liga seleccionada.",
       "goToLeagues": "Ir a Ligas"
+    },
+    "ads": {
+      "title": "{{league}} — Publicidad",
+      "create": "Nueva publicidad",
+      "createTitle": "Nueva publicidad",
+      "editTitle": "Editar publicidad",
+      "createAction": "Crear publicidad",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "activate": "Activar",
+      "deactivate": "Desactivar",
+      "empty": "No hay publicidades todavía. Creá una para empezar.",
+      "noLeague": "No hay liga seleccionada. Elegí una liga del menú.",
+      "goToLeagues": "Ir a Ligas",
+      "loadError": "Error al cargar las publicidades",
+      "created": "Publicidad creada. Ahora podés subir las imágenes.",
+      "updated": "Publicidad actualizada.",
+      "deleted": "Publicidad eliminada.",
+      "deleteFailed": "No se pudo eliminar la publicidad",
+      "toggled": "Estado de la publicidad actualizado.",
+      "deleteConfirmTitle": "Eliminar publicidad",
+      "deleteConfirm": "Se dará de baja \"{{name}}\" y se eliminarán sus imágenes asociadas.",
+      "noPeriod": "Sin período de vigencia",
+      "from": "Desde",
+      "until": "Hasta",
+      "status": {
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "scheduled": "Programado",
+        "expired": "Vencido"
+      },
+      "slots": {
+        "leagueTop": "Superior de liga",
+        "leagueMiddle": "Sección intermedia",
+        "resultsFixture": "Resultados / Fixture"
+      },
+      "fields": {
+        "name": "Nombre",
+        "advertiser": "Anunciante",
+        "slot": "Ubicación",
+        "targetUrl": "URL destino",
+        "targetUrlHelp": "Opcional. Debe empezar con http:// o https://.",
+        "startsAt": "Fecha de inicio",
+        "endsAt": "Fecha de fin",
+        "priority": "Prioridad",
+        "priorityHelp": "Número entero mayor o igual a 0. Mayor prioridad se muestra primero.",
+        "isActive": "Activo",
+        "period": "Vigencia"
+      },
+      "images": {
+        "title": "Imágenes",
+        "desktop": "Imagen desktop",
+        "mobile": "Imagen mobile",
+        "restrictions": "JPEG, PNG o WebP. Máximo 5 MB.",
+        "empty": "Sin imagen",
+        "upload": "Subir",
+        "replace": "Reemplazar",
+        "remove": "Eliminar",
+        "afterCreate": "Creá la publicidad para poder subir las imágenes desktop y mobile.",
+        "uploaded": "Imagen actualizada.",
+        "removed": "Imagen eliminada.",
+        "uploadFailed": "No se pudo subir la imagen",
+        "deleteFailed": "No se pudo eliminar la imagen",
+        "invalidFormat": "Solo se permiten imágenes JPEG, PNG o WebP.",
+        "tooLarge": "La imagen no puede superar 5 MB."
+      },
+      "validation": {
+        "nameRequired": "El nombre es obligatorio.",
+        "advertiserRequired": "El anunciante es obligatorio.",
+        "priorityInvalid": "La prioridad debe ser un número entero mayor o igual a 0.",
+        "startsInvalid": "La fecha de inicio no es válida.",
+        "endsInvalid": "La fecha de fin no es válida.",
+        "periodInvalid": "La fecha de fin no puede ser anterior a la de inicio.",
+        "targetUrlInvalid": "La URL destino debe empezar con http:// o https://."
+      }
     }
   }
 }

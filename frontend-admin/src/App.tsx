@@ -38,6 +38,7 @@ import { TeamPlayersPage } from './pages/TeamPlayersPage'
 import { LoginPage } from './pages/LoginPage'
 import { UsersPage } from './pages/UsersPage'
 import { RolesPage } from './pages/RolesPage'
+import { LeagueAdsPage } from './pages/LeagueAdsPage'
 
 export default function App() {
   return (
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="leagues/:leagueId/fields" element={<FieldsListPage />} />
           <Route path="leagues/:leagueId/fields/new" element={<CreateFieldPage />} />
           <Route path="leagues/:leagueId/fields/:fieldId/edit" element={<EditFieldPage />} />
+          <Route path="leagues/:leagueId/ads" element={<LeagueAdsPage />} />
           <Route path="leagues/:leagueId/competition-rules" element={<CompetitionRulesPage />} />
           <Route path="leagues/:leagueId/match-rules" element={<MatchRulesPage />} />
           <Route
@@ -111,6 +113,7 @@ export default function App() {
             <Route path="fields" element={<FieldsListPage />} />
             <Route path="fields/new" element={<CreateFieldPage />} />
             <Route path="fields/:fieldId/edit" element={<EditFieldPage />} />
+            <Route path="ads" element={<LeagueAdsPage />} />
             <Route path="competition-rules" element={<CompetitionRulesPage />} />
             <Route path="match-rules" element={<MatchRulesPage />} />
             <Route
