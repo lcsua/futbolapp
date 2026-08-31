@@ -32,7 +32,7 @@ public class SeoCopyTests
     {
         var page = SeoCopy.LeagueStandings("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", "/logo.png", "A");
         Assert.Contains("División A", page.Title);
-        Assert.Contains("/og/share.png", page.OgImage);
+        Assert.Contains("/og/share.jpg", page.OgImage);
         Assert.True(page.LargeOgImage);
         Assert.Equal("/ligas/veteranos-de-perico/posiciones", page.CanonicalPath);
     }
@@ -92,17 +92,16 @@ public class SeoCopyTests
 public class OgShareImageGeneratorTests
 {
     [Fact]
-    public void Render_ProducesPng()
+    public void Render_ProducesJpeg()
     {
         var webRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
         using var cache = new MemoryCache(new MemoryCacheOptions());
         var gen = new OgShareImageGenerator(new StubEnv { ContentRootPath = webRoot }, cache);
-        var png = gen.Render("resultados", "B", "Liga de Veteranos de Perico", "Clausura 2026");
-        Assert.True(png.Length > 2000);
-        Assert.Equal(0x89, png[0]);
-        Assert.Equal((byte)'P', png[1]);
-        Assert.Equal((byte)'N', png[2]);
-        Assert.Equal((byte)'G', png[3]);
+        var jpeg = gen.Render("resultados", "B", "Liga de Veteranos de Perico", "Clausura 2026");
+        Assert.True(jpeg.Length > 2000);
+        Assert.Equal(0xFF, jpeg[0]);
+        Assert.Equal(0xD8, jpeg[1]);
+        Assert.Equal(0xFF, jpeg[2]);
     }
 
     private sealed class StubEnv : IWebHostEnvironment

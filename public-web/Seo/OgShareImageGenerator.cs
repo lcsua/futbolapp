@@ -3,7 +3,7 @@ using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
-using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
@@ -35,7 +35,7 @@ public sealed class OgShareImageGenerator
         var division = Clip($"División {Clip(divisionName, 28)}", 36);
         var league = Clip(leagueName, 64);
         var season = Clip(seasonName ?? "", 40);
-        var key = $"og3|{headline}|{division}|{league}|{season}";
+        var key = $"og4|{headline}|{division}|{league}|{season}";
 
         return _cache.GetOrCreate(key, entry =>
         {
@@ -74,7 +74,7 @@ public sealed class OgShareImageGenerator
         });
 
         using var ms = new MemoryStream();
-        image.Save(ms, new PngEncoder { CompressionLevel = PngCompressionLevel.BestSpeed });
+        image.Save(ms, new JpegEncoder { Quality = 82 });
         return ms.ToArray();
     }
 

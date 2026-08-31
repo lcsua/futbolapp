@@ -19,7 +19,8 @@ public static class PublicShareLinks
             .Add("league", leagueName);
         if (!string.IsNullOrWhiteSpace(seasonName))
             q = q.Add("season", seasonName);
-        return "/og/share.png" + q;
+        q = q.Add("v", "2");
+        return "/og/share.jpg" + q;
     }
 
     public static string Headline(string kind) => kind switch

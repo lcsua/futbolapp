@@ -13,20 +13,22 @@ public class OgShareController : Controller
         _images = images;
     }
 
-    [HttpGet("/og/share.png")]
+    [AcceptVerbs("GET", "HEAD")]
+    [Route("/og/share.jpg")]
+    [Route("/og/share.png")]
     public IActionResult Share(
         [FromQuery] string? kind,
         [FromQuery] string? division,
         [FromQuery] string? league,
         [FromQuery] string? season)
     {
-        var png = _images.Render(
+        var jpeg = _images.Render(
             Normalize(kind, 24),
             Normalize(division, 40),
             Normalize(league, 80),
             string.IsNullOrWhiteSpace(season) ? null : Normalize(season, 48));
         Response.Headers.CacheControl = "public, max-age=86400";
-        return File(png, "image/png");
+        return File(jpeg, "image/jpeg");
     }
 
     private static string Normalize(string? value, int max)
