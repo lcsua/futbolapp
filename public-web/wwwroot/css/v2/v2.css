@@ -1853,12 +1853,13 @@ a.v2-match-card {
 }
 
 .v2-share--icon .v2-share-btn {
-  min-height: 2rem;
-  min-width: 2rem;
-  padding: 0.28rem;
-  border: none;
-  background: transparent;
-  color: var(--v2-text-secondary);
+  min-height: 2.15rem;
+  min-width: 2.15rem;
+  padding: 0.32rem;
+  border: 1px solid color-mix(in srgb, var(--v2-primary) 30%, var(--border));
+  background: color-mix(in srgb, var(--v2-primary) 10%, var(--v2-surface));
+  color: var(--v2-primary);
+  border-radius: 999px;
 }
 
 .v2-share--icon .v2-share-btn:hover,

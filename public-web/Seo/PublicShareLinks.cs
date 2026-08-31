@@ -19,7 +19,7 @@ public static class PublicShareLinks
             .Add("league", leagueName);
         if (!string.IsNullOrWhiteSpace(seasonName))
             q = q.Add("season", seasonName);
-        q = q.Add("v", "2");
+        q = q.Add("v", "3");
         return "/og/share.jpg" + q;
     }
 
@@ -31,23 +31,10 @@ public static class PublicShareLinks
     };
 
     /// <summary>
-    /// Custom OG card for fixture/results of any division, and standings only for División A.
+    /// Custom OG card when sharing a specific division (fixture, results, standings).
     /// </summary>
     public static bool UseCustomOgCard(string kind, string? divisionName)
     {
-        if (string.IsNullOrWhiteSpace(divisionName)) return false;
-        if (!string.Equals(kind, "posiciones", StringComparison.OrdinalIgnoreCase))
-            return true;
-        return IsDivisionA(divisionName);
-    }
-
-    public static bool IsDivisionA(string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return false;
-        var n = name.Trim();
-        if (n.Equals("A", StringComparison.OrdinalIgnoreCase)) return true;
-        if (n.Equals("a", StringComparison.OrdinalIgnoreCase)) return true;
-        return n.Equals("División A", StringComparison.OrdinalIgnoreCase)
-            || n.Equals("Division A", StringComparison.OrdinalIgnoreCase);
+        return !string.IsNullOrWhiteSpace(divisionName);
     }
 }
