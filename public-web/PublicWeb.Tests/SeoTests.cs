@@ -28,14 +28,22 @@ public class SeoCopyTests
     }
 
     [Fact]
-    public void Standings_WithDivision_UsesShareCard()
+    public void Standings_DivisionA_UsesShareCard()
+    {
+        var page = SeoCopy.LeagueStandings("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", "/logo.png", "A");
+        Assert.Contains("División A", page.Title);
+        Assert.Contains("/og/share.png", page.OgImage);
+        Assert.True(page.LargeOgImage);
+        Assert.Equal("/ligas/veteranos-de-perico/posiciones", page.CanonicalPath);
+    }
+
+    [Fact]
+    public void Standings_OtherDivision_KeepsLeagueLogo()
     {
         var page = SeoCopy.LeagueStandings("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", "/logo.png", "B");
         Assert.Contains("División B", page.Title);
-        Assert.Contains("/og/share.png", page.OgImage);
-        Assert.Contains("division=B", page.OgImage);
-        Assert.True(page.LargeOgImage);
-        Assert.Equal("/ligas/veteranos-de-perico/posiciones", page.CanonicalPath);
+        Assert.Equal("/logo.png", page.OgImage);
+        Assert.False(page.LargeOgImage);
     }
 
     [Fact]

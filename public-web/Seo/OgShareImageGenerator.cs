@@ -15,19 +15,18 @@ public sealed class OgShareImageGenerator
     public const int Height = 630;
 
     private static readonly Color Navy = Color.ParseHex("0F172A");
-    private static readonly Color Green = Color.ParseHex("16A34A");
-    private static readonly Color GreenDark = Color.ParseHex("15803D");
     private static readonly Color White = Color.ParseHex("F8FAFC");
-    private static readonly Color Muted = Color.ParseHex("94A3B8");
-    private static readonly Color Ball = Color.ParseHex("E2E8F0");
+    private static readonly Color Muted = Color.ParseHex("E2E8F0");
 
     private readonly FontFamily _family;
     private readonly IMemoryCache _cache;
+    private readonly byte[]? _bgBytes;
 
     public OgShareImageGenerator(IWebHostEnvironment env, IMemoryCache cache)
     {
         _cache = cache;
         _family = LoadFamily(env);
+        _bgBytes = LoadBackgroundBytes(env);
     }
 
     public byte[] Render(string kind, string divisionName, string leagueName, string? seasonName)
@@ -36,7 +35,7 @@ public sealed class OgShareImageGenerator
         var division = Clip($"División {Clip(divisionName, 28)}", 36);
         var league = Clip(leagueName, 64);
         var season = Clip(seasonName ?? "", 40);
-        var key = $"og|{headline}|{division}|{league}|{season}";
+        var key = $"og3|{headline}|{division}|{league}|{season}";
 
         return _cache.GetOrCreate(key, entry =>
         {
@@ -50,31 +49,28 @@ public sealed class OgShareImageGenerator
         using var image = new Image<Rgba32>(Width, Height, Navy);
         image.Mutate(ctx =>
         {
-            ctx.Fill(GreenDark, new RectangularPolygon(0, 0, 18, Height));
-            ctx.Fill(Green, new RectangularPolygon(18, 0, 10, Height));
+            DrawBackground(ctx);
+            DrawRightScrim(ctx);
 
-            DrawBall(ctx, 980, 330, 260);
+            var title = _family.CreateFont(64, FontStyle.Bold);
+            var divFont = _family.CreateFont(42, FontStyle.Bold);
+            var body = _family.CreateFont(26, FontStyle.Regular);
+            var small = _family.CreateFont(22, FontStyle.Regular);
 
-            var brand = _family.CreateFont(28, FontStyle.Bold);
-            var title = _family.CreateFont(76, FontStyle.Bold);
-            var divFont = _family.CreateFont(48, FontStyle.Bold);
-            var body = _family.CreateFont(30, FontStyle.Regular);
-            var small = _family.CreateFont(24, FontStyle.Regular);
-
-            ctx.DrawText("MILIGA", brand, Green, new PointF(72, 72));
-            ctx.DrawText(headline, title, White, new PointF(72, 150));
-            ctx.DrawText(division, divFont, White, new PointF(72, 250));
+            const float x = 560;
+            DrawShadowed(ctx, headline, title, White, x, 70);
+            DrawShadowed(ctx, division, divFont, White, x, 155);
 
             var leagueOptions = new RichTextOptions(body)
             {
-                Origin = new PointF(72, 360),
-                WrappingLength = 720,
+                Origin = new PointF(x, 240),
+                WrappingLength = 580,
                 LineSpacing = 1.15f
             };
             ctx.DrawText(leagueOptions, league, Muted);
 
             if (!string.IsNullOrWhiteSpace(season))
-                ctx.DrawText(season, small, Muted, new PointF(72, 540));
+                DrawShadowed(ctx, season, small, Muted, x, 330);
         });
 
         using var ms = new MemoryStream();
@@ -82,33 +78,57 @@ public sealed class OgShareImageGenerator
         return ms.ToArray();
     }
 
-    private static void DrawBall(IImageProcessingContext ctx, float cx, float cy, float r)
+    private void DrawBackground(IImageProcessingContext ctx)
     {
-        ctx.Fill(Color.FromRgba(22, 163, 74, 40), new EllipsePolygon(cx, cy, r));
-        ctx.Fill(Ball, new EllipsePolygon(cx, cy, r * 0.72f));
-        ctx.Draw(Navy, r * 0.035f, new EllipsePolygon(cx, cy, r * 0.72f));
+        if (_bgBytes == null || _bgBytes.Length == 0)
+            return;
 
-        var pent = Pentagon(cx, cy - r * 0.06f, r * 0.16f);
-        ctx.Fill(Navy, new Polygon(new LinearLineSegment(pent)));
-
-        for (var i = 0; i < 5; i++)
+        using var bg = Image.Load<Rgba32>(_bgBytes);
+        bg.Mutate(x => x.Resize(new ResizeOptions
         {
-            var angle = (float)(-Math.PI / 2 + i * 2 * Math.PI / 5);
-            var x = cx + MathF.Cos(angle) * r * 0.42f;
-            var y = cy + MathF.Sin(angle) * r * 0.42f;
-            ctx.Draw(Navy, r * 0.028f, new EllipsePolygon(x, y, r * 0.18f));
-        }
+            Size = new Size(Width, Height),
+            Mode = ResizeMode.Crop,
+            Position = AnchorPositionMode.Left
+        }));
+        ctx.DrawImage(bg, new Point(0, 0), 1f);
     }
 
-    private static PointF[] Pentagon(float cx, float cy, float r)
+    private static void DrawRightScrim(IImageProcessingContext ctx)
     {
-        var pts = new PointF[5];
-        for (var i = 0; i < 5; i++)
+        var brush = new LinearGradientBrush(
+            new PointF(420, 0),
+            new PointF(820, 0),
+            GradientRepetitionMode.None,
+            new ColorStop(0f, Color.FromRgba(15, 23, 42, 0)),
+            new ColorStop(1f, Color.FromRgba(15, 23, 42, 150)));
+        ctx.Fill(brush, new RectangularPolygon(0, 0, Width, Height));
+    }
+
+    private static void DrawShadowed(
+        IImageProcessingContext ctx,
+        string text,
+        Font font,
+        Color color,
+        float x,
+        float y)
+    {
+        ctx.DrawText(text, font, Color.FromRgba(0, 0, 0, 150), new PointF(x + 2, y + 2));
+        ctx.DrawText(text, font, color, new PointF(x, y));
+    }
+
+    private static byte[]? LoadBackgroundBytes(IWebHostEnvironment env)
+    {
+        foreach (var path in new[]
         {
-            var angle = (float)(-Math.PI / 2 + i * 2 * Math.PI / 5);
-            pts[i] = new PointF(cx + MathF.Cos(angle) * r, cy + MathF.Sin(angle) * r);
+            System.IO.Path.Combine(env.ContentRootPath, "Seo", "Assets", "og-share-bg.jpg"),
+            System.IO.Path.Combine(AppContext.BaseDirectory, "Seo", "Assets", "og-share-bg.jpg")
+        })
+        {
+            if (File.Exists(path))
+                return File.ReadAllBytes(path);
         }
-        return pts;
+
+        return null;
     }
 
     private static FontFamily LoadFamily(IWebHostEnvironment env)

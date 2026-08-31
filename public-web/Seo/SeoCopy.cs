@@ -108,6 +108,7 @@ public static class SeoCopy
     {
         var season = seasonName ?? "la temporada actual";
         var hasDivision = !string.IsNullOrWhiteSpace(divisionName);
+        var useCard = PublicShareLinks.UseCustomOgCard("posiciones", divisionName);
         var title = hasDivision
             ? Title($"Posiciones División {divisionName} {leagueName} - {season}")
             : Title($"Tabla de Posiciones {leagueName} - {season}");
@@ -119,11 +120,11 @@ public static class SeoCopy
             Title = title,
             Description = desc,
             CanonicalPath = $"/ligas/{leagueSlug}/posiciones",
-            OgTitle = hasDivision ? $"Posiciones División {divisionName} · {leagueName}" : null,
-            OgImage = hasDivision
+            OgTitle = useCard ? $"Posiciones División {divisionName} · {leagueName}" : null,
+            OgImage = useCard
                 ? PublicShareLinks.ShareCardPath("posiciones", divisionName!, leagueName, seasonName)
                 : logoUrl,
-            LargeOgImage = hasDivision,
+            LargeOgImage = useCard,
             H1 = hasDivision ? $"Posiciones División {divisionName}" : $"Tabla de Posiciones {leagueName}",
             Breadcrumbs = LeagueCrumbs(leagueName, leagueSlug, "Posiciones", $"/ligas/{leagueSlug}/posiciones")
         };

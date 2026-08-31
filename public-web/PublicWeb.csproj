@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <Content Include="Seo\Fonts\*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Seo\Assets\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

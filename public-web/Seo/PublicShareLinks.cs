@@ -28,4 +28,25 @@ public static class PublicShareLinks
         "posiciones" => "Posiciones",
         _ => "Resultados"
     };
+
+    /// <summary>
+    /// Custom OG card for fixture/results of any division, and standings only for División A.
+    /// </summary>
+    public static bool UseCustomOgCard(string kind, string? divisionName)
+    {
+        if (string.IsNullOrWhiteSpace(divisionName)) return false;
+        if (!string.Equals(kind, "posiciones", StringComparison.OrdinalIgnoreCase))
+            return true;
+        return IsDivisionA(divisionName);
+    }
+
+    public static bool IsDivisionA(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        var n = name.Trim();
+        if (n.Equals("A", StringComparison.OrdinalIgnoreCase)) return true;
+        if (n.Equals("a", StringComparison.OrdinalIgnoreCase)) return true;
+        return n.Equals("División A", StringComparison.OrdinalIgnoreCase)
+            || n.Equals("Division A", StringComparison.OrdinalIgnoreCase);
+    }
 }
