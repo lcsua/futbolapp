@@ -7,4 +7,13 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);PublicWeb.Tests\**</DefaultItemExcludes>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Seo\Fonts\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

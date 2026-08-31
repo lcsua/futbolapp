@@ -6,8 +6,11 @@ public sealed class SeoPageModel
     public string Description { get; init; } = "Resultados, posiciones, partidos y estadísticas de tu torneo.";
     public string CanonicalPath { get; init; } = "/";
     public string? OgImage { get; init; }
+    public string? OgTitle { get; init; }
+    public string? OgUrlPath { get; init; }
     public string OgType { get; init; } = "website";
     public bool NoIndex { get; init; }
+    public bool LargeOgImage { get; init; }
     public string? H1 { get; init; }
     public IReadOnlyList<SeoBreadcrumbItem> Breadcrumbs { get; init; } = Array.Empty<SeoBreadcrumbItem>();
 }
@@ -66,44 +69,92 @@ public static class SeoCopy
         };
     }
 
-    public static SeoPageModel LeagueFixture(string leagueName, string leagueSlug, string? seasonName, string? logoUrl)
+    public static SeoPageModel LeagueFixture(
+        string leagueName,
+        string leagueSlug,
+        string? seasonName,
+        string? logoUrl,
+        string? divisionName = null)
     {
         var season = seasonName ?? "la temporada actual";
+        var hasDivision = !string.IsNullOrWhiteSpace(divisionName);
+        var title = hasDivision
+            ? Title($"Fixture División {divisionName} {leagueName} - {season}")
+            : Title($"Fixture {leagueName} - {season}");
+        var desc = hasDivision
+            ? $"Fixture de la División {divisionName} de la {leagueName}. Fechas, horarios y canchas del {season}."
+            : $"Consultá el fixture completo de la {leagueName}, fechas, horarios, canchas y próximos partidos del {season}.";
         return new SeoPageModel
         {
-            Title = Title($"Fixture {leagueName} - {season}"),
-            Description = $"Consultá el fixture completo de la {leagueName}, fechas, horarios, canchas y próximos partidos del {season}.",
+            Title = title,
+            Description = desc,
             CanonicalPath = $"/ligas/{leagueSlug}/fixture",
-            OgImage = logoUrl,
-            H1 = $"Fixture {leagueName}",
+            OgTitle = hasDivision ? $"Fixture División {divisionName} · {leagueName}" : null,
+            OgImage = hasDivision
+                ? PublicShareLinks.ShareCardPath("fixture", divisionName!, leagueName, seasonName)
+                : logoUrl,
+            LargeOgImage = hasDivision,
+            H1 = hasDivision ? $"Fixture División {divisionName}" : $"Fixture {leagueName}",
             Breadcrumbs = LeagueCrumbs(leagueName, leagueSlug, "Fixture", $"/ligas/{leagueSlug}/fixture")
         };
     }
 
-    public static SeoPageModel LeagueStandings(string leagueName, string leagueSlug, string? seasonName, string? logoUrl)
+    public static SeoPageModel LeagueStandings(
+        string leagueName,
+        string leagueSlug,
+        string? seasonName,
+        string? logoUrl,
+        string? divisionName = null)
     {
         var season = seasonName ?? "la temporada actual";
+        var hasDivision = !string.IsNullOrWhiteSpace(divisionName);
+        var title = hasDivision
+            ? Title($"Posiciones División {divisionName} {leagueName} - {season}")
+            : Title($"Tabla de Posiciones {leagueName} - {season}");
+        var desc = hasDivision
+            ? $"Tabla de posiciones de la División {divisionName} de la {leagueName}. Posiciones actualizadas del {season}."
+            : $"Tabla de posiciones actualizada de la {leagueName}. Posiciones por división del {season}.";
         return new SeoPageModel
         {
-            Title = Title($"Tabla de Posiciones {leagueName} - {season}"),
-            Description = $"Tabla de posiciones actualizada de la {leagueName}. Posiciones por división del {season}.",
+            Title = title,
+            Description = desc,
             CanonicalPath = $"/ligas/{leagueSlug}/posiciones",
-            OgImage = logoUrl,
-            H1 = $"Tabla de Posiciones {leagueName}",
+            OgTitle = hasDivision ? $"Posiciones División {divisionName} · {leagueName}" : null,
+            OgImage = hasDivision
+                ? PublicShareLinks.ShareCardPath("posiciones", divisionName!, leagueName, seasonName)
+                : logoUrl,
+            LargeOgImage = hasDivision,
+            H1 = hasDivision ? $"Posiciones División {divisionName}" : $"Tabla de Posiciones {leagueName}",
             Breadcrumbs = LeagueCrumbs(leagueName, leagueSlug, "Posiciones", $"/ligas/{leagueSlug}/posiciones")
         };
     }
 
-    public static SeoPageModel LeagueResults(string leagueName, string leagueSlug, string? seasonName, string? logoUrl)
+    public static SeoPageModel LeagueResults(
+        string leagueName,
+        string leagueSlug,
+        string? seasonName,
+        string? logoUrl,
+        string? divisionName = null)
     {
         var season = seasonName ?? "la temporada actual";
+        var hasDivision = !string.IsNullOrWhiteSpace(divisionName);
+        var title = hasDivision
+            ? Title($"Resultados División {divisionName} {leagueName} - {season}")
+            : Title($"Resultados {leagueName} - {season}");
+        var desc = hasDivision
+            ? $"Últimos resultados de la División {divisionName} de la {leagueName}. Resultados por fecha del {season}."
+            : $"Últimos resultados de la {leagueName}. Resultados por fecha y división del {season}.";
         return new SeoPageModel
         {
-            Title = Title($"Resultados {leagueName} - {season}"),
-            Description = $"Últimos resultados de la {leagueName}. Resultados por fecha y división del {season}.",
+            Title = title,
+            Description = desc,
             CanonicalPath = $"/ligas/{leagueSlug}/resultados",
-            OgImage = logoUrl,
-            H1 = $"Resultados {leagueName}",
+            OgTitle = hasDivision ? $"Resultados División {divisionName} · {leagueName}" : null,
+            OgImage = hasDivision
+                ? PublicShareLinks.ShareCardPath("resultados", divisionName!, leagueName, seasonName)
+                : logoUrl,
+            LargeOgImage = hasDivision,
+            H1 = hasDivision ? $"Resultados División {divisionName}" : $"Resultados {leagueName}",
             Breadcrumbs = LeagueCrumbs(leagueName, leagueSlug, "Resultados", $"/ligas/{leagueSlug}/resultados")
         };
     }

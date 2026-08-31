@@ -1,0 +1,24 @@
+@{
+    var leagueSlug = ViewData["ShareLeagueSlug"] as string ?? "";
+    var section = ViewData["ShareSection"] as string ?? "resultados";
+    var seasonSlug = ViewData["ShareSeasonSlug"] as string;
+    var divisionSlug = ViewData["ShareDivisionSlug"] as string ?? "";
+    var divisionName = ViewData["ShareDivisionName"] as string ?? "";
+    var leagueName = ViewData["ShareLeagueName"] as string ?? "";
+    if (string.IsNullOrWhiteSpace(leagueSlug) || string.IsNullOrWhiteSpace(divisionSlug))
+    {
+        return;
+    }
+
+    var headline = PublicWeb.Seo.PublicShareLinks.Headline(section);
+    var path = PublicWeb.Seo.PublicShareLinks.SectionPath(leagueSlug, section, seasonSlug, divisionSlug);
+    ViewData["ShareTitle"] = $"{headline} División {divisionName}";
+    ViewData["ShareText"] = string.IsNullOrWhiteSpace(leagueName)
+        ? $"{headline} División {divisionName}"
+        : $"{headline} División {divisionName} — {leagueName}";
+    ViewData["SharePath"] = path;
+    ViewData["ShareUrl"] = null;
+    ViewData["ShareIconOnly"] = true;
+    ViewData["ShareCompact"] = false;
+}
+@await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")

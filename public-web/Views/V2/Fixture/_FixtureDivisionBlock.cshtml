@@ -4,6 +4,9 @@
     var seasonSlug = ViewData["SeasonSlug"] as string ?? ViewBag.SeasonSlug as string ?? "";
     var pageDivision = ViewData["PageDivision"] as string ?? ViewBag.Division as string ?? "all";
     var requestingFecha = ViewData["BlockFecha"] as int? ?? ViewBag.Fecha as int?;
+    var leagueName = (ViewBag.League as PublicWeb.Models.Public.LeagueViewModel)?.Name
+        ?? ViewData["ShareLeagueName"] as string
+        ?? "";
 
     var rounds = (Model.Data ?? new List<PublicWeb.Models.Public.MatchdayGroupViewModel>())
         .Select(m => m.Round)
@@ -47,10 +50,21 @@
          data-fecha="@(currentFecha?.ToString() ?? "")"
          data-page-division="@pageDivision">
     <div class="v2-result-group__head">
-        <h2 id="fix-div-@Model.DivisionSlug" class="v2-result-group__division">
-            <span class="v2-result-group__division-label">División:</span>
-            <span class="v2-result-group__division-name">@Model.DivisionName</span>
-        </h2>
+        <div class="v2-result-group__title-row">
+            <h2 id="fix-div-@Model.DivisionSlug" class="v2-result-group__division">
+                <span class="v2-result-group__division-label">División:</span>
+                <span class="v2-result-group__division-name">@Model.DivisionName</span>
+            </h2>
+            @{
+                ViewData["ShareLeagueSlug"] = leagueSlug;
+                ViewData["ShareSection"] = "fixture";
+                ViewData["ShareSeasonSlug"] = seasonSlug;
+                ViewData["ShareDivisionSlug"] = Model.DivisionSlug;
+                ViewData["ShareDivisionName"] = Model.DivisionName;
+                ViewData["ShareLeagueName"] = leagueName;
+            }
+            @await Html.PartialAsync("~/Views/Shared/V2/_DivisionShareButton.cshtml")
+        </div>
     </div>
 
     @if (rounds.Any() && currentFecha.HasValue)

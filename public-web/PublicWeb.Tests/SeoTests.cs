@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.FileProviders;
 using PublicWeb.Seo;
 
 namespace PublicWeb.Tests;
@@ -21,6 +24,33 @@ public class SeoCopyTests
         Assert.Equal("/ligas/veteranos-de-perico/fixture", page.CanonicalPath);
         Assert.StartsWith("Fixture Liga de Veteranos de Perico", page.H1);
         Assert.Contains("Clausura 2026", page.Title);
+        Assert.False(page.LargeOgImage);
+    }
+
+    [Fact]
+    public void Standings_WithDivision_UsesShareCard()
+    {
+        var page = SeoCopy.LeagueStandings("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", "/logo.png", "B");
+        Assert.Contains("División B", page.Title);
+        Assert.Contains("/og/share.png", page.OgImage);
+        Assert.Contains("division=B", page.OgImage);
+        Assert.True(page.LargeOgImage);
+        Assert.Equal("/ligas/veteranos-de-perico/posiciones", page.CanonicalPath);
+    }
+
+    [Fact]
+    public void Results_WithDivision_UsesShareCard()
+    {
+        var page = SeoCopy.LeagueResults("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", "/logo.png", "B");
+        Assert.StartsWith("Resultados División B", page.OgTitle);
+        Assert.Contains("kind=resultados", page.OgImage);
+    }
+
+    [Fact]
+    public void ShareLinks_SectionPath_IncludesSeasonAndDivision()
+    {
+        var path = PublicShareLinks.SectionPath("veteranos-de-perico", "resultados", "clausura-2026", "b");
+        Assert.Equal("/ligas/veteranos-de-perico/resultados?season=clausura-2026&division=b", path);
     }
 
     [Fact]
@@ -48,6 +78,33 @@ public class SeoCopyTests
     {
         var page = SeoCopy.NotFound();
         Assert.True(page.NoIndex);
+    }
+}
+
+public class OgShareImageGeneratorTests
+{
+    [Fact]
+    public void Render_ProducesPng()
+    {
+        var webRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var gen = new OgShareImageGenerator(new StubEnv { ContentRootPath = webRoot }, cache);
+        var png = gen.Render("resultados", "B", "Liga de Veteranos de Perico", "Clausura 2026");
+        Assert.True(png.Length > 2000);
+        Assert.Equal(0x89, png[0]);
+        Assert.Equal((byte)'P', png[1]);
+        Assert.Equal((byte)'N', png[2]);
+        Assert.Equal((byte)'G', png[3]);
+    }
+
+    private sealed class StubEnv : IWebHostEnvironment
+    {
+        public string ApplicationName { get; set; } = "PublicWeb";
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+        public string ContentRootPath { get; set; } = "";
+        public string EnvironmentName { get; set; } = "Tests";
+        public string WebRootPath { get; set; } = "";
+        public IFileProvider WebRootFileProvider { get; set; } = new NullFileProvider();
     }
 }
 

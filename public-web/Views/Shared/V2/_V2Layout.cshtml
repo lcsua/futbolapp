@@ -32,8 +32,11 @@
         ?? Context.Request.Path.Value
         ?? "/";
     var canonical = seoUrls.Absolute(canonicalPath);
+    var ogUrlRaw = ViewData["OgUrl"] as string;
+    var ogUrl = string.IsNullOrWhiteSpace(ogUrlRaw) ? canonical : seoUrls.Absolute(ogUrlRaw);
     var ogImage = seoUrls.AbsoluteMedia(ViewData["OgImage"] as string);
     var ogType = ViewData["OgType"] as string ?? "website";
+    var largeOg = ViewData["LargeOgImage"] as bool? == true;
     var allowIndexing = seoOptions.AllowIndexing;
     var noIndex = !allowIndexing || ViewData["NoIndex"] as bool? == true;
     var crumbs = ViewBag.SeoBreadcrumbs as IReadOnlyList<PublicWeb.Seo.SeoBreadcrumbItem>;
@@ -55,12 +58,19 @@
     <meta property="og:title" content="@ogTitle" />
     <meta property="og:description" content="@description" />
     <meta property="og:type" content="@ogType" />
-    <meta property="og:url" content="@canonical" />
+    <meta property="og:url" content="@ogUrl" />
     <meta property="og:image" content="@ogImage" />
+    @if (largeOg)
+    {
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="@ogTitle" />
+    }
     <meta property="og:site_name" content="@seoOptions.SiteName" />
     <meta property="og:locale" content="es_AR" />
 
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="@(largeOg ? "summary_large_image" : "summary")" />
     <meta name="twitter:title" content="@ogTitle" />
     <meta name="twitter:description" content="@description" />
     <meta name="twitter:image" content="@ogImage" />

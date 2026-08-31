@@ -1845,6 +1845,46 @@ a.v2-match-card {
   padding: 0.4rem 0.75rem;
 }
 
+.v2-share--icon {
+  position: relative;
+  display: inline-flex;
+  margin: 0;
+  align-self: center;
+}
+
+.v2-share--icon .v2-share-btn {
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 0.28rem;
+  border: none;
+  background: transparent;
+  color: var(--v2-text-secondary);
+}
+
+.v2-share--icon .v2-share-btn:hover,
+.v2-share--icon .v2-share-btn:focus-visible {
+  color: var(--v2-primary);
+  background: color-mix(in srgb, var(--v2-primary) 10%, transparent);
+}
+
+.v2-share--icon .v2-share-btn__icon {
+  color: inherit;
+}
+
+.v2-share--icon .v2-share-menu {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.v2-result-group__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.2rem 0.15rem;
+}
+
 .v2-share-menu {
   position: absolute;
   top: calc(100% + 0.35rem);
@@ -2255,7 +2295,7 @@ a.v2-match-card {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: baseline;
+  align-items: center;
   gap: 0.35rem;
   line-height: 1.25;
 }

@@ -208,6 +208,7 @@ public class V2LeagueController : Controller
         ViewBag.Fecha = selectedFecha;
         ViewBag.LeagueSlug = league.Slug;
         ViewBag.SeasonSlug = calendar.SeasonSlug;
+        ViewBag.SeasonName = calendar.SeasonName;
 
         // Per-division AJAX navigation: return only that block.
         if (!string.Equals(selectedDivision, "all", StringComparison.OrdinalIgnoreCase)

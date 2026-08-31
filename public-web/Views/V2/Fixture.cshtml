@@ -18,12 +18,23 @@
     ViewBag.SeasonSlug = Model?.SeasonSlug ?? selectedSeason?.Slug;
     ViewBag.LeagueSlug = leagueSlug;
 
+    var seasonName = ViewBag.SeasonName as string;
+    var seasonSlug = ViewBag.SeasonSlug as string;
+    string? seoDivisionName = null;
+    if (!string.Equals(selectedDivision, "all", StringComparison.OrdinalIgnoreCase))
+    {
+        seoDivisionName = divisions.FirstOrDefault(d => string.Equals(d.Slug, selectedDivision, StringComparison.OrdinalIgnoreCase))?.Name
+            ?? Model?.Divisions?.FirstOrDefault(d => string.Equals(d.DivisionSlug, selectedDivision, StringComparison.OrdinalIgnoreCase))?.DivisionName;
+    }
+
     if (league != null)
     {
         PublicWeb.Seo.SeoPageApplicator.Apply(
-            PublicWeb.Seo.SeoCopy.LeagueFixture(league.Name, leagueSlug, ViewBag.SeasonName as string, league.LogoUrl),
+            PublicWeb.Seo.SeoCopy.LeagueFixture(league.Name, leagueSlug, seasonName, league.LogoUrl, seoDivisionName),
             ViewData,
             ViewBag);
+        if (!string.IsNullOrWhiteSpace(seoDivisionName))
+            ViewData["OgUrl"] = PublicWeb.Seo.PublicShareLinks.SectionPath(leagueSlug, "fixture", seasonSlug, selectedDivision);
     }
 }
 

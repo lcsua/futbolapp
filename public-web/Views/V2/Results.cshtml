@@ -19,12 +19,23 @@
     ViewBag.SeasonSlug = Model?.SeasonSlug ?? selectedSeason?.Slug;
     ViewBag.LeagueSlug = leagueSlug;
 
+    var seasonName = ViewBag.SeasonName as string;
+    var seasonSlug = ViewBag.SeasonSlug as string;
+    string? seoDivisionName = null;
+    if (!string.Equals(selectedDivision, "all", StringComparison.OrdinalIgnoreCase))
+    {
+        seoDivisionName = divisions.FirstOrDefault(d => string.Equals(d.Slug, selectedDivision, StringComparison.OrdinalIgnoreCase))?.Name
+            ?? Model?.Divisions?.FirstOrDefault(d => string.Equals(d.DivisionSlug, selectedDivision, StringComparison.OrdinalIgnoreCase))?.DivisionName;
+    }
+
     if (league != null)
     {
         PublicWeb.Seo.SeoPageApplicator.Apply(
-            PublicWeb.Seo.SeoCopy.LeagueResults(league.Name, leagueSlug, ViewBag.SeasonName as string, league.LogoUrl),
+            PublicWeb.Seo.SeoCopy.LeagueResults(league.Name, leagueSlug, seasonName, league.LogoUrl, seoDivisionName),
             ViewData,
             ViewBag);
+        if (!string.IsNullOrWhiteSpace(seoDivisionName))
+            ViewData["OgUrl"] = PublicWeb.Seo.PublicShareLinks.SectionPath(leagueSlug, "resultados", seasonSlug, selectedDivision);
     }
 }
 
@@ -95,10 +106,21 @@
                 var showRoundNav = div.Data.Count > 1;
 
                 <div class="v2-result-group__head">
-                    <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">
-                        <span class="v2-result-group__division-label">División:</span>
-                        <span class="v2-result-group__division-name">@div.DivisionName</span>
-                    </h2>
+                    <div class="v2-result-group__title-row">
+                        <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">
+                            <span class="v2-result-group__division-label">División:</span>
+                            <span class="v2-result-group__division-name">@div.DivisionName</span>
+                        </h2>
+                        @{
+                            ViewData["ShareLeagueSlug"] = leagueSlug;
+                            ViewData["ShareSection"] = "resultados";
+                            ViewData["ShareSeasonSlug"] = seasonSlug;
+                            ViewData["ShareDivisionSlug"] = div.DivisionSlug;
+                            ViewData["ShareDivisionName"] = div.DivisionName;
+                            ViewData["ShareLeagueName"] = league?.Name ?? "";
+                        }
+                        @await Html.PartialAsync("~/Views/Shared/V2/_DivisionShareButton.cshtml")
+                    </div>
 
                     @if (activeMatchday != null)
                     {
@@ -156,10 +178,21 @@
             else
             {
                 <div class="v2-result-group__head">
-                    <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">
-                        <span class="v2-result-group__division-label">División:</span>
-                        <span class="v2-result-group__division-name">@div.DivisionName</span>
-                    </h2>
+                    <div class="v2-result-group__title-row">
+                        <h2 id="div-@div.DivisionSlug" class="v2-result-group__division">
+                            <span class="v2-result-group__division-label">División:</span>
+                            <span class="v2-result-group__division-name">@div.DivisionName</span>
+                        </h2>
+                        @{
+                            ViewData["ShareLeagueSlug"] = leagueSlug;
+                            ViewData["ShareSection"] = "resultados";
+                            ViewData["ShareSeasonSlug"] = seasonSlug;
+                            ViewData["ShareDivisionSlug"] = div.DivisionSlug;
+                            ViewData["ShareDivisionName"] = div.DivisionName;
+                            ViewData["ShareLeagueName"] = league?.Name ?? "";
+                        }
+                        @await Html.PartialAsync("~/Views/Shared/V2/_DivisionShareButton.cshtml")
+                    </div>
                 </div>
                 <div class="v2-empty">No hay resultados registrados en esta división.</div>
             }

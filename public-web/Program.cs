@@ -7,6 +7,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.Configure<SeoOptions>(builder.Configuration.GetSection(SeoOptions.SectionName));
 builder.Services.AddSingleton<SeoUrlBuilder>();
+builder.Services.AddSingleton<OgShareImageGenerator>();
 builder.Services.AddScoped<SitemapDocumentService>();
 
 builder.Services.AddHttpClient("BackendApi", client =>

@@ -98,19 +98,13 @@ export function ImportMatchResultsModal({
   const [showReview, setShowReview] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
   const [infoMsg, setInfoMsg] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
   /** Empty = import all divisions found in JSON; otherwise only that division. */
   const [scopeDivisionId, setScopeDivisionId] = useState(filterDivisionId)
 
   useEffect(() => {
     if (open) {
       setScopeDivisionId(filterDivisionId)
-      setFileName(null)
-      setCsvText(null)
-      setPlans(null)
-      setShowReview(false)
-      setLocalError(null)
-      setInfoMsg(null)
-      if (fileRef.current) fileRef.current.value = ''
     }
   }, [open, filterDivisionId])
 
@@ -134,19 +128,10 @@ export function ImportMatchResultsModal({
     return map
   }, [aliasesData])
 
-  const reset = () => {
-    setFileName(null)
-    setCsvText(null)
-    setPlans(null)
-    setShowReview(false)
-    setLocalError(null)
-    setInfoMsg(null)
-    if (fileRef.current) fileRef.current.value = ''
-  }
-
   const handleClose = () => {
     if (importMutation.isPending) return
-    reset()
+    setSuccessMsg(null)
+    setLocalError(null)
     onClose()
   }
 
@@ -287,8 +272,18 @@ export function ImportMatchResultsModal({
         notCreatedCount: res.notCreatedCount ?? 0,
         warnings: [...(res.warnings ?? []), ...(infoMsg ? [infoMsg] : [])],
       })
-      reset()
-      onClose()
+      const parts = [
+        res.updatedCount ? `${res.updatedCount} actualizado(s)` : null,
+        res.createdCount ? `${res.createdCount} creado(s)` : null,
+        res.skippedCount ? `${res.skippedCount} omitido(s) (ya tenían resultado)` : null,
+        res.notCreatedCount ? `${res.notCreatedCount} no creado(s) (la fecha ya tiene fixture)` : null,
+      ].filter(Boolean)
+      setLocalError(null)
+      setSuccessMsg(
+        parts.length
+          ? `Importado: ${parts.join(', ')}. Podés cambiar la división e importar de nuevo sin volver a subir el archivo.`
+          : 'Importación OK. Podés cambiar la división e importar de nuevo sin volver a subir el archivo.'
+      )
     },
     onError: (err) => {
       setLocalError(err instanceof Error ? err.message : 'Import failed')
@@ -338,6 +333,7 @@ export function ImportMatchResultsModal({
 
   const handleFile = async (file: File) => {
     setFileName(file.name)
+    setSuccessMsg(null)
     try {
       const text = await file.text()
       setCsvText(text)
@@ -354,6 +350,13 @@ export function ImportMatchResultsModal({
     setScopeDivisionId(nextScopeId)
     if (csvText) applyCsvText(csvText, nextScopeId)
   }
+
+  useEffect(() => {
+    if (!open || !csvText || !setupData) return
+    applyCsvText(csvText, scopeDivisionId)
+    // Re-apply stored CSV when reopening the modal or when setup finishes loading.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- applyCsvText is recreated each render
+  }, [open, csvText, setupData, scopeDivisionId])
 
   const updateMapping = (planIndex: number, mappingIndex: number, teamId: string | null) => {
     setPlans((prev) => {
@@ -502,6 +505,12 @@ export function ImportMatchResultsModal({
           </Box>
         )}
 
+        {successMsg && (
+          <Alert severity="success" sx={{ mt: 2, whiteSpace: 'pre-wrap' }} onClose={() => setSuccessMsg(null)}>
+            {successMsg}
+          </Alert>
+        )}
+
         {infoMsg && (
           <Alert severity="info" sx={{ mt: 2, whiteSpace: 'pre-wrap' }} onClose={() => setInfoMsg(null)}>
             {infoMsg}
@@ -523,8 +532,10 @@ export function ImportMatchResultsModal({
                 {reviewRows.length > 0 ? ` (${reviewRows.length} nombre(s) a revisar)` : ''}
               </Alert>
             ) : (
-              <Alert severity="success" sx={{ mb: 1.5 }}>
-                Vista previa lista. Confirmá para importar estos resultados.
+              <Alert severity={successMsg ? 'info' : 'success'} sx={{ mb: 1.5 }}>
+                {successMsg
+                  ? 'El archivo sigue cargado. Cambiá la división si querés importar otro bloque, o confirmá de nuevo.'
+                  : 'Vista previa lista. Confirmá para importar estos resultados.'}
               </Alert>
             )}
 
@@ -656,7 +667,7 @@ export function ImportMatchResultsModal({
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={importMutation.isPending}>
-          Cancelar
+          {csvText ? 'Cerrar' : 'Cancelar'}
         </Button>
         {showReview && plans && (
           <Button
