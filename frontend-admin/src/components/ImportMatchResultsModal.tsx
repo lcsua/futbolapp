@@ -13,9 +13,11 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Paper,
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   Typography,
@@ -70,6 +72,15 @@ function displayName(t: TeamInSetup) {
   return t.displayName ?? t.name
 }
 
+function statusLabel(status: string): string {
+  const s = status.trim().toLowerCase()
+  if (s === 'finished') return 'Finalizado'
+  if (s === 'suspended') return 'Suspendido'
+  if (s === 'postponed') return 'Pospuesto'
+  if (s === 'cancelled') return 'Cancelado'
+  return status.trim() || 'Finalizado'
+}
+
 export function ImportMatchResultsModal({
   open,
   onClose,
@@ -82,6 +93,7 @@ export function ImportMatchResultsModal({
   const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState<string | null>(null)
+  const [csvText, setCsvText] = useState<string | null>(null)
   const [plans, setPlans] = useState<DivisionPlan[] | null>(null)
   const [showReview, setShowReview] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
@@ -93,6 +105,7 @@ export function ImportMatchResultsModal({
     if (open) {
       setScopeDivisionId(filterDivisionId)
       setFileName(null)
+      setCsvText(null)
       setPlans(null)
       setShowReview(false)
       setLocalError(null)
@@ -123,6 +136,7 @@ export function ImportMatchResultsModal({
 
   const reset = () => {
     setFileName(null)
+    setCsvText(null)
     setPlans(null)
     setShowReview(false)
     setLocalError(null)
@@ -136,7 +150,10 @@ export function ImportMatchResultsModal({
     onClose()
   }
 
-  const buildPlans = (blocks: JsonDivisionRoundBlock[]): { plans: DivisionPlan[]; notes: string[] } => {
+  const buildPlans = (
+    blocks: JsonDivisionRoundBlock[],
+    scopeId: string
+  ): { plans: DivisionPlan[]; notes: string[] } => {
     const setupDivisions = setupData?.divisions ?? []
     const result: DivisionPlan[] = []
     const notes: string[] = []
@@ -153,7 +170,7 @@ export function ImportMatchResultsModal({
       // division alone lets "45 Zona A" fuzzily attach to "45 Zona B" (~0.89 similarity).
       const matched = matchDivisionName(block.division, divisions)
       if (!matched) {
-        if (scopeDivisionId) {
+        if (scopeId) {
           // Other / unknown division while scoped — skip quietly.
           continue
         }
@@ -170,7 +187,7 @@ export function ImportMatchResultsModal({
         continue
       }
 
-      if (scopeDivisionId && matched.divisionId !== scopeDivisionId) {
+      if (scopeId && matched.divisionId !== scopeId) {
         continue
       }
 
@@ -279,18 +296,16 @@ export function ImportMatchResultsModal({
     },
   })
 
-  const handleFile = async (file: File) => {
+  const applyCsvText = (text: string, scopeId: string) => {
     setLocalError(null)
     setInfoMsg(null)
-    setFileName(file.name)
     try {
       if (!setupData) {
         setLocalError('Cargando setup de temporada… esperá un segundo y reintentá.')
         return
       }
-      const text = await file.text()
       const blocks = parseMatchResultsCsv(text)
-      const { plans: next, notes } = buildPlans(blocks)
+      const { plans: next, notes } = buildPlans(blocks, scopeId)
       if (notes.length > 0) {
         setInfoMsg(
           [
@@ -304,24 +319,40 @@ export function ImportMatchResultsModal({
       }
       if (next.length === 0) {
         setLocalError(
-          scopeDivisionId
+          scopeId
             ? 'El CSV no tiene partidos para la división elegida (o el nombre de división en el CSV no coincide exactamente con esa división). Los bloques de otras divisiones (p. ej. Zona A vs Zona B) se omiten.'
             : 'El CSV no tiene bloques importables.'
         )
         setPlans(null)
+        setShowReview(false)
         return
       }
       setPlans(next)
-      const needs = next.some((p) => p.needsReview || !!p.error)
-      if (needs) {
-        setShowReview(true)
-      } else {
-        importMutation.mutate(next)
-      }
+      setShowReview(true)
     } catch (e) {
       setLocalError(e instanceof Error ? e.message : 'CSV inválido')
       setPlans(null)
+      setShowReview(false)
     }
+  }
+
+  const handleFile = async (file: File) => {
+    setFileName(file.name)
+    try {
+      const text = await file.text()
+      setCsvText(text)
+      applyCsvText(text, scopeDivisionId)
+    } catch (e) {
+      setCsvText(null)
+      setLocalError(e instanceof Error ? e.message : 'No se pudo leer el archivo CSV.')
+      setPlans(null)
+      setShowReview(false)
+    }
+  }
+
+  const handleScopeDivisionChange = (nextScopeId: string) => {
+    setScopeDivisionId(nextScopeId)
+    if (csvText) applyCsvText(csvText, nextScopeId)
   }
 
   const updateMapping = (planIndex: number, mappingIndex: number, teamId: string | null) => {
@@ -361,7 +392,7 @@ export function ImportMatchResultsModal({
       return prev.map((plan, i) => {
         if (i !== planIndex) return plan
         const names = [...new Set(plan.matches.flatMap((m) => [m.homeTeam, m.awayTeam]))]
-        const teamMappings = mapTeamNamesForDivision(names, teams)
+        const teamMappings = mapTeamNamesForDivision(names, teams, aliasByNormalized)
         return {
           ...plan,
           divisionId,
@@ -379,6 +410,16 @@ export function ImportMatchResultsModal({
     () => plans?.flatMap((p) => p.teamMappings.filter((m) => m.needsReview || m.action === 'create')) ?? [],
     [plans]
   )
+
+  const hasMappingIssues = !!plans && plans.some((p) => p.needsReview || !!p.error)
+
+  const mappedTeamLabel = (plan: DivisionPlan, csvName: string): string => {
+    const row = plan.teamMappings.find((m) => m.csvName === csvName)
+    if (!row || row.action !== 'match' || !row.teamId) return csvName
+    const setupTeams = setupData?.divisions.find((d) => d.divisionId === plan.divisionId)?.teams ?? []
+    const team = setupTeams.find((t) => t.id === row.teamId)
+    return team ? displayName(team) : csvName
+  }
 
   const canConfirm =
     !!plans &&
@@ -403,13 +444,13 @@ export function ImportMatchResultsModal({
           crean cruces nuevos. Si la fecha todavía no tiene partidos, se crea el fixture.
         </Typography>
 
-        <FormControl fullWidth size="small" sx={{ mb: 2 }} disabled={!!plans || importMutation.isPending}>
+        <FormControl fullWidth size="small" sx={{ mb: csvText ? 1 : 2 }} disabled={importMutation.isPending}>
           <InputLabel id="import-scope-division">División a importar</InputLabel>
           <Select
             labelId="import-scope-division"
             label="División a importar"
             value={scopeDivisionId}
-            onChange={(e) => setScopeDivisionId(e.target.value)}
+            onChange={(e) => handleScopeDivisionChange(e.target.value)}
           >
             <MenuItem value={ALL_DIVISIONS}>
               <em>Todas las del CSV</em>
@@ -421,6 +462,11 @@ export function ImportMatchResultsModal({
             ))}
           </Select>
         </FormControl>
+        {csvText && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+            El archivo se mantiene: podés cambiar la división y se actualiza la vista previa.
+          </Typography>
+        )}
 
         <input
           ref={fileRef}
@@ -439,7 +485,7 @@ export function ImportMatchResultsModal({
           disabled={setupLoading || importMutation.isPending || !seasonId}
           onClick={() => fileRef.current?.click()}
         >
-          Elegir CSV
+          {fileName ? 'Cambiar CSV' : 'Elegir CSV'}
         </Button>
         {fileName && (
           <Typography variant="caption" sx={{ ml: 1.5 }} color="text.secondary">
@@ -470,11 +516,17 @@ export function ImportMatchResultsModal({
 
         {showReview && plans && (
           <Box sx={{ mt: 2 }}>
-            <Alert severity="info" sx={{ mb: 1.5 }}>
-              Revisá mapeos dudosos o divisiones sin match. No se crean equipos nuevos: hay que elegir uno
-              existente de la división.
-              {reviewRows.length > 0 ? ` (${reviewRows.length} nombre(s) a revisar)` : ''}
-            </Alert>
+            {hasMappingIssues ? (
+              <Alert severity="info" sx={{ mb: 1.5 }}>
+                Revisá mapeos dudosos o divisiones sin match. No se crean equipos nuevos: hay que elegir uno
+                existente de la división.
+                {reviewRows.length > 0 ? ` (${reviewRows.length} nombre(s) a revisar)` : ''}
+              </Alert>
+            ) : (
+              <Alert severity="success" sx={{ mb: 1.5 }}>
+                Vista previa lista. Confirmá para importar estos resultados.
+              </Alert>
+            )}
 
             {plans.map((plan, planIndex) => (
               <Box key={`${plan.jsonDivision}-${planIndex}`} sx={{ mb: 2.5 }}>
@@ -482,32 +534,37 @@ export function ImportMatchResultsModal({
                   <Typography variant="subtitle2">
                     CSV: {plan.jsonDivision} (fecha {plan.round}, {plan.matches.length} partidos)
                   </Typography>
+                  {plan.divisionName && (
+                    <Chip size="small" label={plan.divisionName} />
+                  )}
                   {plan.error && <Chip size="small" color="error" label="Error" />}
                 </Box>
-                <FormControl fullWidth size="small" sx={{ mb: 1, maxWidth: 360 }}>
-                  <InputLabel>División destino</InputLabel>
-                  <Select
-                    label="División destino"
-                    value={plan.divisionId ?? ''}
-                    onChange={(e) => updateDivisionId(planIndex, e.target.value)}
-                  >
-                    <MenuItem value="">
-                      <em>Seleccionar</em>
-                    </MenuItem>
-                    {divisions.map((d) => (
-                      <MenuItem key={d.id} value={d.id}>
-                        {d.name}
+                {(plan.needsReview || !!plan.error || !plan.divisionId) && (
+                  <FormControl fullWidth size="small" sx={{ mb: 1, maxWidth: 360 }}>
+                    <InputLabel>División destino</InputLabel>
+                    <Select
+                      label="División destino"
+                      value={plan.divisionId ?? ''}
+                      onChange={(e) => updateDivisionId(planIndex, e.target.value)}
+                    >
+                      <MenuItem value="">
+                        <em>Seleccionar</em>
                       </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                      {divisions.map((d) => (
+                        <MenuItem key={d.id} value={d.id}>
+                          {d.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
                 {plan.error && (
                   <Alert severity="warning" sx={{ mb: 1 }}>
                     {plan.error}
                   </Alert>
                 )}
-                {plan.teamMappings.length > 0 && (
-                  <Table size="small">
+                {(plan.needsReview || !!plan.error) && plan.teamMappings.length > 0 && (
+                  <Table size="small" sx={{ mb: 1.5 }}>
                     <TableHead>
                       <TableRow>
                         <TableCell>Nombre en CSV</TableCell>
@@ -564,6 +621,33 @@ export function ImportMatchResultsModal({
                       })}
                     </TableBody>
                   </Table>
+                )}
+
+                {plan.matches.length > 0 && (
+                  <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 320 }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Local</TableCell>
+                          <TableCell align="center">Goles</TableCell>
+                          <TableCell>Visitante</TableCell>
+                          <TableCell align="center">Goles</TableCell>
+                          <TableCell>Estado</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {plan.matches.map((m, i) => (
+                          <TableRow key={`${m.homeTeam}-${m.awayTeam}-${i}`}>
+                            <TableCell>{mappedTeamLabel(plan, m.homeTeam)}</TableCell>
+                            <TableCell align="center">{m.homeScore ?? '—'}</TableCell>
+                            <TableCell>{mappedTeamLabel(plan, m.awayTeam)}</TableCell>
+                            <TableCell align="center">{m.awayScore ?? '—'}</TableCell>
+                            <TableCell>{statusLabel(m.status)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 )}
               </Box>
             ))}
