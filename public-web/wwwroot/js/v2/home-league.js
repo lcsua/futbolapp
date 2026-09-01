@@ -81,7 +81,6 @@
     const btn = root.querySelector('[data-home-league-pin-trigger]');
     const label = root.querySelector('[data-home-league-pin-label]');
     if (!btn) return;
-    root.dataset.state = pinned ? 'pinned' : 'not-pinned';
     btn.classList.toggle('is-pinned', pinned);
     btn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
     btn.setAttribute(
@@ -89,7 +88,6 @@
       pinned ? 'Dejar de abrir esta liga al entrar' : 'Usar esta liga al abrir Mi Liga'
     );
     if (label) label.textContent = pinned ? LABEL_ON : LABEL_OFF;
-    root.dispatchEvent(new CustomEvent('v2-home-pin-state', { bubbles: true, detail: { pinned } }));
   }
 
   function isPinned(path) {

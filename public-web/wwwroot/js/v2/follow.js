@@ -100,8 +100,6 @@
         hint.textContent = '';
       }
     }
-
-    root.dispatchEvent(new CustomEvent('v2-follow-state', { bubbles: true, detail: { state } }));
   }
 
   async function refresh(root) {
