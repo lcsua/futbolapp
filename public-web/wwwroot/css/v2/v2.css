@@ -2195,7 +2195,7 @@ a.v2-match-card {
 }
 
 .v2-team-page-tabs {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .v2-filter-bar {
@@ -4075,6 +4075,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 .v2-ui-icon--home { --v2-ui-icon: url("../../assets/miliga-ui/icons/navigation/home.svg"); }
 .v2-ui-icon--calendar { --v2-ui-icon: url("../../assets/miliga-ui/icons/navigation/calendar.svg"); }
 .v2-ui-icon--trophy { --v2-ui-icon: url("../../assets/miliga-ui/icons/navigation/trophy.svg"); }
+.v2-ui-icon--scorers { --v2-ui-icon: url("../../assets/miliga-ui/icons/navigation/scorers.svg"); }
 .v2-ui-icon--results { --v2-ui-icon: url("../../assets/miliga-ui/icons/navigation/results.svg"); }
 .v2-ui-icon--info { --v2-ui-icon: url("../../assets/miliga-ui/icons/navigation/info.svg"); }
 .v2-ui-icon--location { --v2-ui-icon: url("../../assets/miliga-ui/icons/league/location.svg"); }
@@ -4881,19 +4882,22 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
 /* ─── League home board ─── */
 .v2-home-kicker {
-  margin: 0 0 0.4rem;
-  font-size: var(--font-size-label);
+  margin: 0;
+  font-size: 0.78rem;
   font-weight: var(--font-weight-bold);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--v2-text-secondary);
+  color: inherit;
 }
 
 .v2-home-chips {
   display: flex;
   gap: 0.4rem;
   overflow-x: auto;
-  padding-bottom: 0.1rem;
+  padding: 0.35rem;
+  border-radius: 999px;
+  background: var(--v2-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-primary) 10%, var(--border));
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -4904,26 +4908,52 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   flex: 0 0 auto;
   cursor: pointer;
   max-width: min(12rem, 70vw);
+  min-height: 2.4rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 0.32rem 0.7rem;
-  font-size: 0.75rem;
+  padding: 0.42rem 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
   border-radius: 999px;
+  border: 1.5px solid color-mix(in srgb, var(--v2-primary) 28%, var(--border));
+  background: color-mix(in srgb, var(--v2-primary) 5%, var(--v2-surface));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.v2-home-chip:hover,
+.v2-home-chip:focus-visible {
+  border-color: var(--v2-primary);
+  color: var(--v2-primary);
+  background: color-mix(in srgb, var(--v2-primary) 8%, var(--v2-surface));
+}
+
+.v2-home-chip:active {
+  transform: translateY(1px);
 }
 
 .v2-home-divisions {
   margin: 0 0 var(--space-3);
+  padding: 0.7rem 0.8rem 0.75rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--v2-primary) 16%, var(--border));
+  background: color-mix(in srgb, var(--v2-primary) 6%, var(--v2-surface));
+  box-shadow: var(--shadow-sm);
 }
 
-.v2-home-divisions__hint {
+.v2-home-divisions__head {
   display: flex;
-  align-items: flex-start;
-  gap: 0.35rem;
-  margin: 0.4rem 0 0;
-  color: var(--v2-text-secondary);
-  font-size: 0.7rem;
-  line-height: 1.35;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.55rem;
+  color: var(--v2-primary-dark);
+}
+
+.v2-home-divisions .v2-home-kicker {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.88rem;
 }
 
 .v2-home-grid {
@@ -4939,9 +4969,10 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
     flex-wrap: wrap;
     gap: 0.45rem 0.85rem;
     margin: 0 0 var(--space-4);
+    padding: 0.75rem 0.95rem;
   }
 
-  .v2-home-kicker {
+  .v2-home-divisions__head {
     margin: 0;
   }
 
@@ -4949,11 +4980,8 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
     flex: 1 1 16rem;
     flex-wrap: wrap;
     overflow: visible;
-    padding-bottom: 0;
-  }
-
-  .v2-home-divisions__hint {
-    display: none;
+    padding: 0.35rem;
+    border-radius: var(--radius-md);
   }
 
   .v2-home-grid {

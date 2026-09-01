@@ -345,7 +345,7 @@ public class V2LeagueController : Controller
     private static string NormalizeTab(string? tab)
     {
         var t = (tab ?? "resumen").Trim().ToLowerInvariant();
-        return t is "partidos" or "estadisticas" ? t : "resumen";
+        return t is "partidos" or "estadisticas" or "goleadores" ? t : "resumen";
     }
 
     /// <summary>

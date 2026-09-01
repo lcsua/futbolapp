@@ -80,6 +80,7 @@
                     background: var(--v2-primary);
                     border-color: var(--v2-primary);
                     color: #fff;
+                    box-shadow: 0 2px 8px color-mix(in srgb, var(--v2-primary) 38%, transparent);
                 }
                 </text>
             }
@@ -97,8 +98,11 @@
                    @(isSelected ? "checked" : null) />
         }
 
-        <section class="v2-home-divisions" aria-label="Divisiones">
-            <h2 class="v2-home-kicker">Divisiones</h2>
+        <section class="v2-home-divisions" aria-label="Elegí la división">
+            <div class="v2-home-divisions__head">
+                <span class="v2-ui-icon v2-ui-icon--division" aria-hidden="true"></span>
+                <h2 class="v2-home-kicker">Elegí la división</h2>
+            </div>
             <div class="v2-home-chips" role="radiogroup" aria-label="Elegir división">
                 @foreach (var panel in panels)
                 {
@@ -108,10 +112,6 @@
                            for="@inputId">@panel.DivisionName</label>
                 }
             </div>
-            <p class="v2-home-divisions__hint">
-                <span class="v2-ui-icon v2-ui-icon--status-info v2-ui-icon--sm" aria-hidden="true"></span>
-                El contenido del resumen se actualiza según la división seleccionada.
-            </p>
         </section>
 
         @foreach (var panel in panels)

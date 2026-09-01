@@ -1,5 +1,5 @@
 (() => {
-  const VALID = new Set(['resumen', 'partidos', 'estadisticas']);
+  const VALID = new Set(['resumen', 'partidos', 'estadisticas', 'goleadores']);
 
   function normalize(tab) {
     return VALID.has(tab) ? tab : 'resumen';
