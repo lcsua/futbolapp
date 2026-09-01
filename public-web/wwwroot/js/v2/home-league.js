@@ -81,13 +81,24 @@
     const btn = root.querySelector('[data-home-league-pin-trigger]');
     const label = root.querySelector('[data-home-league-pin-label]');
     if (!btn) return;
+    const off = root.getAttribute('data-label-off') || LABEL_OFF;
+    const on = root.getAttribute('data-label-on') || LABEL_ON;
+    root.dataset.state = pinned ? 'pinned' : 'not-pinned';
     btn.classList.toggle('is-pinned', pinned);
     btn.setAttribute('aria-pressed', pinned ? 'true' : 'false');
     btn.setAttribute(
       'aria-label',
       pinned ? 'Dejar de abrir esta liga al entrar' : 'Usar esta liga al abrir Mi Liga'
     );
-    if (label) label.textContent = pinned ? LABEL_ON : LABEL_OFF;
+    if (label) label.textContent = pinned ? on : off;
+    root.dispatchEvent(new CustomEvent('v2-home-pin-state', { bubbles: true, detail: { pinned } }));
+  }
+
+  function refreshAllPins() {
+    document.querySelectorAll('[data-home-league-pin]').forEach((el) => {
+      const path = el.getAttribute('data-home-league-pin') || '';
+      setPinUi(el, isPinned(path));
+    });
   }
 
   function isPinned(path) {
@@ -106,7 +117,7 @@
       writeStorage(PINNED_KEY, next ? path : '');
       if (next) writeStorage(LAST_KEY, path);
       document.documentElement.setAttribute('data-pinned-home-league', next ? path : '');
-      setPinUi(root, next);
+      refreshAllPins();
       applyHomeLinks();
       persistPinned(next ? path : '');
     });

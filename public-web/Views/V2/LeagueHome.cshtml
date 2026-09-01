@@ -256,21 +256,46 @@ else
     <div class="v2-empty">Todavía no hay divisiones publicadas para esta temporada.</div>
 }
 
-<aside class="v2-follow-cta">
-    <span class="v2-follow-cta__icon" aria-hidden="true">
+<aside class="v2-follow-cta" data-v2-league-cta data-help-key="league:@leagueSlug">
+    <button type="button"
+            class="v2-follow-cta__close"
+            data-v2-league-cta-close
+            aria-label="Cerrar ayuda">
+        &times;
+    </button>
+    <span class="v2-follow-cta__icon" data-cta-icon="follow" aria-hidden="true">
         <span class="v2-ui-icon v2-ui-icon--bell v2-ui-icon--lg"></span>
     </span>
+    <span class="v2-follow-cta__icon" data-cta-icon="pin" hidden aria-hidden="true">
+        <span class="v2-ui-icon v2-ui-icon--home v2-ui-icon--lg"></span>
+    </span>
     <div class="v2-follow-cta__copy">
-        <p class="v2-follow-cta__title">No te pierdas nada de esta liga</p>
-        <p class="v2-follow-cta__text">Recibí avisos de resultados y del fixture cuando haya novedades.</p>
+        <p class="v2-follow-cta__title" data-cta-title>No te pierdas nada de esta liga</p>
+        <p class="v2-follow-cta__text" data-cta-text>Recibí avisos de resultados y del fixture cuando haya novedades.</p>
     </div>
-    @{
-        ViewData["FollowScopeType"] = "League";
-        ViewData["FollowScopeId"] = league.Id;
-        ViewData["FollowLabel"] = "Seguir liga";
-        ViewData["FollowFollowingLabel"] = "Siguiendo";
-    }
-    @await Html.PartialAsync("~/Views/Shared/V2/_FollowButton.cshtml")
+    <div class="v2-follow-cta__actions">
+        <div data-cta-follow>
+            @{
+                ViewData["FollowScopeType"] = "League";
+                ViewData["FollowScopeId"] = league.Id;
+                ViewData["FollowLabel"] = "Seguir liga";
+                ViewData["FollowFollowingLabel"] = "Siguiendo";
+            }
+            @await Html.PartialAsync("~/Views/Shared/V2/_FollowButton.cshtml")
+        </div>
+        <div data-cta-pin>
+            <div class="v2-home-pin" data-home-league-pin="@leagueSlug" data-label-off="Liga de inicio">
+                <button type="button"
+                        class="v2-home-pin-btn"
+                        data-home-league-pin-trigger
+                        aria-pressed="false"
+                        aria-label="Usar esta liga al abrir Mi Liga">
+                    <span class="v2-ui-icon v2-ui-icon--home v2-home-pin-btn__icon" aria-hidden="true"></span>
+                    <span class="v2-home-pin-btn__label" data-home-league-pin-label>Liga de inicio</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </aside>
 
 @section Scripts {

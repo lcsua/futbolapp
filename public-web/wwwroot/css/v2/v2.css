@@ -5129,15 +5129,58 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 }
 
 .v2-follow-cta {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   margin: var(--space-5) 0 0;
-  padding: 0.9rem 1rem;
+  padding: 0.9rem 2.4rem 0.9rem 1rem;
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--v2-primary) 10%, var(--v2-surface));
   border: 1px solid color-mix(in srgb, var(--v2-primary) 20%, var(--border));
+}
+
+.v2-follow-cta[hidden] {
+  display: none;
+}
+
+.v2-follow-cta__icon[hidden] {
+  display: none;
+}
+
+.v2-follow-cta__close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.45rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--v2-text-secondary);
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.v2-follow-cta__close:hover,
+.v2-follow-cta__close:focus-visible {
+  background: color-mix(in srgb, var(--v2-primary) 12%, transparent);
+  color: var(--v2-navy);
+  outline: none;
+}
+
+.v2-follow-cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.v2-follow-cta__actions [hidden] {
+  display: none;
 }
 
 .v2-follow-cta__icon {
@@ -5184,6 +5227,30 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 
 .v2-follow-cta .v2-follow-btn.is-following .v2-follow-btn__icon {
   color: var(--v2-primary);
+}
+
+.v2-follow-cta .v2-home-pin,
+.v2-follow-cta .v2-follow {
+  width: auto;
+}
+
+.v2-follow-cta .v2-home-pin-btn {
+  width: auto;
+  min-width: 10rem;
+  min-height: 2.5rem;
+  background: var(--v2-surface);
+  border-color: color-mix(in srgb, var(--v2-primary) 35%, var(--border));
+  color: var(--v2-primary);
+}
+
+.v2-follow-cta[data-mode="pin"] .v2-home-pin-btn {
+  background: var(--v2-primary);
+  border-color: var(--v2-primary);
+  color: #fff;
+}
+
+.v2-follow-cta[data-mode="pin"] .v2-home-pin-btn__icon {
+  color: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {
