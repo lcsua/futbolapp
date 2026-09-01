@@ -12,7 +12,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Checkbox,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
@@ -50,6 +52,7 @@ export function MatchesPage() {
   const [divisionId, setDivisionId] = useState<string>('')
   const [round, setRound] = useState<string>('')
   const [teamId, setTeamId] = useState<string>('')
+  const [groupByField, setGroupByField] = useState(false)
   const [resultModalMatch, setResultModalMatch] = useState<MatchListItem | null>(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importResultsOpen, setImportResultsOpen] = useState(false)
@@ -152,7 +155,7 @@ export function MatchesPage() {
   const fieldGroups = React.useMemo(() => {
     const grouped = new Map<string, MatchListItem[]>()
     for (const match of displayedMatches) {
-      const fieldName = match.fieldName.trim()
+      const fieldName = match.fieldName.trim() || 'Sin cancha'
       const group = grouped.get(fieldName) ?? []
       group.push(match)
       grouped.set(fieldName, group)
@@ -167,13 +170,14 @@ export function MatchesPage() {
           return a.divisionName.localeCompare(b.divisionName)
         }),
       }))
-      .sort((a, b) => a.fieldName.localeCompare(b.fieldName))
+      .sort((a, b) => {
+        if (a.fieldName === 'Sin cancha') return 1
+        if (b.fieldName === 'Sin cancha') return -1
+        return a.fieldName.localeCompare(b.fieldName)
+      })
   }, [displayedMatches])
 
-  const canGroupByField =
-    round !== '' &&
-    displayedMatches.length > 0 &&
-    displayedMatches.every((match) => match.fieldName.trim().length > 0)
+  const showFieldGroups = groupByField && round !== '' && displayedMatches.length > 0
 
   const canClearRoundResults =
     !!leagueId &&
@@ -352,6 +356,16 @@ export function MatchesPage() {
             ))}
           </Select>
         </FormControl>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={groupByField}
+              onChange={(e) => setGroupByField(e.target.checked)}
+              disabled={!seasonId || round === ''}
+            />
+          }
+          label="Agrupar por cancha"
+        />
         <Button
           variant="outlined"
           startIcon={<UploadFileIcon />}
@@ -413,7 +427,7 @@ export function MatchesPage() {
         <Typography color="text.secondary">{t('matches.noMatches')}</Typography>
       )}
 
-      {!matchesLoading && rounds.length > 0 && canGroupByField && (
+      {!matchesLoading && rounds.length > 0 && showFieldGroups && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Typography variant="subtitle1" fontWeight={600}>
             Fecha {round} por cancha
@@ -448,7 +462,7 @@ export function MatchesPage() {
         </Box>
       )}
 
-      {!matchesLoading && rounds.length > 0 && !canGroupByField && (
+      {!matchesLoading && rounds.length > 0 && !showFieldGroups && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {rounds.map((group) => (
             <Box key={`${group.roundNumber}-${group.divisionName}`}>
