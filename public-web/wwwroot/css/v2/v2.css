@@ -1584,6 +1584,58 @@ a.v2-match-card {
 
 .v2-stats-dl__accent { color: var(--v2-primary) !important; }
 
+.v2-scorers__table {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--v2-surface);
+}
+
+.v2-scorers__row {
+  display: grid;
+  grid-template-columns: 2.1rem minmax(0, 1fr) 3.4rem;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.v2-scorers__row--head {
+  font-size: 0.68rem;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--v2-text-secondary);
+  background: color-mix(in srgb, var(--v2-navy) 4%, var(--v2-surface));
+}
+
+.v2-scorers__row:last-child {
+  border-bottom: 0;
+}
+
+.v2-scorers__pos {
+  font-weight: var(--font-weight-bold);
+  color: var(--v2-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-scorers__name {
+  min-width: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--v2-navy);
+}
+
+.v2-scorers__goals {
+  text-align: right;
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-scorers__row.is-leader .v2-scorers__pos,
+.v2-scorers__row.is-leader .v2-scorers__goals {
+  color: var(--v2-primary);
+}
+
 .v2-empty {
   padding: var(--space-5) var(--space-4);
   text-align: center;
@@ -2140,6 +2192,10 @@ a.v2-match-card {
     font-size: 0.55rem;
     padding: 0.4rem 0.04rem 0.45rem;
   }
+}
+
+.v2-team-page-tabs {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .v2-filter-bar {

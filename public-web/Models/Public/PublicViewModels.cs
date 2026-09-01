@@ -78,12 +78,20 @@ public class StandingSummaryViewModel
     public int GoalDifference => GoalsFor - GoalsAgainst;
 }
 
+public class TeamScorerViewModel
+{
+    public Guid? PlayerId { get; set; }
+    public string PlayerName { get; set; } = string.Empty;
+    public int Goals { get; set; }
+}
+
 public class TeamDetailViewModel
 {
     public TeamViewModel Team { get; set; } = new();
     public LeagueViewModel? League { get; set; }
     public SeasonViewModel? Season { get; set; }
     public StandingSummaryViewModel? Standing { get; set; }
+    public List<TeamScorerViewModel> Scorers { get; set; } = new();
     public List<MatchViewModel> NextMatches { get; set; } = new();
     public List<MatchViewModel> LastResults { get; set; } = new();
     public int PageSize { get; set; } = 5;

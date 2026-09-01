@@ -23,6 +23,8 @@
     var lastMatch = summary.LastResults.FirstOrDefault();
     var nextMatch = summary.NextMatches.FirstOrDefault();
     var standing = Model.Standing ?? summary.Standing;
+    var scorers = (summary.Scorers != null && summary.Scorers.Count > 0 ? summary.Scorers : Model.Scorers)
+        ?? new List<PublicWeb.Models.Public.TeamScorerViewModel>();
     var upcomingSharePath = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(teamSlug)
         ? $"/ligas/{leagueSlug}/{teamSlug}?share=proximo"
         : null;
@@ -117,8 +119,19 @@
     </form>
 }
 
+@{
+    var teamSeasonQs = string.IsNullOrWhiteSpace(seasonSlug) ? "" : $"?season={Uri.EscapeDataString(seasonSlug)}";
+}
 <div class="v2-team-tabs" data-v2-team-tabs data-v2-initial-tab="@activeTab">
-    <div class="v2-tabs" role="tablist" aria-label="Secciones del equipo">
+    <div class="v2-tabs v2-league-tabs v2-team-page-tabs" role="tablist" aria-label="Secciones del equipo">
+        @if (!string.IsNullOrWhiteSpace(leagueSlug))
+        {
+            <a class="v2-tabs__link"
+               href="@Url.Content($"~/ligas/{leagueSlug}")@teamSeasonQs">
+                <span class="v2-ui-icon v2-ui-icon--home" aria-hidden="true"></span>
+                <span>Inicio</span>
+            </a>
+        }
         <button type="button"
                 class="v2-tabs__link @(activeTab == "resumen" ? "is-active" : null)"
                 role="tab"
@@ -126,7 +139,10 @@
                 data-v2-tab="resumen"
                 aria-controls="panel-resumen"
                 aria-selected="@(activeTab == "resumen" ? "true" : "false")"
-                tabindex="@(activeTab == "resumen" ? "0" : "-1")">Resumen</button>
+                tabindex="@(activeTab == "resumen" ? "0" : "-1")">
+            <span class="v2-ui-icon v2-ui-icon--results" aria-hidden="true"></span>
+            <span>Resumen</span>
+        </button>
         <button type="button"
                 class="v2-tabs__link @(activeTab == "partidos" ? "is-active" : null)"
                 role="tab"
@@ -134,7 +150,10 @@
                 data-v2-tab="partidos"
                 aria-controls="panel-partidos"
                 aria-selected="@(activeTab == "partidos" ? "true" : "false")"
-                tabindex="@(activeTab == "partidos" ? "0" : "-1")">Partidos</button>
+                tabindex="@(activeTab == "partidos" ? "0" : "-1")">
+            <span class="v2-ui-icon v2-ui-icon--calendar" aria-hidden="true"></span>
+            <span>Partidos</span>
+        </button>
         <button type="button"
                 class="v2-tabs__link @(activeTab == "estadisticas" ? "is-active" : null)"
                 role="tab"
@@ -142,7 +161,10 @@
                 data-v2-tab="estadisticas"
                 aria-controls="panel-estadisticas"
                 aria-selected="@(activeTab == "estadisticas" ? "true" : "false")"
-                tabindex="@(activeTab == "estadisticas" ? "0" : "-1")">Estadísticas</button>
+                tabindex="@(activeTab == "estadisticas" ? "0" : "-1")">
+            <span class="v2-ui-icon v2-ui-icon--trophy" aria-hidden="true"></span>
+            <span>Estadísticas</span>
+        </button>
     </div>
 
     <section id="panel-resumen"
@@ -271,6 +293,34 @@
         {
             <div class="v2-empty">No hay estadísticas disponibles para esta temporada.</div>
         }
+
+        <section class="v2-scorers" aria-labelledby="team-scorers">
+            <h2 id="team-scorers" class="v2-section-title v2-section-title--spaced">Goleadores</h2>
+            @if (scorers.Count > 0)
+            {
+                <div class="v2-scorers__table" role="table" aria-label="Goleadores de @Model.Team.Name">
+                    <div class="v2-scorers__row v2-scorers__row--head" role="row">
+                        <span role="columnheader">#</span>
+                        <span role="columnheader">Jugador</span>
+                        <span class="v2-scorers__goals" role="columnheader">Goles</span>
+                    </div>
+                    @{ var rank = 1; }
+                    @foreach (var scorer in scorers)
+                    {
+                        <div class="v2-scorers__row @(rank == 1 ? "is-leader" : null)" role="row">
+                            <span class="v2-scorers__pos" role="cell">@rank</span>
+                            <span class="v2-scorers__name" role="cell">@scorer.PlayerName</span>
+                            <span class="v2-scorers__goals v2-nums" role="cell">@scorer.Goals</span>
+                        </div>
+                        rank++;
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="v2-empty">Todavía no hay goles atribuidos a jugadores en esta temporada.</div>
+            }
+        </section>
     </section>
 </div>
 

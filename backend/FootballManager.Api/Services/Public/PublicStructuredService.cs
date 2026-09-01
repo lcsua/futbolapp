@@ -4,7 +4,9 @@ using FootballManager.Api.Services;
 using FootballManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using FootballManager.Domain.Entities;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.UseCases.Seasons.GetStandings;
+using FootballManager.Domain.Enums;
 
 namespace FootballManager.Api.Services.Public;
 
@@ -298,6 +300,41 @@ public class PublicStructuredService
                 DivisionName = division.DivisionName
             };
             break;
+        }
+
+        var resultFixtureIds = fixtures
+            .Where(f => CountsAsPublishedResult(f.Status))
+            .Select(f => f.Id)
+            .ToList();
+        if (resultFixtureIds.Count > 0)
+        {
+            var goalRows = await _db.Set<MatchIncident>()
+                .AsNoTracking()
+                .Where(i =>
+                    i.TeamId == team.Id &&
+                    i.IncidentType == MatchIncidentType.Goal &&
+                    resultFixtureIds.Contains(i.FixtureId))
+                .Select(i => new
+                {
+                    i.PlayerId,
+                    i.PlayerName,
+                    Nickname = i.Player != null ? i.Player.Nickname : null,
+                    FirstName = i.Player != null ? i.Player.FirstName : null,
+                    LastName = i.Player != null ? i.Player.LastName : null
+                })
+                .ToListAsync(cancellationToken);
+
+            response.Scorers = GoalScorerAggregator
+                .Aggregate(goalRows.Select(g => (
+                    g.PlayerId,
+                    GoalScorerAggregator.ResolveDisplayName(g.PlayerName, g.Nickname, g.FirstName, g.LastName))))
+                .Select(s => new TeamScorerPublicDto
+                {
+                    PlayerId = s.PlayerId,
+                    PlayerName = s.PlayerName,
+                    Goals = s.Goals
+                })
+                .ToList();
         }
 
         return response;
