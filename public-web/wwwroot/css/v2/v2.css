@@ -4302,6 +4302,10 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   min-width: 0;
 }
 
+.v2-league-hero__actions .v2-action-help {
+  flex: 1 0 100%;
+}
+
 .v2-league-hero .v2-follow-btn,
 .v2-league-hero .v2-share-btn,
 .v2-league-hero .v2-home-pin-btn {
@@ -4367,6 +4371,52 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 .v2-league-hero .v2-share-menu {
   left: 50%;
   transform: translateX(-50%);
+}
+
+.v2-action-help {
+  position: relative;
+  width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.6rem 2rem 0.6rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.36);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.v2-action-help__body {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.v2-action-help__body p {
+  margin: 0;
+}
+
+.v2-action-help__close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.45rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font: inherit;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.v2-action-help__close:hover,
+.v2-action-help__close:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  outline: none;
 }
 
 @media (max-width: 767.98px) {
@@ -4459,7 +4509,8 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
   .v2-league-hero__actions .v2-follow,
   .v2-league-hero__actions .v2-share,
-  .v2-league-hero__actions .v2-home-pin {
+  .v2-league-hero__actions .v2-home-pin,
+  .v2-league-hero__actions .v2-action-help {
     flex: 0 0 auto;
   }
 
