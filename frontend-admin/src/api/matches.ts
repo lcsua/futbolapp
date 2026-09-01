@@ -14,6 +14,7 @@ export interface MatchListItem {
   status: string
   kickoffTime: string
   matchDate: string
+  fieldId: string | null
   fieldName: string
   homeTeamLogoUrl?: string | null
   awayTeamLogoUrl?: string | null
@@ -155,6 +156,18 @@ export const matchesService = {
   ) =>
     apiClient.post<{ updatedCount: number; warnings: string[] }>(
       `/api/leagues/${leagueId}/matches/import-schedule`,
+      body,
+      signal
+    ),
+
+  updateSchedule: (
+    leagueId: string,
+    matchId: string,
+    body: { startTime: string; fieldId: string },
+    signal?: AbortSignal
+  ) =>
+    apiClient.put<void>(
+      `/api/leagues/${leagueId}/matches/${matchId}/schedule`,
       body,
       signal
     ),

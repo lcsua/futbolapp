@@ -16,6 +16,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  TextField,
   Typography,
   CircularProgress,
 } from '@mui/material'
@@ -30,6 +31,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { matchesService, matchStatusLabel, type MatchListItem } from '../api/matches'
 import { seasonsService } from '../api/seasons'
 import { divisionsService } from '../api/divisions'
+import { fieldsService } from '../api/fields'
+import type { Field } from '../api/types'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { MatchResultModal } from '../components/MatchResultModal'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
@@ -54,6 +57,7 @@ export function MatchesPage() {
   const [importResultsMsg, setImportResultsMsg] = useState<string | null>(null)
   const [clearError, setClearError] = useState<string | null>(null)
   const [matchToDelete, setMatchToDelete] = useState<MatchListItem | null>(null)
+  const [scheduleModalMatch, setScheduleModalMatch] = useState<MatchListItem | null>(null)
   const queryClient = useQueryClient()
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
@@ -65,6 +69,12 @@ export function MatchesPage() {
   const { data: divisions = [] } = useQuery({
     queryKey: ['leagues', leagueId, 'divisions'],
     queryFn: ({ signal }) => divisionsService.getByLeagueId(leagueId!, signal),
+    enabled: !!leagueId,
+  })
+
+  const { data: fields = [] } = useQuery({
+    queryKey: ['leagues', leagueId, 'fields'],
+    queryFn: ({ signal }) => fieldsService.getByLeagueId(leagueId!, signal),
     enabled: !!leagueId,
   })
 
@@ -217,6 +227,27 @@ export function MatchesPage() {
     },
     onError: (err) => {
       setClearError(err instanceof Error ? err.message : 'No se pudo eliminar el partido')
+    },
+  })
+
+  const updateScheduleMutation = useMutation({
+    mutationFn: ({
+      matchId,
+      startTime,
+      fieldId,
+    }: {
+      matchId: string
+      startTime: string
+      fieldId: string
+    }) => matchesService.updateSchedule(leagueId!, matchId, { startTime, fieldId }),
+    onSuccess: () => {
+      setClearError(null)
+      setScheduleModalMatch(null)
+      setImportResultsMsg('Horario/cancha actualizado.')
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
+    },
+    onError: (err) => {
+      setClearError(err instanceof Error ? err.message : 'No se pudo actualizar horario/cancha')
     },
   })
 
@@ -403,8 +434,10 @@ export function MatchesPage() {
                     match={m}
                     matchDetailPath={leagueIdInPath ? `/leagues/${leagueIdInPath}/matches/${m.id}` : `/matches/${m.id}`}
                     onEditResult={() => setResultModalMatch(m)}
+                    onEditSchedule={() => setScheduleModalMatch(m)}
                     onDelete={() => handleDeleteMatch(m)}
                     canDelete={!seasonClosed}
+                    canEditSchedule={!seasonClosed}
                     isDeleting={deleteMatchMutation.isPending && deleteMatchMutation.variables === m.id}
                     metaLabel={`${m.divisionName} · ${m.kickoffTime || '—'}`}
                   />
@@ -429,8 +462,10 @@ export function MatchesPage() {
                     match={m}
                     matchDetailPath={leagueIdInPath ? `/leagues/${leagueIdInPath}/matches/${m.id}` : `/matches/${m.id}`}
                     onEditResult={() => setResultModalMatch(m)}
+                    onEditSchedule={() => setScheduleModalMatch(m)}
                     onDelete={() => handleDeleteMatch(m)}
                     canDelete={!seasonClosed}
+                    canEditSchedule={!seasonClosed}
                     isDeleting={deleteMatchMutation.isPending && deleteMatchMutation.variables === m.id}
                     metaLabel={`${m.fieldName || '—'} · ${m.kickoffTime || '—'}`}
                   />
@@ -507,6 +542,24 @@ export function MatchesPage() {
           }}
         />
       )}
+      {scheduleModalMatch && (
+        <MatchScheduleModal
+          open
+          match={scheduleModalMatch}
+          fields={fields}
+          saving={updateScheduleMutation.isPending}
+          onClose={() => {
+            if (!updateScheduleMutation.isPending) setScheduleModalMatch(null)
+          }}
+          onSave={(startTime, fieldId) =>
+            updateScheduleMutation.mutate({
+              matchId: scheduleModalMatch.id,
+              startTime,
+              fieldId,
+            })
+          }
+        />
+      )}
 
       <Dialog
         open={!!matchToDelete}
@@ -559,16 +612,20 @@ function MatchCard({
   match,
   matchDetailPath,
   onEditResult,
+  onEditSchedule,
   onDelete,
   canDelete,
+  canEditSchedule,
   isDeleting,
   metaLabel,
 }: {
   match: MatchListItem
   matchDetailPath: string
   onEditResult: () => void
+  onEditSchedule: () => void
   onDelete: () => void
   canDelete: boolean
+  canEditSchedule: boolean
   isDeleting: boolean
   metaLabel: string
 }) {
@@ -633,6 +690,9 @@ function MatchCard({
           <Button size="small" startIcon={<EditIcon />} onClick={onEditResult}>
             {t('matches.editResult')}
           </Button>
+          <Button size="small" startIcon={<ScheduleIcon />} onClick={onEditSchedule} disabled={!canEditSchedule}>
+            Horario/cancha
+          </Button>
           <Button size="small" component={RouterLink} to={matchDetailPath} startIcon={<VisibilityIcon />}>
             {t('matches.viewDetails')}
           </Button>
@@ -648,6 +708,88 @@ function MatchCard({
         </Box>
       </CardContent>
     </Card>
+  )
+}
+
+function MatchScheduleModal({
+  open,
+  match,
+  fields,
+  saving,
+  onClose,
+  onSave,
+}: {
+  open: boolean
+  match: MatchListItem
+  fields: Field[]
+  saving: boolean
+  onClose: () => void
+  onSave: (startTime: string, fieldId: string) => void
+}) {
+  const { t } = useTranslation()
+  const [startTime, setStartTime] = React.useState(match.kickoffTime || '')
+  const [fieldId, setFieldId] = React.useState(match.fieldId ?? '')
+
+  React.useEffect(() => {
+    setStartTime(match.kickoffTime || '')
+    setFieldId(match.fieldId ?? '')
+  }, [match])
+
+  const selectedFieldName = fields.find((f) => f.id === fieldId)?.name ?? ''
+  const canSave = startTime.trim().length > 0 && fieldId.length > 0 && !saving
+
+  const handleSave = () => {
+    if (!canSave) return
+
+    const ok = window.confirm(
+      `¿Guardar horario/cancha para ${match.homeTeamName} vs ${match.awayTeamName}?\n\nHorario: ${startTime}\nCancha: ${selectedFieldName}`,
+    )
+    if (!ok) return
+
+    onSave(startTime.trim(), fieldId)
+  }
+
+  return (
+    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>Editar horario/cancha</DialogTitle>
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+        <Typography variant="body2" fontWeight={600}>
+          {match.homeTeamName} vs {match.awayTeamName}
+        </Typography>
+        <TextField
+          label="Horario"
+          type="time"
+          size="small"
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+          fullWidth
+        />
+        <FormControl size="small" fullWidth>
+          <InputLabel id="match-schedule-field-label">Cancha</InputLabel>
+          <Select
+            labelId="match-schedule-field-label"
+            label="Cancha"
+            value={fieldId}
+            onChange={(e) => setFieldId(e.target.value)}
+          >
+            {fields.map((field) => (
+              <MenuItem key={field.id} value={field.id}>
+                {field.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={saving}>
+          {t('common.cancel')}
+        </Button>
+        <Button variant="contained" onClick={handleSave} disabled={!canSave}>
+          {saving ? 'Guardando…' : 'Guardar'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   )
 }
 
