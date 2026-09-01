@@ -30,7 +30,7 @@
         }
         @if (!showAsResult && !string.IsNullOrWhiteSpace(venue))
         {
-            <span class="v2-match-card__venue">@venue</span>
+            <span class="v2-match-card__venue">@await Html.PartialAsync("~/Views/Shared/V2/_FieldLabel.cshtml", venue)</span>
         }
     </div>
 
@@ -46,7 +46,7 @@
             @if (!string.IsNullOrWhiteSpace(venue))
             {
                 <span aria-hidden="true">·</span>
-                <span>@venue</span>
+                @await Html.PartialAsync("~/Views/Shared/V2/_FieldLabel.cshtml", venue)
             }
         </div>
     }
@@ -118,7 +118,7 @@
             @if (!string.IsNullOrWhiteSpace(venue))
             {
                 <span aria-hidden="true">·</span>
-                <span>@venue</span>
+                @await Html.PartialAsync("~/Views/Shared/V2/_FieldLabel.cshtml", venue)
             }
         </div>
     }

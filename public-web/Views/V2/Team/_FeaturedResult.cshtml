@@ -40,7 +40,7 @@
         @if (!string.IsNullOrWhiteSpace(venue))
         {
             <span aria-hidden="true">·</span>
-            <span>@venue</span>
+            @await Html.PartialAsync("~/Views/Shared/V2/_FieldLabel.cshtml", venue)
         }
     </div>
 </a>

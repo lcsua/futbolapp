@@ -55,7 +55,7 @@
                 }
                 @if (!showScore && !suspended && !string.IsNullOrWhiteSpace(venue))
                 {
-                    <span class="v2-fixture-row__venue">@venue</span>
+                    <span class="v2-fixture-row__venue">@await Html.PartialAsync("~/Views/Shared/V2/_FieldLabel.cshtml", venue)</span>
                 }
             </a>
         </div>

@@ -24,8 +24,7 @@
         @if (!string.IsNullOrWhiteSpace(venue))
         {
             <span class="v2-home-match__venue">
-                <span class="v2-ui-icon v2-ui-icon--field v2-ui-icon--sm" aria-hidden="true"></span>
-                @venue
+                @await Html.PartialAsync("~/Views/Shared/V2/_FieldLabel.cshtml", venue)
             </span>
         }
         @if (time == null && string.IsNullOrWhiteSpace(venue))

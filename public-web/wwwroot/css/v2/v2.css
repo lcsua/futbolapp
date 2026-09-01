@@ -899,6 +899,9 @@ a.v2-match-card {
 }
 
 .v2-match-card__venue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: var(--font-size-secondary);
   font-weight: var(--font-weight-medium);
   letter-spacing: 0;
@@ -1231,6 +1234,9 @@ a.v2-match-card {
 }
 
 .v2-match-meta__venue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: var(--font-size-secondary-lg);
   color: var(--v2-text-secondary);
   font-weight: var(--font-weight-medium);
@@ -3843,12 +3849,15 @@ a.v2-fixture-row__team:focus-visible .v2-fixture-row__name {
 }
 
 .v2-fixture-row__venue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.72rem;
   font-weight: 500;
   color: var(--v2-text-secondary);
   text-align: center;
   line-height: 1.2;
-  max-width: 7.5rem;
+  max-width: 8.5rem;
 }
 
 .v2-fixture-row .v2-team-badge--sm {
@@ -4015,6 +4024,18 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 .v2-ui-icon--location { --v2-ui-icon: url("../../assets/miliga-ui/icons/league/location.svg"); }
 .v2-ui-icon--clock { --v2-ui-icon: url("../../assets/miliga-ui/icons/league/clock.svg"); }
 .v2-ui-icon--field { --v2-ui-icon: url("../../assets/miliga-ui/icons/league/field.svg"); }
+
+.v2-field {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+}
+
+.v2-field .v2-ui-icon--field {
+  flex-shrink: 0;
+}
+
 .v2-ui-icon--division { --v2-ui-icon: url("../../assets/miliga-ui/icons/league/division.svg"); }
 .v2-ui-icon--teams { --v2-ui-icon: url("../../assets/miliga-ui/icons/league/teams.svg"); }
 .v2-ui-icon--heart { --v2-ui-icon: url("../../assets/miliga-ui/icons/actions/heart.svg"); }
