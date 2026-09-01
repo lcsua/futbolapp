@@ -23,6 +23,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import PlaceIcon from '@mui/icons-material/Place'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink, useParams } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -135,6 +136,34 @@ export function MatchesPage() {
         ),
     [rounds],
   )
+
+  const displayedMatches = React.useMemo(() => rounds.flatMap((g) => g.matches), [rounds])
+
+  const fieldGroups = React.useMemo(() => {
+    const grouped = new Map<string, MatchListItem[]>()
+    for (const match of displayedMatches) {
+      const fieldName = match.fieldName.trim()
+      const group = grouped.get(fieldName) ?? []
+      group.push(match)
+      grouped.set(fieldName, group)
+    }
+
+    return Array.from(grouped.entries())
+      .map(([fieldName, matches]) => ({
+        fieldName,
+        matches: [...matches].sort((a, b) => {
+          const byTime = (a.kickoffTime || '').localeCompare(b.kickoffTime || '')
+          if (byTime !== 0) return byTime
+          return a.divisionName.localeCompare(b.divisionName)
+        }),
+      }))
+      .sort((a, b) => a.fieldName.localeCompare(b.fieldName))
+  }, [displayedMatches])
+
+  const canGroupByField =
+    round !== '' &&
+    displayedMatches.length > 0 &&
+    displayedMatches.every((match) => match.fieldName.trim().length > 0)
 
   const canClearRoundResults =
     !!leagueId &&
@@ -353,7 +382,40 @@ export function MatchesPage() {
         <Typography color="text.secondary">{t('matches.noMatches')}</Typography>
       )}
 
-      {!matchesLoading && rounds.length > 0 && (
+      {!matchesLoading && rounds.length > 0 && canGroupByField && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Typography variant="subtitle1" fontWeight={600}>
+            Fecha {round} por cancha
+          </Typography>
+          {fieldGroups.map((group) => (
+            <Box key={group.fieldName}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>
+                <PlaceIcon color="primary" fontSize="small" />
+                <Typography variant="subtitle2" fontWeight={700}>
+                  {group.fieldName}
+                </Typography>
+                <Chip size="small" label={`${group.matches.length} partido${group.matches.length === 1 ? '' : 's'}`} />
+              </Box>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 2 }}>
+                {group.matches.map((m) => (
+                  <MatchCard
+                    key={m.id}
+                    match={m}
+                    matchDetailPath={leagueIdInPath ? `/leagues/${leagueIdInPath}/matches/${m.id}` : `/matches/${m.id}`}
+                    onEditResult={() => setResultModalMatch(m)}
+                    onDelete={() => handleDeleteMatch(m)}
+                    canDelete={!seasonClosed}
+                    isDeleting={deleteMatchMutation.isPending && deleteMatchMutation.variables === m.id}
+                    metaLabel={`${m.divisionName} · ${m.kickoffTime || '—'}`}
+                  />
+                ))}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {!matchesLoading && rounds.length > 0 && !canGroupByField && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {rounds.map((group) => (
             <Box key={`${group.roundNumber}-${group.divisionName}`}>
@@ -370,6 +432,7 @@ export function MatchesPage() {
                     onDelete={() => handleDeleteMatch(m)}
                     canDelete={!seasonClosed}
                     isDeleting={deleteMatchMutation.isPending && deleteMatchMutation.variables === m.id}
+                    metaLabel={`${m.fieldName || '—'} · ${m.kickoffTime || '—'}`}
                   />
                 ))}
               </Box>
@@ -499,6 +562,7 @@ function MatchCard({
   onDelete,
   canDelete,
   isDeleting,
+  metaLabel,
 }: {
   match: MatchListItem
   matchDetailPath: string
@@ -506,6 +570,7 @@ function MatchCard({
   onDelete: () => void
   canDelete: boolean
   isDeleting: boolean
+  metaLabel: string
 }) {
   const { t } = useTranslation()
   return (
@@ -562,7 +627,7 @@ function MatchCard({
           </Box>
         </Box>
         <Typography variant="caption" color="text.secondary" display="block">
-          {(match.fieldName || '—')} · {(match.kickoffTime || '—')}
+          {metaLabel}
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
           <Button size="small" startIcon={<EditIcon />} onClick={onEditResult}>
