@@ -86,6 +86,48 @@ public static class SlugGenerator
         return string.Join('-', tokens);
     }
 
+    /// <summary>
+    /// Public match URLs: {home-slug}-vs-{away-slug} plus optional -{season-slug}
+    /// so the same pairing in another tournament stays unique.
+    /// </summary>
+    public static string GenerateMatchSlug(string home, string away, string? season = null)
+    {
+        var homeSlug = Generate(home);
+        var awaySlug = Generate(away);
+        if (string.IsNullOrEmpty(homeSlug) || string.IsNullOrEmpty(awaySlug))
+            return string.Empty;
+
+        var slug = $"{homeSlug}-vs-{awaySlug}";
+        var seasonSlug = Generate(season ?? string.Empty);
+        if (!string.IsNullOrEmpty(seasonSlug))
+            slug += $"-{seasonSlug}";
+        return slug;
+    }
+
+    /// <summary>
+    /// Splits {home}-vs-{away} or {home}-vs-{away}-{season}.
+    /// <paramref name="awayAndSeason"/> is everything after the first -vs-;
+    /// the repository matches the longest away slug plus optional season suffix.
+    /// </summary>
+    public static bool TryParseMatchSlug(string? slug, out string homeSlug, out string awayAndSeason)
+    {
+        homeSlug = string.Empty;
+        awayAndSeason = string.Empty;
+
+        var normalized = Generate(slug ?? string.Empty);
+        if (string.IsNullOrEmpty(normalized))
+            return false;
+
+        const string separator = "-vs-";
+        var idx = normalized.IndexOf(separator, StringComparison.Ordinal);
+        if (idx <= 0)
+            return false;
+
+        homeSlug = normalized[..idx];
+        awayAndSeason = normalized[(idx + separator.Length)..];
+        return homeSlug.Length > 0 && awayAndSeason.Length > 0;
+    }
+
     private static char RemoveAccent(char c)
     {
         var s = c.ToString().Normalize(NormalizationForm.FormD);

@@ -4,7 +4,7 @@
     var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
     ViewData["BadgeSize"] = "sm";
 }
-<a class="v2-match @(finished ? "is-result" : "is-upcoming")" href="@Url.Content($"~/partido/{Model.Id}")">
+<a class="v2-match @(finished ? "is-result" : "is-upcoming")" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
     <div class="v2-match__row">
         <div class="v2-match__side is-home">
             <span class="v2-match__name">@Model.HomeTeam.Name</span>

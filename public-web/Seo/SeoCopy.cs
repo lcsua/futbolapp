@@ -182,11 +182,13 @@ public static class SeoCopy
         string awayName,
         string? leagueName,
         string? leagueSlug,
-        Guid matchId,
-        string? logoUrl)
+        string matchSlug,
+        string? logoUrl,
+        string? seasonName = null)
     {
         var vs = $"{homeName} vs {awayName}";
         var league = string.IsNullOrWhiteSpace(leagueName) ? "MiLiga" : leagueName;
+        var path = $"/partido/{matchSlug}";
         var crumbs = new List<SeoBreadcrumbItem>
         {
             new() { Name = "Inicio", Path = "/" },
@@ -194,13 +196,20 @@ public static class SeoCopy
         };
         if (!string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(leagueName))
             crumbs.Add(new SeoBreadcrumbItem { Name = leagueName, Path = $"/ligas/{leagueSlug}" });
-        crumbs.Add(new SeoBreadcrumbItem { Name = vs, Path = $"/partido/{matchId}" });
+        crumbs.Add(new SeoBreadcrumbItem { Name = vs, Path = path });
+
+        var titleCore = string.IsNullOrWhiteSpace(seasonName)
+            ? $"{vs} - {league}"
+            : $"{vs} - {seasonName} - {league}";
+        var description = string.IsNullOrWhiteSpace(seasonName)
+            ? $"Resultado, horario y detalles de {vs} en la {league}."
+            : $"Resultado, horario y detalles de {vs} ({seasonName}) en la {league}.";
 
         return new SeoPageModel
         {
-            Title = Title($"{vs} - {league}"),
-            Description = $"Resultado, horario y detalles de {vs} en la {league}.",
-            CanonicalPath = $"/partido/{matchId}",
+            Title = Title(titleCore),
+            Description = description,
+            CanonicalPath = path,
             OgImage = logoUrl,
             H1 = vs,
             Breadcrumbs = crumbs

@@ -25,6 +25,7 @@ public sealed class GetMatchByIdResponse
     public string? HomeTeamSlug { get; }
     public string? AwayTeamSlug { get; }
     public string? LeagueSlug { get; }
+    public string? SeasonSlug { get; }
     public IReadOnlyList<MatchIncidentDto> Incidents { get; }
 
     public GetMatchByIdResponse(Guid id, Guid seasonId, bool seasonIsActive, int roundNumber, string divisionName,
@@ -32,7 +33,7 @@ public sealed class GetMatchByIdResponse
         int? homeScore, int? awayScore, string status, string kickoffTime, string matchDate, string fieldName,
         IReadOnlyList<MatchIncidentDto> incidents,
         string homeTeamLogoUrl = null, string awayTeamLogoUrl = null,
-        string homeTeamSlug = null, string awayTeamSlug = null, string leagueSlug = null)
+        string homeTeamSlug = null, string awayTeamSlug = null, string leagueSlug = null, string seasonSlug = null)
     {
         Id = id;
         SeasonId = seasonId;
@@ -55,6 +56,7 @@ public sealed class GetMatchByIdResponse
         HomeTeamSlug = homeTeamSlug;
         AwayTeamSlug = awayTeamSlug;
         LeagueSlug = leagueSlug;
+        SeasonSlug = seasonSlug;
     }
 }
 

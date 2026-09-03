@@ -4,6 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Api.Models.Public;
 using FootballManager.Api.Services;
+using FootballManager.Application.Helpers;
+using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Application.UseCases.Matches.GetMatchById;
 
 namespace FootballManager.Api.Services.Public;
@@ -11,10 +13,27 @@ namespace FootballManager.Api.Services.Public;
 public class PublicMatchService
 {
     private readonly IGetMatchByIdUseCase _getMatchByIdUseCase;
+    private readonly IFixtureRepository _fixtureRepository;
 
-    public PublicMatchService(IGetMatchByIdUseCase getMatchByIdUseCase)
+    public PublicMatchService(
+        IGetMatchByIdUseCase getMatchByIdUseCase,
+        IFixtureRepository fixtureRepository)
     {
         _getMatchByIdUseCase = getMatchByIdUseCase;
+        _fixtureRepository = fixtureRepository;
+    }
+
+    public async Task<MatchPublicDto?> GetMatchBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        if (!SlugGenerator.TryParseMatchSlug(slug, out var homeSlug, out var awayAndSeason))
+            return null;
+
+        var fixture = await _fixtureRepository.FindPublicByTeamSlugsAsync(homeSlug, awayAndSeason, cancellationToken);
+
+        if (fixture == null)
+            return null;
+
+        return await GetMatchAsync(fixture.Id, cancellationToken);
     }
 
     public async Task<MatchPublicDto?> GetMatchAsync(Guid matchId, CancellationToken cancellationToken = default)
@@ -33,6 +52,7 @@ public class PublicMatchService
                 HomeScore = res.HomeScore,
                 AwayScore = res.AwayScore,
                 LeagueSlug = res.LeagueSlug,
+                SeasonSlug = res.SeasonSlug,
                 HomeTeam = new TeamPublicDto
                 {
                     Id = res.HomeTeamId,
@@ -49,7 +69,7 @@ public class PublicMatchService
                     LogoUrl = res.AwayTeamLogoUrl,
                     LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(res.AwayTeamLogoUrl)
                 },
-                Kickoff = DateTime.TryParse(res.MatchDate + " " + res.KickoffTime, out var dt) ? dt : DateTime.UtcNow,
+                Kickoff = DateTime.TryParse(res.MatchDate + " " + res.KickoffTime, out var dt) ? dt : default,
                 FieldName = string.IsNullOrWhiteSpace(res.FieldName) ? null : res.FieldName.Trim(),
                 RoundNumber = res.RoundNumber,
                 DivisionName = string.IsNullOrWhiteSpace(res.DivisionName) ? null : res.DivisionName.Trim(),

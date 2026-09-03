@@ -1,3 +1,4 @@
+using PublicWeb.Helpers;
 using PublicWeb.Models.Public;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Caching.Memory;
@@ -139,6 +140,7 @@ public class LeaguePublicService
             results = await client.GetFromJsonAsync<SeasonGroupedViewModel<MatchdayGroupViewModel>>($"liga/{leagueSlug}/resultados{query}");
             if (results != null)
             {
+                MatchSlugHelper.ApplySeasonSlug(results);
                 _cache.Set(cacheKey, results, TimeSpan.FromMinutes(5));
                 return results;
             }
@@ -168,6 +170,7 @@ public class LeaguePublicService
             fixture = await client.GetFromJsonAsync<SeasonGroupedViewModel<MatchdayGroupViewModel>>($"liga/{leagueSlug}/partidos{query}");
             if (fixture != null)
             {
+                MatchSlugHelper.ApplySeasonSlug(fixture);
                 _cache.Set(cacheKey, fixture, TimeSpan.FromMinutes(10));
                 return fixture;
             }

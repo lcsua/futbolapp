@@ -6,7 +6,7 @@
     var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(Model.Kickoff);
     ViewData["BadgeSize"] = "md";
 }
-<a class="v2-match-row @(finished ? "is-result" : "is-upcoming")" href="@Url.Content($"~/partido/{Model.Id}")">
+<a class="v2-match-row @(finished ? "is-result" : "is-upcoming")" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
     @* Desktop: centered unit — meta then LOCAL | MID | VISITANTE *@
     <div class="v2-match-row__desktop">
         <div class="v2-upcoming-match-inner">

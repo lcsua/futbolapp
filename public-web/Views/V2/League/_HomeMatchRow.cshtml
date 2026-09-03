@@ -13,7 +13,7 @@
     var awayUrl = TeamUrl(Model.AwayTeam);
 }
 <article class="v2-home-match">
-    <a class="v2-home-match__meta" href="@Url.Content($"~/partido/{Model.Id}")">
+    <a class="v2-home-match__meta" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
         @if (time != null)
         {
             <span class="v2-home-match__time v2-nums">

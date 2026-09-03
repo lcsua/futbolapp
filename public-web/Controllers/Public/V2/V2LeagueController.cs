@@ -314,6 +314,7 @@ public class V2LeagueController : Controller
             nextMatches = model.NextMatches.Select(m => new
             {
                 id = m.Id,
+                slug = MatchSlugHelper.FromMatch(m),
                 kickoff = m.Kickoff,
                 status = m.Status,
                 homeScore = m.HomeScore,
@@ -325,6 +326,7 @@ public class V2LeagueController : Controller
             lastResults = model.LastResults.Select(m => new
             {
                 id = m.Id,
+                slug = MatchSlugHelper.FromMatch(m),
                 kickoff = m.Kickoff,
                 status = m.Status,
                 homeScore = m.HomeScore,

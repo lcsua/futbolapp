@@ -4,7 +4,7 @@
     ViewData["BadgeSize"] = "md";
     var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
 }
-<a class="v2-match-card v2-match-card--result" href="@Url.Content($"~/partido/{Model.Id}")">
+<a class="v2-match-card v2-match-card--result" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
     <div class="v2-match-card__meta">
         <span class="v2-match-card__meta-desktop">@(suspended ? "Suspendido" : "Finalizado")</span>
         <span class="v2-match-card__meta-mobile">

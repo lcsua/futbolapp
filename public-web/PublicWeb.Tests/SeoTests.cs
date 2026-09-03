@@ -64,12 +64,20 @@ public class SeoCopyTests
     [Fact]
     public void MatchPage_HasSpecificMetadata()
     {
-        var id = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-        var page = SeoCopy.MatchPage("ATL FOR EVER", "AC. LA UNION", "Liga de Veteranos", "veteranos", id, null);
-        Assert.Equal("/partido/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", page.CanonicalPath);
+        var page = SeoCopy.MatchPage(
+            "ATL FOR EVER",
+            "AC. LA UNION",
+            "Liga de Veteranos",
+            "veteranos",
+            "atl-for-ever-vs-ac-la-union-clausura-2026",
+            null,
+            "Clausura 2026");
+        Assert.Equal("/partido/atl-for-ever-vs-ac-la-union-clausura-2026", page.CanonicalPath);
         Assert.Equal("ATL FOR EVER vs AC. LA UNION", page.H1);
         Assert.Contains("ATL FOR EVER", page.Title);
+        Assert.Contains("Clausura 2026", page.Title);
         Assert.Contains("Liga de Veteranos", page.Title);
+        Assert.Contains("Clausura 2026", page.Description);
     }
 
     [Fact]
@@ -149,6 +157,8 @@ public class SeoUrlBuilderTests
         });
         var urls = new SeoUrlBuilder(opts);
         Assert.Equal("https://miliga.com.ar/ligas/veteranos-de-perico/fixture", urls.LeagueFixture("veteranos-de-perico"));
+        Assert.Equal("https://miliga.com.ar/partido/jueves-de-sometidos-vs-dep-ctj-clausura-2026",
+            urls.Match("jueves-de-sometidos-vs-dep-ctj-clausura-2026"));
         Assert.Equal("https://miliga.com.ar/branding/blue/icon-512.png", urls.DefaultOgImage);
     }
 }
@@ -254,6 +264,7 @@ public class SitemapVeteranosExampleTests
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/resultados", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/informacion", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/bmalvinas-las-pts", locs);
+        Assert.Contains("https://miliga.com.ar/partido/jueves-de-sometidos-vs-dep-ctj-clausura-2026", locs);
         Assert.DoesNotContain(locs, l => l.Contains("/admin", StringComparison.OrdinalIgnoreCase));
 
         var xml = await svc.GetSitemapXmlAsync();
@@ -287,6 +298,9 @@ public class SitemapVeteranosExampleTests
                         { "slug": "bmalvinas-las-pts", "updatedAtUtc": "2026-08-11T00:00:00Z" }
                       ]
                     }
+                  ],
+                  "matches": [
+                    { "slug": "jueves-de-sometidos-vs-dep-ctj-clausura-2026", "updatedAtUtc": "2026-08-22T00:00:00Z" }
                   ]
                 }
                 """;

@@ -31,7 +31,7 @@
             }
 
             <div class="v2-result-row__mid">
-                <a class="v2-result-row__scorewrap" href="@Url.Content($"~/partido/{Model.Id}")">
+                <a class="v2-result-row__scorewrap" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
                     @if (suspended)
                     {
                         <span class="v2-result-row__status is-warn">Suspendido</span>

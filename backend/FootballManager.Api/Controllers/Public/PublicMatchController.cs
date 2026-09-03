@@ -18,7 +18,15 @@ public class PublicMatchController : ControllerBase
         _matchService = matchService;
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("by-slug/{slug}")]
+    public async Task<IActionResult> GetMatchBySlug(string slug)
+    {
+        var match = await _matchService.GetMatchBySlugAsync(slug, HttpContext.RequestAborted);
+        if (match == null) return NotFound();
+        return Ok(match);
+    }
+
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetMatch(Guid id)
     {
         var match = await _matchService.GetMatchAsync(id, HttpContext.RequestAborted);

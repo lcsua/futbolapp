@@ -36,7 +36,7 @@
         </div>
 
         <div class="v2-fixture-row__mid">
-            <a class="v2-fixture-row__info" href="@Url.Content($"~/partido/{Model.Id}")">
+            <a class="v2-fixture-row__info" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
                 @if (suspended)
                 {
                     <span class="v2-fixture-row__status is-warn">Suspendido</span>
