@@ -47,6 +47,7 @@ public class MatchPublicDto
     public int? HomeScore { get; set; }
     public int? AwayScore { get; set; }
     public string? LeagueSlug { get; set; }
+    public string? SeasonSlug { get; set; }
     public string? FieldName { get; set; }
     public int RoundNumber { get; set; }
     public string? DivisionName { get; set; }

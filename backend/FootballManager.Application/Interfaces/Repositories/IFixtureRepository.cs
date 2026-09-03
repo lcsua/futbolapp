@@ -9,6 +9,7 @@ namespace FootballManager.Application.Interfaces.Repositories;
 public interface IFixtureRepository
 {
     Task<Fixture> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<Fixture?> FindPublicByTeamSlugsAsync(string homeSlug, string awayAndSeason, CancellationToken cancellationToken = default);
     Task<int> CountBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
     Task<int> CountByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default);
     Task<List<Fixture>> GetBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);

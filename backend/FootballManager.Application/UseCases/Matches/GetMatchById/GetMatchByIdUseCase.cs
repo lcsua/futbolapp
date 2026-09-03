@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Domain.Entities;
 
@@ -73,6 +74,7 @@ public sealed class GetMatchByIdUseCase : IGetMatchByIdUseCase
             awayTeam?.LogoUrl,
             homeTeam?.Slug,
             awayTeam?.Slug,
-            fixture.League?.Slug);
+            fixture.League?.Slug,
+            string.IsNullOrWhiteSpace(fixture.Season?.Name) ? null : SlugGenerator.Generate(fixture.Season.Name));
     }
 }

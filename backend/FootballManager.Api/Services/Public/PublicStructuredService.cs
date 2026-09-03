@@ -154,6 +154,40 @@ public class PublicStructuredService
                 .OrderBy(x => x.Slug)
                 .ToList());
 
+        var fixtures = await _db.Set<Fixture>()
+            .AsNoTracking()
+            .Where(f => leagueIds.Contains(f.LeagueId) &&
+                        f.Season.IsActive &&
+                        (f.Status == Domain.Enums.MatchStatus.COMPLETED ||
+                         f.Status == Domain.Enums.MatchStatus.PLAYED ||
+                         f.Status == Domain.Enums.MatchStatus.SUSPENDED))
+            .Select(f => new
+            {
+                f.UpdatedAt,
+                HomeSlug = f.HomeTeamDivisionSeason.Team.Slug,
+                HomeName = f.HomeTeamDivisionSeason.Team.Name,
+                AwaySlug = f.AwayTeamDivisionSeason.Team.Slug,
+                AwayName = f.AwayTeamDivisionSeason.Team.Name,
+                SeasonName = f.Season.Name
+            })
+            .ToListAsync(cancellationToken);
+
+        var matchDtos = fixtures
+            .Select(f =>
+            {
+                var home = string.IsNullOrWhiteSpace(f.HomeSlug) ? f.HomeName : f.HomeSlug;
+                var away = string.IsNullOrWhiteSpace(f.AwaySlug) ? f.AwayName : f.AwaySlug;
+                return new SitemapMatchDto
+                {
+                    Slug = SlugGenerator.GenerateMatchSlug(home, away, f.SeasonName),
+                    UpdatedAtUtc = f.UpdatedAt == default ? null : f.UpdatedAt
+                };
+            })
+            .Where(m => !string.IsNullOrWhiteSpace(m.Slug))
+            .GroupBy(m => m.Slug, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(x => x.UpdatedAtUtc).First())
+            .ToList();
+
         return new SitemapPublicDto
         {
             GeneratedAtUtc = DateTime.UtcNow,
@@ -168,7 +202,8 @@ public class PublicStructuredService
                         UpdatedAtUtc = t.UpdatedAt == default ? null : t.UpdatedAt
                     }).ToList()
                     : new List<SitemapTeamDto>()
-            }).ToList()
+            }).ToList(),
+            Matches = matchDtos
         };
     }
 
@@ -277,8 +312,8 @@ public class PublicStructuredService
             .ToList();
 
         // Include crest URLs so V2 team Resumen/Partidos can render TeamBadge logos.
-        response.NextMatches = upcoming.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true)).ToList();
-        response.LastResults = recent.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true)).ToList();
+        response.NextMatches = upcoming.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
+        response.LastResults = recent.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
 
         var standingsReq = new GetStandingsRequest { LeagueId = league.Id, SeasonId = season.Id, IsPublic = true };
         var standingsRes = await _getStandingsUseCase.ExecuteAsync(standingsReq, cancellationToken);
@@ -425,7 +460,7 @@ public class PublicStructuredService
             .Take(50)
             .ToListAsync(cancellationToken);
 
-        return fixtures.Select(f => MapToMatchDto(f, league.Slug)).ToList();
+        return fixtures.Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
     }
 
     public async Task<List<MatchPublicDto>> GetDivisionMatchesAsync(string leagueSlug, string seasonSlug, string divisionSlug, CancellationToken cancellationToken = default)
@@ -455,10 +490,10 @@ public class PublicStructuredService
             .Take(50)
             .ToListAsync(cancellationToken);
 
-        return fixtures.Select(f => MapToMatchDto(f, league.Slug)).ToList();
+        return fixtures.Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
     }
 
-    private MatchPublicDto MapToMatchDto(Fixture match, string? leagueSlug = null, bool includeLogos = true)
+    private MatchPublicDto MapToMatchDto(Fixture match, string? leagueSlug = null, bool includeLogos = true, string? seasonSlug = null)
     {
         var homeTeam = match.HomeTeamDivisionSeason?.Team;
         var awayTeam = match.AwayTeamDivisionSeason?.Team;
@@ -478,6 +513,10 @@ public class PublicStructuredService
             away.LogoThumbUrl = null;
         }
 
+        var resolvedSeason = !string.IsNullOrWhiteSpace(seasonSlug)
+            ? seasonSlug
+            : SlugHelper.NormalizeSlug(match.Season?.Name);
+
         return new MatchPublicDto
         {
             Id = match.Id,
@@ -485,9 +524,10 @@ public class PublicStructuredService
             HomeScore = match.Result?.HomeTeamGoals,
             AwayScore = match.Result?.AwayTeamGoals,
             LeagueSlug = leagueSlug,
+            SeasonSlug = resolvedSeason,
             HomeTeam = home,
             AwayTeam = away,
-            Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : DateTime.UtcNow,
+            Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : default,
             FieldName = string.IsNullOrWhiteSpace(match.Field?.Name) ? null : match.Field.Name.Trim()
         };
     }
@@ -665,7 +705,7 @@ public class PublicStructuredService
 
         foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
         {
-            var matchesForDiv = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(f => MapToMatchDto(f, league.Slug)).ToList();
+            var matchesForDiv = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
             if (matchesForDiv.Any())
             {
                 var matchdays = matchesForDiv.GroupBy(m => allFixtures.First(f => f.Id == m.Id).RoundNumber)
@@ -728,7 +768,7 @@ public class PublicStructuredService
             if (round.HasValue)
                 openFixtures = openFixtures.Where(f => f.RoundNumber == round.Value).ToList();
 
-            var matchesForDiv = openFixtures.Select(f => MapToMatchDto(f, league.Slug)).ToList();
+            var matchesForDiv = openFixtures.Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
             if (matchesForDiv.Count == 0 && !round.HasValue)
                 continue;
 

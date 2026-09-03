@@ -17,8 +17,9 @@
             Model.AwayTeam.Name,
             league?.Name,
             leagueSlug,
-            Model.Id,
-            league?.LogoUrl ?? Model.HomeTeam.LogoUrl),
+            MatchSlugHelper.FromMatch(Model),
+            league?.LogoUrl ?? Model.HomeTeam.LogoUrl,
+            ViewBag.SeasonName as string),
         ViewData,
         ViewBag);
     crumbs = ViewBag.SeoBreadcrumbs as IReadOnlyList<PublicWeb.Seo.SeoBreadcrumbItem> ?? crumbs;

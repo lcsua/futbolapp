@@ -43,5 +43,6 @@ public sealed class SeoUrlBuilder
     public string LeagueResults(string leagueSlug) => Absolute($"/ligas/{leagueSlug}/resultados");
     public string LeagueInformation(string leagueSlug) => Absolute($"/ligas/{leagueSlug}/informacion");
     public string Team(string leagueSlug, string teamSlug) => Absolute($"/ligas/{leagueSlug}/{teamSlug}");
+    public string Match(string matchSlug) => Absolute($"/partido/{matchSlug}");
     public string ArgentineCompetition(string slug) => Absolute($"/ligas/argentina/{slug}");
 }
