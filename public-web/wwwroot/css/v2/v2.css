@@ -4628,8 +4628,8 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-team-hero .v2-team-badge--lg {
-  width: 3.35rem;
-  height: 3.35rem;
+  width: 5.5rem;
+  height: 5.5rem;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.4);
   background: #fff;
@@ -4637,7 +4637,11 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-team-hero .v2-team-badge--lg img {
-  padding: 0.22rem;
+  padding: 0.12rem;
+}
+
+.v2-team-hero .v2-team-badge--lg .v2-team-badge__initials {
+  font-size: 1.2rem;
 }
 
 .v2-team-hero__copy {
@@ -4825,8 +4829,12 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
   .v2-team-hero .v2-team-badge--lg {
     grid-area: logo;
-    width: 5.25rem;
-    height: 5.25rem;
+    width: 6.5rem;
+    height: 6.5rem;
+  }
+
+  .v2-team-hero .v2-team-badge--lg .v2-team-badge__initials {
+    font-size: 1.35rem;
   }
 
   .v2-team-hero__copy {
@@ -4875,8 +4883,8 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
 @media (max-width: 374.98px) {
   .v2-team-hero .v2-team-badge--lg {
-    width: 3rem;
-    height: 3rem;
+    width: 4.75rem;
+    height: 4.75rem;
   }
 }
 
