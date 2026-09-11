@@ -44,9 +44,7 @@
 
   function homeTarget() {
     const pinned = readStorage(PINNED_KEY) || serverPinned();
-    if (isValidPath(pinned)) return pinned;
-    const last = readStorage(LAST_KEY) || document.documentElement.getAttribute('data-home-league') || '';
-    return isValidPath(last) ? last : '';
+    return isValidPath(pinned) ? pinned : '';
   }
 
   function leagueHref(path) {

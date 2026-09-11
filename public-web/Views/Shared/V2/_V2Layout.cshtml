@@ -122,14 +122,14 @@
                 var params = new URLSearchParams(location.search);
                 if (params.has('inicio') || params.has('todas')) return;
                 if (/bot|crawl|spider|slurp|googlebot|bingbot|yandex|facebookexternalhit/i.test(navigator.userAgent)) return;
-                var path = localStorage.getItem('miliga-home-league') || localStorage.getItem('miliga-last-league');
+                var path = localStorage.getItem('miliga-home-league');
                 if (!path) {
                   var cookies = document.cookie ? document.cookie.split('; ') : [];
                   for (var i = 0; i < cookies.length; i++) {
                     var parts = cookies[i].split('=');
-                    if (parts[0] === 'miliga-home-league' || (!path && parts[0] === 'miliga-last-league')) {
+                    if (parts[0] === 'miliga-home-league') {
                       path = decodeURIComponent(parts.slice(1).join('='));
-                      if (parts[0] === 'miliga-home-league') break;
+                      break;
                     }
                   }
                 }

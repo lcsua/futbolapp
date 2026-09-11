@@ -29,12 +29,41 @@ public static class SeoCopy
 
     public static SeoPageModel Home() => new()
     {
-        Title = Title("Todo tu torneo, en un solo lugar"),
-        Description = "Resultados, posiciones, partidos y estadísticas de tu liga amateur en MiLiga.",
+        Title = Title("Tu liga, pública y al día"),
+        Description = "Publicá fixture, resultados y posiciones de tu liga amateur. Jugadores y delegados la siguen desde el celular. La Liga de Veteranos de Perico ya está al aire en MiLiga.",
         CanonicalPath = "/",
+        H1 = "Tu liga, pública y al día.",
         Breadcrumbs = new[]
         {
             new SeoBreadcrumbItem { Name = "Inicio", Path = "/" }
+        }
+    };
+
+    public static SeoPageModel Contacto() => new()
+    {
+        Title = Title("Crear tu liga"),
+        Description = "¿Querés una liga pública como la de Veteranos de Perico? Dejanos tus datos y te contactamos para publicarla.",
+        CanonicalPath = "/contacto",
+        H1 = "¿Querés publicar tu liga?",
+        Breadcrumbs = new[]
+        {
+            new SeoBreadcrumbItem { Name = "Inicio", Path = "/" },
+            new SeoBreadcrumbItem { Name = "Crear liga", Path = "/contacto" }
+        }
+    };
+
+    public static SeoPageModel Gracias() => new()
+    {
+        Title = Title("Gracias"),
+        Description = "Recibimos tu consulta. Nos pondremos en contacto para ayudarte a publicar tu liga.",
+        CanonicalPath = "/gracias",
+        NoIndex = true,
+        H1 = "Gracias",
+        Breadcrumbs = new[]
+        {
+            new SeoBreadcrumbItem { Name = "Inicio", Path = "/" },
+            new SeoBreadcrumbItem { Name = "Crear liga", Path = "/contacto" },
+            new SeoBreadcrumbItem { Name = "Gracias", Path = "/gracias" }
         }
     };
 

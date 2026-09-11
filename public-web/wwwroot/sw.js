@@ -29,7 +29,7 @@ self.addEventListener('fetch', (event) => {
   if (url.searchParams.has('inicio') || url.searchParams.has('todas')) return;
 
   const header = event.request.headers.get('Cookie') || '';
-  const target = cookieValue(header, 'miliga-home-league') || cookieValue(header, 'miliga-last-league');
+  const target = cookieValue(header, 'miliga-home-league');
   if (!LEAGUE_PATH_RE.test(target)) return;
 
   event.respondWith(Response.redirect(new URL(`/ligas/${target}`, url.origin), 302));
