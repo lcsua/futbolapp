@@ -80,7 +80,8 @@ public sealed class SitemapDocumentService
         var list = new List<SitemapUrlEntry>
         {
             new() { Loc = _urls.Absolute("/") },
-            new() { Loc = _urls.Absolute("/ligas") }
+            new() { Loc = _urls.Absolute("/ligas") },
+            new() { Loc = _urls.Absolute("/contacto") }
         };
 
         var payload = await FetchBackendSitemapAsync(cancellationToken);

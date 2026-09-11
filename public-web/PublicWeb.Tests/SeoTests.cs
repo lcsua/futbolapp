@@ -18,6 +18,38 @@ public class SeoCopyTests
     }
 
     [Fact]
+    public void Home_InvitesLeaguesWithPericoExample()
+    {
+        var page = SeoCopy.Home();
+        Assert.Equal("/", page.CanonicalPath);
+        Assert.Contains("Tu liga, pública y al día", page.Title);
+        Assert.Contains("Veteranos de Perico", page.Description);
+        Assert.False(page.NoIndex);
+    }
+
+    [Fact]
+    public void Contacto_HasCanonicalAndInviteCopy()
+    {
+        var page = SeoCopy.Contacto();
+        Assert.Equal("/contacto", page.CanonicalPath);
+        Assert.Contains("Crear tu liga", page.Title);
+        Assert.Contains("MiLiga", page.Title);
+        Assert.Contains("Veteranos de Perico", page.Description);
+        Assert.Equal("¿Querés publicar tu liga?", page.H1);
+        Assert.False(page.NoIndex);
+    }
+
+    [Fact]
+    public void Gracias_IsNoIndexThankYou()
+    {
+        var page = SeoCopy.Gracias();
+        Assert.Equal("/gracias", page.CanonicalPath);
+        Assert.True(page.NoIndex);
+        Assert.Equal("Gracias", page.H1);
+        Assert.Contains("pondremos en contacto", page.Description);
+    }
+
+    [Fact]
     public void Fixture_Canonical_StripsFilters()
     {
         var page = SeoCopy.LeagueFixture("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", null);
@@ -258,6 +290,7 @@ public class SitemapVeteranosExampleTests
 
         Assert.Contains("https://miliga.com.ar/", locs);
         Assert.Contains("https://miliga.com.ar/ligas", locs);
+        Assert.Contains("https://miliga.com.ar/contacto", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/fixture", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/posiciones", locs);

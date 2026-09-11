@@ -48,11 +48,12 @@ jobs:
       uses: appleboy/ssh-action@v1.0.3
       env:
         SUDO_PASSWORD: ${{ secrets.SSH_SUDO_PASSWORD }}
+        WEB3FORMS_ACCESS_KEY: ${{ secrets.WEB3FORMS_ACCESS_KEY }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
-        envs: SUDO_PASSWORD
+        envs: SUDO_PASSWORD,WEB3FORMS_ACCESS_KEY
         script: |
           chmod +x /home/lucas/apps/futbolnet/web/PublicWeb
 
@@ -80,6 +81,12 @@ jobs:
           [Install]
           WantedBy=multi-user.target
           EOF
+            if [ -n "${WEB3FORMS_ACCESS_KEY:-}" ]; then
+              awk -v key="$WEB3FORMS_ACCESS_KEY" '
+                /^\[Install\]/ { print "Environment=Web3Forms__AccessKey=" key }
+                { print }
+              ' "$service_file" > "$service_file.tmp" && mv "$service_file.tmp" "$service_file"
+            fi
             nginx_patch="$(mktemp)"
             cat > "$nginx_patch" <<'PY'
           import re
@@ -110,6 +117,22 @@ jobs:
                   proxy_pass http://127.0.0.1:5002/public-web/robots.txt;
                   proxy_http_version 1.1;
                   proxy_set_header Host $host;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+              location = /contacto {
+                  proxy_pass http://127.0.0.1:5002/public-web/contacto;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+              location = /gracias {
+                  proxy_pass http://127.0.0.1:5002/public-web/gracias;
+                  proxy_http_version 1.1;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                   proxy_set_header X-Forwarded-Proto $scheme;
               }
               location /sitemaps/ {
@@ -181,6 +204,8 @@ jobs:
           text = strip_location(text, "/public-web/")
           text = strip_location(text, "= /sitemap.xml")
           text = strip_location(text, "= /robots.txt")
+          text = strip_location(text, "= /contacto")
+          text = strip_location(text, "= /gracias")
           text = strip_location(text, "/sitemaps/")
           text = strip_location(text, "/og/")
           text = strip_location(text, "/uploads/")
@@ -210,7 +235,7 @@ jobs:
           else
             pkill -x PublicWeb || true
             cd /home/lucas/apps/futbolnet/web
-            setsid env ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:5002 BackendApi__BaseUrl=http://127.0.0.1:5001/api/public/ PublicWeb__PathBase=/public-web Seo__PublicBaseUrl=https://miliga.com.ar ./PublicWeb > public-web.log 2>&1 < /dev/null &
+            setsid env ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://127.0.0.1:5002 BackendApi__BaseUrl=http://127.0.0.1:5001/api/public/ PublicWeb__PathBase=/public-web Seo__PublicBaseUrl=https://miliga.com.ar Web3Forms__AccessKey="${WEB3FORMS_ACCESS_KEY:-}" ./PublicWeb > public-web.log 2>&1 < /dev/null &
           fi
 
           # grep -q closes the pipe early (curl 23) when pipefail is on; load the body first.

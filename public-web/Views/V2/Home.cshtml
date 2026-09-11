@@ -1,13 +1,193 @@
+@model PublicWeb.Models.Public.HomePageViewModel
 @{
     Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    ViewBag.OverlayGlobalHeader = true;
     PublicWeb.Seo.SeoPageApplicator.Apply(PublicWeb.Seo.SeoCopy.Home(), ViewData, ViewBag);
+    var example = Model.ExampleLeague;
+    var exampleHref = example != null
+        ? Url.Content($"~/ligas/{example.Slug}")
+        : Url.Content("~/ligas/veteranos-de-perico");
 }
-<section>
-    <h1 class="v2-page-title">Todo tu torneo, en un solo lugar.</h1>
-    <p class="v2-page-lead" style="margin-bottom: var(--space-6, 1.5rem)">
-        Resultados, posiciones, partidos y estadísticas de tu liga.
-    </p>
-    <p>
-        <a class="v2-button" href="@Url.Content("~/ligas")">Ver ligas</a>
-    </p>
-</section>
+
+<article class="v2-landing">
+    <section class="v2-landing-hero">
+        <div class="v2-landing-hero__inner">
+            <img class="v2-landing-hero__mark"
+                 data-v2-brand="icon-192"
+                 src="~/branding/blue/icon-192.png"
+                 asp-append-version="true"
+                 width="72"
+                 height="72"
+                 alt="Mi Liga" />
+            <p class="v2-landing-hero__eyebrow">Tu liga, tu competencia</p>
+            <h1 class="v2-landing-hero__title">Tu liga, pública y al día.</h1>
+            <p class="v2-landing-hero__lead">
+                La página pública de tu torneo amateur: fixture, tabla y resultados,
+                como ya lo ve Veteranos de Perico.
+            </p>
+            <p class="v2-landing-hero__actions">
+                <a class="v2-button" href="@Url.Content("~/contacto")">Crear tu liga</a>
+                <a class="v2-button v2-button--ghost" href="@exampleHref">Ver ejemplo</a>
+            </p>
+        </div>
+    </section>
+
+    @if (Model.Leagues.Count > 0)
+    {
+        <section class="v2-landing__section" aria-labelledby="v2-landing-ejemplo">
+            <h2 id="v2-landing-ejemplo" class="v2-section-title">Así se ve una liga al aire</h2>
+            <p class="v2-page-lead">La misma ficha que van a tener ustedes: resumen, fixture, tabla y equipos.</p>
+            <div class="v2-stack" style="margin-top: var(--space-4)">
+                @foreach (var league in Model.Leagues)
+                {
+                    <a class="v2-league-card" href="@Url.Content($"~/ligas/{league.Slug}")">
+                        <span class="v2-league-card__badge" aria-hidden="true">
+                            @if (!string.IsNullOrWhiteSpace(league.LogoUrl))
+                            {
+                                <img src="@league.LogoUrl" alt="" width="40" height="40" loading="lazy" decoding="async" />
+                            }
+                            else
+                            {
+                                <img data-v2-brand="icon-192"
+                                     src="~/branding/blue/icon-192.png"
+                                     asp-append-version="true"
+                                     alt=""
+                                     width="40"
+                                     height="40"
+                                     loading="lazy"
+                                     decoding="async" />
+                            }
+                        </span>
+                        <span class="v2-league-card__copy">
+                            <span class="v2-league-card__name">@league.Name</span>
+                            <span class="v2-league-card__meta">
+                                @(string.IsNullOrWhiteSpace(league.Country) ? "Liga amateur" : league.Country) · Fixture, posiciones y resultados
+                            </span>
+                        </span>
+                        <span class="v2-league-card__arrow" aria-hidden="true">→</span>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+
+    <section class="v2-landing__section" aria-labelledby="v2-landing-caminos">
+        <h2 id="v2-landing-caminos" class="v2-section-title">Dos formas de usarla</h2>
+        <div class="v2-landing__split">
+            <div class="v2-landing__card">
+                <span class="v2-landing__card-icon" aria-hidden="true"><span class="v2-ui-icon v2-ui-icon--lg v2-ui-icon--results"></span></span>
+                <h3 class="v2-landing__card-title">Ya tienen su sistema</h3>
+                <p>
+                    Si la liga ya arma el fixture o carga resultados en otro lado, MiLiga puede ser solo la vitrina.
+                    Importan partidos, resultados y horarios, y los jugadores entran a una URL limpia sin tocar el sistema interno.
+                </p>
+            </div>
+            <div class="v2-landing__card">
+                <span class="v2-landing__card-icon" aria-hidden="true"><span class="v2-ui-icon v2-ui-icon--lg v2-ui-icon--field"></span></span>
+                <h3 class="v2-landing__card-title">Arrancan de cero</h3>
+                <p>
+                    Temporadas, divisiones y equipos; fixture generado o importado; canchas, disponibilidad y horarios;
+                    resultados e incidencias. Toda la gestión en un solo panel, con la misma página pública.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="v2-landing__section" aria-labelledby="v2-landing-publico">
+        <h2 id="v2-landing-publico" class="v2-section-title">Lo que ve la gente</h2>
+        <ul class="v2-landing__features">
+            <li>
+                <span class="v2-ui-icon v2-ui-icon--calendar" aria-hidden="true"></span>
+                <div>
+                    <strong>Fixture</strong>
+                    <span>Por división y fecha, con cancha y horario cuando están cargados.</span>
+                </div>
+            </li>
+            <li>
+                <span class="v2-ui-icon v2-ui-icon--trophy" aria-hidden="true"></span>
+                <div>
+                    <strong>Posiciones</strong>
+                    <span>La tabla se actualiza al publicar un resultado.</span>
+                </div>
+            </li>
+            <li>
+                <span class="v2-ui-icon v2-ui-icon--results" aria-hidden="true"></span>
+                <div>
+                    <strong>Resultados y partidos</strong>
+                    <span>Marcador, goles y tarjetas en la ficha de cada encuentro.</span>
+                </div>
+            </li>
+            <li>
+                <span class="v2-ui-icon v2-ui-icon--teams" aria-hidden="true"></span>
+                <div>
+                    <strong>Equipos</strong>
+                    <span>Página de cada club, forma reciente y goleadores.</span>
+                </div>
+            </li>
+            <li>
+                <span class="v2-ui-icon v2-ui-icon--bell" aria-hidden="true"></span>
+                <div>
+                    <strong>Avisos</strong>
+                    <span>Seguir la liga o un equipo y recibir novedades en el celular.</span>
+                </div>
+            </li>
+            <li>
+                <span class="v2-ui-icon v2-ui-icon--info" aria-hidden="true"></span>
+                <div>
+                    <strong>Información</strong>
+                    <span>Documentos, reglamento y datos de la liga en un solo lugar.</span>
+                </div>
+            </li>
+        </ul>
+    </section>
+
+    <section class="v2-landing__section" aria-labelledby="v2-landing-gestion">
+        <h2 id="v2-landing-gestion" class="v2-section-title">Lo que arma el organizador</h2>
+        <ul class="v2-landing__chips" role="list">
+            <li>Fixture automático o por CSV</li>
+            <li>Importar resultados y horarios</li>
+            <li>Canchas, bloqueos y disponibilidad</li>
+            <li>Varias divisiones y temporadas</li>
+            <li>Alta masiva de equipos</li>
+            <li>Jugadores e incidencias</li>
+            <li>Usuarios y permisos</li>
+            <li>Documentos para delegados</li>
+        </ul>
+    </section>
+
+    <section class="v2-landing__section" aria-labelledby="v2-landing-pasos">
+        <h2 id="v2-landing-pasos" class="v2-section-title">Cómo publicamos tu liga</h2>
+        <ol class="v2-landing__steps">
+            <li>
+                <span class="v2-landing__step-n">1</span>
+                <div>
+                    <strong>Nos contás</strong>
+                    <span>Nombre, localidad, equipos y divisiones. El formulario es corto.</span>
+                </div>
+            </li>
+            <li>
+                <span class="v2-landing__step-n">2</span>
+                <div>
+                    <strong>La dejamos al aire</strong>
+                    <span>Importamos lo que ya tengan o la armamos en MiLiga, como Veteranos de Perico.</span>
+                </div>
+            </li>
+            <li>
+                <span class="v2-landing__step-n">3</span>
+                <div>
+                    <strong>La comparten</strong>
+                    <span>Un link para jugadores, delegados y prensa. Fixture y tabla, siempre visibles.</span>
+                </div>
+            </li>
+        </ol>
+    </section>
+
+    <section class="v2-landing__cta" aria-labelledby="v2-landing-cta">
+        <h2 id="v2-landing-cta" class="v2-landing__cta-title">¿Querés una liga como esta?</h2>
+        <p>Dejanos tus datos y te contactamos para publicarla.</p>
+        <p class="v2-landing-hero__actions">
+            <a class="v2-button" href="@Url.Content("~/contacto")">Crear tu liga</a>
+            <a class="v2-button v2-button--ghost" href="@Url.Content("~/ligas")">Ver ligas</a>
+        </p>
+    </section>
+</article>

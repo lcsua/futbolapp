@@ -62,11 +62,12 @@ jobs:
       uses: appleboy/ssh-action@v1.0.3
       env:
         SUDO_PASSWORD: ${{ secrets.SSH_SUDO_PASSWORD }}
+        WEB3FORMS_ACCESS_KEY: ${{ secrets.WEB3FORMS_ACCESS_KEY }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
-        envs: SUDO_PASSWORD
+        envs: SUDO_PASSWORD,WEB3FORMS_ACCESS_KEY
         script: |
           set -euo pipefail
           chmod +x /home/lucas/apps/futbolnet/web-dev/PublicWebDev
@@ -99,6 +100,13 @@ jobs:
           [Install]
           WantedBy=multi-user.target
           EOF
+
+          if [ -n "${WEB3FORMS_ACCESS_KEY:-}" ]; then
+            awk -v key="$WEB3FORMS_ACCESS_KEY" '
+              /^\[Install\]/ { print "Environment=Web3Forms__AccessKey=" key }
+              { print }
+            ' "$service_file" > "$service_file.tmp" && mv "$service_file.tmp" "$service_file"
+          fi
 
           sudo_run() {
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' "$@"

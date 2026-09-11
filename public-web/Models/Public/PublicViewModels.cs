@@ -188,6 +188,21 @@ public class LeagueDocumentsPageViewModel
     public LeagueDocumentCategoryViewModel? ActiveCategory { get; set; }
 }
 
+public sealed class HomePageViewModel
+{
+    public List<LeagueViewModel> Leagues { get; init; } = new();
+    public LeagueViewModel? ExampleLeague { get; init; }
+}
+
+public sealed class ContactFormViewModel
+{
+    public string AccessKey { get; init; } = "";
+    public string RedirectUrl { get; init; } = "https://miliga.com.ar/gracias";
+    public int CaptchaA { get; init; }
+    public int CaptchaB { get; init; }
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(AccessKey);
+}
+
 /// <summary>V2 league home composition (portada). Data sliced from existing public endpoints.</summary>
 public class LeagueHomeViewModel
 {

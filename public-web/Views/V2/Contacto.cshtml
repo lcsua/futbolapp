@@ -1,0 +1,94 @@
+@model PublicWeb.Models.Public.ContactFormViewModel
+@{
+    Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+}
+
+<section class="v2-contact">
+    <h1 class="v2-page-title">¿Querés publicar tu liga?</h1>
+    <p class="v2-page-lead">
+        Si te gusta cómo está armada la Liga de Veteranos de Perico, dejanos tus datos.
+        Te contactamos para crear la tuya.
+    </p>
+
+    @if (!Model.IsConfigured)
+    {
+        <p class="v2-contact__notice" role="status">
+            El formulario se está configurando. Probá de nuevo en un rato.
+        </p>
+    }
+    else
+    {
+        <form class="v2-contact__form"
+              action="https://api.web3forms.com/submit"
+              method="POST"
+              data-contact-form
+              data-captcha-sum="@(Model.CaptchaA + Model.CaptchaB)"
+              data-thanks-url="@Url.Content("~/gracias")"
+              novalidate>
+            <input type="hidden" name="access_key" value="@Model.AccessKey" />
+            <input type="hidden" name="subject" value="Nueva consulta para publicar una liga" />
+            <input type="hidden" name="from_name" value="MiLiga" />
+            <input type="hidden" name="redirect" value="@Model.RedirectUrl" />
+
+            <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" class="v2-contact__honeypot" aria-hidden="true" />
+            <div class="v2-contact__honeypot" aria-hidden="true">
+                <label for="v2-contact-website">Sitio web</label>
+                <input id="v2-contact-website" type="text" name="website" tabindex="-1" autocomplete="off" />
+            </div>
+
+            <div class="v2-contact__field">
+                <label for="v2-contact-name">Nombre de contacto</label>
+                <input id="v2-contact-name" type="text" name="name" maxlength="120" autocomplete="name" required />
+            </div>
+
+            <div class="v2-contact__field">
+                <label for="v2-contact-email">Correo electrónico</label>
+                <input id="v2-contact-email" type="email" name="email" maxlength="160" autocomplete="email" required />
+            </div>
+
+            <div class="v2-contact__field">
+                <label for="v2-contact-whatsapp">WhatsApp <span class="v2-contact__optional">opcional</span></label>
+                <input id="v2-contact-whatsapp" type="tel" name="WhatsApp" maxlength="40" autocomplete="tel" inputmode="tel" placeholder="388…" />
+            </div>
+
+            <div class="v2-contact__field">
+                <label for="v2-contact-localidad">Localidad o provincia</label>
+                <input id="v2-contact-localidad" type="text" name="Localidad" maxlength="160" required placeholder="Ej. Perico, Jujuy" />
+            </div>
+
+            <div class="v2-contact__field">
+                <label for="v2-contact-liga">Nombre de la liga</label>
+                <input id="v2-contact-liga" type="text" name="Liga" maxlength="160" required />
+            </div>
+
+            <div class="v2-contact__row">
+                <div class="v2-contact__field">
+                    <label for="v2-contact-equipos">Cantidad de equipos</label>
+                    <input id="v2-contact-equipos" type="number" name="Equipos" min="1" max="500" inputmode="numeric" required />
+                </div>
+                <div class="v2-contact__field">
+                    <label for="v2-contact-divisiones">Divisiones o categorías</label>
+                    <input id="v2-contact-divisiones" type="number" name="Divisiones" min="1" max="50" inputmode="numeric" required />
+                </div>
+            </div>
+
+            <div class="v2-contact__field">
+                <label for="v2-contact-comentario">Comentario <span class="v2-contact__optional">opcional</span></label>
+                <textarea id="v2-contact-comentario" name="Comentario" rows="4" maxlength="800" placeholder="Día de juego, si ya tienen página, o cualquier detalle."></textarea>
+            </div>
+
+            <div class="v2-contact__field">
+                <label for="v2-contact-captcha">Para evitar spam: ¿cuánto es @Model.CaptchaA + @Model.CaptchaB?</label>
+                <input id="v2-contact-captcha" type="text" inputmode="numeric" name="captcha" autocomplete="off" required />
+            </div>
+
+            <p class="v2-contact__error" data-contact-error hidden></p>
+
+            <button type="submit" class="v2-button" data-contact-submit>Enviar</button>
+        </form>
+    }
+</section>
+
+@section Scripts {
+    <script src="~/js/v2/contact-form.js" asp-append-version="true"></script>
+}
