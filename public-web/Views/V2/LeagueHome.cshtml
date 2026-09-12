@@ -103,14 +103,28 @@
                 <span class="v2-ui-icon v2-ui-icon--division" aria-hidden="true"></span>
                 <h2 class="v2-home-kicker">Elegí la división</h2>
             </div>
-            <div class="v2-home-chips" role="radiogroup" aria-label="Elegir división">
-                @foreach (var panel in panels)
-                {
-                    var inputId = PublicWeb.Helpers.LeagueHomeComposer.CssId("home-div-", panel.DivisionSlug);
-                    <label class="v2-chip v2-home-chip"
-                           data-home-chip="@panel.DivisionSlug"
-                           for="@inputId">@panel.DivisionName</label>
-                }
+            <div class="v2-home-chips-scroller" data-v2-chip-scroller>
+                <button type="button"
+                        class="v2-home-chips-scroller__btn v2-home-chips-scroller__btn--prev"
+                        data-v2-carousel-prev
+                        aria-label="Ver categorías anteriores">
+                    <span class="v2-ui-icon v2-ui-icon--arrow" aria-hidden="true"></span>
+                </button>
+                <div class="v2-home-chips" role="radiogroup" aria-label="Elegir división" data-v2-carousel-track>
+                    @foreach (var panel in panels)
+                    {
+                        var inputId = PublicWeb.Helpers.LeagueHomeComposer.CssId("home-div-", panel.DivisionSlug);
+                        <label class="v2-chip v2-home-chip"
+                               data-home-chip="@panel.DivisionSlug"
+                               for="@inputId">@panel.DivisionName</label>
+                    }
+                </div>
+                <button type="button"
+                        class="v2-home-chips-scroller__btn v2-home-chips-scroller__btn--next"
+                        data-v2-carousel-next
+                        aria-label="Ver más categorías">
+                    <span class="v2-ui-icon v2-ui-icon--arrow" aria-hidden="true"></span>
+                </button>
             </div>
         </section>
 
