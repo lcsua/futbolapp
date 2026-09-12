@@ -28,6 +28,7 @@ import {
 } from '../api/matches'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { IncidentModal } from '../components/IncidentModal'
+import { CrestImg } from '../components/CrestImg'
 
 const INCIDENT_CHIP_COLOR: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info'> = {
   Goal: 'success',
@@ -220,7 +221,7 @@ function MatchHeader({ match }: { match: MatchDetailResponse }) {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, minWidth: 0 }}>
             {match.homeTeamLogoUrl && (
-              <Box component="img" src={match.homeTeamLogoUrl} alt="" sx={{ width: 32, height: 32, objectFit: 'contain' }} />
+              <CrestImg src={match.homeTeamLogoUrl} alt="" size={32} />
             )}
             <Typography variant="h6" component="span">
               {match.homeTeamName}
@@ -240,7 +241,7 @@ function MatchHeader({ match }: { match: MatchDetailResponse }) {
               {match.awayTeamName}
             </Typography>
             {match.awayTeamLogoUrl && (
-              <Box component="img" src={match.awayTeamLogoUrl} alt="" sx={{ width: 32, height: 32, objectFit: 'contain' }} />
+              <CrestImg src={match.awayTeamLogoUrl} alt="" size={32} />
             )}
           </Box>
         </Box>

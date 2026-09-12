@@ -43,7 +43,14 @@ export const teamsService = {
   },
 
   materializeDataUrlLogos: (leagueId: string, signal?: AbortSignal) =>
-    apiClient.post<{ converted: number; skipped: number; failed: number }>(
+    apiClient.post<{
+      converted: number
+      skipped: number
+      failed: number
+      thumbsCreated?: number
+      thumbsSkipped?: number
+      thumbsFailed?: number
+    }>(
       `/api/leagues/${leagueId}/uploads/images/materialize-data-urls`,
       {},
       signal

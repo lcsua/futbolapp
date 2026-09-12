@@ -17,13 +17,13 @@ public class LeagueLogoMigrationService
         HttpRequest request,
         CancellationToken cancellationToken = default)
     {
-        var teams = await _db.Teams
-            .Where(t => t.LeagueId == leagueId)
-            .ToListAsync(cancellationToken);
-
         var converted = 0;
         var skipped = 0;
         var failed = 0;
+
+        var teams = await _db.Teams
+            .Where(t => t.LeagueId == leagueId)
+            .ToListAsync(cancellationToken);
 
         foreach (var team in teams)
         {
@@ -60,6 +60,33 @@ public class LeagueLogoMigrationService
 
                 if (changed) converted++;
                 else skipped++;
+            }
+            catch
+            {
+                failed++;
+            }
+        }
+
+        var clubs = await _db.Clubs
+            .Where(c => c.LeagueId == leagueId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var club in clubs)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                if (DataUrlImageMaterializer.IsDataUrl(club.LogoUrl))
+                {
+                    var url = await DataUrlImageMaterializer.MaterializeIfDataUrlAsync(
+                        club.LogoUrl, leagueId, request, cancellationToken);
+                    club.Update(club.Name, url ?? string.Empty);
+                    converted++;
+                }
+                else
+                {
+                    skipped++;
+                }
             }
             catch
             {

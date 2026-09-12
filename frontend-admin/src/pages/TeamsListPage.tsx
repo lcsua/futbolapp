@@ -26,6 +26,8 @@ import { useLeagueId, useActiveLeague } from '../contexts/LeagueContext'
 import type { Team } from '../api/types'
 import { CreateClubDialog } from '../components/CreateClubDialog'
 import { ConfirmDeleteTeamsDialog, getTeamDisplayName } from '../components/DeleteTeamsConfirmation'
+import { CrestImg } from '../components/CrestImg'
+import { effectiveTeamLogoUrl } from '../utils/teamLogo'
 import ImageIcon from '@mui/icons-material/Image'
 
 export function TeamsListPage() {
@@ -81,8 +83,12 @@ export function TeamsListPage() {
   const optimizeMutation = useMutation({
     mutationFn: () => teamsService.materializeDataUrlLogos(leagueId!),
     onSuccess: (res) => {
-      setOptimizeMsg(`Escudos optimizados: ${res.converted} convertidos, ${res.skipped} sin cambio, ${res.failed} con error.`)
+      const thumbs = res.thumbsCreated != null
+        ? ` Miniaturas: ${res.thumbsCreated} creadas, ${res.thumbsSkipped ?? 0} ya existían, ${res.thumbsFailed ?? 0} con error.`
+        : ''
+      setOptimizeMsg(`Escudos optimizados: ${res.converted} convertidos, ${res.skipped} sin cambio, ${res.failed} con error.${thumbs}`)
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'teams'] })
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'clubs'] })
     },
     onError: (err) => {
       setOptimizeMsg(err instanceof Error ? err.message : 'No se pudieron optimizar los escudos')
@@ -250,6 +256,7 @@ export function TeamsListPage() {
           {sortedTeams.map((team) => {
             const canDelete = neverAssignedIds.has(team.id)
             const displayName = getTeamDisplayName(team)
+            const logo = effectiveTeamLogoUrl(team)
             return (
               <Card key={team.id} variant="outlined" sx={{ height: '100%', position: 'relative' }}>
                 {canDelete ? (
@@ -274,9 +281,19 @@ export function TeamsListPage() {
                   sx={{ height: '100%', display: 'block', textAlign: 'left', pr: canDelete ? 5 : undefined }}
                 >
                   <CardContent>
-                    <Typography variant="h6" component="h3" gutterBottom>
-                      {displayName}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                      {logo ? (
+                        <CrestImg
+                          src={logo}
+                          alt=""
+                          size={40}
+                          sx={{ borderRadius: 1, border: 1, borderColor: 'divider' }}
+                        />
+                      ) : null}
+                      <Typography variant="h6" component="h3">
+                        {displayName}
+                      </Typography>
+                    </Box>
                     {team.clubName ? (
                       <Typography variant="body2" color="text.secondary">
                         Club: {team.clubName}

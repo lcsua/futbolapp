@@ -70,7 +70,8 @@ namespace FootballManager.Application.UseCases.Leagues.GetLeagueTeams
                     t.DelegateContact,
                     t.PhotoUrl,
                     t.ClubId,
-                    t.Club?.Name));
+                    t.Club?.Name,
+                    t.Club?.LogoUrl));
             return new GetLeagueTeamsResponse(teamDtos);
         }
     }

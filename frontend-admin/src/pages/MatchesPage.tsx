@@ -38,6 +38,7 @@ import type { Field } from '../api/types'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { MatchResultModal } from '../components/MatchResultModal'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
+import { CrestImg } from '../components/CrestImg'
 import { ImportMatchResultsModal } from '../components/ImportMatchResultsModal'
 import { ImportScheduleModal } from '../components/ImportScheduleModal'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
@@ -667,7 +668,7 @@ function MatchCard({
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
             {match.homeTeamLogoUrl && (
-              <Box component="img" src={match.homeTeamLogoUrl} alt="" sx={{ width: 24, height: 24, flexShrink: 0, objectFit: 'contain' }} />
+              <CrestImg src={match.homeTeamLogoUrl} alt="" size={24} />
             )}
             <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {match.homeTeamName}
@@ -693,7 +694,7 @@ function MatchCard({
               {match.awayTeamName}
             </Typography>
             {match.awayTeamLogoUrl && (
-              <Box component="img" src={match.awayTeamLogoUrl} alt="" sx={{ width: 24, height: 24, flexShrink: 0, objectFit: 'contain' }} />
+              <CrestImg src={match.awayTeamLogoUrl} alt="" size={24} />
             )}
           </Box>
         </Box>

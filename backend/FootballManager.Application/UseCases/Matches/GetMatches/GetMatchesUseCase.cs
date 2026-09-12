@@ -78,7 +78,7 @@ public sealed class GetMatchesUseCase : IGetMatchesUseCase
             f.MatchDate?.ToString("yyyy-MM-dd") ?? "",
             f.FieldId,
             f.Field?.Name ?? "",
-            homeTeam?.LogoUrl,
-            awayTeam?.LogoUrl);
+            homeTeam?.EffectiveLogoUrl,
+            awayTeam?.EffectiveLogoUrl);
     }
 }

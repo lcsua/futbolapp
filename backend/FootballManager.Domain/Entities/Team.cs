@@ -30,6 +30,20 @@ namespace FootballManager.Domain.Entities
                 return string.IsNullOrWhiteSpace(Suffix) ? clubName : $"{clubName} {Suffix}";
             }
         }
+
+        /// <summary>
+        /// Logo shown in standings, fixtures and public pages: the team's own logo if set, otherwise the club's.
+        /// </summary>
+        public string? EffectiveLogoUrl
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(LogoUrl))
+                    return LogoUrl;
+                var clubLogo = Club?.LogoUrl;
+                return string.IsNullOrWhiteSpace(clubLogo) ? null : clubLogo;
+            }
+        }
         public string Slug { get; private set; }
         public string ShortName { get; private set; }
         public string PrimaryColor { get; private set; }

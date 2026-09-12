@@ -45,6 +45,8 @@ import { seasonsService, type TeamInSetup } from '../api/seasons'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { QuickCreateTeamForDivisionDialog } from '../components/QuickCreateTeamForDivisionDialog'
 import { ImportCategoryRostersDialog } from '../components/ImportCategoryRostersDialog'
+import { CrestImg } from '../components/CrestImg'
+import { effectiveTeamLogoUrl } from '../utils/teamLogo'
 
 const UNASSIGNED_ID = 'unassigned'
 
@@ -73,23 +75,31 @@ function TeamCardContent({ team, divisionName }: { team: TeamInSetup; divisionNa
     team.clubName ? `Club: ${team.clubName}` : null,
     `Division: ${divisionName}`,
   ].filter(Boolean) as string[]
+  const logo = effectiveTeamLogoUrl(team)
 
   return (
     <Tooltip title={tooltipLines.join(' | ')} arrow>
       <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
-        <Typography variant="body2" fontWeight={500}>
-          {getTeamDisplayName(team)}
-        </Typography>
-        {team.clubName ? (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-            Club: {team.clubName}
-          </Typography>
-        ) : null}
-        {team.shortName && (
-          <Typography variant="caption" color="text.secondary">
-            {team.shortName}
-          </Typography>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {logo ? (
+            <CrestImg src={logo} alt="" size={28} />
+          ) : null}
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="body2" fontWeight={500}>
+              {getTeamDisplayName(team)}
+            </Typography>
+            {team.clubName ? (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                Club: {team.clubName}
+              </Typography>
+            ) : null}
+            {team.shortName && (
+              <Typography variant="caption" color="text.secondary">
+                {team.shortName}
+              </Typography>
+            )}
+          </Box>
+        </Box>
       </CardContent>
     </Tooltip>
   )

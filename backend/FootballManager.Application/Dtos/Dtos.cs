@@ -18,7 +18,8 @@ namespace FootballManager.Application.Dtos
         string DelegateContact,
         string PhotoUrl,
         Guid? ClubId,
-        string? ClubName);
+        string? ClubName,
+        string? ClubLogoUrl = null);
     public record DivisionDto(
         Guid Id,
         Guid LeagueId,

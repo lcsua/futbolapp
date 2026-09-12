@@ -28,6 +28,8 @@ import { teamsService } from '../api/teams'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { ImportTeamsCsvDialog } from '../components/ImportTeamsCsvDialog'
 import { ImportCategoryRostersDialog } from '../components/ImportCategoryRostersDialog'
+import { CrestImg } from '../components/CrestImg'
+import { effectiveTeamLogoUrl } from '../utils/teamLogo'
 
 function getTeamDisplayName(team: { name: string; displayName?: string | null }) {
   return team.displayName ?? team.name
@@ -305,7 +307,15 @@ export function SeasonSetupPage() {
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {selected.map((id) => {
                   const t = teams.find((x) => x.id === id)
-                  return <Chip key={id} label={t ? getTeamDisplayName(t) : id} size="small" />
+                  const logo = t ? effectiveTeamLogoUrl(t) : null
+                  return (
+                    <Chip
+                      key={id}
+                      label={t ? getTeamDisplayName(t) : id}
+                      size="small"
+                      avatar={logo ? <CrestImg src={logo} alt="" size={24} /> : undefined}
+                    />
+                  )
                 })}
               </Box>
             )}
@@ -374,7 +384,15 @@ export function SeasonSetupPage() {
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {selected.map((id) => {
                   const t = teamsInDivision.find((x) => x.id === id)
-                  return <Chip key={id} label={t ? getTeamDisplayName(t) : id} size="small" />
+                  const logo = t ? effectiveTeamLogoUrl(t) : null
+                  return (
+                    <Chip
+                      key={id}
+                      label={t ? getTeamDisplayName(t) : id}
+                      size="small"
+                      avatar={logo ? <CrestImg src={logo} alt="" size={24} /> : undefined}
+                    />
+                  )
                 })}
               </Box>
             )}

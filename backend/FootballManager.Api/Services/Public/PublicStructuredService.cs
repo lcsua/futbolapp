@@ -80,6 +80,7 @@ public class PublicStructuredService
             return new TeamPublicDto();
         }
 
+        var logo = team.EffectiveLogoUrl;
         return new TeamPublicDto
         {
             Id = team.Id,
@@ -88,8 +89,8 @@ public class PublicStructuredService
             ShortName = string.IsNullOrWhiteSpace(team.ShortName)
                 ? team.CompetitionName.Substring(0, Math.Min(team.CompetitionName.Length, 3)).ToUpperInvariant()
                 : team.ShortName,
-            LogoUrl = string.IsNullOrWhiteSpace(team.LogoUrl) ? null : team.LogoUrl,
-            LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(team.LogoUrl)
+            LogoUrl = string.IsNullOrWhiteSpace(logo) ? null : logo,
+            LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(logo)
         };
     }
 

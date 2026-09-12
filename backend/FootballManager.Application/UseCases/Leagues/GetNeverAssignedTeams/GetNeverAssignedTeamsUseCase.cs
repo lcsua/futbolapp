@@ -65,7 +65,8 @@ namespace FootballManager.Application.UseCases.Leagues.GetNeverAssignedTeams
                 t.DelegateContact,
                 t.PhotoUrl,
                 t.ClubId,
-                t.Club?.Name));
+                t.Club?.Name,
+                t.Club?.LogoUrl));
             return new GetNeverAssignedTeamsResponse(dtos);
         }
     }
