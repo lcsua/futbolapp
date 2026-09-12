@@ -4919,12 +4919,12 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 
 .v2-home-chips {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: stretch;
-  gap: 0.2rem;
+  gap: 0.35rem;
   overflow: visible;
-  padding: 0.2rem;
-  border-radius: 999px;
+  padding: 0.28rem;
+  border-radius: var(--radius-md);
   background: var(--v2-surface);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v2-primary) 10%, var(--border));
 }
@@ -4933,15 +4933,16 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   width: auto;
+  max-width: 100%;
   min-width: 0;
   cursor: pointer;
   min-height: 2.15rem;
-  padding: 0.22rem 0.32rem;
-  font-size: 0.68rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
   text-align: center;
   white-space: nowrap;
   border-radius: 999px;
@@ -5017,7 +5018,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   .v2-home-chip {
     flex: 0 0 auto;
     width: auto;
-    max-width: min(12rem, 70vw);
+    max-width: 100%;
     min-height: 2.4rem;
     padding: 0.42rem 0.9rem;
     font-size: 0.8125rem;
