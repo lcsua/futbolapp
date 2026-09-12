@@ -8,20 +8,24 @@ import {
   CardActionArea,
   CardContent,
   CircularProgress,
+  IconButton,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DomainAddIcon from '@mui/icons-material/DomainAdd'
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { teamsService } from '../api/teams'
 import { leaguesService } from '../api/leagues'
 import { useLeagueId, useActiveLeague } from '../contexts/LeagueContext'
 import type { Team } from '../api/types'
 import { CreateClubDialog } from '../components/CreateClubDialog'
+import { ConfirmDeleteTeamsDialog, getTeamDisplayName } from '../components/DeleteTeamsConfirmation'
 import ImageIcon from '@mui/icons-material/Image'
 
 export function TeamsListPage() {
@@ -34,6 +38,8 @@ export function TeamsListPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [clubDialogOpen, setClubDialogOpen] = useState(false)
   const [optimizeMsg, setOptimizeMsg] = useState<string | null>(null)
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const fromParams = !!params.leagueId
   const seasonsBase = fromParams && leagueId ? `/leagues/${leagueId}/seasons` : '/seasons'
   const divisionsBase = fromParams && leagueId ? `/leagues/${leagueId}/divisions` : '/divisions'
@@ -49,6 +55,27 @@ export function TeamsListPage() {
     queryKey: ['leagues', leagueId, 'teams'],
     queryFn: ({ signal }) => teamsService.getByLeagueId(leagueId!, signal),
     enabled: !!leagueId,
+  })
+  const { data: neverAssignedTeams = [] } = useQuery({
+    queryKey: ['leagues', leagueId, 'teams', 'never-assigned'],
+    queryFn: ({ signal }) => teamsService.getNeverAssigned(leagueId!, signal),
+    enabled: !!leagueId,
+  })
+  const neverAssignedIds = useMemo(
+    () => new Set(neverAssignedTeams.map((t) => t.id)),
+    [neverAssignedTeams]
+  )
+
+  const deleteMutation = useMutation({
+    mutationFn: () => teamsService.deleteOne(leagueId!, teamToDelete!.id),
+    onSuccess: () => {
+      setTeamToDelete(null)
+      setDeleteError(null)
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'teams'] })
+    },
+    onError: (err) => {
+      setDeleteError(err instanceof Error ? err.message : 'No se pudo eliminar el equipo')
+    },
   })
 
   const optimizeMutation = useMutation({
@@ -146,7 +173,9 @@ export function TeamsListPage() {
             color="warning"
             startIcon={<DeleteSweepIcon />}
           >
-            Nunca asignados
+            {neverAssignedTeams.length > 0
+              ? `Eliminar no asignados (${neverAssignedTeams.length})`
+              : 'Eliminar no asignados'}
           </Button>
           <Button variant="outlined" startIcon={<DomainAddIcon />} onClick={() => setClubDialogOpen(true)}>
             Create club
@@ -160,6 +189,11 @@ export function TeamsListPage() {
       {optimizeMsg && (
         <Alert severity={optimizeMutation.isError ? 'error' : 'success'} sx={{ mb: 2 }} onClose={() => setOptimizeMsg(null)}>
           {optimizeMsg}
+        </Alert>
+      )}
+      {deleteError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setDeleteError(null)}>
+          {deleteError}
         </Alert>
       )}
 
@@ -198,6 +232,9 @@ export function TeamsListPage() {
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Showing {sortedTeams.length} of {teams?.length ?? 0} teams
+        {neverAssignedTeams.length > 0
+          ? ` · ${neverAssignedTeams.length} se pueden eliminar (nunca asignados a una temporada)`
+          : ''}
       </Typography>
 
       {!teams?.length ? (
@@ -210,34 +247,61 @@ export function TeamsListPage() {
         </Typography>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
-          {sortedTeams.map((team) => (
-            <Card key={team.id} variant="outlined" sx={{ height: '100%' }}>
-              <CardActionArea
-                component={RouterLink}
-                to={`${teamsBase}/${team.id}/edit`}
-                sx={{ height: '100%', display: 'block', textAlign: 'left' }}
-              >
-                <CardContent>
-                  <Typography variant="h6" component="h3" gutterBottom>
-                    {team.displayName ?? team.name}
-                  </Typography>
-                  {team.clubName ? (
-                    <Typography variant="body2" color="text.secondary">
-                      Club: {team.clubName}
+          {sortedTeams.map((team) => {
+            const canDelete = neverAssignedIds.has(team.id)
+            const displayName = getTeamDisplayName(team)
+            return (
+              <Card key={team.id} variant="outlined" sx={{ height: '100%', position: 'relative' }}>
+                {canDelete ? (
+                  <Tooltip title="Eliminar equipo">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      aria-label={`Eliminar ${displayName}`}
+                      onClick={() => {
+                        setDeleteError(null)
+                        setTeamToDelete(team)
+                      }}
+                      sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1, bgcolor: 'background.paper' }}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                ) : null}
+                <CardActionArea
+                  component={RouterLink}
+                  to={`${teamsBase}/${team.id}/edit`}
+                  sx={{ height: '100%', display: 'block', textAlign: 'left', pr: canDelete ? 5 : undefined }}
+                >
+                  <CardContent>
+                    <Typography variant="h6" component="h3" gutterBottom>
+                      {displayName}
                     </Typography>
-                  ) : null}
-                  {team.shortName ? (
-                    <Typography variant="body2" color="text.secondary">
-                      {team.shortName}
-                    </Typography>
-                  ) : null}
-                </CardContent>
-              </CardActionArea>
-            </Card>
-          ))}
+                    {team.clubName ? (
+                      <Typography variant="body2" color="text.secondary">
+                        Club: {team.clubName}
+                      </Typography>
+                    ) : null}
+                    {team.shortName ? (
+                      <Typography variant="body2" color="text.secondary">
+                        {team.shortName}
+                      </Typography>
+                    ) : null}
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+            )
+          })}
         </Box>
       )}
       <CreateClubDialog open={clubDialogOpen} leagueId={leagueId} onClose={() => setClubDialogOpen(false)} />
+      <ConfirmDeleteTeamsDialog
+        open={!!teamToDelete}
+        teams={teamToDelete ? [teamToDelete] : []}
+        loading={deleteMutation.isPending}
+        onClose={() => !deleteMutation.isPending && setTeamToDelete(null)}
+        onConfirm={() => deleteMutation.mutate()}
+      />
     </Box>
   )
 }
