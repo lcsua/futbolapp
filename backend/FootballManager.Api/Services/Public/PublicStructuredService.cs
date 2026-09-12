@@ -54,12 +54,14 @@ public class PublicStructuredService
 
         var bySlug = await _db.Teams
             .AsNoTracking()
+            .Include(t => t.Club)
             .FirstOrDefaultAsync(t => t.LeagueId == leagueId && t.Slug == targetSlug, cancellationToken);
         if (bySlug != null) return bySlug;
 
         // Fallback for older links that used NormalizeSlug(Name) instead of persisted Team.Slug
         var teams = await _db.Teams
             .AsNoTracking()
+            .Include(t => t.Club)
             .Where(t => t.LeagueId == leagueId)
             .ToListAsync(cancellationToken);
 
@@ -81,10 +83,10 @@ public class PublicStructuredService
         return new TeamPublicDto
         {
             Id = team.Id,
-            Name = team.DisplayName,
-            Slug = string.IsNullOrWhiteSpace(team.Slug) ? SoftNormalizeTeamSlug(team.DisplayName) : team.Slug,
+            Name = team.CompetitionName,
+            Slug = string.IsNullOrWhiteSpace(team.Slug) ? SoftNormalizeTeamSlug(team.CompetitionName) : team.Slug,
             ShortName = string.IsNullOrWhiteSpace(team.ShortName)
-                ? team.DisplayName.Substring(0, Math.Min(team.DisplayName.Length, 3)).ToUpperInvariant()
+                ? team.CompetitionName.Substring(0, Math.Min(team.CompetitionName.Length, 3)).ToUpperInvariant()
                 : team.ShortName,
             LogoUrl = string.IsNullOrWhiteSpace(team.LogoUrl) ? null : team.LogoUrl,
             LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(team.LogoUrl)
@@ -95,6 +97,7 @@ public class PublicStructuredService
     {
         return await _db.Teams
             .AsNoTracking()
+            .Include(t => t.Club)
             .Where(t => t.LeagueId == leagueId)
             .ToDictionaryAsync(t => t.Id, cancellationToken);
     }
@@ -273,8 +276,8 @@ public class PublicStructuredService
         response.ActiveSeasons.Add(response.Season);
 
         var fixtures = await _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Result)
             .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
             .Include(f => f.Field)
@@ -448,8 +451,8 @@ public class PublicStructuredService
         if (divSeason == null) return new List<MatchPublicDto>();
 
         var fixtures = await _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Result)
             .Include(f => f.Field)
             .Where(f => f.DivisionSeasonId == divSeason.Id &&
@@ -478,8 +481,8 @@ public class PublicStructuredService
         if (divSeason == null) return new List<MatchPublicDto>();
 
         var fixtures = await _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Field)
             .Where(f => f.DivisionSeasonId == divSeason.Id &&
                         f.Status != Domain.Enums.MatchStatus.COMPLETED &&
@@ -685,8 +688,8 @@ public class PublicStructuredService
         }
 
         var allFixturesQuery = _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Result)
             .Include(f => f.Field)
             .Where(f => f.SeasonId == season.Id &&
@@ -744,8 +747,8 @@ public class PublicStructuredService
         }
 
         var seasonFixtures = await _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Result)
             .Include(f => f.Field)
             .Where(f => f.SeasonId == season.Id)

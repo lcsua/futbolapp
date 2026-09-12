@@ -17,6 +17,7 @@ import {
 } from '@mui/material'
 import CheckIcon from '@mui/icons-material/Check'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
+import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo'
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from 'react-router-dom'
@@ -26,6 +27,7 @@ import { divisionsService } from '../api/divisions'
 import { teamsService } from '../api/teams'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { ImportTeamsCsvDialog } from '../components/ImportTeamsCsvDialog'
+import { ImportCategoryRostersDialog } from '../components/ImportCategoryRostersDialog'
 
 function getTeamDisplayName(team: { name: string; displayName?: string | null }) {
   return team.displayName ?? team.name
@@ -41,6 +43,7 @@ export function SeasonSetupPage() {
   const [assignError, setAssignError] = useState<string | null>(null)
   const [assignSuccess, setAssignSuccess] = useState<string | null>(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [rosterImportOpen, setRosterImportOpen] = useState(false)
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons'],
@@ -212,7 +215,8 @@ export function SeasonSetupPage() {
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Assign or unassign teams for a division in a season. Each team can be in only one division per season.
-        Divisions with committed fixtures stay locked.
+        Divisions with committed fixtures stay locked. Para cargar varias categorías de una vez, elegí la temporada
+        y usá <strong>Pegar categorías</strong>.
       </Typography>
       {seasonClosed && (
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -333,6 +337,14 @@ export function SeasonSetupPage() {
           </Button>
           <Button
             variant="outlined"
+            startIcon={<ContentPasteGoIcon />}
+            disabled={!seasonId || seasonClosed}
+            onClick={() => setRosterImportOpen(true)}
+          >
+            Pegar categorías
+          </Button>
+          <Button
+            variant="outlined"
             startIcon={<UploadFileIcon />}
             disabled={!seasonId || !divisionId || seasonClosed || divisionFixturesLocked}
             onClick={() => setImportOpen(true)}
@@ -421,6 +433,26 @@ export function SeasonSetupPage() {
         )}
       </Box>
 
+      {leagueId && seasonId && (
+        <ImportCategoryRostersDialog
+          open={rosterImportOpen}
+          onClose={() => setRosterImportOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          onImported={({ created, reused, divisionsCreated }) => {
+            const parts = [
+              created ? `${created} creado(s)` : null,
+              reused ? `${reused} reutilizado(s)` : null,
+              divisionsCreated ? `${divisionsCreated} división(es) nueva(s)` : null,
+            ].filter(Boolean)
+            setAssignSuccess(parts.length ? `Categorías: ${parts.join(', ')}.` : 'Importación de categorías completa.')
+            setAssignError(null)
+            invalidateAssignmentQueries()
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'divisions'] })
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'clubs'] })
+          }}
+        />
+      )}
       {leagueId && seasonId && divisionId && (
         <ImportTeamsCsvDialog
           open={importOpen}

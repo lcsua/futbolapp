@@ -26,8 +26,8 @@ namespace FootballManager.Infrastructure.Repositories
                 .Include(f => f.League)
                 .Include(f => f.Season)
                 .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
-                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team)
-                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team)
+                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
                 .Include(f => f.Field)
                 .Include(f => f.Result)
                 .Include(f => f.Incidents).ThenInclude(i => i.Team)
@@ -46,8 +46,8 @@ namespace FootballManager.Infrastructure.Repositories
             var candidates = await _context.Fixtures
                 .Include(f => f.League)
                 .Include(f => f.Season)
-                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team)
-                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team)
+                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
                 .Where(f => f.League != null && f.League.IsPublic)
                 .Where(f => f.HomeTeamDivisionSeason.Team.Slug == homeSlug)
                 .ToListAsync(cancellationToken);
@@ -112,8 +112,8 @@ namespace FootballManager.Infrastructure.Repositories
         {
             return await _context.Fixtures
                 .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
-                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team)
-                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team)
+                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
                 .Include(f => f.Field)
                 .Include(f => f.Result)
                 .Where(f => f.SeasonId == seasonId)
@@ -127,8 +127,8 @@ namespace FootballManager.Infrastructure.Repositories
         {
             var query = _context.Fixtures
                 .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
-                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team)
-                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team)
+                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
                 .Include(f => f.Field)
                 .Include(f => f.Result)
                 .Where(f => f.SeasonId == seasonId);
