@@ -689,6 +689,16 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_public");
 
+                    b.Property<string>("FontKey")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("font_key");
+
+                    b.Property<string>("HeroImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("hero_image_url");
+
                     b.Property<string>("LogoUrl")
                         .IsRequired()
                         .HasColumnType("text")
@@ -700,11 +710,21 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
+                    b.Property<string>("PrimaryColor")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("primary_color");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)")
                         .HasColumnName("slug");
+
+                    b.Property<string>("TeamHeroImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("team_hero_image_url");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()

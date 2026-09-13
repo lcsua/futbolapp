@@ -8,6 +8,10 @@ public class LeagueViewModel
     public string Country { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string? LogoUrl { get; set; }
+    public string? PrimaryColor { get; set; }
+    public string? FontKey { get; set; }
+    public string? HeroImageUrl { get; set; }
+    public string? TeamHeroImageUrl { get; set; }
 }
 
 public class TeamViewModel

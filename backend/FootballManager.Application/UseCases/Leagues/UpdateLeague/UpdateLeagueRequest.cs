@@ -11,6 +11,10 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateLeague
         public string? Slug { get; set; }
         public string? Description { get; set; }
         public string? LogoUrl { get; set; }
+        public string? PrimaryColor { get; set; }
+        public string? FontKey { get; set; }
+        public string? HeroImageUrl { get; set; }
+        public string? TeamHeroImageUrl { get; set; }
         public bool IsPublic { get; set; }
         public bool IsActive { get; set; }
     }

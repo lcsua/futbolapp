@@ -106,11 +106,8 @@ body {
   --v2-background: #F5F7FA;
 }
 
-/* League Details: green as the interactive accent. Global header stays on the site theme. */
+/* League pages inherit .v2-app tokens so a custom league color can override the default green. */
 .v2-league-details {
-  --v2-primary: #16A34A;
-  --v2-primary-dark: #15803D;
-  --v2-accent: #4ADE80;
   --v2-max: 1280px;
   --v2-background: #F8FAFC;
   background: var(--v2-background);
@@ -4213,7 +4210,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   background-color: var(--v2-navy);
   background-image:
     var(--hero-overlay),
-    url("../../assets/miliga-ui/backgrounds/league-hero-mobile.webp");
+    var(--league-hero-image, url("../../assets/miliga-ui/backgrounds/league-hero-mobile.webp"));
   background-size: cover;
   background-position: center 40%;
 }
@@ -4222,7 +4219,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   .v2-league-hero {
     background-image:
       var(--hero-overlay),
-      url("../../assets/miliga-ui/backgrounds/league-hero-desktop.webp");
+      var(--league-hero-image, url("../../assets/miliga-ui/backgrounds/league-hero-desktop.webp"));
     background-position: center 42%;
     padding: 0.95rem 0 1.05rem;
   }
@@ -4232,7 +4229,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   .v2-league-hero {
     background-image:
       var(--hero-overlay),
-      url("../../assets/miliga-ui/backgrounds/league-hero-fallback.webp");
+      var(--league-hero-image, url("../../assets/miliga-ui/backgrounds/league-hero-fallback.webp"));
   }
 }
 
@@ -4602,7 +4599,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   background-color: var(--v2-navy);
   background-image:
     var(--hero-overlay),
-    url("../../assets/miliga-ui/backgrounds/team-hero.png");
+    var(--team-hero-image, url("../../assets/miliga-ui/backgrounds/team-hero.png"));
   background-size: cover;
   background-position: center 42%;
   display: block;

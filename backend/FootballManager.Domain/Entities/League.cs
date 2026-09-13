@@ -14,6 +14,15 @@ namespace FootballManager.Domain.Entities
         public bool IsActive { get; private set; }
         public bool IsPublic { get; private set; }
 
+        /// <summary>Custom public accent. Null means the MiLiga green default.</summary>
+        public string? PrimaryColor { get; private set; }
+        /// <summary>Preset key (barlow, nunito, rubik). Null means Inter.</summary>
+        public string? FontKey { get; private set; }
+        /// <summary>League home hero background. Null means the product photo.</summary>
+        public string? HeroImageUrl { get; private set; }
+        /// <summary>Team detail hero background. Null means the product photo.</summary>
+        public string? TeamHeroImageUrl { get; private set; }
+
         private readonly List<Season> _seasons = new();
         public virtual IReadOnlyCollection<Season> Seasons => _seasons.AsReadOnly();
 
@@ -64,6 +73,15 @@ namespace FootballManager.Domain.Entities
             LogoUrl = logoUrl;
             IsPublic = isPublic;
             IsActive = isActive;
+            UpdateTimestamp();
+        }
+
+        public void UpdateAppearance(string? primaryColor, string? fontKey, string? heroImageUrl, string? teamHeroImageUrl)
+        {
+            PrimaryColor = LeagueAppearance.NormalizeColor(primaryColor);
+            FontKey = LeagueAppearance.NormalizeFontKey(fontKey);
+            HeroImageUrl = LeagueAppearance.NormalizeImageUrl(heroImageUrl);
+            TeamHeroImageUrl = LeagueAppearance.NormalizeImageUrl(teamHeroImageUrl);
             UpdateTimestamp();
         }
 

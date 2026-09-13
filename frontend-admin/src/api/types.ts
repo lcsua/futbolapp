@@ -7,6 +7,10 @@ export interface League {
   logoUrl: string
   isPublic: boolean
   isActive: boolean
+  primaryColor?: string | null
+  fontKey?: string | null
+  heroImageUrl?: string | null
+  teamHeroImageUrl?: string | null
 }
 
 export interface LeagueFormData {
@@ -17,6 +21,16 @@ export interface LeagueFormData {
   logoUrl: string
   isPublic: boolean
   isActive: boolean
+  primaryColor?: string
+  fontKey?: string
+  heroImageUrl?: string
+  teamHeroImageUrl?: string
+}
+
+export interface LeagueFormFiles {
+  logoFile?: File | null
+  heroFile?: File | null
+  teamHeroFile?: File | null
 }
 
 export interface Season {

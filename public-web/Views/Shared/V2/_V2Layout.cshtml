@@ -16,6 +16,7 @@
       data-home-league="@homeLeagueSlug"
       data-pinned-home-league="@pinnedHomeLeague">
 @{
+    var leagueTheme = PublicWeb.Helpers.LeagueTheme.From(ViewBag.League as PublicWeb.Models.Public.LeagueViewModel);
     var seoUrls = Context.RequestServices.GetRequiredService<PublicWeb.Seo.SeoUrlBuilder>();
     var seoOptions = Context.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<PublicWeb.Seo.SeoOptions>>().Value;
     var title = ViewData["Title"] as string ?? "MiLiga";
@@ -112,6 +113,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    @if (!string.IsNullOrWhiteSpace(leagueTheme.GoogleFontsHref))
+    {
+        <link href="@leagueTheme.GoogleFontsHref" rel="stylesheet" />
+    }
     <link rel="stylesheet" href="~/css/v2/v2.css" asp-append-version="true" />
 
     @if (string.Equals(ViewBag.V2ActiveNav as string, "home", StringComparison.Ordinal))
@@ -146,6 +151,10 @@
     @if (!string.IsNullOrWhiteSpace(breadcrumbJson))
     {
         <script type="application/ld+json">@Html.Raw(breadcrumbJson)</script>
+    }
+    @if (leagueTheme.HasCustomizations)
+    {
+        <style>#v2-app-root { @Html.Raw(leagueTheme.InlineStyle) }</style>
     }
 </head>
 <body>

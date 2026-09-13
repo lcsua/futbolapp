@@ -56,6 +56,7 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
                 throw new KeyNotFoundException($"User {request.UserId} not found.");
 
             var league = new League(request.Name, request.Country, slug, request.Description, request.LogoUrl, request.IsPublic, request.IsActive);
+            league.UpdateAppearance(request.PrimaryColor, request.FontKey, request.HeroImageUrl, request.TeamHeroImageUrl);
             await _leagueRepository.AddAsync(league, cancellationToken);
 
             var adminRole = await _roleRepository.GetByCodeAsync(RoleCodes.Admin, cancellationToken);

@@ -46,7 +46,19 @@ namespace FootballManager.Application.UseCases.Leagues.GetUserLeagues
         {
             // No specific Auth check needed here as we are fetching ONLY what the user has access to.
             var leagues = await _leagueRepository.GetByUserIdAsync(request.UserId, cancellationToken);
-            var leagueDtos = leagues.ConvertAll(l => new LeagueDto(l.Id, l.Name, l.Slug, l.Country, l.Description ?? string.Empty, l.LogoUrl ?? string.Empty, l.IsPublic, l.IsActive));
+            var leagueDtos = leagues.ConvertAll(l => new LeagueDto(
+                l.Id,
+                l.Name,
+                l.Slug,
+                l.Country,
+                l.Description ?? string.Empty,
+                l.LogoUrl ?? string.Empty,
+                l.IsPublic,
+                l.IsActive,
+                l.PrimaryColor,
+                l.FontKey,
+                l.HeroImageUrl,
+                l.TeamHeroImageUrl));
             return new GetUserLeaguesResponse(leagueDtos);
         }
     }

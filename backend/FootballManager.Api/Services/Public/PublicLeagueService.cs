@@ -58,7 +58,12 @@ public class PublicLeagueService
             Name = league.Name,
             Slug = league.Slug,
             Country = league.Country,
-            Description = league.Description ?? string.Empty
+            Description = league.Description ?? string.Empty,
+            LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl,
+            PrimaryColor = string.IsNullOrWhiteSpace(league.PrimaryColor) ? null : league.PrimaryColor,
+            FontKey = string.IsNullOrWhiteSpace(league.FontKey) ? null : league.FontKey,
+            HeroImageUrl = string.IsNullOrWhiteSpace(league.HeroImageUrl) ? null : league.HeroImageUrl,
+            TeamHeroImageUrl = string.IsNullOrWhiteSpace(league.TeamHeroImageUrl) ? null : league.TeamHeroImageUrl
         };
     }
 

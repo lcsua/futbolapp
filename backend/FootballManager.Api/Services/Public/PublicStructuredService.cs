@@ -116,7 +116,11 @@ public class PublicStructuredService
                 Slug = l.Slug,
                 Country = l.Country ?? string.Empty,
                 Description = l.Description ?? string.Empty,
-                LogoUrl = string.IsNullOrWhiteSpace(l.LogoUrl) ? null : l.LogoUrl
+                LogoUrl = string.IsNullOrWhiteSpace(l.LogoUrl) ? null : l.LogoUrl,
+                PrimaryColor = string.IsNullOrWhiteSpace(l.PrimaryColor) ? null : l.PrimaryColor,
+                FontKey = string.IsNullOrWhiteSpace(l.FontKey) ? null : l.FontKey,
+                HeroImageUrl = string.IsNullOrWhiteSpace(l.HeroImageUrl) ? null : l.HeroImageUrl,
+                TeamHeroImageUrl = string.IsNullOrWhiteSpace(l.TeamHeroImageUrl) ? null : l.TeamHeroImageUrl
             })
             .ToListAsync(cancellationToken);
     }
@@ -216,15 +220,7 @@ public class PublicStructuredService
         var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
         if (league == null) return null;
 
-        return new LeaguePublicDto
-        {
-            Id = league.Id,
-            Name = league.Name,
-            Slug = league.Slug,
-            Country = league.Country ?? string.Empty,
-            Description = league.Description ?? string.Empty,
-            LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl
-        };
+        return MapLeague(league);
     }
 
     public async Task<TeamSummaryPublicDto?> GetTeamSummaryAsync(
@@ -252,15 +248,7 @@ public class PublicStructuredService
         var response = new TeamSummaryPublicDto
         {
             Team = MapTeamDto(team),
-            League = new LeaguePublicDto
-            {
-                Id = league.Id,
-                Name = league.Name,
-                Slug = league.Slug,
-                Country = league.Country ?? string.Empty,
-                Description = league.Description ?? string.Empty,
-                LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl
-            },
+            League = MapLeague(league),
             Season = new SeasonPublicDto
             {
                 Id = season.Id,
@@ -849,6 +837,23 @@ public class PublicStructuredService
         }
 
         return result;
+    }
+
+    private static LeaguePublicDto MapLeague(League league)
+    {
+        return new LeaguePublicDto
+        {
+            Id = league.Id,
+            Name = league.Name,
+            Slug = league.Slug,
+            Country = league.Country ?? string.Empty,
+            Description = league.Description ?? string.Empty,
+            LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl,
+            PrimaryColor = string.IsNullOrWhiteSpace(league.PrimaryColor) ? null : league.PrimaryColor,
+            FontKey = string.IsNullOrWhiteSpace(league.FontKey) ? null : league.FontKey,
+            HeroImageUrl = string.IsNullOrWhiteSpace(league.HeroImageUrl) ? null : league.HeroImageUrl,
+            TeamHeroImageUrl = string.IsNullOrWhiteSpace(league.TeamHeroImageUrl) ? null : league.TeamHeroImageUrl
+        };
     }
 
     private static string ResolvePublicUploadUrl(string? relativePath, string? fileUrl)
