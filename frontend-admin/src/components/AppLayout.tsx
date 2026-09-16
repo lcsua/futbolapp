@@ -192,7 +192,7 @@ export function AppLayout() {
           borderColor: 'divider',
         }}
       >
-        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 }, gap: { xs: 0.5, sm: 1 }, px: { xs: 1, sm: 2 } }}>
           <IconButton
             edge="start"
             color="inherit"
@@ -206,7 +206,7 @@ export function AppLayout() {
           <Typography variant="h6" component="h1" sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
             {t('app.title')}
           </Typography>
-          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', minWidth: 0, mx: 1 }}>
             <LeagueSelector />
           </Box>
           {user && (
@@ -249,9 +249,11 @@ export function AppLayout() {
         sx={{
           flexGrow: 1,
           width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          minWidth: 0,
           minHeight: '100vh',
           mt: { xs: 7, sm: 8 },
-          p: { xs: 2, sm: 3 },
+          p: { xs: 1.5, sm: 3 },
+          overflowX: 'hidden',
           mx: location.pathname.includes('season-setup/advanced') ? 0 : 'auto',
           maxWidth: location.pathname.includes('season-setup/advanced') ? 'none' : 1000,
         }}

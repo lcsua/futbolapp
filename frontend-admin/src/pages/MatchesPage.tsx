@@ -16,11 +16,16 @@ import {
   FormControl,
   FormControlLabel,
   InputLabel,
+  ListItemIcon,
+  ListItemText,
+  Menu,
   MenuItem,
   Select,
   TextField,
   Typography,
   CircularProgress,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import VisibilityIcon from '@mui/icons-material/Visibility'
@@ -44,9 +49,23 @@ import { ImportScheduleModal } from '../components/ImportScheduleModal'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import ScoreboardIcon from '@mui/icons-material/Scoreboard'
 import ScheduleIcon from '@mui/icons-material/Schedule'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
+
+const MATCH_GRID_SX = {
+  display: 'grid',
+  gridTemplateColumns: {
+    xs: '1fr',
+    sm: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
+  },
+  gap: { xs: 1.5, sm: 2 },
+} as const
+
+const FILTER_CONTROL_SX = { minWidth: 0, width: '100%' } as const
 
 export function MatchesPage() {
   const { t } = useTranslation()
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const leagueId = useLeagueId()
   const { leagueId: leagueIdInPath } = useParams<{ leagueId?: string }>()
   const [seasonId, setSeasonId] = useState('')
@@ -54,6 +73,7 @@ export function MatchesPage() {
   const [round, setRound] = useState<string>('')
   const [teamId, setTeamId] = useState<string>('')
   const [groupByField, setGroupByField] = useState(false)
+  const [actionsAnchor, setActionsAnchor] = useState<HTMLElement | null>(null)
   const [resultModalMatch, setResultModalMatch] = useState<MatchListItem | null>(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importResultsOpen, setImportResultsOpen] = useState(false)
@@ -272,7 +292,7 @@ export function MatchesPage() {
   }
 
   return (
-    <Box>
+    <Box sx={{ minWidth: 0, overflowX: 'hidden' }}>
       <Button component={RouterLink} to="/seasons" startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
         {t('matches.backToSeasons')}
       </Button>
@@ -286,80 +306,90 @@ export function MatchesPage() {
         </Alert>
       )}
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center', mb: 3 }}>
-        <FormControl size="small" sx={{ minWidth: 200 }} disabled={seasonsLoading}>
-          <InputLabel id="season-label">{t('matches.season')}</InputLabel>
-          <Select
-            labelId="season-label"
-            label={t('matches.season')}
-            value={seasonId}
-            onChange={handleSeasonChange}
-          >
-            <MenuItem value="">
-              <em>{t('matches.selectSeason')}</em>
-            </MenuItem>
-            {seasons.map((s) => (
-              <MenuItem key={s.id} value={s.id}>
-                {s.name}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3, minWidth: 0 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, minmax(0, 1fr))' },
+            gap: 1.5,
+          }}
+        >
+          <FormControl size="small" sx={FILTER_CONTROL_SX} disabled={seasonsLoading}>
+            <InputLabel id="season-label">{t('matches.season')}</InputLabel>
+            <Select
+              labelId="season-label"
+              label={t('matches.season')}
+              value={seasonId}
+              onChange={handleSeasonChange}
+            >
+              <MenuItem value="">
+                <em>{t('matches.selectSeason')}</em>
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 180 }} disabled={!seasonId}>
-          <InputLabel id="division-label">{t('matches.division')}</InputLabel>
-          <Select
-            labelId="division-label"
-            label={t('matches.division')}
-            value={divisionId}
-            onChange={handleDivisionChange}
-          >
-            <MenuItem value="">
-              <em>{t('matches.all')}</em>
-            </MenuItem>
-            {divisions.map((d) => (
-              <MenuItem key={d.id} value={d.id}>
-                {d.name}
+              {seasons.map((s) => (
+                <MenuItem key={s.id} value={s.id}>
+                  {s.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={FILTER_CONTROL_SX} disabled={!seasonId}>
+            <InputLabel id="division-label">{t('matches.division')}</InputLabel>
+            <Select
+              labelId="division-label"
+              label={t('matches.division')}
+              value={divisionId}
+              onChange={handleDivisionChange}
+            >
+              <MenuItem value="">
+                <em>{t('matches.all')}</em>
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 120 }} disabled={!seasonId}>
-          <InputLabel id="round-label">{t('matches.round')}</InputLabel>
-          <Select
-            labelId="round-label"
-            label={t('matches.round')}
-            value={round}
-            onChange={handleRoundChange}
-          >
-            <MenuItem value="">
-              <em>{t('matches.all')}</em>
-            </MenuItem>
-            {roundNumbers.map((r) => (
-              <MenuItem key={r} value={String(r)}>
-                {r}
+              {divisions.map((d) => (
+                <MenuItem key={d.id} value={d.id}>
+                  {d.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={FILTER_CONTROL_SX} disabled={!seasonId}>
+            <InputLabel id="round-label">{t('matches.round')}</InputLabel>
+            <Select
+              labelId="round-label"
+              label={t('matches.round')}
+              value={round}
+              onChange={handleRoundChange}
+            >
+              <MenuItem value="">
+                <em>{t('matches.all')}</em>
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 200 }} disabled={!seasonId || allRounds.length === 0}>
-          <InputLabel id="team-label">{t('matches.team')}</InputLabel>
-          <Select
-            labelId="team-label"
-            label={t('matches.team')}
-            value={teamId}
-            onChange={handleTeamChange}
-          >
-            <MenuItem value="">
-              <em>{t('matches.all')}</em>
-            </MenuItem>
-            {teams.map(([id, name]) => (
-              <MenuItem key={id} value={id}>
-                {name}
+              {roundNumbers.map((r) => (
+                <MenuItem key={r} value={String(r)}>
+                  {r}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={FILTER_CONTROL_SX} disabled={!seasonId || allRounds.length === 0}>
+            <InputLabel id="team-label">{t('matches.team')}</InputLabel>
+            <Select
+              labelId="team-label"
+              label={t('matches.team')}
+              value={teamId}
+              onChange={handleTeamChange}
+            >
+              <MenuItem value="">
+                <em>{t('matches.all')}</em>
               </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+              {teams.map(([id, name]) => (
+                <MenuItem key={id} value={id}>
+                  {name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+
         <FormControlLabel
+          sx={{ m: 0, alignSelf: 'flex-start' }}
           control={
             <Checkbox
               checked={groupByField}
@@ -367,41 +397,116 @@ export function MatchesPage() {
               disabled={!seasonId || round === ''}
             />
           }
-          label="Agrupar por cancha"
+          label={t('matches.groupByField')}
         />
-        <Button
-          variant="outlined"
-          startIcon={<UploadFileIcon />}
-          onClick={() => setImportModalOpen(true)}
-          disabled={seasonClosed || !seasonId || !divisionId}
-        >
-          {t('matches.importFixture')}
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<ScoreboardIcon />}
-          onClick={() => setImportResultsOpen(true)}
-          disabled={seasonClosed || !seasonId}
-        >
-          Importar resultados CSV
-        </Button>
-        <Button
-          variant="outlined"
-          startIcon={<ScheduleIcon />}
-          onClick={() => setImportScheduleOpen(true)}
-          disabled={seasonClosed || !seasonId}
-        >
-          Importar horarios/canchas
-        </Button>
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<DeleteSweepIcon />}
-          onClick={handleClearRoundResults}
-          disabled={!canClearRoundResults || clearRoundMutation.isPending}
-        >
-          {clearRoundMutation.isPending ? 'Borrando…' : 'Borrar resultados de la fecha'}
-        </Button>
+
+        {isMobile ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Button
+              variant="contained"
+              startIcon={<ScoreboardIcon />}
+              onClick={() => setImportResultsOpen(true)}
+              disabled={seasonClosed || !seasonId}
+              fullWidth
+            >
+              {t('matches.importResultsCsv')}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<MoreVertIcon />}
+              onClick={(e) => setActionsAnchor(e.currentTarget)}
+              disabled={!seasonId}
+              fullWidth
+            >
+              {t('matches.moreActions')}
+            </Button>
+            <Menu
+              anchorEl={actionsAnchor}
+              open={!!actionsAnchor}
+              onClose={() => setActionsAnchor(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            >
+              <MenuItem
+                disabled={seasonClosed || !seasonId || !divisionId}
+                onClick={() => {
+                  setActionsAnchor(null)
+                  setImportModalOpen(true)
+                }}
+              >
+                <ListItemIcon>
+                  <UploadFileIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>{t('matches.importFixture')}</ListItemText>
+              </MenuItem>
+              <MenuItem
+                disabled={seasonClosed || !seasonId}
+                onClick={() => {
+                  setActionsAnchor(null)
+                  setImportScheduleOpen(true)
+                }}
+              >
+                <ListItemIcon>
+                  <ScheduleIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>{t('matches.importSchedule')}</ListItemText>
+              </MenuItem>
+              <MenuItem
+                disabled={!canClearRoundResults || clearRoundMutation.isPending}
+                onClick={() => {
+                  setActionsAnchor(null)
+                  handleClearRoundResults()
+                }}
+              >
+                <ListItemIcon>
+                  <DeleteSweepIcon fontSize="small" color="error" />
+                </ListItemIcon>
+                <ListItemText>
+                  {clearRoundMutation.isPending
+                    ? t('matches.clearingRoundResults')
+                    : t('matches.clearRoundResults')}
+                </ListItemText>
+              </MenuItem>
+            </Menu>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+            <Button
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              onClick={() => setImportModalOpen(true)}
+              disabled={seasonClosed || !seasonId || !divisionId}
+            >
+              {t('matches.importFixture')}
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<ScoreboardIcon />}
+              onClick={() => setImportResultsOpen(true)}
+              disabled={seasonClosed || !seasonId}
+            >
+              {t('matches.importResultsCsv')}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<ScheduleIcon />}
+              onClick={() => setImportScheduleOpen(true)}
+              disabled={seasonClosed || !seasonId}
+            >
+              {t('matches.importSchedule')}
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteSweepIcon />}
+              onClick={handleClearRoundResults}
+              disabled={!canClearRoundResults || clearRoundMutation.isPending}
+            >
+              {clearRoundMutation.isPending
+                ? t('matches.clearingRoundResults')
+                : t('matches.clearRoundResults')}
+            </Button>
+          </Box>
+        )}
       </Box>
 
       {clearError && (
@@ -444,7 +549,7 @@ export function MatchesPage() {
                 </Typography>
                 <Chip size="small" label={`${group.matches.length} partido${group.matches.length === 1 ? '' : 's'}`} />
               </Box>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 2 }}>
+              <Box sx={MATCH_GRID_SX}>
                 {group.matches.map((m) => (
                   <MatchCard
                     key={m.id}
@@ -472,7 +577,7 @@ export function MatchesPage() {
               <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
                 {t('matches.roundTitle', { round: group.roundNumber, division: group.divisionName })}
               </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: 2 }}>
+              <Box sx={MATCH_GRID_SX}>
                 {group.matches.map((m) => (
                   <MatchCard
                     key={m.id}
@@ -647,6 +752,28 @@ function MatchCard({
   metaLabel: string
 }) {
   const { t } = useTranslation()
+  const teamNameSx = {
+    overflow: 'hidden',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    wordBreak: 'break-word',
+    lineHeight: 1.25,
+  } as const
+
+  const actionBtnSx = {
+    justifyContent: 'flex-start',
+    minWidth: 0,
+    px: { xs: 0.75, sm: 1 },
+    whiteSpace: 'nowrap',
+    lineHeight: 1.2,
+    textAlign: 'left',
+    '& .MuiButton-startIcon': {
+      display: { xs: 'none', sm: 'inline-flex' },
+      mr: { sm: 0.5 },
+    },
+  } as const
+
   return (
     <Card
       variant="outlined"
@@ -654,25 +781,26 @@ function MatchCard({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        minHeight: 130,
-        padding: 2,
+        minWidth: 0,
+        minHeight: { xs: 0, sm: 130 },
+        padding: { xs: 1.5, sm: 2 },
       }}
     >
-      <CardContent sx={{ p: 0, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', '&:last-child': { pb: 0 } }}>
+      <CardContent sx={{ p: 0, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0, '&:last-child': { pb: 0 } }}>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
+            gridTemplateColumns: { xs: 'minmax(0, 1fr) auto minmax(0, 1fr)', sm: '1fr auto 1fr' },
             alignItems: 'center',
-            gap: 1.5,
+            gap: { xs: 0.75, sm: 1.5 },
             minWidth: 0,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0 }}>
             {match.homeTeamLogoUrl && (
-              <CrestImg src={match.homeTeamLogoUrl} alt="" size={24} />
+              <CrestImg src={match.homeTeamLogoUrl} alt="" size={22} />
             )}
-            <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <Typography variant="body2" fontWeight={600} sx={teamNameSx}>
               {match.homeTeamName}
             </Typography>
           </Box>
@@ -681,36 +809,46 @@ function MatchCard({
               <Chip label={matchStatusLabel('SUSPENDED')} size="small" color="warning" />
             ) : (
               <>
-                <Typography variant="h6" component="span" sx={{ minWidth: 24, textAlign: 'center' }}>
+                <Typography variant="h6" component="span" sx={{ minWidth: 20, textAlign: 'center', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                   {match.homeScore ?? '-'}
                 </Typography>
                 <Typography color="text.secondary">—</Typography>
-                <Typography variant="h6" component="span" sx={{ minWidth: 24, textAlign: 'center' }}>
+                <Typography variant="h6" component="span" sx={{ minWidth: 20, textAlign: 'center', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                   {match.awayScore ?? '-'}
                 </Typography>
               </>
             )}
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, justifyContent: 'flex-end' }}>
-            <Typography variant="body2" fontWeight={600} sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, justifyContent: 'flex-end' }}>
+            <Typography variant="body2" fontWeight={600} sx={{ ...teamNameSx, textAlign: 'right' }}>
               {match.awayTeamName}
             </Typography>
             {match.awayTeamLogoUrl && (
-              <CrestImg src={match.awayTeamLogoUrl} alt="" size={24} />
+              <CrestImg src={match.awayTeamLogoUrl} alt="" size={22} />
             )}
           </Box>
         </Box>
-        <Typography variant="caption" color="text.secondary" display="block">
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>
           {metaLabel}
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
-          <Button size="small" startIcon={<EditIcon />} onClick={onEditResult}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 0.5,
+            mt: 1.25,
+            '& .MuiButton-root': {
+              flex: { xs: '1 1 calc(50% - 4px)', sm: '0 0 auto' },
+            },
+          }}
+        >
+          <Button size="small" startIcon={<EditIcon />} onClick={onEditResult} sx={actionBtnSx}>
             {t('matches.editResult')}
           </Button>
-          <Button size="small" startIcon={<ScheduleIcon />} onClick={onEditSchedule} disabled={!canEditSchedule}>
-            Horario/cancha
+          <Button size="small" startIcon={<ScheduleIcon />} onClick={onEditSchedule} disabled={!canEditSchedule} sx={actionBtnSx}>
+            {t('matches.editSchedule')}
           </Button>
-          <Button size="small" component={RouterLink} to={matchDetailPath} startIcon={<VisibilityIcon />}>
+          <Button size="small" component={RouterLink} to={matchDetailPath} startIcon={<VisibilityIcon />} sx={actionBtnSx}>
             {t('matches.viewDetails')}
           </Button>
           <Button
@@ -719,6 +857,7 @@ function MatchCard({
             startIcon={<DeleteOutlineIcon />}
             onClick={onDelete}
             disabled={!canDelete || isDeleting}
+            sx={actionBtnSx}
           >
             {isDeleting ? t('matches.deleting') : t('matches.deleteMatch')}
           </Button>
