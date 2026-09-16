@@ -3,6 +3,7 @@ using FootballManager.Application.UseCases.Auth.GetCapabilities;
 using FootballManager.Application.UseCases.Users.CreateLeagueUser;
 using FootballManager.Application.UseCases.Users.GetLeagueUsers;
 using FootballManager.Application.UseCases.Users.UpdateLeagueUserRole;
+using FootballManager.Application.UseCases.Users.SetLeagueUserPassword;
 using FootballManager.Application.UseCases.Users.RemoveLeagueUser;
 using FootballManager.Application.UseCases.Users.GetMyAccess;
 using FootballManager.Application.UseCases.Roles.CreateRole;
@@ -117,6 +118,7 @@ namespace FootballManager.Application
             services.AddScoped<ICreateLeagueUserUseCase, CreateLeagueUserUseCase>();
             services.AddScoped<IGetLeagueUsersUseCase, GetLeagueUsersUseCase>();
             services.AddScoped<IUpdateLeagueUserRoleUseCase, UpdateLeagueUserRoleUseCase>();
+            services.AddScoped<ISetLeagueUserPasswordUseCase, SetLeagueUserPasswordUseCase>();
             services.AddScoped<IRemoveLeagueUserUseCase, RemoveLeagueUserUseCase>();
             services.AddScoped<IGetMyAccessUseCase, GetMyAccessUseCase>();
             services.AddScoped<ICreateRoleUseCase, CreateRoleUseCase>();

@@ -3,6 +3,7 @@ using FootballManager.Application.UseCases.Users.CreateLeagueUser;
 using FootballManager.Application.UseCases.Users.GetLeagueUsers;
 using FootballManager.Application.UseCases.Users.GetMyAccess;
 using FootballManager.Application.UseCases.Users.RemoveLeagueUser;
+using FootballManager.Application.UseCases.Users.SetLeagueUserPassword;
 using FootballManager.Application.UseCases.Users.UpdateLeagueUserRole;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,6 +16,7 @@ namespace FootballManager.Api.Controllers
         private readonly IGetLeagueUsersUseCase _getLeagueUsersUseCase;
         private readonly ICreateLeagueUserUseCase _createLeagueUserUseCase;
         private readonly IUpdateLeagueUserRoleUseCase _updateLeagueUserRoleUseCase;
+        private readonly ISetLeagueUserPasswordUseCase _setLeagueUserPasswordUseCase;
         private readonly IRemoveLeagueUserUseCase _removeLeagueUserUseCase;
         private readonly IGetMyAccessUseCase _getMyAccessUseCase;
 
@@ -22,12 +24,14 @@ namespace FootballManager.Api.Controllers
             IGetLeagueUsersUseCase getLeagueUsersUseCase,
             ICreateLeagueUserUseCase createLeagueUserUseCase,
             IUpdateLeagueUserRoleUseCase updateLeagueUserRoleUseCase,
+            ISetLeagueUserPasswordUseCase setLeagueUserPasswordUseCase,
             IRemoveLeagueUserUseCase removeLeagueUserUseCase,
             IGetMyAccessUseCase getMyAccessUseCase)
         {
             _getLeagueUsersUseCase = getLeagueUsersUseCase;
             _createLeagueUserUseCase = createLeagueUserUseCase;
             _updateLeagueUserRoleUseCase = updateLeagueUserRoleUseCase;
+            _setLeagueUserPasswordUseCase = setLeagueUserPasswordUseCase;
             _removeLeagueUserUseCase = removeLeagueUserUseCase;
             _getMyAccessUseCase = getMyAccessUseCase;
         }
@@ -72,6 +76,26 @@ namespace FootballManager.Api.Controllers
             };
             var response = await _createLeagueUserUseCase.ExecuteAsync(request, cancellationToken);
             return Ok(response);
+        }
+
+        [HttpPut("users/{userId:guid}/password")]
+        public async Task<IActionResult> SetUserPassword(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid userId,
+            [FromBody] SetLeagueUserPasswordBody body,
+            CancellationToken cancellationToken)
+        {
+            var actorId = GetUserId();
+            if (actorId == Guid.Empty) return Unauthorized();
+
+            await _setLeagueUserPasswordUseCase.ExecuteAsync(new SetLeagueUserPasswordRequest
+            {
+                ActorUserId = actorId,
+                LeagueId = leagueId,
+                TargetUserId = userId,
+                Password = body.Password
+            }, cancellationToken);
+            return NoContent();
         }
 
         [HttpPut("users/{userId:guid}")]
@@ -125,5 +149,10 @@ namespace FootballManager.Api.Controllers
     public class UpdateLeagueUserRoleBody
     {
         public Guid RoleId { get; set; }
+    }
+
+    public class SetLeagueUserPasswordBody
+    {
+        public string Password { get; set; } = string.Empty;
     }
 }

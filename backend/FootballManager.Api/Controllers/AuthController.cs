@@ -23,7 +23,7 @@ namespace FootballManager.Api.Controllers
         {
             var response = await _loginUseCase.ExecuteAsync(request, cancellationToken);
             if (response == null)
-                return Unauthorized();
+                return Unauthorized(new { error = "Email o contraseña incorrectos." });
             return Ok(response);
         }
 

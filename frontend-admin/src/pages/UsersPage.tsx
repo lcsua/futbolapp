@@ -13,6 +13,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -24,9 +25,10 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import LockResetIcon from '@mui/icons-material/LockReset'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { usersService } from '../api/users'
+import { usersService, type LeagueUser } from '../api/users'
 import { rolesService } from '../api/roles'
 import { useAuth } from '../contexts/AuthContext'
 import { useLeagueId } from '../contexts/LeagueContext'
@@ -43,6 +45,10 @@ export function UsersPage() {
   const [password, setPassword] = useState('')
   const [roleId, setRoleId] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+  const [resetUser, setResetUser] = useState<LeagueUser | null>(null)
+  const [resetPassword, setResetPassword] = useState('')
+  const [resetError, setResetError] = useState<string | null>(null)
+  const [snackbar, setSnackbar] = useState<string | null>(null)
 
   const { data: users, isLoading, isError, error } = useQuery({
     queryKey: ['leagues', leagueId, 'users'],
@@ -91,6 +97,19 @@ export function UsersPage() {
     mutationFn: (userId: string) => usersService.remove(leagueId!, userId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'users'] })
+    },
+  })
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: () => usersService.setPassword(leagueId!, resetUser!.userId, resetPassword),
+    onSuccess: () => {
+      setResetUser(null)
+      setResetPassword('')
+      setResetError(null)
+      setSnackbar(t('users.resetPasswordSuccess'))
+    },
+    onError: (err) => {
+      setResetError(err instanceof Error ? err.message : t('users.resetPasswordError'))
     },
   })
 
@@ -160,7 +179,19 @@ export function UsersPage() {
                   </Select>
                 </FormControl>
               </TableCell>
-              <TableCell align="right">
+              <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                <Button
+                  size="small"
+                  startIcon={<LockResetIcon />}
+                  disabled={resetPasswordMutation.isPending}
+                  onClick={() => {
+                    setResetUser(member)
+                    setResetPassword('')
+                    setResetError(null)
+                  }}
+                >
+                  {t('users.resetPassword')}
+                </Button>
                 <IconButton
                   aria-label={t('users.remove')}
                   disabled={member.userId === user?.userId || removeMutation.isPending}
@@ -236,6 +267,71 @@ export function UsersPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog
+        open={!!resetUser}
+        onClose={() => {
+          setResetUser(null)
+          setResetPassword('')
+          setResetError(null)
+        }}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>{t('users.resetPasswordTitle')}</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          {resetError ? <Alert severity="error">{resetError}</Alert> : null}
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            {resetUser?.fullName}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {resetUser?.email}
+          </Typography>
+          <TextField
+            label={t('users.password')}
+            type="password"
+            value={resetPassword}
+            onChange={(e) => setResetPassword(e.target.value)}
+            helperText={t('users.resetPasswordHint')}
+            autoFocus
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setResetUser(null)
+              setResetPassword('')
+              setResetError(null)
+            }}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            disabled={resetPassword.trim().length < 6 || resetPasswordMutation.isPending}
+            onClick={() => {
+              setResetError(null)
+              resetPasswordMutation.mutate()
+            }}
+          >
+            {resetPasswordMutation.isPending ? <CircularProgress size={22} color="inherit" /> : t('users.resetPassword')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={!!snackbar}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        {snackbar ? (
+          <Alert onClose={() => setSnackbar(null)} severity="success" variant="filled" sx={{ width: '100%' }}>
+            {snackbar}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
 
       <Button component={RouterLink} to="/" size="small" sx={{ mt: 3 }}>
         {t('users.goToLeagues')}

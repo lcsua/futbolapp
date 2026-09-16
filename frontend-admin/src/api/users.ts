@@ -41,6 +41,9 @@ export const usersService = {
   updateRole: (leagueId: string, userId: string, roleId: string, signal?: AbortSignal) =>
     apiClient.put(`/api/leagues/${leagueId}/users/${userId}`, { roleId }, signal),
 
+  setPassword: (leagueId: string, userId: string, password: string, signal?: AbortSignal) =>
+    apiClient.put(`/api/leagues/${leagueId}/users/${userId}/password`, { password }, signal),
+
   remove: (leagueId: string, userId: string, signal?: AbortSignal) =>
     apiClient.delete(`/api/leagues/${leagueId}/users/${userId}`, signal),
 }

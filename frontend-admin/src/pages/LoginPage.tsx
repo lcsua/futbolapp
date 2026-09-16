@@ -36,7 +36,7 @@ export function LoginPage() {
       await login(email.trim(), password)
       navigate('/', { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : 'Email o contraseña incorrectos.')
     } finally {
       setLoading(false)
     }

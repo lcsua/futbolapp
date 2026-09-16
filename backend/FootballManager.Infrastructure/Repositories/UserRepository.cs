@@ -66,17 +66,11 @@ namespace FootballManager.Infrastructure.Repositories
 
         public async Task SetPasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default)
         {
-            await _context.Database.ExecuteSqlRawAsync(
-                @"UPDATE users
-                  SET password_hash = crypt(@password, gen_salt('bf')),
-                      updated_at = NOW()
-                  WHERE id = @id",
-                new object[]
-                {
-                    new NpgsqlParameter("password", password.Trim()),
-                    new NpgsqlParameter("id", userId)
-                },
-                cancellationToken);
+            var user = await GetByIdAsync(userId, cancellationToken)
+                ?? throw new KeyNotFoundException("User not found.");
+
+            var hash = await HashPasswordAsync(password, cancellationToken);
+            user.SetPasswordHash(hash);
         }
     }
 }

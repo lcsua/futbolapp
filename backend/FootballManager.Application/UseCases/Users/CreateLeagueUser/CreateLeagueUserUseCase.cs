@@ -95,6 +95,13 @@ namespace FootballManager.Application.UseCases.Users.CreateLeagueUser
                 var alreadyMember = await _userLeagueRepository.GetAsync(user.Id, request.LeagueId, cancellationToken);
                 if (alreadyMember != null)
                     throw new BusinessException("That user already belongs to this league.");
+
+                if (!string.IsNullOrWhiteSpace(request.Password))
+                {
+                    if (request.Password.Trim().Length < 6)
+                        throw new ArgumentException("Password must be at least 6 characters.");
+                    await _userRepository.SetPasswordAsync(user.Id, request.Password.Trim(), cancellationToken);
+                }
             }
 
             var membership = new UserLeague(user, league, role);
