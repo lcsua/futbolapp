@@ -21,4 +21,8 @@ i18n
     }
   });
 
+if (typeof document !== 'undefined') {
+  document.title = i18n.t('app.title');
+}
+
 export default i18n;
