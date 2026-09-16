@@ -83,14 +83,13 @@ export function MatchesPage() {
   })
 
   const { data: matchesData, isLoading: matchesLoading } = useQuery({
-    queryKey: ['leagues', leagueId, 'matches', seasonId, divisionId || null, round || null],
+    queryKey: ['leagues', leagueId, 'matches', seasonId, divisionId || null],
     queryFn: ({ signal }) =>
       matchesService.getMatches(
         leagueId!,
         {
           seasonId,
           divisionId: divisionId || undefined,
-          round: round === '' ? undefined : parseInt(round, 10),
         },
         signal
       ),
@@ -113,7 +112,7 @@ export function MatchesPage() {
   const handleTeamChange = (e: SelectChangeEvent<string>) => setTeamId(e.target.value)
 
   const allRounds = matchesData?.rounds ?? []
-  const roundNumbers = [...new Set(allRounds.flatMap((r) => r.matches.map((m) => m.roundNumber)))].sort((a, b) => a - b)
+  const roundNumbers = [...new Set(allRounds.map((r) => r.roundNumber))].sort((a, b) => a - b)
   const selectedSeason = seasons.find((s) => s.id === seasonId)
   const seasonClosed = !!selectedSeason && selectedSeason.isActive === false
 
@@ -129,14 +128,17 @@ export function MatchesPage() {
   }, [allRounds])
 
   const rounds = React.useMemo(() => {
-    if (!teamId) return allRounds
+    const selectedRound = round === '' ? null : parseInt(round, 10)
     return allRounds
+      .filter((g) => selectedRound == null || g.roundNumber === selectedRound)
       .map((g) => ({
         ...g,
-        matches: g.matches.filter((m) => m.homeTeamId === teamId || m.awayTeamId === teamId),
+        matches: teamId
+          ? g.matches.filter((m) => m.homeTeamId === teamId || m.awayTeamId === teamId)
+          : g.matches,
       }))
       .filter((g) => g.matches.length > 0)
-  }, [allRounds, teamId])
+  }, [allRounds, round, teamId])
 
   const matchesWithResults = React.useMemo(
     () =>
