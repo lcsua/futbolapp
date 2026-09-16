@@ -24,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { matchesService, MATCH_STATUSES, matchStatusLabel, type MatchGoalAttribution } from '../api/matches'
 import type { MatchListItem } from '../api/matches'
 import { playersService, type Player } from '../api/players'
+import { CrestImg } from './CrestImg'
 
 interface MatchResultModalProps {
   open: boolean
@@ -168,40 +169,40 @@ export function MatchResultModal({ open, match, leagueId, seasonClosed = false, 
               (por ejemplo marcándolo como Finalizado).
             </Alert>
           )}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '1fr auto auto auto 1fr',
-              alignItems: 'center',
-              gap: 2,
-              minWidth: 0,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'right' }}>
-              {match.homeTeamName}
+          <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1.5, minWidth: 0 }}>
+            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+              {match.homeTeamLogoUrl ? <CrestImg src={match.homeTeamLogoUrl} alt="" size={28} /> : null}
+              <Typography variant="subtitle2" fontWeight={600} textAlign="center" sx={{ wordBreak: 'break-word', lineHeight: 1.25 }}>
+                {match.homeTeamName}
+              </Typography>
+              <TextField
+                type="number"
+                inputProps={{ min: 0, style: { fontSize: 26, textAlign: 'center' } }}
+                value={homeScore}
+                onChange={(e) => setHomeScore(e.target.value)}
+                size="small"
+                sx={{ width: 72 }}
+                disabled={isNonScoringStatus}
+              />
+            </Box>
+            <Typography variant="h6" color="text.secondary" sx={{ pb: 1 }}>
+              —
             </Typography>
-            <TextField
-              type="number"
-              inputProps={{ min: 0, style: { fontSize: 26, textAlign: 'center' } }}
-              value={homeScore}
-              onChange={(e) => setHomeScore(e.target.value)}
-              size="small"
-              sx={{ width: 70 }}
-              disabled={isNonScoringStatus}
-            />
-            <Typography variant="h6" color="text.secondary">—</Typography>
-            <TextField
-              type="number"
-              inputProps={{ min: 0, style: { fontSize: 26, textAlign: 'center' } }}
-              value={awayScore}
-              onChange={(e) => setAwayScore(e.target.value)}
-              size="small"
-              sx={{ width: 70 }}
-              disabled={isNonScoringStatus}
-            />
-            <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left' }}>
-              {match.awayTeamName}
-            </Typography>
+            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+              {match.awayTeamLogoUrl ? <CrestImg src={match.awayTeamLogoUrl} alt="" size={28} /> : null}
+              <Typography variant="subtitle2" fontWeight={600} textAlign="center" sx={{ wordBreak: 'break-word', lineHeight: 1.25 }}>
+                {match.awayTeamName}
+              </Typography>
+              <TextField
+                type="number"
+                inputProps={{ min: 0, style: { fontSize: 26, textAlign: 'center' } }}
+                value={awayScore}
+                onChange={(e) => setAwayScore(e.target.value)}
+                size="small"
+                sx={{ width: 72 }}
+                disabled={isNonScoringStatus}
+              />
+            </Box>
           </Box>
           <FormControl fullWidth size="small">
             <InputLabel id="result-status-label">Estado</InputLabel>
