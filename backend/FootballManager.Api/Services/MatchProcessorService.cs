@@ -16,7 +16,7 @@ public sealed class MatchProcessorService
     public const string DefaultModel = "gemini-3.6-flash";
     public const string CsvHeader = "fecha,division,Equipo 1,goles equipo 1,equipo 2,goles equipo 2,estado";
 
-    private const int TimeoutMs = 90_000;
+    private const int TimeoutMs = 150_000;
 
     private readonly IConfiguration _configuration;
     private readonly ILogger<MatchProcessorService> _logger;
