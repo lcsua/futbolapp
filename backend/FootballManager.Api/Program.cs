@@ -8,6 +8,8 @@ using Microsoft.Extensions.FileProviders;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+if (builder.Environment.IsDevelopment())
+    LoadLocalEnv(builder);
 
 builder.Services.AddSingleton<IDevTokenStore, DevTokenStore>();
 builder.Services.AddApplication();
@@ -37,6 +39,7 @@ builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicTeamService
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicMatchService>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicStructuredService>();
 builder.Services.AddScoped<FootballManager.Api.Services.LeagueLogoMigrationService>();
+builder.Services.AddScoped<FootballManager.Api.Services.MatchProcessorService>();
 
 var app = builder.Build();
 
@@ -68,3 +71,37 @@ app.UseMiddleware<FootballManager.Api.Middleware.ExceptionHandlingMiddleware>();
 app.MapControllers();
 
 app.Run();
+
+static void LoadLocalEnv(WebApplicationBuilder builder)
+{
+    var candidates = new[]
+    {
+        Path.Combine(builder.Environment.ContentRootPath, ".env"),
+        Path.Combine(builder.Environment.ContentRootPath, "..", ".env"),
+    };
+
+    foreach (var candidate in candidates)
+    {
+        var full = Path.GetFullPath(candidate);
+        if (!File.Exists(full))
+            continue;
+
+        var values = new Dictionary<string, string?>();
+        foreach (var raw in File.ReadAllLines(full))
+        {
+            var line = raw.Trim();
+            if (line.Length == 0 || line.StartsWith('#'))
+                continue;
+            var eq = line.IndexOf('=');
+            if (eq <= 0)
+                continue;
+            var key = line[..eq].Trim();
+            if (string.IsNullOrWhiteSpace(key) || !string.IsNullOrWhiteSpace(builder.Configuration[key]))
+                continue;
+            values[key] = line[(eq + 1)..].Trim().Trim('"');
+        }
+
+        builder.Configuration.AddInMemoryCollection(values);
+        break;
+    }
+}

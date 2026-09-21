@@ -273,6 +273,7 @@
       "team": "Team",
       "importFixture": "Import Fixture",
       "importResultsCsv": "Import results CSV",
+      "importResultsImage": "Import from image",
       "importSchedule": "Import times/fields",
       "clearRoundResults": "Clear round results",
       "clearingRoundResults": "Clearing…",

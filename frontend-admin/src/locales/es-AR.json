@@ -273,6 +273,7 @@
       "team": "Equipo",
       "importFixture": "Importar Fixture",
       "importResultsCsv": "Importar resultados CSV",
+      "importResultsImage": "Importar desde imagen",
       "importSchedule": "Importar horarios/canchas",
       "clearRoundResults": "Borrar resultados de la fecha",
       "clearingRoundResults": "Borrando…",

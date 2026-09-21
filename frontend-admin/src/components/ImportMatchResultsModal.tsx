@@ -59,6 +59,9 @@ export type ImportMatchResultsModalProps = {
   /** Preselect division filter from Matches page (optional). */
   filterDivisionId?: string
   divisions: Array<{ id: string; name: string }>
+  /** CSV already produced (for example from a sheet image). Opens the same preview. */
+  seedCsv?: string | null
+  seedLabel?: string | null
   onImported?: (summary: {
     updatedCount: number
     createdCount: number
@@ -88,6 +91,8 @@ export function ImportMatchResultsModal({
   seasonId,
   filterDivisionId = '',
   divisions,
+  seedCsv = null,
+  seedLabel = null,
   onImported,
 }: ImportMatchResultsModalProps) {
   const queryClient = useQueryClient()
@@ -352,6 +357,14 @@ export function ImportMatchResultsModal({
   }
 
   useEffect(() => {
+    if (!open || !seedCsv) return
+    setFileName(seedLabel || 'resultados.csv')
+    setSuccessMsg(null)
+    setLocalError(null)
+    setCsvText(seedCsv)
+  }, [open, seedCsv, seedLabel])
+
+  useEffect(() => {
     if (!open || !csvText || !setupData) return
     applyCsvText(csvText, scopeDivisionId)
     // Re-apply stored CSV when reopening the modal or when setup finishes loading.
@@ -446,6 +459,11 @@ export function ImportMatchResultsModal({
           fixture, solo se cargan partidos <strong>pendientes</strong>; si ya tienen resultado no se pisan, y no se
           crean cruces nuevos. Si la fecha todavía no tiene partidos, se crea el fixture.
         </Typography>
+        {seedLabel && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Planilla leída: {seedLabel}. Revisá la vista previa antes de confirmar.
+          </Alert>
+        )}
 
         <FormControl fullWidth size="small" sx={{ mb: csvText ? 1 : 2 }} disabled={importMutation.isPending}>
           <InputLabel id="import-scope-division">División a importar</InputLabel>

@@ -59,13 +59,20 @@ jobs:
       uses: appleboy/ssh-action@v1.0.3
       env:
         DATABASE_CONNECTION: ${{ secrets.DATABASE_CONNECTION }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        GEMINI_PROJECT: ${{ vars.GEMINI_PROJECT }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
-        envs: DATABASE_CONNECTION
+        envs: DATABASE_CONNECTION,GEMINI_API_KEY,GEMINI_MODEL,GEMINI_PROJECT
         script: |
           set -euo pipefail
+          if [ -z "${GEMINI_API_KEY:-}" ]; then
+            echo "Falta el secret de GitHub GEMINI_API_KEY."
+            exit 1
+          fi
           cd /home/lucas/apps/futbolnet/api
           chmod +x ./efbundle
 
@@ -104,6 +111,21 @@ jobs:
           export DATABASE_CONNECTION="$CONN"
           ./efbundle --connection "$CONN"
           echo "Migrations applied."
+
+          echo "Updating Gemini settings for futbolnet-api..."
+          sudo mkdir -p /etc/systemd/system/futbolnet-api.service.d
+          {
+            printf '%s\n' '[Service]'
+            printf 'Environment="GEMINI_API_KEY=%s"\n' "$GEMINI_API_KEY"
+            if [ -n "${GEMINI_MODEL:-}" ]; then
+              printf 'Environment="GEMINI_MODEL=%s"\n' "$GEMINI_MODEL"
+            fi
+            if [ -n "${GEMINI_PROJECT:-}" ]; then
+              printf 'Environment="GEMINI_PROJECT=%s"\n' "$GEMINI_PROJECT"
+            fi
+          } | sudo tee /etc/systemd/system/futbolnet-api.service.d/gemini.conf >/dev/null
+          sudo chmod 600 /etc/systemd/system/futbolnet-api.service.d/gemini.conf
+          sudo systemctl daemon-reload
 
           sudo systemctl restart futbolnet-api
           sudo systemctl is-active --quiet futbolnet-api

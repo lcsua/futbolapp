@@ -193,6 +193,16 @@ export const matchesService = {
   deleteMatch: (leagueId: string, matchId: string, signal?: AbortSignal) =>
     apiClient.delete(`/api/leagues/${leagueId}/matches/${matchId}`, signal),
 
+  processResultImage: (leagueId: string, file: File, signal?: AbortSignal) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiClient.postForm<{ csv: string; fileName: string }>(
+      `/api/leagues/${leagueId}/matches/process-image`,
+      form,
+      signal
+    )
+  },
+
   importResults: (
     leagueId: string,
     body: {
