@@ -20,6 +20,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
@@ -68,6 +69,7 @@ export type ImportMatchResultsModalProps = {
     skippedCount: number
     notCreatedCount: number
     warnings: string[]
+    lines: string[]
   }) => void
 }
 
@@ -103,7 +105,6 @@ export function ImportMatchResultsModal({
   const [showReview, setShowReview] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
   const [infoMsg, setInfoMsg] = useState<string | null>(null)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
   /** Empty = import all divisions found in JSON; otherwise only that division. */
   const [scopeDivisionId, setScopeDivisionId] = useState(filterDivisionId)
 
@@ -135,7 +136,6 @@ export function ImportMatchResultsModal({
 
   const handleClose = () => {
     if (importMutation.isPending) return
-    setSuccessMsg(null)
     setLocalError(null)
     onClose()
   }
@@ -268,7 +268,7 @@ export function ImportMatchResultsModal({
         divisions: payloadDivisions,
       })
     },
-    onSuccess: (res) => {
+    onSuccess: (res, current) => {
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'team-name-aliases'] })
       onImported?.({
         updatedCount: res.updatedCount,
@@ -276,19 +276,12 @@ export function ImportMatchResultsModal({
         skippedCount: res.skippedCount ?? 0,
         notCreatedCount: res.notCreatedCount ?? 0,
         warnings: [...(res.warnings ?? []), ...(infoMsg ? [infoMsg] : [])],
+        lines: current.map(
+          (plan) =>
+            `${plan.divisionName ?? plan.jsonDivision} · fecha ${plan.round} · ${plan.matches.length} partido(s)`
+        ),
       })
-      const parts = [
-        res.updatedCount ? `${res.updatedCount} actualizado(s)` : null,
-        res.createdCount ? `${res.createdCount} creado(s)` : null,
-        res.skippedCount ? `${res.skippedCount} omitido(s) (ya tenían resultado)` : null,
-        res.notCreatedCount ? `${res.notCreatedCount} no creado(s) (la fecha ya tiene fixture)` : null,
-      ].filter(Boolean)
-      setLocalError(null)
-      setSuccessMsg(
-        parts.length
-          ? `Importado: ${parts.join(', ')}. Podés cambiar la división e importar de nuevo sin volver a subir el archivo.`
-          : 'Importación OK. Podés cambiar la división e importar de nuevo sin volver a subir el archivo.'
-      )
+      onClose()
     },
     onError: (err) => {
       setLocalError(err instanceof Error ? err.message : 'Import failed')
@@ -338,7 +331,6 @@ export function ImportMatchResultsModal({
 
   const handleFile = async (file: File) => {
     setFileName(file.name)
-    setSuccessMsg(null)
     try {
       const text = await file.text()
       setCsvText(text)
@@ -359,7 +351,6 @@ export function ImportMatchResultsModal({
   useEffect(() => {
     if (!open || !seedCsv) return
     setFileName(seedLabel || 'resultados.csv')
-    setSuccessMsg(null)
     setLocalError(null)
     setCsvText(seedCsv)
   }, [open, seedCsv, seedLabel])
@@ -396,6 +387,13 @@ export function ImportMatchResultsModal({
           error: plan.error,
         }
       })
+    })
+  }
+
+  const updateRound = (planIndex: number, round: number) => {
+    setPlans((prev) => {
+      if (!prev) return prev
+      return prev.map((plan, i) => (i === planIndex ? { ...plan, round } : plan))
     })
   }
 
@@ -443,6 +441,7 @@ export function ImportMatchResultsModal({
     plans.every(
       (p) =>
         !!p.divisionId &&
+        p.round >= 1 &&
         !p.error &&
         p.matches.length > 0 &&
         p.teamMappings.every((m) => m.action === 'match' && !!m.teamId)
@@ -523,12 +522,6 @@ export function ImportMatchResultsModal({
           </Box>
         )}
 
-        {successMsg && (
-          <Alert severity="success" sx={{ mt: 2, whiteSpace: 'pre-wrap' }} onClose={() => setSuccessMsg(null)}>
-            {successMsg}
-          </Alert>
-        )}
-
         {infoMsg && (
           <Alert severity="info" sx={{ mt: 2, whiteSpace: 'pre-wrap' }} onClose={() => setInfoMsg(null)}>
             {infoMsg}
@@ -550,23 +543,45 @@ export function ImportMatchResultsModal({
                 {reviewRows.length > 0 ? ` (${reviewRows.length} nombre(s) a revisar)` : ''}
               </Alert>
             ) : (
-              <Alert severity={successMsg ? 'info' : 'success'} sx={{ mb: 1.5 }}>
-                {successMsg
-                  ? 'El archivo sigue cargado. Cambiá la división si querés importar otro bloque, o confirmá de nuevo.'
-                  : 'Vista previa lista. Confirmá para importar estos resultados.'}
+              <Alert severity="success" sx={{ mb: 1.5 }}>
+                Vista previa lista. Confirmá para importar estos resultados.
               </Alert>
             )}
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              Confirmá la fecha de cada bloque. El número sale del título de la planilla y a veces no coincide con la
+              fecha real: en ese caso cambialo antes de importar.
+            </Typography>
 
             {plans.map((plan, planIndex) => (
               <Box key={`${plan.jsonDivision}-${planIndex}`} sx={{ mb: 2.5 }}>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', mb: 1 }}>
                   <Typography variant="subtitle2">
-                    CSV: {plan.jsonDivision} (fecha {plan.round}, {plan.matches.length} partidos)
+                    {plan.jsonDivision} · {plan.matches.length} partidos
                   </Typography>
                   {plan.divisionName && (
                     <Chip size="small" label={plan.divisionName} />
                   )}
                   {plan.error && <Chip size="small" color="error" label="Error" />}
+                  <TextField
+                    size="small"
+                    type="number"
+                    label="Fecha"
+                    value={plan.round > 0 ? plan.round : ''}
+                    onChange={(e) => {
+                      const raw = e.target.value.trim()
+                      if (!raw) {
+                        updateRound(planIndex, 0)
+                        return
+                      }
+                      const n = Number.parseInt(raw, 10)
+                      if (Number.isInteger(n) && n >= 1 && n <= 99) updateRound(planIndex, n)
+                    }}
+                    slotProps={{ htmlInput: { min: 1, max: 99, step: 1 } }}
+                    error={plan.round < 1}
+                    helperText={plan.round < 1 ? 'Indicá la fecha' : undefined}
+                    disabled={importMutation.isPending}
+                    sx={{ width: 120, ml: { sm: 'auto' } }}
+                  />
                 </Box>
                 {(plan.needsReview || !!plan.error || !plan.divisionId) && (
                   <FormControl fullWidth size="small" sx={{ mb: 1, maxWidth: 360 }}>
