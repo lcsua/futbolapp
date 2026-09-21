@@ -550,6 +550,7 @@ export function MatchesPage() {
 
       {importResultsMsg && (
         <Alert
+          id="import-results-summary"
           severity={importResultsMsg.includes('no creado') ? 'warning' : 'success'}
           sx={{ mb: 2, whiteSpace: 'pre-wrap' }}
           onClose={() => setImportResultsMsg(null)}
@@ -680,17 +681,20 @@ export function MatchesPage() {
           divisions={divisions}
           seedCsv={seededResultsCsv}
           seedLabel={seededResultsLabel}
-          onImported={({ updatedCount, createdCount, skippedCount, notCreatedCount, warnings }) => {
+          onImported={({ updatedCount, createdCount, skippedCount, notCreatedCount, warnings, lines }) => {
             const parts = [
               updatedCount ? `${updatedCount} actualizado(s)` : null,
               createdCount ? `${createdCount} creado(s)` : null,
               skippedCount ? `${skippedCount} omitido(s) (ya tenían resultado)` : null,
               notCreatedCount ? `${notCreatedCount} no creado(s) (la fecha ya tiene fixture)` : null,
             ].filter(Boolean)
+            const outcome = parts.length ? parts.join(', ') : 'sin cambios'
+            const detail = lines.length ? `\n${lines.join('\n')}` : ''
             const warn = warnings.length ? `\n${warnings.join('\n')}` : ''
-            setImportResultsMsg(
-              parts.length ? `Resultados: ${parts.join(', ')}.${warn}` : `Import OK.${warn}`
-            )
+            setImportResultsMsg(`Resultados importados (${outcome}).${detail}${warn}`)
+            window.setTimeout(() => {
+              document.getElementById('import-results-summary')?.scrollIntoView({ block: 'center' })
+            }, 0)
             void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
           }}
         />
