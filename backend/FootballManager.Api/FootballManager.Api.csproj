@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="FootballManager.Application.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FootballManager.Application\FootballManager.Application.csproj" />
     <ProjectReference Include="..\FootballManager.Infrastructure\FootballManager.Infrastructure.csproj" />
   </ItemGroup>

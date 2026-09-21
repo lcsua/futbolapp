@@ -8,7 +8,8 @@ using Microsoft.Extensions.FileProviders;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
-LoadLocalEnv(builder);
+if (builder.Environment.IsDevelopment())
+    LoadLocalEnv(builder);
 
 builder.Services.AddSingleton<IDevTokenStore, DevTokenStore>();
 builder.Services.AddApplication();

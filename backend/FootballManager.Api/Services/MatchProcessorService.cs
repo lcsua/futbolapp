@@ -34,7 +34,7 @@ public sealed class MatchProcessorService
 
         var mime = NormalizeMime(mimeType);
         if (mime == null)
-            throw new ArgumentException("La imagen tiene que ser JPG, PNG o WebP.");
+            throw new ArgumentException("La imagen tiene que ser JPG, PNG, WebP o GIF.");
 
         var apiKey = FirstConfigured("GEMINI_API_KEY", "Gemini:ApiKey");
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -89,7 +89,7 @@ public sealed class MatchProcessorService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Gemini no pudo leer la planilla con el modelo {Model}.", model);
-            throw new BusinessException("No se pudo leer la planilla. " + SafeDetail(ex, apiKey));
+            throw new BusinessException("No se pudo leer la planilla.");
         }
 
         var rows = ParseRows(raw);
@@ -148,7 +148,7 @@ public sealed class MatchProcessorService
         return sb.ToString();
     }
 
-    private static List<SheetRow> ParseRows(string raw)
+    internal static List<SheetRow> ParseRows(string raw)
     {
         var json = ExtractJson(raw);
         JsonDocument document;
@@ -448,17 +448,6 @@ public sealed class MatchProcessorService
             "image/gif" => "image/gif",
             _ => null,
         };
-    }
-
-    private static string SafeDetail(Exception ex, string apiKey)
-    {
-        var message = ex.Message ?? "";
-        if (!string.IsNullOrEmpty(apiKey))
-            message = message.Replace(apiKey, "[api-key]", StringComparison.Ordinal);
-        message = message.Replace("\r", " ").Replace("\n", " ").Trim();
-        if (message.Length > 240)
-            message = message[..240];
-        return message;
     }
 
     internal sealed class SheetRow

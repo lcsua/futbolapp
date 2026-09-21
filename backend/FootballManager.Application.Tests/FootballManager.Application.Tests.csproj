@@ -25,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FootballManager.Api\FootballManager.Api.csproj" />
     <ProjectReference Include="..\FootballManager.Application\FootballManager.Application.csproj" />
     <ProjectReference Include="..\FootballManager.Infrastructure\FootballManager.Infrastructure.csproj" />
   </ItemGroup>
