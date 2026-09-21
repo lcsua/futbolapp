@@ -144,14 +144,27 @@ jobs:
 
           echo "Raising nginx read timeout for /api/..."
           nginx_py="$(mktemp)"
+          restore_py="$(mktemp)"
           cat > "$nginx_py" << 'PY'
           import re
           from pathlib import Path
 
           LOCATION = re.compile(r'(?m)^[ \t]*location[ \t]+(?:\^~[ \t]+)?/api/?[ \t]*\{')
+          NGINX_DIRS = [Path("/etc/nginx/sites-enabled"), Path("/etc/nginx/conf.d")]
+          BACKUP_DIR = Path("/tmp/nginx-planilla-bak")
+          BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
           def api_locations(text: str):
               return list(LOCATION.finditer(text))
+
+          def is_miliga(path: Path, text: str) -> bool:
+              if "presupuester" in path.name:
+                  return False
+              return (
+                  "miliga.com.ar" in text
+                  or "/backoffice/" in text
+                  or path.name.startswith("futbolnet")
+              )
 
           def patch(text: str) -> str:
               for match in reversed(api_locations(text)):
@@ -178,50 +191,66 @@ jobs:
                   text = text[:match.end()] + new_block + rest[brace_end:]
               return text
 
-          candidates = [
-              *Path("/etc/nginx/sites-enabled").glob("*"),
-              *Path("/etc/nginx/conf.d").glob("*.conf"),
-          ]
+          for folder in NGINX_DIRS:
+              if not folder.is_dir():
+                  continue
+              for backup in list(folder.glob("*.bak-planilla")):
+                  dest = BACKUP_DIR / f"{folder.name}--{backup.name}"
+                  if not dest.exists():
+                      dest.write_text(backup.read_text())
+                  site_name = backup.name[: -len(".bak-planilla")]
+                  target = folder / site_name
+                  if target.exists() and not is_miliga(target, target.read_text()):
+                      target.write_text(backup.read_text())
+                      print(f"Restored unrelated site {target}")
+                  backup.unlink()
+                  print(f"Removed leftover {backup}")
+
           updated = []
-          for path in candidates:
-              if not path.is_file() or path.name.endswith(".bak-planilla"):
+          for folder in NGINX_DIRS:
+              if not folder.is_dir():
                   continue
-              original = path.read_text()
-              if not api_locations(original):
-                  continue
-              patched = patch(original)
-              if patched == original:
-                  print(f"{path} already allows a long /api/ read")
+              for path in folder.iterdir():
+                  if not path.is_file() or path.name.endswith(".bak-planilla"):
+                      continue
+                  original = path.read_text()
+                  if not is_miliga(path, original) or not api_locations(original):
+                      continue
+                  patched = patch(original)
+                  if patched == original:
+                      print(f"{path} already allows a long /api/ read")
+                      updated.append(str(path))
+                      continue
+                  dest = BACKUP_DIR / f"{folder.name}--{path.name}.bak-planilla"
+                  if not dest.exists():
+                      dest.write_text(original)
+                  path.write_text(patched)
                   updated.append(str(path))
-                  continue
-              backup = Path(str(path) + ".bak-planilla")
-              backup.write_text(original)
-              path.write_text(patched)
-              updated.append(str(path))
-              print(f"Updated {path}")
+                  print(f"Updated {path}")
           if not updated:
-              raise SystemExit("No nginx location /api/ found")
+              raise SystemExit("No nginx location /api/ found for miliga")
+          PY
+          cat > "$restore_py" << 'PY'
+          from pathlib import Path
+
+          backup_dir = Path("/tmp/nginx-planilla-bak")
+          if not backup_dir.is_dir():
+              raise SystemExit("No nginx backups to restore")
+          for backup in backup_dir.glob("*--*.bak-planilla"):
+              folder_name, file_name = backup.name.split("--", 1)
+              site_name = file_name[: -len(".bak-planilla")]
+              target = Path("/etc/nginx") / folder_name / site_name
+              target.write_text(backup.read_text())
+              print(f"Restored {target}")
           PY
           sudo_run python3 "$nginx_py"
           rm -f "$nginx_py"
           if ! sudo_run nginx -t; then
             echo "nginx -t failed; restoring previous site config"
-            sudo_run python3 - << 'PY'
-          from pathlib import Path
-          for backup in list(Path("/etc/nginx/sites-enabled").glob("*.bak-planilla")) + list(Path("/etc/nginx/conf.d").glob("*.bak-planilla")):
-              target = Path(str(backup)[: -len(".bak-planilla")])
-              target.write_text(backup.read_text())
-              print(f"Restored {target}")
-          PY
+            sudo_run python3 "$restore_py"
+            rm -f "$restore_py"
             exit 1
           fi
+          rm -f "$restore_py"
           sudo_run systemctl reload nginx
-          sudo_run python3 - << 'PY'
-          from pathlib import Path
-          for folder in (Path("/etc/nginx/sites-enabled"), Path("/etc/nginx/conf.d")):
-              if not folder.is_dir():
-                  continue
-              for backup in folder.glob("*.bak-planilla"):
-                  backup.unlink()
-          PY
           echo "nginx reloaded."
