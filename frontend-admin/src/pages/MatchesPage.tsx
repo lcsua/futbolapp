@@ -45,9 +45,11 @@ import { MatchResultModal } from '../components/MatchResultModal'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
 import { CrestImg } from '../components/CrestImg'
 import { ImportMatchResultsModal } from '../components/ImportMatchResultsModal'
+import { ImportResultsImageModal } from '../components/ImportResultsImageModal'
 import { ImportScheduleModal } from '../components/ImportScheduleModal'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import ScoreboardIcon from '@mui/icons-material/Scoreboard'
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 
@@ -77,6 +79,10 @@ export function MatchesPage() {
   const [resultModalMatch, setResultModalMatch] = useState<MatchListItem | null>(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importResultsOpen, setImportResultsOpen] = useState(false)
+  const [importImageOpen, setImportImageOpen] = useState(false)
+  const [resultsSession, setResultsSession] = useState(0)
+  const [seededResultsCsv, setSeededResultsCsv] = useState<string | null>(null)
+  const [seededResultsLabel, setSeededResultsLabel] = useState<string | null>(null)
   const [importScheduleOpen, setImportScheduleOpen] = useState(false)
   const [importResultsMsg, setImportResultsMsg] = useState<string | null>(null)
   const [clearError, setClearError] = useState<string | null>(null)
@@ -405,11 +411,25 @@ export function MatchesPage() {
             <Button
               variant="contained"
               startIcon={<ScoreboardIcon />}
-              onClick={() => setImportResultsOpen(true)}
+              onClick={() => {
+                setSeededResultsCsv(null)
+                setSeededResultsLabel(null)
+                setResultsSession((n) => n + 1)
+                setImportResultsOpen(true)
+              }}
               disabled={seasonClosed || !seasonId}
               fullWidth
             >
               {t('matches.importResultsCsv')}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PhotoLibraryIcon />}
+              onClick={() => setImportImageOpen(true)}
+              disabled={seasonClosed || !seasonId}
+              fullWidth
+            >
+              {t('matches.importResultsImage')}
             </Button>
             <Button
               variant="outlined"
@@ -481,10 +501,23 @@ export function MatchesPage() {
             <Button
               variant="contained"
               startIcon={<ScoreboardIcon />}
-              onClick={() => setImportResultsOpen(true)}
+              onClick={() => {
+                setSeededResultsCsv(null)
+                setSeededResultsLabel(null)
+                setResultsSession((n) => n + 1)
+                setImportResultsOpen(true)
+              }}
               disabled={seasonClosed || !seasonId}
             >
               {t('matches.importResultsCsv')}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<PhotoLibraryIcon />}
+              onClick={() => setImportImageOpen(true)}
+              disabled={seasonClosed || !seasonId}
+            >
+              {t('matches.importResultsImage')}
             </Button>
             <Button
               variant="outlined"
@@ -624,13 +657,29 @@ export function MatchesPage() {
         />
       )}
       {leagueId && seasonId && (
+        <>
+        <ImportResultsImageModal
+          open={importImageOpen}
+          onClose={() => setImportImageOpen(false)}
+          leagueId={leagueId}
+          onCsvReady={(csv, label) => {
+            setImportImageOpen(false)
+            setSeededResultsCsv(csv)
+            setSeededResultsLabel(label)
+            setResultsSession((n) => n + 1)
+            setImportResultsOpen(true)
+          }}
+        />
         <ImportMatchResultsModal
+          key={resultsSession}
           open={importResultsOpen}
           onClose={() => setImportResultsOpen(false)}
           leagueId={leagueId}
           seasonId={seasonId}
           filterDivisionId={divisionId}
           divisions={divisions}
+          seedCsv={seededResultsCsv}
+          seedLabel={seededResultsLabel}
           onImported={({ updatedCount, createdCount, skippedCount, notCreatedCount, warnings }) => {
             const parts = [
               updatedCount ? `${updatedCount} actualizado(s)` : null,
@@ -645,6 +694,7 @@ export function MatchesPage() {
             void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
           }}
         />
+        </>
       )}
       {leagueId && seasonId && (
         <ImportScheduleModal

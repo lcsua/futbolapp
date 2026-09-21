@@ -12,6 +12,7 @@ using FootballManager.Application.UseCases.Matches.SwapDivisionHomeAway;
 using FootballManager.Application.UseCases.Matches.AddMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatch;
+using FootballManager.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -32,6 +33,7 @@ namespace FootballManager.Api.Controllers
         private readonly IAddMatchIncidentUseCase _addMatchIncidentUseCase;
         private readonly IDeleteMatchIncidentUseCase _deleteMatchIncidentUseCase;
         private readonly IDeleteMatchUseCase _deleteMatchUseCase;
+        private readonly MatchProcessorService _matchProcessorService;
 
         public MatchesController(
             IGetMatchesUseCase getMatchesUseCase,
@@ -44,7 +46,8 @@ namespace FootballManager.Api.Controllers
             ISwapDivisionHomeAwayUseCase swapDivisionHomeAwayUseCase,
             IAddMatchIncidentUseCase addMatchIncidentUseCase,
             IDeleteMatchIncidentUseCase deleteMatchIncidentUseCase,
-            IDeleteMatchUseCase deleteMatchUseCase)
+            IDeleteMatchUseCase deleteMatchUseCase,
+            MatchProcessorService matchProcessorService)
         {
             _getMatchesUseCase = getMatchesUseCase ?? throw new ArgumentNullException(nameof(getMatchesUseCase));
             _getMatchByIdUseCase = getMatchByIdUseCase ?? throw new ArgumentNullException(nameof(getMatchByIdUseCase));
@@ -57,6 +60,7 @@ namespace FootballManager.Api.Controllers
             _addMatchIncidentUseCase = addMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(addMatchIncidentUseCase));
             _deleteMatchIncidentUseCase = deleteMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(deleteMatchIncidentUseCase));
             _deleteMatchUseCase = deleteMatchUseCase ?? throw new ArgumentNullException(nameof(deleteMatchUseCase));
+            _matchProcessorService = matchProcessorService ?? throw new ArgumentNullException(nameof(matchProcessorService));
         }
 
         [HttpGet]
@@ -95,6 +99,39 @@ namespace FootballManager.Api.Controllers
             request.UserId = userId;
             var response = await _importMatchResultsUseCase.ExecuteAsync(request, cancellationToken);
             return Ok(response);
+        }
+
+        /// <summary>
+        /// Reads a results-sheet image and returns the CSV consumed by the existing preview/import flow.
+        /// </summary>
+        [HttpPost("process-image")]
+        [RequestSizeLimit(12 * 1024 * 1024)]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> ProcessMatchImage(
+            [FromRoute] Guid leagueId,
+            [FromForm] IFormFile? file,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            file ??= Request.Form.Files.FirstOrDefault();
+            if (file == null || file.Length == 0)
+                return BadRequest(new { error = "Tenés que subir una imagen de la planilla." });
+
+            if (file.Length > 10 * 1024 * 1024)
+                return BadRequest(new { error = "La imagen puede pesar hasta 10 MB." });
+
+            await using var stream = file.OpenReadStream();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, cancellationToken);
+
+            var csv = await _matchProcessorService.ProcessAsync(buffer.ToArray(), ResolveImageMime(file), cancellationToken);
+            return Ok(new
+            {
+                csv,
+                fileName = "resultados.csv",
+            });
         }
 
         [HttpGet("{matchId}")]
@@ -240,6 +277,23 @@ namespace FootballManager.Api.Controllers
 
             await _deleteMatchIncidentUseCase.ExecuteAsync(leagueId, incidentId, userId, cancellationToken);
             return NoContent();
+        }
+
+        private static string ResolveImageMime(IFormFile file)
+        {
+            var mime = (file.ContentType ?? "").Split(';')[0].Trim();
+            if (!string.IsNullOrWhiteSpace(mime)
+                && !mime.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase))
+                return mime;
+
+            return Path.GetExtension(file.FileName).ToLowerInvariant() switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                _ => mime,
+            };
         }
 
         private Guid GetUserId()
