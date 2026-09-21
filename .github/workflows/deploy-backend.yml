@@ -62,17 +62,25 @@ jobs:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
         GEMINI_PROJECT: ${{ vars.GEMINI_PROJECT }}
+        SUDO_PASSWORD: ${{ secrets.SSH_SUDO_PASSWORD }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
-        envs: DATABASE_CONNECTION,GEMINI_API_KEY,GEMINI_MODEL,GEMINI_PROJECT
+        envs: DATABASE_CONNECTION,GEMINI_API_KEY,GEMINI_MODEL,GEMINI_PROJECT,SUDO_PASSWORD
         script: |
           set -euo pipefail
           if [ -z "${GEMINI_API_KEY:-}" ]; then
             echo "Falta el secret de GitHub GEMINI_API_KEY."
             exit 1
           fi
+          if [ -z "${SUDO_PASSWORD:-}" ]; then
+            echo "Falta el secret de GitHub SSH_SUDO_PASSWORD."
+            exit 1
+          fi
+          sudo_run() {
+            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' "$@"
+          }
           cd /home/lucas/apps/futbolnet/api
           chmod +x ./efbundle
 
@@ -113,7 +121,7 @@ jobs:
           echo "Migrations applied."
 
           echo "Updating Gemini settings for futbolnet-api..."
-          sudo mkdir -p /etc/systemd/system/futbolnet-api.service.d
+          gemini_tmp="$(mktemp)"
           {
             printf '%s\n' '[Service]'
             printf 'Environment="GEMINI_API_KEY=%s"\n' "$GEMINI_API_KEY"
@@ -123,10 +131,13 @@ jobs:
             if [ -n "${GEMINI_PROJECT:-}" ]; then
               printf 'Environment="GEMINI_PROJECT=%s"\n' "$GEMINI_PROJECT"
             fi
-          } | sudo tee /etc/systemd/system/futbolnet-api.service.d/gemini.conf >/dev/null
-          sudo chmod 600 /etc/systemd/system/futbolnet-api.service.d/gemini.conf
-          sudo systemctl daemon-reload
+          } > "$gemini_tmp"
+          sudo_run mkdir -p /etc/systemd/system/futbolnet-api.service.d
+          sudo_run cp "$gemini_tmp" /etc/systemd/system/futbolnet-api.service.d/gemini.conf
+          sudo_run chmod 600 /etc/systemd/system/futbolnet-api.service.d/gemini.conf
+          rm -f "$gemini_tmp"
+          sudo_run systemctl daemon-reload
 
-          sudo systemctl restart futbolnet-api
-          sudo systemctl is-active --quiet futbolnet-api
+          sudo_run systemctl restart futbolnet-api
+          sudo_run systemctl is-active --quiet futbolnet-api
           echo "futbolnet-api restarted."
