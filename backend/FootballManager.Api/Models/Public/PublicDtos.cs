@@ -3,6 +3,16 @@ using System.Collections.Generic;
 
 namespace FootballManager.Api.Models.Public;
 
+public class PublicAdvertisementDto
+{
+    public Guid Id { get; set; }
+    public string AdvertiserName { get; set; } = string.Empty;
+    public string Slot { get; set; } = string.Empty;
+    public string? DesktopImageUrl { get; set; }
+    public string? MobileImageUrl { get; set; }
+    public string? TargetUrl { get; set; }
+}
+
 public class LeaguePublicDto
 {
     public Guid Id { get; set; }

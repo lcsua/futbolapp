@@ -112,6 +112,17 @@ public class Advertisement : Entity
         UpdateTimestamp();
     }
 
+    public bool IsVisible(DateTime utcNow)
+    {
+        if (!IsActive || DeletedAt != null)
+            return false;
+        if (StartsAt.HasValue && utcNow < StartsAt.Value)
+            return false;
+        if (EndsAt.HasValue && utcNow > EndsAt.Value)
+            return false;
+        return !string.IsNullOrWhiteSpace(DesktopImageUrl) || !string.IsNullOrWhiteSpace(MobileImageUrl);
+    }
+
     private static string RequireText(string value, string paramName, string message)
     {
         return !string.IsNullOrWhiteSpace(value)

@@ -784,6 +784,37 @@ public class PublicStructuredService
         return result;
     }
 
+    public async Task<List<PublicAdvertisementDto>?> GetActiveAdvertisementsAsync(string leagueSlug, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
+
+        var now = DateTime.UtcNow;
+        var advertisements = await _db.Advertisements
+            .AsNoTracking()
+            .Where(a => a.LeagueId == league.Id && a.DeletedAt == null && a.IsActive)
+            .Where(a => a.StartsAt == null || a.StartsAt <= now)
+            .Where(a => a.EndsAt == null || a.EndsAt >= now)
+            .Where(a => a.DesktopImageUrl != null || a.MobileImageUrl != null)
+            .OrderByDescending(a => a.Priority)
+            .ThenByDescending(a => a.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return advertisements
+            .Where(a => a.IsVisible(now))
+            .Select(a => new PublicAdvertisementDto
+            {
+                Id = a.Id,
+                AdvertiserName = a.AdvertiserName,
+                Slot = a.Slot.ToString(),
+                DesktopImageUrl = NormalizeAdImage(a.DesktopImageUrl),
+                MobileImageUrl = NormalizeAdImage(a.MobileImageUrl),
+                TargetUrl = SanitizeTargetUrl(a.TargetUrl),
+            })
+            .Where(a => a.DesktopImageUrl != null || a.MobileImageUrl != null)
+            .ToList();
+    }
+
     public async Task<LeagueDocumentsPublicDto?> GetLeagueDocumentsAsync(string leagueSlug, CancellationToken cancellationToken = default)
     {
         var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
@@ -883,5 +914,25 @@ public class PublicStructuredService
         }
 
         return fileUrl ?? string.Empty;
+    }
+
+    private static string? NormalizeAdImage(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+            return null;
+
+        var resolved = ResolvePublicUploadUrl(imageUrl, imageUrl);
+        return string.IsNullOrWhiteSpace(resolved) ? null : resolved;
+    }
+
+    private static string? SanitizeTargetUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return null;
+        if (!Uri.TryCreate(url.Trim(), UriKind.Absolute, out var uri))
+            return null;
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            return null;
+        return uri.ToString();
     }
 }
