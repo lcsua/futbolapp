@@ -1,0 +1,39 @@
+@model IReadOnlyList<PublicWeb.Models.Public.PublicAdvertisementViewModel>
+<aside class="v2-ads" aria-label="Publicidad">
+    <p class="v2-ads__label">Publicidad</p>
+    @foreach (var ad in Model)
+    {
+        var desktop = string.IsNullOrWhiteSpace(ad.DesktopImageUrl) ? null : ad.DesktopImageUrl;
+        var mobile = string.IsNullOrWhiteSpace(ad.MobileImageUrl) ? null : ad.MobileImageUrl;
+        var image = desktop ?? mobile;
+        if (image == null)
+            continue;
+
+        var alt = string.IsNullOrWhiteSpace(ad.AdvertiserName) ? "Publicidad" : ad.AdvertiserName;
+        var useDistinctMobile = mobile != null && desktop != null && !string.Equals(mobile, desktop, StringComparison.Ordinal);
+        if (!string.IsNullOrWhiteSpace(ad.TargetUrl))
+        {
+            <a class="v2-ad" href="@ad.TargetUrl" target="_blank" rel="sponsored noopener noreferrer">
+                <picture>
+                    @if (useDistinctMobile)
+                    {
+                        <source media="(max-width: 767px)" srcset="@mobile" />
+                    }
+                    <img src="@image" alt="@alt" loading="lazy" decoding="async" />
+                </picture>
+            </a>
+        }
+        else
+        {
+            <div class="v2-ad">
+                <picture>
+                    @if (useDistinctMobile)
+                    {
+                        <source media="(max-width: 767px)" srcset="@mobile" />
+                    }
+                    <img src="@image" alt="@alt" loading="lazy" decoding="async" />
+                </picture>
+            </div>
+        }
+    }
+</aside>

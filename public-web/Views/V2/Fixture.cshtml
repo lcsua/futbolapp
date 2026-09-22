@@ -33,6 +33,8 @@
 
 @await Html.PartialAsync("~/Views/V2/League/_CompetitionTabs.cshtml")
 
+@await Component.InvokeAsync("LeagueAds", new { slot = "LeagueTop" })
+
 @if (seasons != null && seasons.Any())
 {
     <form method="get" class="v2-filter-bar" aria-label="Filtros de fixture" data-v2-fixture-filters>
@@ -78,6 +80,8 @@
         </div>
     </form>
 }
+
+@await Component.InvokeAsync("LeagueAds", new { slot = "ResultsFixture" })
 
 <div data-v2-fixture-root
      data-fragment-url="@Url.Content($"~/ligas/{leagueSlug}/fixture/fragment")"

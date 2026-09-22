@@ -237,3 +237,13 @@ public class StandingsPreviewGroupViewModel
     public List<StandingsRowViewModel> Rows { get; set; } = new();
 }
 
+public class PublicAdvertisementViewModel
+{
+    public Guid Id { get; set; }
+    public string AdvertiserName { get; set; } = string.Empty;
+    public string Slot { get; set; } = string.Empty;
+    public string? DesktopImageUrl { get; set; }
+    public string? MobileImageUrl { get; set; }
+    public string? TargetUrl { get; set; }
+}
+

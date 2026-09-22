@@ -203,4 +203,35 @@ public class LeaguePublicService
 
         return null;
     }
+
+    public async Task<List<PublicAdvertisementViewModel>> GetAdvertisementsAsync(string slug)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+            return new();
+
+        var cacheKey = $"liga_ads_{slug}";
+        if (_cache.TryGetValue(cacheKey, out List<PublicAdvertisementViewModel>? cached) && cached != null)
+            return cached;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            var ads = await client.GetFromJsonAsync<List<PublicAdvertisementViewModel>>($"liga/{Uri.EscapeDataString(slug)}/publicidad");
+            if (ads != null)
+            {
+                _cache.Set(cacheKey, ads, TimeSpan.FromMinutes(2));
+                return ads;
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogDebug(ex, "Advertisements are not available for league {Slug}", slug);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calling backend API for advertisements in league {Slug}", slug);
+        }
+
+        return new();
+    }
 }

@@ -5108,3 +5108,51 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   }
 }
 
+.v2-ads {
+  width: min(100% - 1.5rem, var(--v2-max));
+  margin: 0.85rem auto 0.35rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.v2-ads__label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--v2-text-secondary);
+  line-height: 1.2;
+}
+
+.v2-ad {
+  display: block;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--v2-border);
+  background: var(--v2-surface);
+  line-height: 0;
+  text-decoration: none;
+}
+
+.v2-ad:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-ad img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 11rem;
+  object-fit: contain;
+  object-position: center;
+  background: #f8fafc;
+}
+
+@media (min-width: 768px) {
+  .v2-ad img {
+    max-height: 14rem;
+  }
+}
+

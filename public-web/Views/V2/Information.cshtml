@@ -50,6 +50,8 @@
 
 @await Html.PartialAsync("~/Views/V2/League/_CompetitionTabs.cshtml")
 
+@await Component.InvokeAsync("LeagueAds", new { slot = "LeagueTop" })
+
 <div class="v2-info">
     @if (hasAbout)
     {

@@ -44,6 +44,8 @@
 
 @await Html.PartialAsync("~/Views/V2/League/_CompetitionTabs.cshtml")
 
+@await Component.InvokeAsync("LeagueAds", new { slot = "LeagueTop" })
+
 @if (seasons != null && seasons.Count > 1)
 {
     <form method="get" class="v2-filter-bar v2-filter-bar--compact" aria-label="Filtro de temporada">
@@ -65,6 +67,8 @@
         </div>
     </form>
 }
+
+@await Component.InvokeAsync("LeagueAds", new { slot = "LeagueMiddle" })
 
 @if (panels.Count > 0)
 {
