@@ -14,6 +14,8 @@ import {
   Select,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import type { SelectChangeEvent } from '@mui/material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -66,6 +68,8 @@ export function QuickResultEntryDialog({
   initialRound,
   onSaved,
 }: QuickResultEntryDialogProps) {
+  const theme = useTheme()
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
   const queryClient = useQueryClient()
   const inputRefs = useRef<Array<HTMLInputElement | null>>([])
   const [seasonId, setSeasonId] = useState(initialSeasonId)
@@ -219,7 +223,7 @@ export function QuickResultEntryDialog({
   let inputIndex = 0
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth fullScreen={fullScreen}>
       <DialogTitle>Carga rápida de resultados</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -334,12 +338,36 @@ export function QuickResultEntryDialog({
                         key={match.id}
                         sx={{
                           display: 'grid',
-                          gridTemplateColumns: 'minmax(0, 1fr) 64px 12px 64px minmax(0, 1fr)',
+                          gridTemplateColumns: {
+                            xs: '1fr 72px 16px 72px 1fr',
+                            sm: 'minmax(0, 1fr) 64px 12px 64px minmax(0, 1fr)',
+                          },
+                          gridTemplateAreas: {
+                            xs: `"homeName homeName homeName homeName homeName"
+                                 ". home dash away ."
+                                 "awayName awayName awayName awayName awayName"`,
+                            sm: `"homeName home dash away awayName"`,
+                          },
                           alignItems: 'center',
-                          gap: 1,
+                          columnGap: 1,
+                          rowGap: 0.5,
+                          py: { xs: 1.25, sm: 0 },
+                          borderBottom: { xs: '1px solid', sm: 'none' },
+                          borderColor: 'divider',
                         }}
                       >
-                        <Typography variant="body2" sx={{ textAlign: 'right' }} noWrap title={match.homeTeamName}>
+                        <Typography
+                          variant="body2"
+                          title={match.homeTeamName}
+                          sx={{
+                            gridArea: 'homeName',
+                            fontWeight: { xs: 600, sm: 400 },
+                            textAlign: { xs: 'center', sm: 'right' },
+                            whiteSpace: { xs: 'normal', sm: 'nowrap' },
+                            overflow: { sm: 'hidden' },
+                            textOverflow: { sm: 'ellipsis' },
+                          }}
+                        >
                           {match.homeTeamName}
                         </Typography>
                         <TextField
@@ -356,6 +384,7 @@ export function QuickResultEntryDialog({
                             event.preventDefault()
                             focusAt(homeIndex + 1)
                           }}
+                          sx={{ gridArea: 'home' }}
                           slotProps={{
                             htmlInput: {
                               inputMode: 'numeric',
@@ -364,7 +393,7 @@ export function QuickResultEntryDialog({
                             },
                           }}
                         />
-                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ gridArea: 'dash', textAlign: 'center' }}>
                           –
                         </Typography>
                         <TextField
@@ -381,6 +410,7 @@ export function QuickResultEntryDialog({
                             event.preventDefault()
                             focusAt(awayIndex + 1)
                           }}
+                          sx={{ gridArea: 'away' }}
                           slotProps={{
                             htmlInput: {
                               inputMode: 'numeric',
@@ -389,7 +419,18 @@ export function QuickResultEntryDialog({
                             },
                           }}
                         />
-                        <Typography variant="body2" noWrap title={match.awayTeamName}>
+                        <Typography
+                          variant="body2"
+                          title={match.awayTeamName}
+                          sx={{
+                            gridArea: 'awayName',
+                            fontWeight: { xs: 600, sm: 400 },
+                            textAlign: { xs: 'center', sm: 'left' },
+                            whiteSpace: { xs: 'normal', sm: 'nowrap' },
+                            overflow: { sm: 'hidden' },
+                            textOverflow: { sm: 'ellipsis' },
+                          }}
+                        >
                           {match.awayTeamName}
                         </Typography>
                       </Box>
