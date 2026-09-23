@@ -47,9 +47,11 @@ import { CrestImg } from '../components/CrestImg'
 import { ImportMatchResultsModal } from '../components/ImportMatchResultsModal'
 import { ImportResultsImageModal } from '../components/ImportResultsImageModal'
 import { ImportScheduleModal } from '../components/ImportScheduleModal'
+import { QuickResultEntryDialog } from '../components/QuickResultEntryDialog'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import ScoreboardIcon from '@mui/icons-material/Scoreboard'
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary'
+import GridOnIcon from '@mui/icons-material/GridOn'
 import ScheduleIcon from '@mui/icons-material/Schedule'
 import MoreVertIcon from '@mui/icons-material/MoreVert'
 
@@ -84,6 +86,7 @@ export function MatchesPage() {
   const [seededResultsCsv, setSeededResultsCsv] = useState<string | null>(null)
   const [seededResultsLabel, setSeededResultsLabel] = useState<string | null>(null)
   const [importScheduleOpen, setImportScheduleOpen] = useState(false)
+  const [quickEntryOpen, setQuickEntryOpen] = useState(false)
   const [importResultsMsg, setImportResultsMsg] = useState<string | null>(null)
   const [clearError, setClearError] = useState<string | null>(null)
   const [matchToDelete, setMatchToDelete] = useState<MatchListItem | null>(null)
@@ -433,6 +436,15 @@ export function MatchesPage() {
             </Button>
             <Button
               variant="outlined"
+              startIcon={<GridOnIcon />}
+              onClick={() => setQuickEntryOpen(true)}
+              disabled={seasonClosed || !seasonId}
+              fullWidth
+            >
+              {t('matches.quickEntry')}
+            </Button>
+            <Button
+              variant="outlined"
               startIcon={<MoreVertIcon />}
               onClick={(e) => setActionsAnchor(e.currentTarget)}
               disabled={!seasonId}
@@ -518,6 +530,14 @@ export function MatchesPage() {
               disabled={seasonClosed || !seasonId}
             >
               {t('matches.importResultsImage')}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<GridOnIcon />}
+              onClick={() => setQuickEntryOpen(true)}
+              disabled={seasonClosed || !seasonId}
+            >
+              {t('matches.quickEntry')}
             </Button>
             <Button
               variant="outlined"
@@ -699,6 +719,24 @@ export function MatchesPage() {
           }}
         />
         </>
+      )}
+      {leagueId && (
+        <QuickResultEntryDialog
+          open={quickEntryOpen}
+          onClose={() => setQuickEntryOpen(false)}
+          leagueId={leagueId}
+          seasons={seasons}
+          divisions={divisions}
+          initialSeasonId={seasonId}
+          initialDivisionId={divisionId}
+          initialRound={round}
+          onSaved={(summary) => {
+            setImportResultsMsg(summary)
+            window.setTimeout(() => {
+              document.getElementById('import-results-summary')?.scrollIntoView({ block: 'center' })
+            }, 0)
+          }}
+        />
       )}
       {leagueId && seasonId && (
         <ImportScheduleModal
