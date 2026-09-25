@@ -13,7 +13,7 @@ public class LeagueAdsViewComponent : ViewComponent
         _leagues = leagues;
     }
 
-    public async Task<IViewComponentResult> InvokeAsync(string slot)
+    public async Task<IViewComponentResult> InvokeAsync(string slot, string? variant = null)
     {
         if (string.IsNullOrWhiteSpace(slot))
             return Content(string.Empty);
@@ -32,6 +32,7 @@ public class LeagueAdsViewComponent : ViewComponent
         if (matches.Count == 0)
             return Content(string.Empty);
 
+        ViewData["AdVariant"] = variant;
         return View("~/Views/Shared/V2/_LeagueAds.cshtml", matches);
     }
 }

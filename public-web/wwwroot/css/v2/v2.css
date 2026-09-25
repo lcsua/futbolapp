@@ -5115,14 +5115,28 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   gap: 0.55rem;
 }
 
-.v2-ads__label {
+.v2-ads--page-top {
+  width: 100%;
   margin: 0;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--v2-text-secondary);
-  line-height: 1.2;
+  background: #fff;
+}
+
+.v2-ads--page-top .v2-ad {
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+}
+
+.v2-ads--page-top .v2-ad img {
+  max-height: 4.5rem;
+  object-fit: cover;
+  background: #fff;
+}
+
+@media (min-width: 768px) {
+  .v2-ads--page-top .v2-ad img {
+    max-height: 6.25rem;
+  }
 }
 
 .v2-ad {

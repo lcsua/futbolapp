@@ -1,6 +1,8 @@
 @model IReadOnlyList<PublicWeb.Models.Public.PublicAdvertisementViewModel>
-<aside class="v2-ads" aria-label="Publicidad">
-    <p class="v2-ads__label">Publicidad</p>
+@{
+    var isPageTop = string.Equals(ViewData["AdVariant"] as string, "page-top", StringComparison.Ordinal);
+}
+<aside class="v2-ads@(isPageTop ? " v2-ads--page-top" : null)" aria-label="Publicidad">
     @foreach (var ad in Model)
     {
         var desktop = string.IsNullOrWhiteSpace(ad.DesktopImageUrl) ? null : ad.DesktopImageUrl;
@@ -19,7 +21,7 @@
                     {
                         <source media="(max-width: 767px)" srcset="@mobile" />
                     }
-                    <img src="@image" alt="@alt" loading="lazy" decoding="async" />
+                    <img src="@image" alt="@alt" loading="@(isPageTop ? "eager" : "lazy")" decoding="async" />
                 </picture>
             </a>
         }
@@ -31,7 +33,7 @@
                     {
                         <source media="(max-width: 767px)" srcset="@mobile" />
                     }
-                    <img src="@image" alt="@alt" loading="lazy" decoding="async" />
+                    <img src="@image" alt="@alt" loading="@(isPageTop ? "eager" : "lazy")" decoding="async" />
                 </picture>
             </div>
         }
