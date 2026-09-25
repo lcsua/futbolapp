@@ -329,6 +329,7 @@
       "slots": {
         "leagueTop": "Superior de liga",
         "leagueMiddle": "Sección intermedia",
+        "pageTop": "Tope de página",
         "resultsFixture": "Resultados / Fixture"
       },
       "fields": {
