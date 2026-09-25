@@ -5144,7 +5144,7 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 
   .v2-league-hero__ad:has(.v2-ad) {
     display: block;
-    width: min(100% - 2.5rem, 56rem);
+    width: min(100% - 1.5rem, var(--v2-max));
     margin: 0.15rem auto 0.85rem;
   }
 
@@ -5163,21 +5163,11 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 
   .v2-ads--in-hero .v2-ad img {
     width: 100%;
-    height: 11.5rem;
-    max-height: none;
-    object-fit: cover;
+    height: auto;
+    max-height: 18rem;
+    object-fit: contain;
     object-position: center;
     background: transparent;
-  }
-}
-
-@media (min-width: 992px) {
-  .v2-league-hero__ad:has(.v2-ad) {
-    width: min(100% - 3rem, 64rem);
-  }
-
-  .v2-ads--in-hero .v2-ad img {
-    height: 13.5rem;
   }
 }
 
