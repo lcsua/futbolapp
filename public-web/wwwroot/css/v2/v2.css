@@ -5133,9 +5133,51 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   background: #fff;
 }
 
+.v2-league-hero__ad {
+  display: none;
+}
+
 @media (min-width: 768px) {
-  .v2-ads--page-top .v2-ad img {
-    max-height: 6.25rem;
+  body:has(.v2-league-hero) > .v2-ads--page-top {
+    display: none;
+  }
+
+  .v2-league-hero__ad:has(.v2-ad) {
+    display: block;
+    width: min(100% - 2.5rem, 56rem);
+    margin: 0.15rem auto 0.85rem;
+  }
+
+  .v2-ads--in-hero {
+    width: 100%;
+    margin: 0;
+    background: transparent;
+  }
+
+  .v2-ads--in-hero .v2-ad {
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  }
+
+  .v2-ads--in-hero .v2-ad img {
+    width: 100%;
+    height: 11.5rem;
+    max-height: none;
+    object-fit: cover;
+    object-position: center;
+    background: transparent;
+  }
+}
+
+@media (min-width: 992px) {
+  .v2-league-hero__ad:has(.v2-ad) {
+    width: min(100% - 3rem, 64rem);
+  }
+
+  .v2-ads--in-hero .v2-ad img {
+    height: 13.5rem;
   }
 }
 

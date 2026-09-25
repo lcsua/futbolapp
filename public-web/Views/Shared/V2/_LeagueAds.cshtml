@@ -1,8 +1,11 @@
 @model IReadOnlyList<PublicWeb.Models.Public.PublicAdvertisementViewModel>
 @{
-    var isPageTop = string.Equals(ViewData["AdVariant"] as string, "page-top", StringComparison.Ordinal);
+    var adVariant = ViewData["AdVariant"] as string;
+    var isPageTop = string.Equals(adVariant, "page-top", StringComparison.Ordinal);
+    var isInHero = string.Equals(adVariant, "in-hero", StringComparison.Ordinal);
+    var isAboveFold = isPageTop || isInHero;
 }
-<aside class="v2-ads@(isPageTop ? " v2-ads--page-top" : null)" aria-label="Publicidad">
+<aside class="v2-ads@(isPageTop ? " v2-ads--page-top" : null)@(isInHero ? " v2-ads--in-hero" : null)" aria-label="Publicidad">
     @foreach (var ad in Model)
     {
         var desktop = string.IsNullOrWhiteSpace(ad.DesktopImageUrl) ? null : ad.DesktopImageUrl;
@@ -21,7 +24,7 @@
                     {
                         <source media="(max-width: 767px)" srcset="@mobile" />
                     }
-                    <img src="@image" alt="@alt" loading="@(isPageTop ? "eager" : "lazy")" decoding="async" />
+                    <img src="@image" alt="@alt" loading="@(isAboveFold ? "eager" : "lazy")" decoding="async" />
                 </picture>
             </a>
         }
@@ -33,7 +36,7 @@
                     {
                         <source media="(max-width: 767px)" srcset="@mobile" />
                     }
-                    <img src="@image" alt="@alt" loading="@(isPageTop ? "eager" : "lazy")" decoding="async" />
+                    <img src="@image" alt="@alt" loading="@(isAboveFold ? "eager" : "lazy")" decoding="async" />
                 </picture>
             </div>
         }

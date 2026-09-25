@@ -24,6 +24,9 @@
     string TeamLabel(int n) => n == 1 ? "equipo" : "equipos";
 }
 <header class="v2-league-hero">
+    <div class="v2-league-hero__ad">
+        @await Component.InvokeAsync("LeagueAds", new { slot = "PageTop", variant = "in-hero" })
+    </div>
     <div class="v2-league-hero__inner">
         @if (league != null)
         {
