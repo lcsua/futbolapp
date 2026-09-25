@@ -328,6 +328,7 @@
       "slots": {
         "leagueTop": "League top",
         "leagueMiddle": "Middle section",
+        "pageTop": "Top of page",
         "resultsFixture": "Results / Fixture"
       },
       "fields": {

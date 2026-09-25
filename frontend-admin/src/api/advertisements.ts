@@ -4,6 +4,7 @@ export const AdvertisementSlot = {
   LeagueTop: 1,
   LeagueMiddle: 2,
   ResultsFixture: 3,
+  PageTop: 4,
 } as const
 
 export type AdvertisementSlot = (typeof AdvertisementSlot)[keyof typeof AdvertisementSlot]
@@ -48,6 +49,7 @@ export function normalizeAdvertisementSlot(slot: unknown): AdvertisementSlot {
   if (slot === AdvertisementSlot.ResultsFixture || slot === 'ResultsFixture' || slot === '3') {
     return AdvertisementSlot.ResultsFixture
   }
+  if (slot === AdvertisementSlot.PageTop || slot === 'PageTop' || slot === '4') return AdvertisementSlot.PageTop
   return AdvertisementSlot.LeagueTop
 }
 
