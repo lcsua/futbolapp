@@ -32,7 +32,7 @@ public sealed class SitemapDocumentService
 
     public async Task<string> GetSitemapXmlAsync(CancellationToken cancellationToken = default)
     {
-        const string cacheKey = "seo_sitemap_xml_v1";
+        const string cacheKey = "seo_sitemap_xml_v3";
         if (_cache.TryGetValue(cacheKey, out string? cached) && !string.IsNullOrEmpty(cached))
             return cached;
 
@@ -80,7 +80,8 @@ public sealed class SitemapDocumentService
         var list = new List<SitemapUrlEntry>
         {
             new() { Loc = _urls.Absolute("/") },
-            new() { Loc = _urls.Absolute("/ligas") }
+            new() { Loc = _urls.Absolute("/ligas") },
+            new() { Loc = _urls.Absolute("/contacto") }
         };
 
         var payload = await FetchBackendSitemapAsync(cancellationToken);
@@ -105,6 +106,19 @@ public sealed class SitemapDocumentService
                         LastMod = team.UpdatedAtUtc ?? leagueMod
                     });
                 }
+            }
+        }
+
+        if (payload?.Matches != null)
+        {
+            foreach (var match in payload.Matches)
+            {
+                if (string.IsNullOrWhiteSpace(match.Slug)) continue;
+                list.Add(new SitemapUrlEntry
+                {
+                    Loc = _urls.Match(match.Slug),
+                    LastMod = match.UpdatedAtUtc
+                });
             }
         }
 
@@ -161,6 +175,7 @@ public sealed class SitemapDocumentService
     {
         public DateTime GeneratedAtUtc { get; set; }
         public List<BackendSitemapLeagueDto> Leagues { get; set; } = new();
+        public List<BackendSitemapMatchDto> Matches { get; set; } = new();
     }
 
     private sealed class BackendSitemapLeagueDto
@@ -171,6 +186,12 @@ public sealed class SitemapDocumentService
     }
 
     private sealed class BackendSitemapTeamDto
+    {
+        public string Slug { get; set; } = "";
+        public DateTime? UpdatedAtUtc { get; set; }
+    }
+
+    private sealed class BackendSitemapMatchDto
     {
         public string Slug { get; set; } = "";
         public DateTime? UpdatedAtUtc { get; set; }

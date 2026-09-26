@@ -58,7 +58,12 @@ public class PublicLeagueService
             Name = league.Name,
             Slug = league.Slug,
             Country = league.Country,
-            Description = league.Description ?? string.Empty
+            Description = league.Description ?? string.Empty,
+            LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl,
+            PrimaryColor = string.IsNullOrWhiteSpace(league.PrimaryColor) ? null : league.PrimaryColor,
+            FontKey = string.IsNullOrWhiteSpace(league.FontKey) ? null : league.FontKey,
+            HeroImageUrl = string.IsNullOrWhiteSpace(league.HeroImageUrl) ? null : league.HeroImageUrl,
+            TeamHeroImageUrl = string.IsNullOrWhiteSpace(league.TeamHeroImageUrl) ? null : league.TeamHeroImageUrl
         };
     }
 
@@ -131,7 +136,7 @@ public class PublicLeagueService
                         AwayScore = match.AwayScore,
                         HomeTeam = new TeamPublicDto { Id = match.HomeTeamId, Name = match.HomeTeamName ?? "Local", Slug = match.HomeTeamId.ToString() },
                         AwayTeam = new TeamPublicDto { Id = match.AwayTeamId, Name = match.AwayTeamName ?? "Visitante", Slug = match.AwayTeamId.ToString() },
-                        Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : DateTime.UtcNow,
+                        Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : default,
                         FieldName = string.IsNullOrWhiteSpace(match.FieldName) ? null : match.FieldName.Trim()
                     });
                 }
@@ -169,7 +174,7 @@ public class PublicLeagueService
                         Status = match.Status,
                         HomeTeam = new TeamPublicDto { Id = match.HomeTeamId, Name = match.HomeTeamName ?? "Local", Slug = match.HomeTeamId.ToString() },
                         AwayTeam = new TeamPublicDto { Id = match.AwayTeamId, Name = match.AwayTeamName ?? "Visitante", Slug = match.AwayTeamId.ToString() },
-                        Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : DateTime.UtcNow,
+                        Kickoff = DateTime.TryParse(match.MatchDate + " " + match.KickoffTime, out var dt) ? dt : default,
                         FieldName = string.IsNullOrWhiteSpace(match.FieldName) ? null : match.FieldName.Trim()
                     });
                 }

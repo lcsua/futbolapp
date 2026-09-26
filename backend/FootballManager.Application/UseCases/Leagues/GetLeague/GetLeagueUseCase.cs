@@ -39,7 +39,19 @@ namespace FootballManager.Application.UseCases.Leagues.GetLeague
                 throw new KeyNotFoundException($"League {request.LeagueId} not found.");
             }
 
-            var leagueDto = new LeagueDto(league.Id, league.Name, league.Slug, league.Country, league.Description ?? string.Empty, league.LogoUrl ?? string.Empty, league.IsPublic, league.IsActive);
+            var leagueDto = new LeagueDto(
+                league.Id,
+                league.Name,
+                league.Slug,
+                league.Country,
+                league.Description ?? string.Empty,
+                league.LogoUrl ?? string.Empty,
+                league.IsPublic,
+                league.IsActive,
+                league.PrimaryColor,
+                league.FontKey,
+                league.HeroImageUrl,
+                league.TeamHeroImageUrl);
             return new GetLeagueResponse(leagueDto);
         }
     }

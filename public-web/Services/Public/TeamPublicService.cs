@@ -1,3 +1,4 @@
+using PublicWeb.Helpers;
 using PublicWeb.Models.Public;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Caching.Memory;
@@ -45,6 +46,11 @@ public class TeamPublicService
             model = await client.GetFromJsonAsync<TeamDetailViewModel>(path);
             if (model != null)
             {
+                var seasonSlug = model.Season?.Slug;
+                foreach (var match in model.NextMatches)
+                    MatchSlugHelper.ApplySeasonSlug(match, seasonSlug);
+                foreach (var match in model.LastResults)
+                    MatchSlugHelper.ApplySeasonSlug(match, seasonSlug);
                 _cache.Set(cacheKey, model, TimeSpan.FromMinutes(2));
                 return model;
             }

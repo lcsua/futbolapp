@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.Helpers;
 using FootballManager.Domain.Entities;
 using FootballManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -25,12 +26,74 @@ namespace FootballManager.Infrastructure.Repositories
                 .Include(f => f.League)
                 .Include(f => f.Season)
                 .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
-                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team)
-                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team)
+                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
                 .Include(f => f.Field)
                 .Include(f => f.Result)
                 .Include(f => f.Incidents).ThenInclude(i => i.Team)
                 .SingleOrDefaultAsync(f => f.Id == id, cancellationToken);
+        }
+
+        public async Task<Fixture?> FindPublicByTeamSlugsAsync(
+            string homeSlug,
+            string awayAndSeason,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(homeSlug) || string.IsNullOrWhiteSpace(awayAndSeason))
+                return null;
+
+            var remainder = awayAndSeason.Trim().ToLowerInvariant();
+            var candidates = await _context.Fixtures
+                .Include(f => f.League)
+                .Include(f => f.Season)
+                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Where(f => f.League != null && f.League.IsPublic)
+                .Where(f => f.HomeTeamDivisionSeason.Team.Slug == homeSlug)
+                .ToListAsync(cancellationToken);
+
+            Fixture? best = null;
+            var bestScore = -1;
+            var bestAwayLen = -1;
+
+            foreach (var fixture in candidates)
+            {
+                var awaySlug = fixture.AwayTeamDivisionSeason?.Team?.Slug;
+                if (string.IsNullOrWhiteSpace(awaySlug))
+                    continue;
+
+                var seasonSlug = SlugGenerator.Generate(fixture.Season?.Name ?? string.Empty);
+                var withSeason = string.IsNullOrEmpty(seasonSlug) ? awaySlug : $"{awaySlug}-{seasonSlug}";
+                int score;
+                if (remainder.Equals(withSeason, StringComparison.OrdinalIgnoreCase))
+                    score = 2;
+                else if (remainder.Equals(awaySlug, StringComparison.OrdinalIgnoreCase))
+                    score = 1;
+                else
+                    continue;
+
+                var awayLen = awaySlug.Length;
+                var better = score > bestScore
+                    || (score == bestScore && awayLen > bestAwayLen)
+                    || (score == bestScore && awayLen == bestAwayLen && best != null && ComparePublicMatch(fixture, best) < 0);
+                if (better || best == null)
+                {
+                    best = fixture;
+                    bestScore = score;
+                    bestAwayLen = awayLen;
+                }
+            }
+
+            return best;
+        }
+
+        private static int ComparePublicMatch(Fixture left, Fixture right)
+        {
+            var active = (right.Season?.IsActive == true).CompareTo(left.Season?.IsActive == true);
+            if (active != 0) return active;
+            var date = (right.MatchDate ?? DateOnly.MinValue).CompareTo(left.MatchDate ?? DateOnly.MinValue);
+            if (date != 0) return date;
+            return (right.StartTime ?? TimeOnly.MinValue).CompareTo(left.StartTime ?? TimeOnly.MinValue);
         }
 
         public async Task<int> CountBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default)
@@ -49,8 +112,8 @@ namespace FootballManager.Infrastructure.Repositories
         {
             return await _context.Fixtures
                 .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
-                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team)
-                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team)
+                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
                 .Include(f => f.Field)
                 .Include(f => f.Result)
                 .Where(f => f.SeasonId == seasonId)
@@ -64,8 +127,8 @@ namespace FootballManager.Infrastructure.Repositories
         {
             var query = _context.Fixtures
                 .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
-                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team)
-                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team)
+                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
                 .Include(f => f.Field)
                 .Include(f => f.Result)
                 .Where(f => f.SeasonId == seasonId);

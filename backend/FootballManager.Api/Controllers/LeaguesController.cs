@@ -564,7 +564,7 @@ namespace FootballManager.Api.Controllers
         }
 
         /// <summary>
-        /// Converts team logo/photo data-URLs stored in the DB into uploaded files + thumbnails.
+        /// Converts team and club logo data-URLs into uploaded files, then backfills missing .thumb.webp files.
         /// </summary>
         [HttpPost("{leagueId}/uploads/images/materialize-data-urls")]
         [RequestSizeLimit(50 * 1024 * 1024)]
@@ -577,7 +577,9 @@ namespace FootballManager.Api.Controllers
             if (!hasAccess) return Forbid();
 
             var (converted, skipped, failed) = await _leagueLogoMigrationService.MaterializeDataUrlLogosAsync(leagueId, Request, cancellationToken);
-            return Ok(new { converted, skipped, failed });
+            var imagesDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "leagues", leagueId.ToString(), "images");
+            var (thumbsCreated, thumbsSkipped, thumbsFailed) = await LogoThumbnailService.BackfillDirectoryAsync(imagesDir, cancellationToken);
+            return Ok(new { converted, skipped, failed, thumbsCreated, thumbsSkipped, thumbsFailed });
         }
 
         [HttpPut("{leagueId}/divisions/{divisionId}")]

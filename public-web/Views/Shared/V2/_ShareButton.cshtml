@@ -8,8 +8,9 @@
         ?? "/";
     var shareUrl = ViewData["ShareUrl"] as string ?? seoUrls.Absolute(sharePath);
     var compact = ViewData["ShareCompact"] as bool? == true;
+    var iconOnly = ViewData["ShareIconOnly"] as bool? == true;
 }
-<div class="v2-share @(compact ? "v2-share--compact" : null)" data-v2-share>
+<div class="v2-share @(compact ? "v2-share--compact" : null) @(iconOnly ? "v2-share--icon" : null)" data-v2-share>
     <button type="button"
             class="v2-share-btn"
             data-v2-share-trigger
@@ -20,7 +21,10 @@
             aria-expanded="false"
             aria-label="Compartir">
         <span class="v2-ui-icon v2-ui-icon--share v2-share-btn__icon" aria-hidden="true"></span>
-        <span class="v2-share-btn__label">Compartir</span>
+        @if (!iconOnly)
+        {
+            <span class="v2-share-btn__label">Compartir</span>
+        }
     </button>
     <div class="v2-share-menu" data-v2-share-menu hidden role="menu" aria-label="Opciones para compartir">
         <button type="button" class="v2-share-menu__item" data-v2-share-whatsapp role="menuitem">

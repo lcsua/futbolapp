@@ -33,9 +33,12 @@ namespace FootballManager.Infrastructure.Persistence
         public DbSet<User> Users { get; set; }
         public DbSet<UserLeague> UserLeagues { get; set; }
         public DbSet<Role> Roles { get; set; }
+        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<Standing> Standings { get; set; }
         public DbSet<LeagueDocumentCategory> LeagueDocumentCategories { get; set; }
         public DbSet<LeagueDocument> LeagueDocuments { get; set; }
+        public DbSet<Advertisement> Advertisements { get; set; }
         public DbSet<TeamNameAlias> TeamNameAliases { get; set; }
         public DbSet<PushSubscription> PushSubscriptions { get; set; }
         public DbSet<PushFollow> PushFollows { get; set; }

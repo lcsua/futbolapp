@@ -3,6 +3,7 @@ import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextF
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Club } from '../api/types'
 import { teamsService } from '../api/teams'
+import { CrestImg } from './CrestImg'
 
 interface EditClubDialogProps {
   open: boolean
@@ -69,6 +70,14 @@ export function EditClubDialog({ open, leagueId, club, onClose }: EditClubDialog
           onChange={(e) => setLogoUrl(e.target.value)}
           disabled={updateMutation.isPending}
         />
+        {logoUrl.trim() ? (
+          <CrestImg
+            src={logoUrl.trim()}
+            alt=""
+            size={64}
+            sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}
+          />
+        ) : null}
         <div>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
             Replace logo by uploading file

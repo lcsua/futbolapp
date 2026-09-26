@@ -4,7 +4,9 @@ using FootballManager.Api.Services;
 using FootballManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using FootballManager.Domain.Entities;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.UseCases.Seasons.GetStandings;
+using FootballManager.Domain.Enums;
 
 namespace FootballManager.Api.Services.Public;
 
@@ -52,12 +54,14 @@ public class PublicStructuredService
 
         var bySlug = await _db.Teams
             .AsNoTracking()
+            .Include(t => t.Club)
             .FirstOrDefaultAsync(t => t.LeagueId == leagueId && t.Slug == targetSlug, cancellationToken);
         if (bySlug != null) return bySlug;
 
         // Fallback for older links that used NormalizeSlug(Name) instead of persisted Team.Slug
         var teams = await _db.Teams
             .AsNoTracking()
+            .Include(t => t.Club)
             .Where(t => t.LeagueId == leagueId)
             .ToListAsync(cancellationToken);
 
@@ -76,16 +80,17 @@ public class PublicStructuredService
             return new TeamPublicDto();
         }
 
+        var logo = team.EffectiveLogoUrl;
         return new TeamPublicDto
         {
             Id = team.Id,
-            Name = team.DisplayName,
-            Slug = string.IsNullOrWhiteSpace(team.Slug) ? SoftNormalizeTeamSlug(team.DisplayName) : team.Slug,
+            Name = team.CompetitionName,
+            Slug = string.IsNullOrWhiteSpace(team.Slug) ? SoftNormalizeTeamSlug(team.CompetitionName) : team.Slug,
             ShortName = string.IsNullOrWhiteSpace(team.ShortName)
-                ? team.DisplayName.Substring(0, Math.Min(team.DisplayName.Length, 3)).ToUpperInvariant()
+                ? team.CompetitionName.Substring(0, Math.Min(team.CompetitionName.Length, 3)).ToUpperInvariant()
                 : team.ShortName,
-            LogoUrl = string.IsNullOrWhiteSpace(team.LogoUrl) ? null : team.LogoUrl,
-            LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(team.LogoUrl)
+            LogoUrl = string.IsNullOrWhiteSpace(logo) ? null : logo,
+            LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(logo)
         };
     }
 
@@ -93,6 +98,7 @@ public class PublicStructuredService
     {
         return await _db.Teams
             .AsNoTracking()
+            .Include(t => t.Club)
             .Where(t => t.LeagueId == leagueId)
             .ToDictionaryAsync(t => t.Id, cancellationToken);
     }
@@ -110,7 +116,11 @@ public class PublicStructuredService
                 Slug = l.Slug,
                 Country = l.Country ?? string.Empty,
                 Description = l.Description ?? string.Empty,
-                LogoUrl = string.IsNullOrWhiteSpace(l.LogoUrl) ? null : l.LogoUrl
+                LogoUrl = string.IsNullOrWhiteSpace(l.LogoUrl) ? null : l.LogoUrl,
+                PrimaryColor = string.IsNullOrWhiteSpace(l.PrimaryColor) ? null : l.PrimaryColor,
+                FontKey = string.IsNullOrWhiteSpace(l.FontKey) ? null : l.FontKey,
+                HeroImageUrl = string.IsNullOrWhiteSpace(l.HeroImageUrl) ? null : l.HeroImageUrl,
+                TeamHeroImageUrl = string.IsNullOrWhiteSpace(l.TeamHeroImageUrl) ? null : l.TeamHeroImageUrl
             })
             .ToListAsync(cancellationToken);
     }
@@ -152,6 +162,40 @@ public class PublicStructuredService
                 .OrderBy(x => x.Slug)
                 .ToList());
 
+        var fixtures = await _db.Set<Fixture>()
+            .AsNoTracking()
+            .Where(f => leagueIds.Contains(f.LeagueId) &&
+                        f.Season.IsActive &&
+                        (f.Status == Domain.Enums.MatchStatus.COMPLETED ||
+                         f.Status == Domain.Enums.MatchStatus.PLAYED ||
+                         f.Status == Domain.Enums.MatchStatus.SUSPENDED))
+            .Select(f => new
+            {
+                f.UpdatedAt,
+                HomeSlug = f.HomeTeamDivisionSeason.Team.Slug,
+                HomeName = f.HomeTeamDivisionSeason.Team.Name,
+                AwaySlug = f.AwayTeamDivisionSeason.Team.Slug,
+                AwayName = f.AwayTeamDivisionSeason.Team.Name,
+                SeasonName = f.Season.Name
+            })
+            .ToListAsync(cancellationToken);
+
+        var matchDtos = fixtures
+            .Select(f =>
+            {
+                var home = string.IsNullOrWhiteSpace(f.HomeSlug) ? f.HomeName : f.HomeSlug;
+                var away = string.IsNullOrWhiteSpace(f.AwaySlug) ? f.AwayName : f.AwaySlug;
+                return new SitemapMatchDto
+                {
+                    Slug = SlugGenerator.GenerateMatchSlug(home, away, f.SeasonName),
+                    UpdatedAtUtc = f.UpdatedAt == default ? null : f.UpdatedAt
+                };
+            })
+            .Where(m => !string.IsNullOrWhiteSpace(m.Slug))
+            .GroupBy(m => m.Slug, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(x => x.UpdatedAtUtc).First())
+            .ToList();
+
         return new SitemapPublicDto
         {
             GeneratedAtUtc = DateTime.UtcNow,
@@ -166,7 +210,8 @@ public class PublicStructuredService
                         UpdatedAtUtc = t.UpdatedAt == default ? null : t.UpdatedAt
                     }).ToList()
                     : new List<SitemapTeamDto>()
-            }).ToList()
+            }).ToList(),
+            Matches = matchDtos
         };
     }
 
@@ -175,15 +220,7 @@ public class PublicStructuredService
         var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
         if (league == null) return null;
 
-        return new LeaguePublicDto
-        {
-            Id = league.Id,
-            Name = league.Name,
-            Slug = league.Slug,
-            Country = league.Country ?? string.Empty,
-            Description = league.Description ?? string.Empty,
-            LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl
-        };
+        return MapLeague(league);
     }
 
     public async Task<TeamSummaryPublicDto?> GetTeamSummaryAsync(
@@ -211,15 +248,7 @@ public class PublicStructuredService
         var response = new TeamSummaryPublicDto
         {
             Team = MapTeamDto(team),
-            League = new LeaguePublicDto
-            {
-                Id = league.Id,
-                Name = league.Name,
-                Slug = league.Slug,
-                Country = league.Country ?? string.Empty,
-                Description = league.Description ?? string.Empty,
-                LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl
-            },
+            League = MapLeague(league),
             Season = new SeasonPublicDto
             {
                 Id = season.Id,
@@ -236,8 +265,8 @@ public class PublicStructuredService
         response.ActiveSeasons.Add(response.Season);
 
         var fixtures = await _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Result)
             .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
             .Include(f => f.Field)
@@ -275,8 +304,8 @@ public class PublicStructuredService
             .ToList();
 
         // Include crest URLs so V2 team Resumen/Partidos can render TeamBadge logos.
-        response.NextMatches = upcoming.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true)).ToList();
-        response.LastResults = recent.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true)).ToList();
+        response.NextMatches = upcoming.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
+        response.LastResults = recent.Select(f => MapToMatchDto(f, league.Slug, includeLogos: true, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
 
         var standingsReq = new GetStandingsRequest { LeagueId = league.Id, SeasonId = season.Id, IsPublic = true };
         var standingsRes = await _getStandingsUseCase.ExecuteAsync(standingsReq, cancellationToken);
@@ -298,6 +327,41 @@ public class PublicStructuredService
                 DivisionName = division.DivisionName
             };
             break;
+        }
+
+        var resultFixtureIds = fixtures
+            .Where(f => CountsAsPublishedResult(f.Status))
+            .Select(f => f.Id)
+            .ToList();
+        if (resultFixtureIds.Count > 0)
+        {
+            var goalRows = await _db.Set<MatchIncident>()
+                .AsNoTracking()
+                .Where(i =>
+                    i.TeamId == team.Id &&
+                    i.IncidentType == MatchIncidentType.Goal &&
+                    resultFixtureIds.Contains(i.FixtureId))
+                .Select(i => new
+                {
+                    i.PlayerId,
+                    i.PlayerName,
+                    Nickname = i.Player != null ? i.Player.Nickname : null,
+                    FirstName = i.Player != null ? i.Player.FirstName : null,
+                    LastName = i.Player != null ? i.Player.LastName : null
+                })
+                .ToListAsync(cancellationToken);
+
+            response.Scorers = GoalScorerAggregator
+                .Aggregate(goalRows.Select(g => (
+                    g.PlayerId,
+                    GoalScorerAggregator.ResolveDisplayName(g.PlayerName, g.Nickname, g.FirstName, g.LastName))))
+                .Select(s => new TeamScorerPublicDto
+                {
+                    PlayerId = s.PlayerId,
+                    PlayerName = s.PlayerName,
+                    Goals = s.Goals
+                })
+                .ToList();
         }
 
         return response;
@@ -376,8 +440,8 @@ public class PublicStructuredService
         if (divSeason == null) return new List<MatchPublicDto>();
 
         var fixtures = await _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Result)
             .Include(f => f.Field)
             .Where(f => f.DivisionSeasonId == divSeason.Id &&
@@ -388,7 +452,7 @@ public class PublicStructuredService
             .Take(50)
             .ToListAsync(cancellationToken);
 
-        return fixtures.Select(f => MapToMatchDto(f, league.Slug)).ToList();
+        return fixtures.Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
     }
 
     public async Task<List<MatchPublicDto>> GetDivisionMatchesAsync(string leagueSlug, string seasonSlug, string divisionSlug, CancellationToken cancellationToken = default)
@@ -406,8 +470,8 @@ public class PublicStructuredService
         if (divSeason == null) return new List<MatchPublicDto>();
 
         var fixtures = await _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Field)
             .Where(f => f.DivisionSeasonId == divSeason.Id &&
                         f.Status != Domain.Enums.MatchStatus.COMPLETED &&
@@ -418,10 +482,10 @@ public class PublicStructuredService
             .Take(50)
             .ToListAsync(cancellationToken);
 
-        return fixtures.Select(f => MapToMatchDto(f, league.Slug)).ToList();
+        return fixtures.Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
     }
 
-    private MatchPublicDto MapToMatchDto(Fixture match, string? leagueSlug = null, bool includeLogos = true)
+    private MatchPublicDto MapToMatchDto(Fixture match, string? leagueSlug = null, bool includeLogos = true, string? seasonSlug = null)
     {
         var homeTeam = match.HomeTeamDivisionSeason?.Team;
         var awayTeam = match.AwayTeamDivisionSeason?.Team;
@@ -441,6 +505,10 @@ public class PublicStructuredService
             away.LogoThumbUrl = null;
         }
 
+        var resolvedSeason = !string.IsNullOrWhiteSpace(seasonSlug)
+            ? seasonSlug
+            : SlugHelper.NormalizeSlug(match.Season?.Name);
+
         return new MatchPublicDto
         {
             Id = match.Id,
@@ -448,9 +516,10 @@ public class PublicStructuredService
             HomeScore = match.Result?.HomeTeamGoals,
             AwayScore = match.Result?.AwayTeamGoals,
             LeagueSlug = leagueSlug,
+            SeasonSlug = resolvedSeason,
             HomeTeam = home,
             AwayTeam = away,
-            Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : DateTime.UtcNow,
+            Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : default,
             FieldName = string.IsNullOrWhiteSpace(match.Field?.Name) ? null : match.Field.Name.Trim()
         };
     }
@@ -608,8 +677,8 @@ public class PublicStructuredService
         }
 
         var allFixturesQuery = _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Result)
             .Include(f => f.Field)
             .Where(f => f.SeasonId == season.Id &&
@@ -628,7 +697,7 @@ public class PublicStructuredService
 
         foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
         {
-            var matchesForDiv = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(f => MapToMatchDto(f, league.Slug)).ToList();
+            var matchesForDiv = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
             if (matchesForDiv.Any())
             {
                 var matchdays = matchesForDiv.GroupBy(m => allFixtures.First(f => f.Id == m.Id).RoundNumber)
@@ -667,8 +736,8 @@ public class PublicStructuredService
         }
 
         var seasonFixtures = await _db.Set<Fixture>()
-            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team)
-            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team)
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Result)
             .Include(f => f.Field)
             .Where(f => f.SeasonId == season.Id)
@@ -691,7 +760,7 @@ public class PublicStructuredService
             if (round.HasValue)
                 openFixtures = openFixtures.Where(f => f.RoundNumber == round.Value).ToList();
 
-            var matchesForDiv = openFixtures.Select(f => MapToMatchDto(f, league.Slug)).ToList();
+            var matchesForDiv = openFixtures.Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
             if (matchesForDiv.Count == 0 && !round.HasValue)
                 continue;
 
@@ -768,6 +837,23 @@ public class PublicStructuredService
         }
 
         return result;
+    }
+
+    private static LeaguePublicDto MapLeague(League league)
+    {
+        return new LeaguePublicDto
+        {
+            Id = league.Id,
+            Name = league.Name,
+            Slug = league.Slug,
+            Country = league.Country ?? string.Empty,
+            Description = league.Description ?? string.Empty,
+            LogoUrl = string.IsNullOrWhiteSpace(league.LogoUrl) ? null : league.LogoUrl,
+            PrimaryColor = string.IsNullOrWhiteSpace(league.PrimaryColor) ? null : league.PrimaryColor,
+            FontKey = string.IsNullOrWhiteSpace(league.FontKey) ? null : league.FontKey,
+            HeroImageUrl = string.IsNullOrWhiteSpace(league.HeroImageUrl) ? null : league.HeroImageUrl,
+            TeamHeroImageUrl = string.IsNullOrWhiteSpace(league.TeamHeroImageUrl) ? null : league.TeamHeroImageUrl
+        };
     }
 
     private static string ResolvePublicUploadUrl(string? relativePath, string? fileUrl)

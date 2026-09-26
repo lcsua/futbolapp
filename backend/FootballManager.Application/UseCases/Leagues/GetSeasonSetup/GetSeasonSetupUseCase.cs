@@ -104,7 +104,8 @@ namespace FootballManager.Application.UseCases.Leagues.GetSeasonSetup
                 t.DelegateContact,
                 t.PhotoUrl,
                 t.ClubId,
-                t.Club?.Name);
+                t.Club?.Name,
+                t.Club?.LogoUrl);
         }
     }
 }

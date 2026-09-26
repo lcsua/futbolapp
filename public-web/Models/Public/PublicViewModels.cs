@@ -8,6 +8,10 @@ public class LeagueViewModel
     public string Country { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string? LogoUrl { get; set; }
+    public string? PrimaryColor { get; set; }
+    public string? FontKey { get; set; }
+    public string? HeroImageUrl { get; set; }
+    public string? TeamHeroImageUrl { get; set; }
 }
 
 public class TeamViewModel
@@ -48,6 +52,7 @@ public class MatchViewModel
     public int? AwayScore { get; set; }
     public string? MatchDay { get; set; }
     public string? LeagueSlug { get; set; }
+    public string? SeasonSlug { get; set; }
     public string? FieldName { get; set; }
     public int RoundNumber { get; set; }
     public string? DivisionName { get; set; }
@@ -78,12 +83,20 @@ public class StandingSummaryViewModel
     public int GoalDifference => GoalsFor - GoalsAgainst;
 }
 
+public class TeamScorerViewModel
+{
+    public Guid? PlayerId { get; set; }
+    public string PlayerName { get; set; } = string.Empty;
+    public int Goals { get; set; }
+}
+
 public class TeamDetailViewModel
 {
     public TeamViewModel Team { get; set; } = new();
     public LeagueViewModel? League { get; set; }
     public SeasonViewModel? Season { get; set; }
     public StandingSummaryViewModel? Standing { get; set; }
+    public List<TeamScorerViewModel> Scorers { get; set; } = new();
     public List<MatchViewModel> NextMatches { get; set; } = new();
     public List<MatchViewModel> LastResults { get; set; } = new();
     public int PageSize { get; set; } = 5;
@@ -179,6 +192,21 @@ public class LeagueDocumentsPageViewModel
     public LeagueDocumentCategoryViewModel? ActiveCategory { get; set; }
 }
 
+public sealed class HomePageViewModel
+{
+    public List<LeagueViewModel> Leagues { get; init; } = new();
+    public LeagueViewModel? ExampleLeague { get; init; }
+}
+
+public sealed class ContactFormViewModel
+{
+    public string AccessKey { get; init; } = "";
+    public string RedirectUrl { get; init; } = "https://miliga.com.ar/gracias";
+    public int CaptchaA { get; init; }
+    public int CaptchaB { get; init; }
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(AccessKey);
+}
+
 /// <summary>V2 league home composition (portada). Data sliced from existing public endpoints.</summary>
 public class LeagueHomeViewModel
 {
@@ -193,7 +221,7 @@ public class LeagueHomeViewModel
     public string SelectedDivisionSlug { get; set; } = string.Empty;
 }
 
-/// <summary>Optional hero metrics composed from data already loaded for the page.</summary>
+/// <summary>Season-wide hero metrics. Same on every league tab; not filtered by division.</summary>
 public class LeagueHeroStatsViewModel
 {
     public int? DivisionCount { get; set; }

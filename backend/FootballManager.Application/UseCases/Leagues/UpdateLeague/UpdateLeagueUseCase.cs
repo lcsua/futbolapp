@@ -45,6 +45,7 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateLeague
                 throw new ArgumentException("Slug already in use, please choose another one");
 
             league.UpdateDetails(request.Name, request.Country, slug, request.Description ?? string.Empty, request.LogoUrl ?? string.Empty, request.IsPublic, request.IsActive);
+            league.UpdateAppearance(request.PrimaryColor, request.FontKey, request.HeroImageUrl, request.TeamHeroImageUrl);
             _leagueRepository.Update(league);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }

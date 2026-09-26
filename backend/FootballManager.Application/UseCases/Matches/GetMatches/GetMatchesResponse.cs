@@ -42,13 +42,14 @@ public sealed class MatchListItemDto
     public string Status { get; }
     public string KickoffTime { get; }
     public string MatchDate { get; }
+    public Guid? FieldId { get; }
     public string FieldName { get; }
     public string HomeTeamLogoUrl { get; }
     public string AwayTeamLogoUrl { get; }
 
     public MatchListItemDto(Guid id, Guid divisionSeasonId, string divisionName, int roundNumber,
         string homeTeamName, Guid homeTeamId, string awayTeamName, Guid awayTeamId,
-        int? homeScore, int? awayScore, string status, string kickoffTime, string matchDate, string fieldName,
+        int? homeScore, int? awayScore, string status, string kickoffTime, string matchDate, Guid? fieldId, string fieldName,
         string homeTeamLogoUrl = null, string awayTeamLogoUrl = null)
     {
         Id = id;
@@ -64,6 +65,7 @@ public sealed class MatchListItemDto
         Status = status;
         KickoffTime = kickoffTime;
         MatchDate = matchDate;
+        FieldId = fieldId;
         FieldName = fieldName;
         HomeTeamLogoUrl = homeTeamLogoUrl;
         AwayTeamLogoUrl = awayTeamLogoUrl;

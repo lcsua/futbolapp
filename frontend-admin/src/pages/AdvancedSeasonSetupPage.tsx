@@ -24,6 +24,7 @@ import {
   Checkbox,
 } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo'
 import SaveIcon from '@mui/icons-material/Save'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from 'react-router-dom'
@@ -43,6 +44,9 @@ import { CSS } from '@dnd-kit/utilities'
 import { seasonsService, type TeamInSetup } from '../api/seasons'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { QuickCreateTeamForDivisionDialog } from '../components/QuickCreateTeamForDivisionDialog'
+import { ImportCategoryRostersDialog } from '../components/ImportCategoryRostersDialog'
+import { CrestImg } from '../components/CrestImg'
+import { effectiveTeamLogoUrl } from '../utils/teamLogo'
 
 const UNASSIGNED_ID = 'unassigned'
 
@@ -71,23 +75,31 @@ function TeamCardContent({ team, divisionName }: { team: TeamInSetup; divisionNa
     team.clubName ? `Club: ${team.clubName}` : null,
     `Division: ${divisionName}`,
   ].filter(Boolean) as string[]
+  const logo = effectiveTeamLogoUrl(team)
 
   return (
     <Tooltip title={tooltipLines.join(' | ')} arrow>
       <CardContent sx={{ py: 1, px: 1.5, '&:last-child': { pb: 1 } }}>
-        <Typography variant="body2" fontWeight={500}>
-          {getTeamDisplayName(team)}
-        </Typography>
-        {team.clubName ? (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-            Club: {team.clubName}
-          </Typography>
-        ) : null}
-        {team.shortName && (
-          <Typography variant="caption" color="text.secondary">
-            {team.shortName}
-          </Typography>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {logo ? (
+            <CrestImg src={logo} alt="" size={28} />
+          ) : null}
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="body2" fontWeight={500}>
+              {getTeamDisplayName(team)}
+            </Typography>
+            {team.clubName ? (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                Club: {team.clubName}
+              </Typography>
+            ) : null}
+            {team.shortName && (
+              <Typography variant="caption" color="text.secondary">
+                {team.shortName}
+              </Typography>
+            )}
+          </Box>
+        </Box>
       </CardContent>
     </Tooltip>
   )
@@ -249,6 +261,7 @@ export function AdvancedSeasonSetupPage() {
   const [board, setBoard] = useState<{ unassignedTeams: TeamInSetup[]; divisions: BoardDivision[] } | null>(null)
   const [activeTeam, setActiveTeam] = useState<TeamInSetup | null>(null)
   const [copyDialogOpen, setCopyDialogOpen] = useState(false)
+  const [rosterImportOpen, setRosterImportOpen] = useState(false)
   const [sourceSeasonId, setSourceSeasonId] = useState<string>('')
   const [groupByClub, setGroupByClub] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
@@ -497,6 +510,14 @@ export function AdvancedSeasonSetupPage() {
         </FormControl>
         <Button
           variant="outlined"
+          startIcon={<ContentPasteGoIcon />}
+          onClick={() => setRosterImportOpen(true)}
+          disabled={seasonClosed || !seasonId}
+        >
+          Pegar categorías
+        </Button>
+        <Button
+          variant="outlined"
           startIcon={<ContentCopyIcon />}
           onClick={() => setCopyDialogOpen(true)}
           disabled={seasonClosed || !seasonId || seasons.length < 2}
@@ -522,6 +543,26 @@ export function AdvancedSeasonSetupPage() {
         />
       </Box>
 
+      {leagueId && seasonId && (
+        <ImportCategoryRostersDialog
+          open={rosterImportOpen}
+          onClose={() => setRosterImportOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          onImported={({ created, reused, divisionsCreated }) => {
+            const parts = [
+              created ? `${created} creado(s)` : null,
+              reused ? `${reused} reutilizado(s)` : null,
+              divisionsCreated ? `${divisionsCreated} división(es) nueva(s)` : null,
+            ].filter(Boolean)
+            setSnackbar({
+              message: parts.length ? `Categorías: ${parts.join(', ')}.` : 'Importación de categorías completa.',
+              severity: 'success',
+            })
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId] })
+          }}
+        />
+      )}
       {leagueId && seasonId && quickCreateDivision && (
         <QuickCreateTeamForDivisionDialog
           open

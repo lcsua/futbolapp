@@ -26,6 +26,7 @@ namespace FootballManager.Infrastructure.Repositories
                 .Include(ds => ds.Division)
                 .Include(ds => ds.TeamAssignments)
                 .ThenInclude(ta => ta.Team)
+                .ThenInclude(t => t.Club)
                 .SingleOrDefaultAsync(ds => ds.Id == id, cancellationToken);
         }
 
@@ -40,6 +41,7 @@ namespace FootballManager.Infrastructure.Repositories
             return await _context.DivisionSeasons
                 .Include(ds => ds.TeamAssignments)
                 .ThenInclude(ta => ta.Team)
+                .ThenInclude(t => t.Club)
                 .Include(ds => ds.Division)
                 .Include(ds => ds.Season)
                 .SingleOrDefaultAsync(ds => ds.SeasonId == seasonId && ds.DivisionId == divisionId, cancellationToken);
@@ -51,6 +53,7 @@ namespace FootballManager.Infrastructure.Repositories
                 .Include(ds => ds.Division)
                 .Include(ds => ds.TeamAssignments)
                 .ThenInclude(ta => ta.Team)
+                .ThenInclude(t => t.Club)
                 .Where(ds => ds.SeasonId == seasonId)
                 .OrderBy(ds => ds.Division.Name)
                 .ToListAsync(cancellationToken);

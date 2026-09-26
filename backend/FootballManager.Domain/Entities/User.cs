@@ -25,9 +25,9 @@ namespace FootballManager.Domain.Entities
         {
             FullName = !string.IsNullOrWhiteSpace(fullName) ? fullName : throw new ArgumentException("Full name required.", nameof(fullName));
             Email = !string.IsNullOrWhiteSpace(email) ? email : throw new ArgumentException("Email required.", nameof(email));
-            PasswordHash = passwordHash;
-            GoogleSub = googleSub;
-            AvatarUrl = avatarUrl;
+            PasswordHash = passwordHash ?? string.Empty;
+            GoogleSub = googleSub ?? string.Empty;
+            AvatarUrl = avatarUrl ?? string.Empty;
             Role = UserRole.USER;
             IsActive = true;
         }
@@ -36,6 +36,20 @@ namespace FootballManager.Domain.Entities
         public void AssignRole(UserRole role)
         {
             Role = role;
+            UpdateTimestamp();
+        }
+
+        public void SetPasswordHash(string passwordHash)
+        {
+            PasswordHash = !string.IsNullOrWhiteSpace(passwordHash)
+                ? passwordHash
+                : throw new ArgumentException("Password hash required.", nameof(passwordHash));
+            UpdateTimestamp();
+        }
+
+        public void Deactivate()
+        {
+            IsActive = false;
             UpdateTimestamp();
         }
     }

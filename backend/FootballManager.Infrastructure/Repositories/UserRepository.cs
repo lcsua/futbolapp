@@ -27,7 +27,7 @@ namespace FootballManager.Infrastructure.Repositories
         public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         {
             return await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == email.Trim().ToLower(), cancellationToken);
         }
 
         public async Task<User?> GetByEmailAndPasswordAsync(string email, string password, CancellationToken cancellationToken = default)
@@ -50,6 +50,27 @@ namespace FootballManager.Infrastructure.Repositories
         public async Task AddAsync(User user, CancellationToken cancellationToken = default)
         {
             await _context.Users.AddAsync(user, cancellationToken);
+        }
+
+        public async Task<string> HashPasswordAsync(string password, CancellationToken cancellationToken = default)
+        {
+            var hash = await _context.Database
+                .SqlQuery<string>($"SELECT crypt({password.Trim()}, gen_salt('bf')) AS \"Value\"")
+                .FirstAsync(cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(hash))
+                throw new InvalidOperationException("Could not hash password.");
+
+            return hash;
+        }
+
+        public async Task SetPasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default)
+        {
+            var user = await GetByIdAsync(userId, cancellationToken)
+                ?? throw new KeyNotFoundException("User not found.");
+
+            var hash = await HashPasswordAsync(password, cancellationToken);
+            user.SetPasswordHash(hash);
         }
     }
 }

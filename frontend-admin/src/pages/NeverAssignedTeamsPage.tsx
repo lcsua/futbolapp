@@ -6,16 +6,14 @@ import {
   Button,
   Checkbox,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  IconButton,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -23,11 +21,11 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { teamsService } from '../api/teams'
 import { useLeagueId } from '../contexts/LeagueContext'
-import type { Team } from '../api/types'
-
-function getTeamDisplayName(team: Team) {
-  return team.displayName ?? team.name
-}
+import {
+  DeleteTeamsConfirmationBody,
+  getDeleteTeamsConfirmExpected,
+  getTeamDisplayName,
+} from '../components/DeleteTeamsConfirmation'
 
 export function NeverAssignedTeamsPage() {
   const params = useParams<{ leagueId?: string }>()
@@ -39,7 +37,8 @@ export function NeverAssignedTeamsPage() {
 
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmStep, setConfirmStep] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -65,8 +64,17 @@ export function NeverAssignedTeamsPage() {
     })
   }, [teams, searchTerm])
 
+  const selectedTeams = useMemo(
+    () => teams.filter((t) => selectedIds.includes(t.id)),
+    [teams, selectedIds]
+  )
+
   const allFilteredSelected =
     filtered.length > 0 && filtered.every((t) => selectedIds.includes(t.id))
+
+  const expectedConfirm = getDeleteTeamsConfirmExpected(selectedTeams)
+  const canConfirmDelete =
+    selectedTeams.length > 0 && confirmText.trim() === expectedConfirm
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -74,17 +82,26 @@ export function NeverAssignedTeamsPage() {
       return teamsService.deleteNeverAssigned(leagueId, selectedIds)
     },
     onSuccess: (res) => {
-      setConfirmOpen(false)
+      setConfirmStep(false)
+      setConfirmText('')
       setSelectedIds([])
       setSuccess(`${res.deletedCount} equipo(s) eliminado(s).`)
       setError(null)
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'teams'] })
     },
     onError: (err) => {
-      setConfirmOpen(false)
       setError(err instanceof Error ? err.message : 'No se pudieron eliminar los equipos')
     },
   })
+
+  const openConfirm = (ids: string[]) => {
+    if (ids.length === 0) return
+    setSelectedIds(ids)
+    setConfirmText('')
+    setError(null)
+    setSuccess(null)
+    setConfirmStep(true)
+  }
 
   const toggleOne = (id: string) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
@@ -107,16 +124,86 @@ export function NeverAssignedTeamsPage() {
     )
   }
 
+  if (confirmStep) {
+    return (
+      <Box>
+        <Button
+          size="small"
+          startIcon={<ArrowBackIcon />}
+          sx={{ mb: 2 }}
+          disabled={deleteMutation.isPending}
+          onClick={() => {
+            setConfirmStep(false)
+            setConfirmText('')
+          }}
+        >
+          Volver a la selección
+        </Button>
+        <Typography variant="h5" component="h1" fontWeight={600} sx={{ mb: 1 }}>
+          {selectedTeams.length === 1
+            ? 'Eliminar equipo de forma permanente'
+            : `Eliminar ${selectedTeams.length} equipos de forma permanente`}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Revisá la lista y confirmá escribiendo el texto pedido. Hasta entonces no se borra nada.
+        </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+
+        {selectedTeams.length === 0 ? (
+          <Alert severity="warning">No quedó ningún equipo seleccionado.</Alert>
+        ) : (
+          <Box sx={{ maxWidth: 720 }}>
+            <DeleteTeamsConfirmationBody
+              teams={selectedTeams}
+              confirmText={confirmText}
+              onConfirmTextChange={setConfirmText}
+              disabled={deleteMutation.isPending}
+            />
+            <Box sx={{ display: 'flex', gap: 1, mt: 3 }}>
+              <Button
+                onClick={() => {
+                  setConfirmStep(false)
+                  setConfirmText('')
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                color="error"
+                variant="contained"
+                onClick={() => deleteMutation.mutate()}
+                disabled={!canConfirmDelete || deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? (
+                  <CircularProgress size={22} color="inherit" />
+                ) : (
+                  'Eliminar definitivamente'
+                )}
+              </Button>
+            </Box>
+          </Box>
+        )}
+      </Box>
+    )
+  }
+
   return (
     <Box>
       <Button component={RouterLink} to={teamsBase} startIcon={<ArrowBackIcon />} size="small" sx={{ mb: 2 }}>
         Volver a equipos
       </Button>
       <Typography variant="h5" component="h1" fontWeight={600} sx={{ mb: 1 }}>
-        Equipos nunca asignados
+        Eliminar equipos no asignados
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Equipos de la liga que no estuvieron en ninguna temporada. Podés seleccionarlos y borrarlos.
+        Solo aparecen equipos de la liga que nunca estuvieron en una temporada, división ni fixture.
+        Podés borrar varios a la vez o uno por uno. Después hay una pantalla de confirmación.
       </Typography>
 
       {error && (
@@ -153,11 +240,9 @@ export function NeverAssignedTeamsPage() {
         <Button
           variant="contained"
           color="error"
-          startIcon={
-            deleteMutation.isPending ? <CircularProgress size={18} color="inherit" /> : <DeleteOutlineIcon />
-          }
+          startIcon={<DeleteOutlineIcon />}
           disabled={selectedIds.length === 0 || deleteMutation.isPending}
-          onClick={() => setConfirmOpen(true)}
+          onClick={() => openConfirm(selectedIds)}
         >
           Borrar seleccionados ({selectedIds.length})
         </Button>
@@ -192,6 +277,7 @@ export function NeverAssignedTeamsPage() {
               </TableCell>
               <TableCell>Equipo</TableCell>
               <TableCell>Club</TableCell>
+              <TableCell align="right">Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -205,33 +291,23 @@ export function NeverAssignedTeamsPage() {
                 </TableCell>
                 <TableCell>{getTeamDisplayName(team)}</TableCell>
                 <TableCell>{team.clubName || '—'}</TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Eliminar este equipo">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      aria-label={`Eliminar ${getTeamDisplayName(team)}`}
+                      onClick={() => openConfirm([team.id])}
+                    >
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
-
-      <Dialog open={confirmOpen} onClose={() => !deleteMutation.isPending && setConfirmOpen(false)}>
-        <DialogTitle>¿Borrar {selectedIds.length} equipo(s)?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2">
-            Esta acción es permanente. Solo se permiten equipos que nunca se asignaron a una temporada.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} disabled={deleteMutation.isPending}>
-            Cancelar
-          </Button>
-          <Button
-            color="error"
-            variant="contained"
-            onClick={() => deleteMutation.mutate()}
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? <CircularProgress size={20} color="inherit" /> : 'Borrar'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   )
 }

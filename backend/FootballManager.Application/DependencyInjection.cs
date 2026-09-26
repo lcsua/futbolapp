@@ -1,4 +1,16 @@
 using FootballManager.Application.UseCases.Auth.Login;
+using FootballManager.Application.UseCases.Auth.GetCapabilities;
+using FootballManager.Application.UseCases.Users.CreateLeagueUser;
+using FootballManager.Application.UseCases.Users.GetLeagueUsers;
+using FootballManager.Application.UseCases.Users.UpdateLeagueUserRole;
+using FootballManager.Application.UseCases.Users.SetLeagueUserPassword;
+using FootballManager.Application.UseCases.Users.RemoveLeagueUser;
+using FootballManager.Application.UseCases.Users.GetMyAccess;
+using FootballManager.Application.UseCases.Roles.CreateRole;
+using FootballManager.Application.UseCases.Roles.GetRoles;
+using FootballManager.Application.UseCases.Roles.UpdateRole;
+using FootballManager.Application.UseCases.Roles.DeleteRole;
+using FootballManager.Application.UseCases.Roles.GetPermissionCatalog;
 using FootballManager.Application.UseCases.Leagues.CreateLeague;
 using FootballManager.Application.UseCases.Leagues.CreateSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeague;
@@ -59,6 +71,7 @@ using FootballManager.Application.UseCases.Matches.UpdateMatchResult;
 using FootballManager.Application.UseCases.Matches.ImportMatchResults;
 using FootballManager.Application.UseCases.Matches.ClearRoundResults;
 using FootballManager.Application.UseCases.Matches.ImportMatchSchedule;
+using FootballManager.Application.UseCases.Matches.UpdateMatchSchedule;
 using FootballManager.Application.UseCases.Matches.SwapDivisionHomeAway;
 using FootballManager.Application.UseCases.Teams.GetTeamNameAliases;
 using FootballManager.Application.UseCases.Teams.UpsertTeamNameAliases;
@@ -80,6 +93,13 @@ using FootballManager.Application.UseCases.Leagues.CreateDocument;
 using FootballManager.Application.UseCases.Leagues.UpdateDocument;
 using FootballManager.Application.UseCases.Leagues.DeleteDocument;
 using FootballManager.Application.UseCases.Leagues.SeedLeagueDocumentDefaults;
+using FootballManager.Application.UseCases.Leagues.GetAdvertisements;
+using FootballManager.Application.UseCases.Leagues.GetAdvertisement;
+using FootballManager.Application.UseCases.Leagues.CreateAdvertisement;
+using FootballManager.Application.UseCases.Leagues.UpdateAdvertisement;
+using FootballManager.Application.UseCases.Leagues.DeleteAdvertisement;
+using FootballManager.Application.UseCases.Leagues.SetAdvertisementImage;
+using FootballManager.Application.UseCases.Leagues.RemoveAdvertisementImage;
 using FootballManager.Application.Interfaces;
 using FootballManager.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -91,8 +111,21 @@ namespace FootballManager.Application
         public static IServiceCollection AddApplication(this IServiceCollection services)
         {
             services.AddScoped<IMatchRulesResolver, MatchRulesResolver>();
+            services.AddScoped<ILeaguePermissionService, LeaguePermissionService>();
 
             services.AddScoped<ILoginUseCase, LoginUseCase>();
+            services.AddScoped<IGetAuthCapabilitiesUseCase, GetAuthCapabilitiesUseCase>();
+            services.AddScoped<ICreateLeagueUserUseCase, CreateLeagueUserUseCase>();
+            services.AddScoped<IGetLeagueUsersUseCase, GetLeagueUsersUseCase>();
+            services.AddScoped<IUpdateLeagueUserRoleUseCase, UpdateLeagueUserRoleUseCase>();
+            services.AddScoped<ISetLeagueUserPasswordUseCase, SetLeagueUserPasswordUseCase>();
+            services.AddScoped<IRemoveLeagueUserUseCase, RemoveLeagueUserUseCase>();
+            services.AddScoped<IGetMyAccessUseCase, GetMyAccessUseCase>();
+            services.AddScoped<ICreateRoleUseCase, CreateRoleUseCase>();
+            services.AddScoped<IGetRolesUseCase, GetRolesUseCase>();
+            services.AddScoped<IUpdateRoleUseCase, UpdateRoleUseCase>();
+            services.AddScoped<IDeleteRoleUseCase, DeleteRoleUseCase>();
+            services.AddScoped<IGetPermissionCatalogUseCase, GetPermissionCatalogUseCase>();
             services.AddScoped<ICreateLeagueUseCase, CreateLeagueUseCase>();
             services.AddScoped<ICreateSeasonUseCase, CreateSeasonUseCase>();
             services.AddScoped<IGetLeagueUseCase, GetLeagueUseCase>();
@@ -154,6 +187,7 @@ namespace FootballManager.Application
             services.AddScoped<IImportMatchResultsUseCase, ImportMatchResultsUseCase>();
             services.AddScoped<IClearRoundResultsUseCase, ClearRoundResultsUseCase>();
             services.AddScoped<IImportMatchScheduleUseCase, ImportMatchScheduleUseCase>();
+            services.AddScoped<IUpdateMatchScheduleUseCase, UpdateMatchScheduleUseCase>();
             services.AddScoped<IGetTeamNameAliasesUseCase, GetTeamNameAliasesUseCase>();
             services.AddScoped<IUpsertTeamNameAliasesUseCase, UpsertTeamNameAliasesUseCase>();
             services.AddScoped<ISwapDivisionHomeAwayUseCase, SwapDivisionHomeAwayUseCase>();
@@ -175,6 +209,13 @@ namespace FootballManager.Application
             services.AddScoped<IUpdateDocumentUseCase, UpdateDocumentUseCase>();
             services.AddScoped<IDeleteDocumentUseCase, DeleteDocumentUseCase>();
             services.AddScoped<ISeedLeagueDocumentDefaultsUseCase, SeedLeagueDocumentDefaultsUseCase>();
+            services.AddScoped<IGetAdvertisementsUseCase, GetAdvertisementsUseCase>();
+            services.AddScoped<IGetAdvertisementUseCase, GetAdvertisementUseCase>();
+            services.AddScoped<ICreateAdvertisementUseCase, CreateAdvertisementUseCase>();
+            services.AddScoped<IUpdateAdvertisementUseCase, UpdateAdvertisementUseCase>();
+            services.AddScoped<IDeleteAdvertisementUseCase, DeleteAdvertisementUseCase>();
+            services.AddScoped<ISetAdvertisementImageUseCase, SetAdvertisementImageUseCase>();
+            services.AddScoped<IRemoveAdvertisementImageUseCase, RemoveAdvertisementImageUseCase>();
 
             services.AddSingleton<IFixtureDraftStore, FixtureDraftStore>();
 

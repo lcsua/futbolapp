@@ -8,6 +8,7 @@ import { teamsService } from '../api/teams'
 import type { Club } from '../api/types'
 import { CreateClubDialog } from '../components/CreateClubDialog'
 import { EditClubDialog } from '../components/EditClubDialog'
+import { CrestImg } from '../components/CrestImg'
 
 export function ClubsListPage() {
   const leagueId = useLeagueId()
@@ -56,11 +57,11 @@ export function ClubsListPage() {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
                   <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                     {club.logoUrl ? (
-                      <Box
-                        component="img"
+                      <CrestImg
                         src={club.logoUrl}
                         alt={`${club.name} logo`}
-                        sx={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 1, border: 1, borderColor: 'divider' }}
+                        size={44}
+                        sx={{ borderRadius: 1, border: 1, borderColor: 'divider' }}
                       />
                     ) : null}
                     <Box>

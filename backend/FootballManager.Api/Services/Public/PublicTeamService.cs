@@ -26,11 +26,11 @@ public class PublicTeamService
         return new TeamPublicDto
         {
             Id = team.Id,
-            Name = team.Name,
-            Slug = team.Id.ToString(),
+            Name = team.CompetitionName,
+            Slug = string.IsNullOrWhiteSpace(team.Slug) ? team.Id.ToString() : team.Slug,
             ShortName = team.ShortName,
-            LogoUrl = team.LogoUrl,
-            LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(team.LogoUrl)
+            LogoUrl = team.EffectiveLogoUrl,
+            LogoThumbUrl = LogoThumbnailService.DeriveThumbUrl(team.EffectiveLogoUrl)
         };
     }
 }

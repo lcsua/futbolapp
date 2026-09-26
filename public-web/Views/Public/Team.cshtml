@@ -218,7 +218,7 @@
             ? `<div class="match-score text-warning">Suspendido</div>`
             : `<div class="match-score">${escapeHtml(m.homeScore ?? '')} - ${escapeHtml(m.awayScore ?? '')}</div>`);
       return `
-        <a href="${escapeHtml(matchBase)}${escapeHtml(m.id)}" class="list-group-item list-group-item-action">
+        <a href="${escapeHtml(matchBase)}${escapeHtml(m.slug || m.id)}" class="list-group-item list-group-item-action">
           <div class="row align-items-center g-2 league-match-row">
             <div class="col-5">
               <div class="text-end text-truncate match-team" title="${escapeHtml(m.homeTeam)}">${escapeHtml(m.homeTeam)}</div>

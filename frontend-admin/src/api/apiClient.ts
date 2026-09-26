@@ -28,7 +28,11 @@ async function handleResponse<T>(response: Response): Promise<T> {
         message = json.message ?? json.error ?? message
       }
     } catch {
-      if (text) message = text
+      if (response.status === 504 || response.status === 502) {
+        message = 'El servidor tardó demasiado en responder. Probá de nuevo.'
+      } else if (text && !text.trimStart().startsWith('<')) {
+        message = text
+      }
     }
     throw new Error(message)
   }

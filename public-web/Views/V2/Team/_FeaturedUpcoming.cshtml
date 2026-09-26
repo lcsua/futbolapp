@@ -8,7 +8,7 @@
     var shareText = PublicWeb.Helpers.TeamDisplayHelper.FormatUpcomingShareText(Model, shareLeague);
 }
 <article class="v2-match-card v2-match-card--upcoming">
-    <a class="v2-match-card__link" href="@Url.Content($"~/partido/{Model.Id}")">
+    <a class="v2-match-card__link" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
         <div class="v2-match-card__meta v2-match-card__meta--upcoming">
             <span class="v2-match-card__meta-desktop">Próximo partido</span>
             <span class="v2-match-card__meta-mobile">
@@ -20,7 +20,7 @@
             }
             @if (!string.IsNullOrWhiteSpace(venue))
             {
-                <span class="v2-match-card__venue">@venue</span>
+                <span class="v2-match-card__venue">@await Html.PartialAsync("~/Views/Shared/V2/_FieldLabel.cshtml", venue)</span>
             }
         </div>
 
@@ -34,7 +34,7 @@
             @if (!string.IsNullOrWhiteSpace(venue))
             {
                 <span aria-hidden="true">·</span>
-                <span>@venue</span>
+                @await Html.PartialAsync("~/Views/Shared/V2/_FieldLabel.cshtml", venue)
             }
         </div>
 

@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.FileProviders;
 using PublicWeb.Seo;
 
 namespace PublicWeb.Tests;
@@ -15,12 +18,70 @@ public class SeoCopyTests
     }
 
     [Fact]
+    public void Home_InvitesLeaguesWithPericoExample()
+    {
+        var page = SeoCopy.Home();
+        Assert.Equal("/", page.CanonicalPath);
+        Assert.Contains("Tu liga, pública y al día", page.Title);
+        Assert.Contains("Veteranos de Perico", page.Description);
+        Assert.False(page.NoIndex);
+    }
+
+    [Fact]
+    public void Contacto_HasCanonicalAndInviteCopy()
+    {
+        var page = SeoCopy.Contacto();
+        Assert.Equal("/contacto", page.CanonicalPath);
+        Assert.Contains("Crear tu liga", page.Title);
+        Assert.Contains("MiLiga", page.Title);
+        Assert.Contains("Veteranos de Perico", page.Description);
+        Assert.Equal("¿Querés publicar tu liga?", page.H1);
+        Assert.False(page.NoIndex);
+    }
+
+    [Fact]
+    public void Gracias_IsNoIndexThankYou()
+    {
+        var page = SeoCopy.Gracias();
+        Assert.Equal("/gracias", page.CanonicalPath);
+        Assert.True(page.NoIndex);
+        Assert.Equal("Gracias", page.H1);
+        Assert.Contains("pondremos en contacto", page.Description);
+    }
+
+    [Fact]
     public void Fixture_Canonical_StripsFilters()
     {
         var page = SeoCopy.LeagueFixture("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", null);
         Assert.Equal("/ligas/veteranos-de-perico/fixture", page.CanonicalPath);
         Assert.StartsWith("Fixture Liga de Veteranos de Perico", page.H1);
         Assert.Contains("Clausura 2026", page.Title);
+        Assert.False(page.LargeOgImage);
+    }
+
+    [Fact]
+    public void Standings_AnyDivision_UsesShareCard()
+    {
+        var page = SeoCopy.LeagueStandings("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", "/logo.png", "B");
+        Assert.Contains("División B", page.Title);
+        Assert.Contains("/og/share.jpg", page.OgImage);
+        Assert.True(page.LargeOgImage);
+        Assert.Equal("/ligas/veteranos-de-perico/posiciones", page.CanonicalPath);
+    }
+
+    [Fact]
+    public void Results_WithDivision_UsesShareCard()
+    {
+        var page = SeoCopy.LeagueResults("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", "/logo.png", "B");
+        Assert.StartsWith("Resultados División B", page.OgTitle);
+        Assert.Contains("kind=resultados", page.OgImage);
+    }
+
+    [Fact]
+    public void ShareLinks_SectionPath_IncludesSeasonAndDivision()
+    {
+        var path = PublicShareLinks.SectionPath("veteranos-de-perico", "resultados", "clausura-2026", "b");
+        Assert.Equal("/ligas/veteranos-de-perico/resultados?season=clausura-2026&division=b", path);
     }
 
     [Fact]
@@ -35,12 +96,20 @@ public class SeoCopyTests
     [Fact]
     public void MatchPage_HasSpecificMetadata()
     {
-        var id = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-        var page = SeoCopy.MatchPage("ATL FOR EVER", "AC. LA UNION", "Liga de Veteranos", "veteranos", id, null);
-        Assert.Equal("/partido/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", page.CanonicalPath);
+        var page = SeoCopy.MatchPage(
+            "ATL FOR EVER",
+            "AC. LA UNION",
+            "Liga de Veteranos",
+            "veteranos",
+            "atl-for-ever-vs-ac-la-union-clausura-2026",
+            null,
+            "Clausura 2026");
+        Assert.Equal("/partido/atl-for-ever-vs-ac-la-union-clausura-2026", page.CanonicalPath);
         Assert.Equal("ATL FOR EVER vs AC. LA UNION", page.H1);
         Assert.Contains("ATL FOR EVER", page.Title);
+        Assert.Contains("Clausura 2026", page.Title);
         Assert.Contains("Liga de Veteranos", page.Title);
+        Assert.Contains("Clausura 2026", page.Description);
     }
 
     [Fact]
@@ -48,6 +117,32 @@ public class SeoCopyTests
     {
         var page = SeoCopy.NotFound();
         Assert.True(page.NoIndex);
+    }
+}
+
+public class OgShareImageGeneratorTests
+{
+    [Fact]
+    public void Render_ProducesJpeg()
+    {
+        var webRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var gen = new OgShareImageGenerator(new StubEnv { ContentRootPath = webRoot }, cache);
+        var jpeg = gen.Render("resultados", "B", "Liga de Veteranos de Perico", "Clausura 2026");
+        Assert.True(jpeg.Length > 2000);
+        Assert.Equal(0xFF, jpeg[0]);
+        Assert.Equal(0xD8, jpeg[1]);
+        Assert.Equal(0xFF, jpeg[2]);
+    }
+
+    private sealed class StubEnv : IWebHostEnvironment
+    {
+        public string ApplicationName { get; set; } = "PublicWeb";
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+        public string ContentRootPath { get; set; } = "";
+        public string EnvironmentName { get; set; } = "Tests";
+        public string WebRootPath { get; set; } = "";
+        public IFileProvider WebRootFileProvider { get; set; } = new NullFileProvider();
     }
 }
 
@@ -94,6 +189,8 @@ public class SeoUrlBuilderTests
         });
         var urls = new SeoUrlBuilder(opts);
         Assert.Equal("https://miliga.com.ar/ligas/veteranos-de-perico/fixture", urls.LeagueFixture("veteranos-de-perico"));
+        Assert.Equal("https://miliga.com.ar/partido/jueves-de-sometidos-vs-dep-ctj-clausura-2026",
+            urls.Match("jueves-de-sometidos-vs-dep-ctj-clausura-2026"));
         Assert.Equal("https://miliga.com.ar/branding/blue/icon-512.png", urls.DefaultOgImage);
     }
 }
@@ -193,12 +290,14 @@ public class SitemapVeteranosExampleTests
 
         Assert.Contains("https://miliga.com.ar/", locs);
         Assert.Contains("https://miliga.com.ar/ligas", locs);
+        Assert.Contains("https://miliga.com.ar/contacto", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/fixture", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/posiciones", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/resultados", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/informacion", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/bmalvinas-las-pts", locs);
+        Assert.Contains("https://miliga.com.ar/partido/jueves-de-sometidos-vs-dep-ctj-clausura-2026", locs);
         Assert.DoesNotContain(locs, l => l.Contains("/admin", StringComparison.OrdinalIgnoreCase));
 
         var xml = await svc.GetSitemapXmlAsync();
@@ -232,6 +331,9 @@ public class SitemapVeteranosExampleTests
                         { "slug": "bmalvinas-las-pts", "updatedAtUtc": "2026-08-11T00:00:00Z" }
                       ]
                     }
+                  ],
+                  "matches": [
+                    { "slug": "jueves-de-sometidos-vs-dep-ctj-clausura-2026", "updatedAtUtc": "2026-08-22T00:00:00Z" }
                   ]
                 }
                 """;

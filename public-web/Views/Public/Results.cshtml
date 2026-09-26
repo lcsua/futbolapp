@@ -110,7 +110,7 @@
                                         </div>
                                     </div>
                                     <div class="col-2 text-center">
-                                        <a href="@Url.Content($"~/partido/{match.Id}")" class="text-decoration-none">
+                                        <a href="@Url.Content(MatchSlugHelper.AppRelative(match))" class="text-decoration-none">
                                             @if (string.Equals(match.Status, "SUSPENDED", StringComparison.OrdinalIgnoreCase))
                                             {
                                                 <div class="match-score text-warning">Suspendido</div>

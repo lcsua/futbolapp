@@ -16,6 +16,7 @@ export interface TeamInSetup {
   displayName?: string
   clubId?: string | null
   clubName?: string | null
+  clubLogoUrl?: string | null
   shortName: string | null
   logoUrl: string | null
   email: string | null

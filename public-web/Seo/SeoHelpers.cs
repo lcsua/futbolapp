@@ -13,8 +13,11 @@ public static class SeoViewExtensions
         controller.ViewData["Description"] = page.Description;
         controller.ViewData["CanonicalPath"] = page.CanonicalPath;
         controller.ViewData["OgImage"] = page.OgImage;
+        controller.ViewData["OgTitle"] = page.OgTitle;
+        controller.ViewData["OgUrl"] = page.OgUrlPath;
         controller.ViewData["OgType"] = page.OgType;
         controller.ViewData["NoIndex"] = page.NoIndex;
+        controller.ViewData["LargeOgImage"] = page.LargeOgImage;
         if (!string.IsNullOrWhiteSpace(page.H1))
             controller.ViewBag.SeoH1 = page.H1;
         controller.ViewBag.SeoBreadcrumbs = page.Breadcrumbs;

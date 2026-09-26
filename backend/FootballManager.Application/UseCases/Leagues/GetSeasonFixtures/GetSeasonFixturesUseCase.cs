@@ -69,9 +69,9 @@ public sealed class GetSeasonFixturesUseCase : IGetSeasonFixturesUseCase
                         f.DivisionSeasonId,
                         f.DivisionSeason.Division.Name,
                         f.HomeTeamDivisionSeasonId,
-                        f.HomeTeamDivisionSeason.Team.Name,
+                        f.HomeTeamDivisionSeason.Team.CompetitionName,
                         f.AwayTeamDivisionSeasonId,
-                        f.AwayTeamDivisionSeason.Team.Name,
+                        f.AwayTeamDivisionSeason.Team.CompetitionName,
                         f.FieldId,
                         f.Field?.Name,
                         f.MatchDate,
@@ -110,7 +110,7 @@ public sealed class GetSeasonFixturesUseCase : IGetSeasonFixturesUseCase
                     ds.Id,
                     ds.Division.Name,
                     ta.Id,
-                    ta.Team.Name));
+                    ta.Team.CompetitionName));
             }
         }
 

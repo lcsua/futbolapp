@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import type { Club, TeamFormData } from '../api/types'
 import { teamsService } from '../api/teams'
+import { CrestImg } from './CrestImg'
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024
 const ACCEPT_IMAGES = 'image/jpeg,image/png,image/gif,image/webp'
@@ -89,6 +90,8 @@ export function TeamForm({
   const [uploading, setUploading] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const selectedClub = assignToClub ? clubs.find((c) => c.id === clubId) ?? null : null
+  const clubLogoFallback = !logoPreview ? selectedClub?.logoUrl?.trim() || null : null
 
   const validateFile = useCallback((file: File, label: string): string | null => {
     if (!file.type.startsWith('image/')) return `${label} must be an image (e.g. JPEG, PNG, GIF, WebP).`
@@ -387,6 +390,11 @@ export function TeamForm({
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
             Logo (max 5 MB, images only)
           </Typography>
+          {selectedClub ? (
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+              Si no cargás un escudo propio, se usa el del club.
+            </Typography>
+          ) : null}
           <input
             ref={logoInputRef}
             type="file"
@@ -396,7 +404,7 @@ export function TeamForm({
             style={{ display: 'block', marginBottom: 8 }}
             aria-label="Upload logo"
           />
-          {logoPreview && (
+          {logoPreview ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Box
                 component="img"
@@ -408,7 +416,19 @@ export function TeamForm({
                 Remove
               </Button>
             </Box>
-          )}
+          ) : clubLogoFallback ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <CrestImg
+                src={clubLogoFallback}
+                alt={`Escudo de ${selectedClub?.name ?? 'club'}`}
+                size={80}
+                sx={{ border: 1, borderColor: 'divider', borderRadius: 1 }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                Escudo del club
+              </Typography>
+            </Box>
+          ) : null}
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>

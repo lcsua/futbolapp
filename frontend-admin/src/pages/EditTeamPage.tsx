@@ -5,12 +5,14 @@ import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/ma
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import GroupsIcon from '@mui/icons-material/Groups'
 import DomainAddIcon from '@mui/icons-material/DomainAdd'
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import { Link as RouterLink } from 'react-router-dom'
 import { TeamForm } from '../components/TeamForm'
 import { teamsService } from '../api/teams'
 import type { TeamFormData } from '../api/types'
 import { useLeagueId } from '../contexts/LeagueContext'
 import { CreateClubDialog } from '../components/CreateClubDialog'
+import { ConfirmDeleteTeamsDialog } from '../components/DeleteTeamsConfirmation'
 
 export function EditTeamPage() {
   const params = useParams<{ leagueId?: string; teamId?: string }>()
@@ -20,6 +22,7 @@ export function EditTeamPage() {
   const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const [clubDialogOpen, setClubDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const teamsBase = params.leagueId && leagueId ? `/leagues/${leagueId}/teams` : '/teams'
 
   const { data: teams, isLoading, isError, error: queryError } = useQuery({
@@ -32,7 +35,13 @@ export function EditTeamPage() {
     queryFn: ({ signal }) => teamsService.getClubsByLeague(leagueId!, signal),
     enabled: !!leagueId,
   })
+  const { data: neverAssignedTeams, isLoading: neverAssignedLoading } = useQuery({
+    queryKey: ['leagues', leagueId, 'teams', 'never-assigned'],
+    queryFn: ({ signal }) => teamsService.getNeverAssigned(leagueId!, signal),
+    enabled: !!leagueId,
+  })
   const team = teams?.find((t) => t.id === teamId)
+  const canDelete = !!team && (neverAssignedTeams?.some((t) => t.id === team.id) ?? false)
 
   const updateMutation = useMutation({
     mutationFn: (data: TeamFormData) =>
@@ -43,6 +52,18 @@ export function EditTeamPage() {
     },
     onError: (err) => {
       setError(err instanceof Error ? err.message : 'Failed to update team')
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => teamsService.deleteOne(leagueId!, teamId!),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'teams'] })
+      navigate(teamsBase, { replace: true })
+    },
+    onError: (err) => {
+      setDeleteDialogOpen(false)
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el equipo')
     },
   })
 
@@ -122,7 +143,33 @@ export function EditTeamPage() {
         submitLabel="Guardar"
         title="Datos del equipo"
       />
+      <Box sx={{ mt: 3 }}>
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<DeleteForeverIcon />}
+          onClick={() => {
+            setError(null)
+            setDeleteDialogOpen(true)
+          }}
+          disabled={!canDelete || deleteMutation.isPending || updateMutation.isPending || neverAssignedLoading}
+        >
+          Eliminar equipo
+        </Button>
+        {!neverAssignedLoading && !canDelete && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Este equipo no se puede eliminar porque ya estuvo asignado a una temporada o división.
+          </Typography>
+        )}
+      </Box>
       <CreateClubDialog open={clubDialogOpen} leagueId={leagueId} onClose={() => setClubDialogOpen(false)} />
+      <ConfirmDeleteTeamsDialog
+        open={deleteDialogOpen}
+        teams={team ? [team] : []}
+        loading={deleteMutation.isPending}
+        onClose={() => !deleteMutation.isPending && setDeleteDialogOpen(false)}
+        onConfirm={() => deleteMutation.mutate()}
+      />
     </Box>
   )
 }

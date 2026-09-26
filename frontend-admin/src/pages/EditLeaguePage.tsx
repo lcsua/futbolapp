@@ -10,7 +10,7 @@ import {
 import { LeagueForm } from '../components/LeagueForm'
 import { LeagueDocumentsSection } from '../components/LeagueDocumentsSection'
 import { leaguesService } from '../api/leagues'
-import type { LeagueFormData } from '../api/types'
+import type { LeagueFormData, LeagueFormFiles } from '../api/types'
 
 export function EditLeaguePage() {
   const { leagueId } = useParams<{ leagueId: string }>()
@@ -38,18 +38,23 @@ export function EditLeaguePage() {
     },
   })
 
-  const handleSubmit = async (data: LeagueFormData, logoFile?: File | null) => {
+  const handleSubmit = async (data: LeagueFormData, files?: LeagueFormFiles) => {
     setError(null)
     try {
-      let logoUrl = data.logoUrl
-      if (logoFile) {
-        setUploading(true)
-        const upload = await leaguesService.uploadImage(leagueId!, logoFile)
-        logoUrl = upload.url
+      const next = { ...data }
+      setUploading(true)
+      if (files?.logoFile) {
+        next.logoUrl = (await leaguesService.uploadImage(leagueId!, files.logoFile)).url
       }
-      updateMutation.mutate({ ...data, logoUrl })
+      if (files?.heroFile) {
+        next.heroImageUrl = (await leaguesService.uploadImage(leagueId!, files.heroFile)).url
+      }
+      if (files?.teamHeroFile) {
+        next.teamHeroImageUrl = (await leaguesService.uploadImage(leagueId!, files.teamHeroFile)).url
+      }
+      updateMutation.mutate(next)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload league logo')
+      setError(err instanceof Error ? err.message : 'Failed to upload league image')
     } finally {
       setUploading(false)
     }
@@ -85,6 +90,10 @@ export function EditLeaguePage() {
     logoUrl: league.logoUrl ?? '',
     isPublic: league.isPublic ?? false,
     isActive: league.isActive ?? true,
+    primaryColor: league.primaryColor ?? '',
+    fontKey: league.fontKey ?? '',
+    heroImageUrl: league.heroImageUrl ?? '',
+    teamHeroImageUrl: league.teamHeroImageUrl ?? '',
   }
 
   return (

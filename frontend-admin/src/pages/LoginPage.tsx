@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Box,
   Button,
@@ -13,6 +14,7 @@ import SportsSoccerIcon from '@mui/icons-material/SportsSoccer'
 import { useAuth } from '../contexts/AuthContext'
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { login } = useAuth()
   const [email, setEmail] = useState('')
@@ -36,7 +38,7 @@ export function LoginPage() {
       await login(email.trim(), password)
       navigate('/', { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : 'Email o contraseña incorrectos.')
     } finally {
       setLoading(false)
     }
@@ -70,7 +72,7 @@ export function LoginPage() {
             sx={{ fontSize: 48, mb: 1 }}
           />
           <Typography variant="h5" component="h1" fontWeight={600}>
-            Football Admin
+            {t('app.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Login with email and password

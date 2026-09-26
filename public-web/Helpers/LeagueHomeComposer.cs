@@ -40,7 +40,7 @@ public static class LeagueHomeComposer
             Divisions = orderedDivisions.ToList(),
             DivisionLeaders = ComposeLeaders(standings),
             NextFecha = nextFecha,
-            Stats = BuildHeroStats(orderedDivisions.Count, CountUniqueTeams(standings), calendar),
+            Stats = BuildHeroStats(orderedDivisions.Count, CountUniqueTeams(standings) ?? CountUniqueTeams(calendar), calendar),
             DivisionPanels = panels,
             SelectedDivisionSlug = selected?.DivisionSlug ?? string.Empty
         };
@@ -88,6 +88,12 @@ public static class LeagueHomeComposer
         }
 
         return count > 0 ? count : null;
+    }
+
+    public static int? CountUniqueTeams(SeasonGroupedViewModel<MatchdayGroupViewModel>? calendar)
+    {
+        var teams = UniqueTeamsFromMatches(calendar?.Divisions?.SelectMany(d => d.Data ?? new List<MatchdayGroupViewModel>()));
+        return teams.Count > 0 ? teams.Count : null;
     }
 
     public static string CssId(string prefix, string? slug)
@@ -147,13 +153,7 @@ public static class LeagueHomeComposer
             Matches = matches.Take(MatchPreviewCount).ToList(),
             MatchCount = matches.Count,
             StandingsPreview = rows.Take(StandingsPreviewCount).ToList(),
-            Teams = rows
-                .Select((r, index) => (Team: r.Team, Index: index))
-                .Where(x => x.Team != null && !string.IsNullOrWhiteSpace(x.Team.Name))
-                .OrderByDescending(x => TeamDisplayHelper.HasRealLogo(x.Team))
-                .ThenBy(x => x.Index)
-                .Select(x => x.Team!)
-                .ToList()
+            Teams = ResolveHomeTeams(rows, calDiv)
         };
     }
 
@@ -183,6 +183,67 @@ public static class LeagueHomeComposer
             .Where(x => x != null)
             .Cast<LeagueHomeDivisionLeaderViewModel>()
             .ToList();
+    }
+
+    private static List<TeamViewModel> ResolveHomeTeams(
+        List<StandingsRowViewModel> rows,
+        DivisionGroupViewModel<MatchdayGroupViewModel>? calendarDivision)
+    {
+        var fromStandings = rows
+            .Select((r, index) => (Team: r.Team, Index: index))
+            .Where(x => !IsPlaceholderTeam(x.Team))
+            .OrderByDescending(x => TeamDisplayHelper.HasRealLogo(x.Team))
+            .ThenBy(x => x.Index)
+            .Select(x => x.Team!)
+            .ToList();
+        if (fromStandings.Count > 0)
+            return fromStandings;
+
+        return UniqueTeamsFromMatches(calendarDivision?.Data)
+            .OrderByDescending(TeamDisplayHelper.HasRealLogo)
+            .ThenBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
+
+    private static List<TeamViewModel> UniqueTeamsFromMatches(IEnumerable<MatchdayGroupViewModel>? matchdays)
+    {
+        var teams = new List<TeamViewModel>();
+        if (matchdays == null) return teams;
+
+        var seenIds = new HashSet<Guid>();
+        var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var match in matchdays.SelectMany(md => md.Matches ?? new List<MatchViewModel>()))
+        {
+            TryAdd(match.HomeTeam);
+            TryAdd(match.AwayTeam);
+        }
+
+        return teams;
+
+        void TryAdd(TeamViewModel? team)
+        {
+            if (IsPlaceholderTeam(team)) return;
+            if (team!.Id != Guid.Empty)
+            {
+                if (!seenIds.Add(team.Id)) return;
+            }
+            else
+            {
+                var key = !string.IsNullOrWhiteSpace(team.Slug) ? team.Slug : team.Name;
+                if (string.IsNullOrWhiteSpace(key) || !seenKeys.Add(key)) return;
+            }
+
+            teams.Add(team);
+        }
+    }
+
+    private static bool IsPlaceholderTeam(TeamViewModel? team)
+    {
+        if (team == null || string.IsNullOrWhiteSpace(team.Name)) return true;
+        var name = team.Name.Trim();
+        return name.Equals("Local", StringComparison.OrdinalIgnoreCase)
+            || name.Equals("Visitante", StringComparison.OrdinalIgnoreCase);
     }
 
     private static IReadOnlyList<DivisionViewModel> ResolveDivisionOrder(

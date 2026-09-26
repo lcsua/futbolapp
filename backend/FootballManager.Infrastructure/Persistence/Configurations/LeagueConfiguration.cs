@@ -34,6 +34,10 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.Property(e => e.Description).HasColumnName("description");
             builder.Property(e => e.Country).HasMaxLength(100).HasColumnName("country");
             builder.Property(e => e.LogoUrl).HasColumnName("logo_url");
+            builder.Property(e => e.PrimaryColor).HasMaxLength(16).HasColumnName("primary_color");
+            builder.Property(e => e.FontKey).HasMaxLength(32).HasColumnName("font_key");
+            builder.Property(e => e.HeroImageUrl).HasMaxLength(1000).HasColumnName("hero_image_url");
+            builder.Property(e => e.TeamHeroImageUrl).HasMaxLength(1000).HasColumnName("team_hero_image_url");
             builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
 
             builder.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");

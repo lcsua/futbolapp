@@ -11,6 +11,13 @@ export const teamsService = {
   deleteNeverAssigned: (leagueId: string, teamIds: string[], signal?: AbortSignal) =>
     apiClient.post<{ deletedCount: number }>(`/api/leagues/${leagueId}/teams/never-assigned/delete`, { teamIds }, signal),
 
+  deleteOne: (leagueId: string, teamId: string, signal?: AbortSignal) =>
+    apiClient.post<{ deletedCount: number }>(
+      `/api/leagues/${leagueId}/teams/never-assigned/delete`,
+      { teamIds: [teamId] },
+      signal
+    ),
+
   create: (
     leagueId: string,
     data: { name: string; shortName?: string; email?: string; suffix?: string; clubId?: string; seasonId?: string; divisionId?: string },
@@ -36,7 +43,14 @@ export const teamsService = {
   },
 
   materializeDataUrlLogos: (leagueId: string, signal?: AbortSignal) =>
-    apiClient.post<{ converted: number; skipped: number; failed: number }>(
+    apiClient.post<{
+      converted: number
+      skipped: number
+      failed: number
+      thumbsCreated?: number
+      thumbsSkipped?: number
+      thumbsFailed?: number
+    }>(
       `/api/leagues/${leagueId}/uploads/images/materialize-data-urls`,
       {},
       signal

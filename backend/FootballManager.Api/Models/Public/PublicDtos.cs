@@ -11,6 +11,10 @@ public class LeaguePublicDto
     public string Country { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string? LogoUrl { get; set; }
+    public string? PrimaryColor { get; set; }
+    public string? FontKey { get; set; }
+    public string? HeroImageUrl { get; set; }
+    public string? TeamHeroImageUrl { get; set; }
 }
 
 public class TeamPublicDto
@@ -47,6 +51,7 @@ public class MatchPublicDto
     public int? HomeScore { get; set; }
     public int? AwayScore { get; set; }
     public string? LeagueSlug { get; set; }
+    public string? SeasonSlug { get; set; }
     public string? FieldName { get; set; }
     public int RoundNumber { get; set; }
     public string? DivisionName { get; set; }
@@ -93,6 +98,13 @@ public class StandingSummaryDto
     public string? DivisionName { get; set; }
 }
 
+public class TeamScorerPublicDto
+{
+    public Guid? PlayerId { get; set; }
+    public string PlayerName { get; set; } = string.Empty;
+    public int Goals { get; set; }
+}
+
 public class TeamSummaryPublicDto
 {
     public TeamPublicDto Team { get; set; } = new();
@@ -101,6 +113,7 @@ public class TeamSummaryPublicDto
     public List<SeasonPublicDto> ActiveSeasons { get; set; } = new();
     public List<MatchPublicDto> NextMatches { get; set; } = new();
     public List<MatchPublicDto> LastResults { get; set; } = new();
+    public List<TeamScorerPublicDto> Scorers { get; set; } = new();
     public StandingSummaryDto? Standing { get; set; }
     public int PageSize { get; set; } = 5;
     public int NextMatchesPage { get; set; } = 1;

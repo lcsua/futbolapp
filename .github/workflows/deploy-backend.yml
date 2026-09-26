@@ -59,13 +59,28 @@ jobs:
       uses: appleboy/ssh-action@v1.0.3
       env:
         DATABASE_CONNECTION: ${{ secrets.DATABASE_CONNECTION }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        GEMINI_PROJECT: ${{ vars.GEMINI_PROJECT }}
+        SUDO_PASSWORD: ${{ secrets.SSH_SUDO_PASSWORD }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
-        envs: DATABASE_CONNECTION
+        envs: DATABASE_CONNECTION,GEMINI_API_KEY,GEMINI_MODEL,GEMINI_PROJECT,SUDO_PASSWORD
         script: |
           set -euo pipefail
+          if [ -z "${GEMINI_API_KEY:-}" ]; then
+            echo "Falta el secret de GitHub GEMINI_API_KEY."
+            exit 1
+          fi
+          if [ -z "${SUDO_PASSWORD:-}" ]; then
+            echo "Falta el secret de GitHub SSH_SUDO_PASSWORD."
+            exit 1
+          fi
+          sudo_run() {
+            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' "$@"
+          }
           cd /home/lucas/apps/futbolnet/api
           chmod +x ./efbundle
 
@@ -105,6 +120,137 @@ jobs:
           ./efbundle --connection "$CONN"
           echo "Migrations applied."
 
-          sudo systemctl restart futbolnet-api
-          sudo systemctl is-active --quiet futbolnet-api
+          echo "Updating Gemini settings for futbolnet-api..."
+          gemini_tmp="$(mktemp)"
+          {
+            printf '%s\n' '[Service]'
+            printf 'Environment="GEMINI_API_KEY=%s"\n' "$GEMINI_API_KEY"
+            if [ -n "${GEMINI_MODEL:-}" ]; then
+              printf 'Environment="GEMINI_MODEL=%s"\n' "$GEMINI_MODEL"
+            fi
+            if [ -n "${GEMINI_PROJECT:-}" ]; then
+              printf 'Environment="GEMINI_PROJECT=%s"\n' "$GEMINI_PROJECT"
+            fi
+          } > "$gemini_tmp"
+          sudo_run mkdir -p /etc/systemd/system/futbolnet-api.service.d
+          sudo_run cp "$gemini_tmp" /etc/systemd/system/futbolnet-api.service.d/gemini.conf
+          sudo_run chmod 600 /etc/systemd/system/futbolnet-api.service.d/gemini.conf
+          rm -f "$gemini_tmp"
+          sudo_run systemctl daemon-reload
+
+          sudo_run systemctl restart futbolnet-api
+          sudo_run systemctl is-active --quiet futbolnet-api
           echo "futbolnet-api restarted."
+
+          echo "Raising nginx read timeout for /api/..."
+          nginx_py="$(mktemp)"
+          restore_py="$(mktemp)"
+          cat > "$nginx_py" << 'PY'
+          import re
+          from pathlib import Path
+
+          LOCATION = re.compile(r'(?m)^[ \t]*location[ \t]+(?:\^~[ \t]+)?/api/?[ \t]*\{')
+          NGINX_DIRS = [Path("/etc/nginx/sites-enabled"), Path("/etc/nginx/conf.d")]
+          BACKUP_DIR = Path("/tmp/nginx-planilla-bak")
+          BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+
+          def api_locations(text: str):
+              return list(LOCATION.finditer(text))
+
+          def is_miliga(path: Path, text: str) -> bool:
+              if "presupuester" in path.name:
+                  return False
+              return (
+                  "miliga.com.ar" in text
+                  or "/backoffice/" in text
+                  or path.name.startswith("futbolnet")
+              )
+
+          def patch(text: str) -> str:
+              for match in reversed(api_locations(text)):
+                  rest = text[match.end():]
+                  brace_end = rest.find("}")
+                  if brace_end == -1:
+                      continue
+                  block = rest[:brace_end]
+                  if "proxy_read_timeout" in block:
+                      new_block = re.sub(
+                          r'proxy_read_timeout\s+[^;]+;',
+                          'proxy_read_timeout 180s;',
+                          block,
+                          count=1,
+                      )
+                      if "proxy_send_timeout" not in new_block:
+                          new_block = "\n            proxy_send_timeout 180s;" + new_block
+                  else:
+                      new_block = (
+                          "\n            proxy_read_timeout 180s;\n"
+                          "            proxy_send_timeout 180s;"
+                          + block
+                      )
+                  text = text[:match.end()] + new_block + rest[brace_end:]
+              return text
+
+          for folder in NGINX_DIRS:
+              if not folder.is_dir():
+                  continue
+              for backup in list(folder.glob("*.bak-planilla")):
+                  dest = BACKUP_DIR / f"{folder.name}--{backup.name}"
+                  if not dest.exists():
+                      dest.write_text(backup.read_text())
+                  site_name = backup.name[: -len(".bak-planilla")]
+                  target = folder / site_name
+                  if target.exists() and not is_miliga(target, target.read_text()):
+                      target.write_text(backup.read_text())
+                      print(f"Restored unrelated site {target}")
+                  backup.unlink()
+                  print(f"Removed leftover {backup}")
+
+          updated = []
+          for folder in NGINX_DIRS:
+              if not folder.is_dir():
+                  continue
+              for path in folder.iterdir():
+                  if not path.is_file() or path.name.endswith(".bak-planilla"):
+                      continue
+                  original = path.read_text()
+                  if not is_miliga(path, original) or not api_locations(original):
+                      continue
+                  patched = patch(original)
+                  if patched == original:
+                      print(f"{path} already allows a long /api/ read")
+                      updated.append(str(path))
+                      continue
+                  dest = BACKUP_DIR / f"{folder.name}--{path.name}.bak-planilla"
+                  if not dest.exists():
+                      dest.write_text(original)
+                  path.write_text(patched)
+                  updated.append(str(path))
+                  print(f"Updated {path}")
+          if not updated:
+              raise SystemExit("No nginx location /api/ found for miliga")
+          PY
+          cat > "$restore_py" << 'PY'
+          from pathlib import Path
+
+          backup_dir = Path("/tmp/nginx-planilla-bak")
+          if not backup_dir.is_dir():
+              raise SystemExit("No nginx backups to restore")
+          for backup in backup_dir.glob("*--*.bak-planilla"):
+              folder_name, file_name = backup.name.split("--", 1)
+              site_name = file_name[: -len(".bak-planilla")]
+              target = Path("/etc/nginx") / folder_name / site_name
+              target.write_text(backup.read_text())
+              print(f"Restored {target}")
+          PY
+          sudo_run python3 "$nginx_py"
+          rm -f "$nginx_py"
+          if ! sudo_run nginx -t; then
+            echo "nginx -t failed; restoring previous site config"
+            sudo_run python3 "$restore_py"
+            rm -f "$restore_py"
+            exit 1
+          fi
+          rm -f "$restore_py"
+          sudo_run systemctl reload nginx
+          echo "nginx reloaded."

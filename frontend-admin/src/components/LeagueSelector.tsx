@@ -50,7 +50,7 @@ export function LeagueSelector() {
 
   if (isLoading) {
     return (
-      <FormControl size="small" sx={{ minWidth: 180 }}>
+      <FormControl size="small" sx={{ minWidth: 0, width: { xs: '100%', sm: 180 }, maxWidth: { xs: 180, sm: 280 } }}>
         <Skeleton variant="rounded" height={40} />
       </FormControl>
     )
@@ -61,13 +61,20 @@ export function LeagueSelector() {
   }
 
   return (
-    <FormControl size="small" sx={{ minWidth: { xs: 140, sm: 200 } }}>
+    <FormControl size="small" sx={{ minWidth: 0, width: { xs: '100%', sm: 220 }, maxWidth: { xs: 180, sm: 280 } }}>
       <InputLabel id="league-select-label">League</InputLabel>
       <Select
         labelId="league-select-label"
         label="League"
         value={activeLeague?.id ?? ''}
         onChange={handleChange}
+        sx={{
+          '& .MuiSelect-select': {
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          },
+        }}
       >
         <MenuItem value="">
           <em>Select league</em>

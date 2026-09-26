@@ -68,6 +68,9 @@
       next.setAttribute('data-page-division', pageDiv);
       block.replaceWith(next);
       bindBadges(next);
+      if (typeof window.v2BindShareButtons === 'function') {
+        window.v2BindShareButtons(next);
+      }
 
       if (push && pageDiv !== 'all') {
         const nextUrl = pageBase + buildQuery({

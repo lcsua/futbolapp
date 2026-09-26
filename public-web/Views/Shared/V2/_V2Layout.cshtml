@@ -16,6 +16,7 @@
       data-home-league="@homeLeagueSlug"
       data-pinned-home-league="@pinnedHomeLeague">
 @{
+    var leagueTheme = PublicWeb.Helpers.LeagueTheme.From(ViewBag.League as PublicWeb.Models.Public.LeagueViewModel);
     var seoUrls = Context.RequestServices.GetRequiredService<PublicWeb.Seo.SeoUrlBuilder>();
     var seoOptions = Context.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<PublicWeb.Seo.SeoOptions>>().Value;
     var title = ViewData["Title"] as string ?? "MiLiga";
@@ -32,8 +33,11 @@
         ?? Context.Request.Path.Value
         ?? "/";
     var canonical = seoUrls.Absolute(canonicalPath);
+    var ogUrlRaw = ViewData["OgUrl"] as string;
+    var ogUrl = string.IsNullOrWhiteSpace(ogUrlRaw) ? canonical : seoUrls.Absolute(ogUrlRaw);
     var ogImage = seoUrls.AbsoluteMedia(ViewData["OgImage"] as string);
     var ogType = ViewData["OgType"] as string ?? "website";
+    var largeOg = ViewData["LargeOgImage"] as bool? == true;
     var allowIndexing = seoOptions.AllowIndexing;
     var noIndex = !allowIndexing || ViewData["NoIndex"] as bool? == true;
     var crumbs = ViewBag.SeoBreadcrumbs as IReadOnlyList<PublicWeb.Seo.SeoBreadcrumbItem>;
@@ -55,12 +59,19 @@
     <meta property="og:title" content="@ogTitle" />
     <meta property="og:description" content="@description" />
     <meta property="og:type" content="@ogType" />
-    <meta property="og:url" content="@canonical" />
+    <meta property="og:url" content="@ogUrl" />
     <meta property="og:image" content="@ogImage" />
+    @if (largeOg)
+    {
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="@ogTitle" />
+    }
     <meta property="og:site_name" content="@seoOptions.SiteName" />
     <meta property="og:locale" content="es_AR" />
 
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="@(largeOg ? "summary_large_image" : "summary")" />
     <meta name="twitter:title" content="@ogTitle" />
     <meta name="twitter:description" content="@description" />
     <meta name="twitter:image" content="@ogImage" />
@@ -102,6 +113,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    @if (!string.IsNullOrWhiteSpace(leagueTheme.GoogleFontsHref))
+    {
+        <link href="@leagueTheme.GoogleFontsHref" rel="stylesheet" />
+    }
     <link rel="stylesheet" href="~/css/v2/v2.css" asp-append-version="true" />
 
     @if (string.Equals(ViewBag.V2ActiveNav as string, "home", StringComparison.Ordinal))
@@ -112,14 +127,14 @@
                 var params = new URLSearchParams(location.search);
                 if (params.has('inicio') || params.has('todas')) return;
                 if (/bot|crawl|spider|slurp|googlebot|bingbot|yandex|facebookexternalhit/i.test(navigator.userAgent)) return;
-                var path = localStorage.getItem('miliga-home-league') || localStorage.getItem('miliga-last-league');
+                var path = localStorage.getItem('miliga-home-league');
                 if (!path) {
                   var cookies = document.cookie ? document.cookie.split('; ') : [];
                   for (var i = 0; i < cookies.length; i++) {
                     var parts = cookies[i].split('=');
-                    if (parts[0] === 'miliga-home-league' || (!path && parts[0] === 'miliga-last-league')) {
+                    if (parts[0] === 'miliga-home-league') {
                       path = decodeURIComponent(parts.slice(1).join('='));
-                      if (parts[0] === 'miliga-home-league') break;
+                      break;
                     }
                   }
                 }
@@ -136,6 +151,10 @@
     @if (!string.IsNullOrWhiteSpace(breadcrumbJson))
     {
         <script type="application/ld+json">@Html.Raw(breadcrumbJson)</script>
+    }
+    @if (leagueTheme.HasCustomizations)
+    {
+        <style>#v2-app-root { @Html.Raw(leagueTheme.InlineStyle) }</style>
     }
 </head>
 <body>
@@ -157,6 +176,7 @@
 <script src="~/js/v2/share.js" asp-append-version="true"></script>
 <script src="~/js/v2/follow.js" asp-append-version="true"></script>
 <script src="~/js/v2/home-league.js" asp-append-version="true"></script>
+<script src="~/js/v2/action-help.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -22,6 +22,100 @@ namespace FootballManager.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.Advertisement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AdvertiserName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("advertiser_name");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DesktopImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("desktop_image_url");
+
+                    b.Property<DateTime?>("EndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("LeagueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("league_id");
+
+                    b.Property<string>("MobileImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("mobile_image_url");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Priority")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("priority");
+
+                    b.Property<string>("Slot")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("slot");
+
+                    b.Property<DateTime?>("StartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at");
+
+                    b.Property<string>("TargetUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("target_url");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EndsAt");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("LeagueId");
+
+                    b.HasIndex("StartsAt");
+
+                    b.HasIndex("LeagueId", "Slot");
+
+                    b.ToTable("advertisements", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_advertisements_ends_at_gte_starts_at", "ends_at IS NULL OR starts_at IS NULL OR ends_at >= starts_at");
+                        });
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.Club", b =>
                 {
                     b.Property<Guid>("Id")
@@ -595,6 +689,16 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_public");
 
+                    b.Property<string>("FontKey")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("font_key");
+
+                    b.Property<string>("HeroImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("hero_image_url");
+
                     b.Property<string>("LogoUrl")
                         .IsRequired()
                         .HasColumnType("text")
@@ -606,11 +710,21 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
+                    b.Property<string>("PrimaryColor")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("primary_color");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)")
                         .HasColumnName("slug");
+
+                    b.Property<string>("TeamHeroImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("team_hero_image_url");
 
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -950,6 +1064,51 @@ namespace FootballManager.Infrastructure.Migrations
                     b.ToTable("match_rules", (string)null);
                 });
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.Permission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("module");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("permissions", (string)null);
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.Player", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1059,6 +1218,124 @@ namespace FootballManager.Infrastructure.Migrations
                     b.ToTable("players", (string)null);
                 });
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.PushFollow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("NotifyFixture")
+                        .HasColumnType("boolean")
+                        .HasColumnName("notify_fixture");
+
+                    b.Property<bool>("NotifyNews")
+                        .HasColumnType("boolean")
+                        .HasColumnName("notify_news");
+
+                    b.Property<bool>("NotifyResults")
+                        .HasColumnType("boolean")
+                        .HasColumnName("notify_results");
+
+                    b.Property<bool>("NotifyStandings")
+                        .HasColumnType("boolean")
+                        .HasColumnName("notify_standings");
+
+                    b.Property<Guid>("PushSubscriptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("push_subscription_id");
+
+                    b.Property<Guid>("ScopeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("scope_id");
+
+                    b.Property<int>("ScopeType")
+                        .HasColumnType("integer")
+                        .HasColumnName("scope_type");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ScopeType", "ScopeId");
+
+                    b.HasIndex("PushSubscriptionId", "ScopeType", "ScopeId")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("push_follows", (string)null);
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.PushSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Auth")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("auth");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("endpoint");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_used_at");
+
+                    b.Property<string>("P256dh")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("p256dh");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("user_agent");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Endpoint")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.ToTable("push_subscriptions", (string)null);
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.Result", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1113,16 +1390,33 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Code")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("code");
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("description");
+
+                    b.Property<bool>("IsSystem")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_system");
+
+                    b.Property<Guid?>("LeagueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("league_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1131,14 +1425,41 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnName("name");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasFilter("code IS NOT NULL");
+
                     b.HasIndex("Name")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("league_id IS NULL");
+
+                    b.HasIndex("LeagueId", "Name")
+                        .IsUnique()
+                        .HasFilter("league_id IS NOT NULL");
 
                     b.ToTable("roles", (string)null);
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.RolePermission", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("permission_id");
+
+                    b.HasKey("RoleId", "PermissionId");
+
+                    b.HasIndex("PermissionId");
+
+                    b.ToTable("role_permissions", (string)null);
                 });
 
             modelBuilder.Entity("FootballManager.Domain.Entities.Season", b =>
@@ -1406,6 +1727,62 @@ namespace FootballManager.Infrastructure.Migrations
                     b.ToTable("team_division_seasons", (string)null);
                 });
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.TeamNameAlias", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Alias")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("alias");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid>("LeagueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("league_id");
+
+                    b.Property<string>("NormalizedAlias")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("normalized_alias");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("source");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("team_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TeamId");
+
+                    b.HasIndex("LeagueId", "NormalizedAlias")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("team_name_aliases", (string)null);
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1497,14 +1874,20 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnName("created_at");
 
                     b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
 
                     b.Property<Guid>("LeagueId")
                         .HasColumnType("uuid")
                         .HasColumnName("league_id");
 
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -1514,10 +1897,23 @@ namespace FootballManager.Infrastructure.Migrations
 
                     b.HasIndex("LeagueId");
 
+                    b.HasIndex("RoleId");
+
                     b.HasIndex("UserId", "LeagueId")
                         .IsUnique();
 
                     b.ToTable("user_leagues", (string)null);
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.Advertisement", b =>
+                {
+                    b.HasOne("FootballManager.Domain.Entities.League", "League")
+                        .WithMany()
+                        .HasForeignKey("LeagueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("League");
                 });
 
             modelBuilder.Entity("FootballManager.Domain.Entities.Club", b =>
@@ -1812,6 +2208,17 @@ namespace FootballManager.Infrastructure.Migrations
                     b.Navigation("Team");
                 });
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.PushFollow", b =>
+                {
+                    b.HasOne("FootballManager.Domain.Entities.PushSubscription", "PushSubscription")
+                        .WithMany("Follows")
+                        .HasForeignKey("PushSubscriptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PushSubscription");
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.Result", b =>
                 {
                     b.HasOne("FootballManager.Domain.Entities.Fixture", "Fixture")
@@ -1821,6 +2228,35 @@ namespace FootballManager.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Fixture");
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.Role", b =>
+                {
+                    b.HasOne("FootballManager.Domain.Entities.League", "League")
+                        .WithMany()
+                        .HasForeignKey("LeagueId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("League");
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.RolePermission", b =>
+                {
+                    b.HasOne("FootballManager.Domain.Entities.Permission", "Permission")
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FootballManager.Domain.Entities.Role", "Role")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("FootballManager.Domain.Entities.Season", b =>
@@ -1871,6 +2307,25 @@ namespace FootballManager.Infrastructure.Migrations
                     b.Navigation("Team");
                 });
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.TeamNameAlias", b =>
+                {
+                    b.HasOne("FootballManager.Domain.Entities.League", "League")
+                        .WithMany()
+                        .HasForeignKey("LeagueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FootballManager.Domain.Entities.Team", "Team")
+                        .WithMany()
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("League");
+
+                    b.Navigation("Team");
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.UserLeague", b =>
                 {
                     b.HasOne("FootballManager.Domain.Entities.League", "League")
@@ -1879,6 +2334,11 @@ namespace FootballManager.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("FootballManager.Domain.Entities.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("FootballManager.Domain.Entities.User", "User")
                         .WithMany("UserLeagues")
                         .HasForeignKey("UserId")
@@ -1886,6 +2346,8 @@ namespace FootballManager.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("League");
+
+                    b.Navigation("Role");
 
                     b.Navigation("User");
                 });
@@ -1925,6 +2387,16 @@ namespace FootballManager.Infrastructure.Migrations
                     b.Navigation("Teams");
 
                     b.Navigation("UserLeagues");
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.PushSubscription", b =>
+                {
+                    b.Navigation("Follows");
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.Role", b =>
+                {
+                    b.Navigation("RolePermissions");
                 });
 
             modelBuilder.Entity("FootballManager.Domain.Entities.Season", b =>

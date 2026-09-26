@@ -68,7 +68,8 @@ public class LeagueHomeComposerTests
         var panel = Assert.Single(home.DivisionPanels);
         Assert.Equal(8, panel.MatchCount);
         Assert.Equal(3, panel.Matches.Count);
-        Assert.Null(home.Stats.TeamCount);
+        Assert.Equal(16, panel.Teams.Count);
+        Assert.Equal(16, home.Stats.TeamCount);
         Assert.Equal(1, home.Stats.DivisionCount);
     }
 
@@ -91,6 +92,90 @@ public class LeagueHomeComposerTests
         Assert.Equal("a", home.SelectedDivisionSlug);
         Assert.Null(home.Stats.CurrentRound);
         Assert.Null(home.Stats.TeamCount);
+    }
+
+    [Fact]
+    public void Compose_WhenStandingsEmpty_FillsTeamsFromFixture()
+    {
+        var crest = "/uploads/teams/aguilas.png";
+        var calendar = new SeasonGroupedViewModel<MatchdayGroupViewModel>
+        {
+            Divisions =
+            {
+                new DivisionGroupViewModel<MatchdayGroupViewModel>
+                {
+                    DivisionName = "2012/13",
+                    DivisionSlug = "201213",
+                    DefaultRound = 1,
+                    Data =
+                    {
+                        new MatchdayGroupViewModel
+                        {
+                            Round = 1,
+                            Matches =
+                            {
+                                Match("Águilas", "Santo Domingo", "Scheduled", crest),
+                                Match("Talleres", "Barrita FC", "Scheduled"),
+                                Match("Local", "Visitante", "Scheduled"),
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        var home = LeagueHomeComposer.Compose(
+            new LeagueViewModel { Name = "Liga", Slug = "liga" },
+            "Clausura",
+            "clausura",
+            new[] { new DivisionViewModel { Name = "2012/13", Slug = "201213" } },
+            null,
+            calendar,
+            null);
+
+        var names = Assert.Single(home.DivisionPanels).Teams.Select(t => t.Name).ToList();
+        Assert.Equal("Águilas", names[0]);
+        Assert.Equal(
+            new HashSet<string> { "Águilas", "Barrita FC", "Santo Domingo", "Talleres" },
+            names.ToHashSet());
+        Assert.Equal(4, home.Stats.TeamCount);
+    }
+
+    [Fact]
+    public void Compose_PrefersStandingsTeamsOverFixture()
+    {
+        var calendar = new SeasonGroupedViewModel<MatchdayGroupViewModel>
+        {
+            Divisions =
+            {
+                new DivisionGroupViewModel<MatchdayGroupViewModel>
+                {
+                    DivisionSlug = "a",
+                    DefaultRound = 1,
+                    Data =
+                    {
+                        new MatchdayGroupViewModel
+                        {
+                            Round = 1,
+                            Matches = { Match("Extra", "Otro", "Scheduled") }
+                        }
+                    }
+                }
+            }
+        };
+
+        var home = LeagueHomeComposer.Compose(
+            new LeagueViewModel { Name = "Liga", Slug = "liga" },
+            "Apertura",
+            "apertura",
+            new[] { new DivisionViewModel { Name = "A", Slug = "a" } },
+            Standings(),
+            calendar,
+            null);
+
+        var names = home.DivisionPanels.Single(p => p.DivisionSlug == "a").Teams.Select(t => t.Name).ToList();
+        Assert.Equal(new[] { "Belgrano", "Pumas" }, names);
+        Assert.DoesNotContain("Extra", names);
     }
 
     [Fact]
@@ -178,6 +263,28 @@ public class LeagueHomeComposerTests
         };
 
         Assert.Equal(2, LeagueHomeComposer.CountUniqueTeams(standings));
+    }
+
+    [Fact]
+    public void BuildHeroStats_SeasonWideCountsDifferFromASingleDivisionSlice()
+    {
+        var all = Standings();
+        var oneDivision = new SeasonGroupedViewModel<StandingsRowViewModel>
+        {
+            Divisions = { all.Divisions[0] }
+        };
+        var calendar = Calendar();
+
+        var seasonWide = LeagueHomeComposer.BuildHeroStats(
+            2, LeagueHomeComposer.CountUniqueTeams(all), calendar);
+        var filtered = LeagueHomeComposer.BuildHeroStats(
+            1, LeagueHomeComposer.CountUniqueTeams(oneDivision), calendar);
+
+        Assert.Equal(2, seasonWide.DivisionCount);
+        Assert.Equal(4, seasonWide.TeamCount);
+        Assert.Equal(2, seasonWide.CurrentRound);
+        Assert.True(filtered.TeamCount < seasonWide.TeamCount);
+        Assert.Equal(1, filtered.DivisionCount);
     }
 
     [Theory]
@@ -283,12 +390,12 @@ public class LeagueHomeComposerTests
         Team = new TeamViewModel { Id = Guid.NewGuid(), Name = name, Slug = name.ToLowerInvariant().Replace(' ', '-') }
     };
 
-    private static MatchViewModel Match(string home, string away, string status) => new()
+    private static MatchViewModel Match(string home, string away, string status, string? homeLogo = null) => new()
     {
         Id = Guid.NewGuid(),
         Kickoff = new DateTime(2026, 8, 22, 14, 0, 0),
         Status = status,
-        HomeTeam = new TeamViewModel { Name = home, Slug = home.ToLowerInvariant() },
+        HomeTeam = new TeamViewModel { Name = home, Slug = home.ToLowerInvariant(), LogoUrl = homeLogo },
         AwayTeam = new TeamViewModel { Name = away, Slug = away.ToLowerInvariant() },
         FieldName = "3"
     };

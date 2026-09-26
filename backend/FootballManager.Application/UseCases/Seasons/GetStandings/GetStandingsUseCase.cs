@@ -45,9 +45,9 @@ public sealed class GetStandingsUseCase : IGetStandingsUseCase
             foreach (var f in divGroup)
             {
                 var homeTeamId = f.HomeTeamDivisionSeason.TeamId;
-                var homeTeamName = f.HomeTeamDivisionSeason.Team.Name;
+                var homeTeamName = f.HomeTeamDivisionSeason.Team.CompetitionName;
                 var awayTeamId = f.AwayTeamDivisionSeason.TeamId;
-                var awayTeamName = f.AwayTeamDivisionSeason.Team.Name;
+                var awayTeamName = f.AwayTeamDivisionSeason.Team.CompetitionName;
                 var homeGoals = f.Result!.HomeTeamGoals;
                 var awayGoals = f.Result!.AwayTeamGoals;
 

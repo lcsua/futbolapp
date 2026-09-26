@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, type RefObject, type FormEvent } from 'react'
 import {
   Box,
   Button,
@@ -10,16 +10,28 @@ import {
   Checkbox,
   Tooltip,
   InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material'
-import type { LeagueFormData } from '../api/types'
+import type { LeagueFormData, LeagueFormFiles } from '../api/types'
 import { leaguesService } from '../api/leagues'
 
 const ACCEPT_IMAGES = 'image/jpeg,image/png,image/gif,image/webp'
 const MAX_FILE_BYTES = 5 * 1024 * 1024
+const DEFAULT_PRIMARY = '#16A34A'
+
+const FONT_OPTIONS = [
+  { value: '', label: 'Predeterminada (Inter)' },
+  { value: 'barlow', label: 'Deportiva (Barlow)' },
+  { value: 'nunito', label: 'Amigable (Nunito)' },
+  { value: 'rubik', label: 'Moderna (Rubik)' },
+]
 
 export interface LeagueFormProps {
   initialValues?: Partial<LeagueFormData>
-  onSubmit: (data: LeagueFormData, logoFile?: File | null) => void | Promise<void>
+  onSubmit: (data: LeagueFormData, files?: LeagueFormFiles) => void | Promise<void>
   loading?: boolean
   error?: string | null
   submitLabel: string
@@ -36,6 +48,10 @@ const defaultValues: LeagueFormData = {
   logoUrl: '',
   isPublic: false,
   isActive: true,
+  primaryColor: '',
+  fontKey: '',
+  heroImageUrl: '',
+  teamHeroImageUrl: '',
 }
 
 export function LeagueForm({
@@ -65,6 +81,18 @@ export function LeagueForm({
   const logoInputRef = useRef<HTMLInputElement>(null)
   const [isPublic, setIsPublic] = useState(values.isPublic ?? false)
   const [isActive, setIsActive] = useState(values.isActive ?? true)
+  const [primaryColor, setPrimaryColor] = useState(values.primaryColor ?? '')
+  const [fontKey, setFontKey] = useState(values.fontKey ?? '')
+  const [heroImageUrl, setHeroImageUrl] = useState(values.heroImageUrl ?? '')
+  const [heroFile, setHeroFile] = useState<File | null>(null)
+  const [heroPreview, setHeroPreview] = useState<string | null>(values.heroImageUrl?.trim() || null)
+  const [heroRemoved, setHeroRemoved] = useState(false)
+  const heroInputRef = useRef<HTMLInputElement>(null)
+  const [teamHeroImageUrl, setTeamHeroImageUrl] = useState(values.teamHeroImageUrl ?? '')
+  const [teamHeroFile, setTeamHeroFile] = useState<File | null>(null)
+  const [teamHeroPreview, setTeamHeroPreview] = useState<string | null>(values.teamHeroImageUrl?.trim() || null)
+  const [teamHeroRemoved, setTeamHeroRemoved] = useState(false)
+  const teamHeroInputRef = useRef<HTMLInputElement>(null)
 
   const checkSlug = useCallback(async (s: string) => {
     if (!s.trim()) {
@@ -96,8 +124,30 @@ export function LeagueForm({
       setFileError(null)
       setIsPublic(initialValues.isPublic ?? false)
       setIsActive(initialValues.isActive ?? true)
+      setPrimaryColor(initialValues.primaryColor ?? '')
+      setFontKey(initialValues.fontKey ?? '')
+      setHeroImageUrl(initialValues.heroImageUrl ?? '')
+      setHeroFile(null)
+      setHeroPreview(initialValues.heroImageUrl?.trim() || null)
+      setHeroRemoved(false)
+      setTeamHeroImageUrl(initialValues.teamHeroImageUrl ?? '')
+      setTeamHeroFile(null)
+      setTeamHeroPreview(initialValues.teamHeroImageUrl?.trim() || null)
+      setTeamHeroRemoved(false)
     }
-  }, [initialValues?.name, initialValues?.slug, initialValues?.country, initialValues?.description, initialValues?.logoUrl, initialValues?.isPublic, initialValues?.isActive])
+  }, [
+    initialValues?.name,
+    initialValues?.slug,
+    initialValues?.country,
+    initialValues?.description,
+    initialValues?.logoUrl,
+    initialValues?.isPublic,
+    initialValues?.isActive,
+    initialValues?.primaryColor,
+    initialValues?.fontKey,
+    initialValues?.heroImageUrl,
+    initialValues?.teamHeroImageUrl,
+  ])
 
   useEffect(() => {
     if (!slugManuallyEdited && name) {
@@ -113,37 +163,34 @@ export function LeagueForm({
     return () => clearTimeout(timer)
   }, [slug, checkSlug])
 
-  const handleLogoFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const pickImage = useCallback((
+    file: File | undefined,
+    setFile: (file: File | null) => void,
+    setPreview: (url: string | null) => void,
+    setRemoved: (removed: boolean) => void,
+    inputRef: RefObject<HTMLInputElement | null>,
+    label: string,
+  ) => {
     setFileError(null)
-    const file = e.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/')) {
-      setFileError('El logo debe ser una imagen (JPEG, PNG, GIF o WebP).')
-      if (logoInputRef.current) logoInputRef.current.value = ''
+      setFileError(`${label} debe ser una imagen (JPEG, PNG, GIF o WebP).`)
+      if (inputRef.current) inputRef.current.value = ''
       return
     }
     if (file.size > MAX_FILE_BYTES) {
-      setFileError('El logo no puede superar 5 MB.')
-      if (logoInputRef.current) logoInputRef.current.value = ''
+      setFileError(`${label} no puede superar 5 MB.`)
+      if (inputRef.current) inputRef.current.value = ''
       return
     }
-    setLogoFile(file)
-    setLogoRemoved(false)
+    setFile(file)
+    setRemoved(false)
     const reader = new FileReader()
-    reader.onload = () => setLogoPreview(reader.result as string)
+    reader.onload = () => setPreview(reader.result as string)
     reader.readAsDataURL(file)
   }, [])
 
-  const clearLogo = useCallback(() => {
-    setLogoFile(null)
-    setLogoUrl('')
-    setLogoPreview(null)
-    setLogoRemoved(true)
-    setFileError(null)
-    if (logoInputRef.current) logoInputRef.current.value = ''
-  }, [])
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (fileError) return
     const finalSlug = slug.trim() || leaguesService.generateSlug(name)
@@ -155,8 +202,16 @@ export function LeagueForm({
       logoUrl: logoRemoved ? '' : logoUrl.trim(),
       isPublic,
       isActive,
+      primaryColor: primaryColor.trim(),
+      fontKey: fontKey.trim(),
+      heroImageUrl: heroRemoved ? '' : heroImageUrl.trim(),
+      teamHeroImageUrl: teamHeroRemoved ? '' : teamHeroImageUrl.trim(),
     }
-    void onSubmit(data, logoRemoved ? null : logoFile)
+    void onSubmit(data, {
+      logoFile: logoRemoved ? null : logoFile,
+      heroFile: heroRemoved ? null : heroFile,
+      teamHeroFile: teamHeroRemoved ? null : teamHeroFile,
+    })
   }
 
   const slugError = slugAvailable === false
@@ -165,7 +220,7 @@ export function LeagueForm({
     : ''
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 480 }}>
+    <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 560 }}>
       {title && (
         <Typography variant="h6" component="h2" sx={{ mb: 2, fontWeight: 600 }}>
           {title}
@@ -246,7 +301,7 @@ export function LeagueForm({
         ref={logoInputRef}
         type="file"
         accept={ACCEPT_IMAGES}
-        onChange={handleLogoFileChange}
+        onChange={(e) => pickImage(e.target.files?.[0], setLogoFile, setLogoPreview, setLogoRemoved, logoInputRef, 'El logo')}
         disabled={loading}
         style={{ display: 'block', marginBottom: 8 }}
         aria-label="Subir logo de la liga"
@@ -264,7 +319,17 @@ export function LeagueForm({
             alt="Vista previa del logo"
             sx={{ width: 64, height: 64, objectFit: 'contain', border: '1px solid', borderColor: 'divider', borderRadius: 1, bgcolor: 'background.paper' }}
           />
-          <Button size="small" onClick={clearLogo} disabled={loading}>
+          <Button
+            size="small"
+            onClick={() => {
+              setLogoFile(null)
+              setLogoUrl('')
+              setLogoPreview(null)
+              setLogoRemoved(true)
+              if (logoInputRef.current) logoInputRef.current.value = ''
+            }}
+            disabled={loading}
+          >
             Quitar logo
           </Button>
         </Box>
@@ -282,8 +347,141 @@ export function LeagueForm({
         }}
         disabled={loading}
         helperText="Podés subir un archivo o pegar una URL. Si subís un archivo, reemplaza la URL."
-        sx={{ mb: 2 }}
+        sx={{ mb: 3 }}
       />
+
+      <Typography variant="h6" component="h3" sx={{ mb: 1, fontWeight: 600 }}>
+        Apariencia del sitio público
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Si no cambiás nada, la liga se ve como ahora: verde MiLiga, Inter y las fotos de cabecera del producto.
+      </Typography>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+        <Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            Color principal
+          </Typography>
+          <Box
+            component="input"
+            type="color"
+            value={primaryColor.trim() || DEFAULT_PRIMARY}
+            onChange={(e) => setPrimaryColor(e.target.value)}
+            disabled={loading}
+            aria-label="Color principal de la liga"
+            sx={{ width: 56, height: 40, p: 0.25, cursor: 'pointer', bgcolor: 'transparent', border: '1px solid', borderColor: 'divider', borderRadius: 1 }}
+          />
+        </Box>
+        <Button
+          size="small"
+          disabled={loading || !primaryColor.trim()}
+          onClick={() => setPrimaryColor('')}
+        >
+          Usar verde MiLiga
+        </Button>
+      </Box>
+
+      <FormControl fullWidth sx={{ mb: 3 }}>
+        <InputLabel id="league-font-label">Fuente</InputLabel>
+        <Select
+          labelId="league-font-label"
+          label="Fuente"
+          value={fontKey}
+          onChange={(e) => setFontKey(String(e.target.value))}
+          disabled={loading}
+        >
+          {FONT_OPTIONS.map((opt) => (
+            <MenuItem key={opt.value || 'inter'} value={opt.value}>
+              {opt.label}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        Cabecera de la liga
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+        Portada, fixture, posiciones y resultados. Vacío = foto actual de MiLiga.
+      </Typography>
+      <input
+        ref={heroInputRef}
+        type="file"
+        accept={ACCEPT_IMAGES}
+        onChange={(e) => {
+          pickImage(e.target.files?.[0], setHeroFile, setHeroPreview, setHeroRemoved, heroInputRef, 'La cabecera de la liga')
+          setHeroImageUrl('')
+        }}
+        disabled={loading}
+        style={{ display: 'block', marginBottom: 8 }}
+        aria-label="Subir cabecera de la liga"
+      />
+      {heroPreview && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+          <Box
+            component="img"
+            src={heroPreview}
+            alt="Vista previa de la cabecera de la liga"
+            sx={{ width: 160, height: 64, objectFit: 'cover', border: '1px solid', borderColor: 'divider', borderRadius: 1 }}
+          />
+          <Button
+            size="small"
+            onClick={() => {
+              setHeroFile(null)
+              setHeroImageUrl('')
+              setHeroPreview(null)
+              setHeroRemoved(true)
+              if (heroInputRef.current) heroInputRef.current.value = ''
+            }}
+            disabled={loading}
+          >
+            Usar foto de MiLiga
+          </Button>
+        </Box>
+      )}
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        Cabecera del equipo
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+        Detalle de un equipo. Vacío = foto actual de MiLiga.
+      </Typography>
+      <input
+        ref={teamHeroInputRef}
+        type="file"
+        accept={ACCEPT_IMAGES}
+        onChange={(e) => {
+          pickImage(e.target.files?.[0], setTeamHeroFile, setTeamHeroPreview, setTeamHeroRemoved, teamHeroInputRef, 'La cabecera del equipo')
+          setTeamHeroImageUrl('')
+        }}
+        disabled={loading}
+        style={{ display: 'block', marginBottom: 8 }}
+        aria-label="Subir cabecera del equipo"
+      />
+      {teamHeroPreview && (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3, flexWrap: 'wrap' }}>
+          <Box
+            component="img"
+            src={teamHeroPreview}
+            alt="Vista previa de la cabecera del equipo"
+            sx={{ width: 160, height: 64, objectFit: 'cover', border: '1px solid', borderColor: 'divider', borderRadius: 1 }}
+          />
+          <Button
+            size="small"
+            onClick={() => {
+              setTeamHeroFile(null)
+              setTeamHeroImageUrl('')
+              setTeamHeroPreview(null)
+              setTeamHeroRemoved(true)
+              if (teamHeroInputRef.current) teamHeroInputRef.current.value = ''
+            }}
+            disabled={loading}
+          >
+            Usar foto de MiLiga
+          </Button>
+        </Box>
+      )}
+
       <Tooltip title="Inactive leagues may be hidden from lists and selection">
         <FormControlLabel
           control={

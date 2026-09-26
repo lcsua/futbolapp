@@ -1,7 +1,7 @@
 {
   "translation": {
     "app": {
-      "title": "Ligap Admin"
+      "title": "MiLiga Admin"
     },
     "nav": {
       "leagues": "Ligas",
@@ -18,13 +18,78 @@
       "standings": "Posiciones",
       "competitionRules": "Reglas de competición",
       "matchRules": "Reglas del partido",
-      "competitionSettings": "Configuración"
+      "competitionSettings": "Configuración",
+      "administration": "Administración",
+      "users": "Usuarios",
+      "roles": "Roles",
+      "ads": "Publicidad"
     },
     "common": {
       "save": "Guardar",
       "saveError": "Error al guardar",
       "logout": "Cerrar sesión",
       "cancel": "Cancelar"
+    },
+    "users": {
+      "title": "Usuarios de la liga",
+      "create": "Nuevo usuario",
+      "fullName": "Nombre completo",
+      "email": "Email",
+      "password": "Contraseña",
+      "passwordHint": "Mínimo 6 caracteres. Si el email ya existe, se asocia a esta liga y se actualiza la contraseña si la completás.",
+      "role": "Rol",
+      "actions": "Acciones",
+      "resetPassword": "Cambiar contraseña",
+      "resetPasswordTitle": "Nueva contraseña",
+      "resetPasswordHint": "Mínimo 6 caracteres.",
+      "resetPasswordError": "No se pudo cambiar la contraseña",
+      "resetPasswordSuccess": "Contraseña actualizada",
+      "remove": "Quitar de la liga",
+      "removeConfirm": "¿Quitar este usuario de la liga?",
+      "hint": "Los usuarios se asocian a la liga activa. El rol Carga solo puede ver Partidos y Posiciones.",
+      "noLeague": "No hay liga seleccionada.",
+      "goToLeagues": "Ir a Ligas",
+      "loadError": "Error al cargar usuarios",
+      "createError": "No se pudo crear el usuario"
+    },
+    "roles": {
+      "title": "Roles y permisos",
+      "create": "Nuevo rol",
+      "edit": "Editar rol",
+      "name": "Nombre",
+      "description": "Descripción",
+      "permissions": "Permisos",
+      "system": "Sistema",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Eliminar este rol?",
+      "adminLocked": "El rol Administrador siempre tiene todos los permisos.",
+      "saveError": "No se pudo guardar el rol",
+      "loadError": "Error al cargar roles",
+      "noLeague": "No hay liga seleccionada.",
+      "goToLeagues": "Ir a Ligas"
+    },
+    "permissionModules": {
+      "organization": "Organización",
+      "competition": "Competición",
+      "settings": "Configuración",
+      "admin": "Administración"
+    },
+    "permissions": {
+      "leagues": "Ligas",
+      "seasons": "Temporadas",
+      "season_setup": "Configuración de temporada",
+      "divisions": "Divisiones",
+      "teams": "Equipos",
+      "clubs": "Clubes",
+      "fields": "Canchas",
+      "fixtures": "Fixture",
+      "matches": "Partidos",
+      "standings": "Posiciones",
+      "competition_rules": "Reglas de competición",
+      "match_rules": "Reglas del partido",
+      "users": "Usuarios",
+      "roles": "Roles",
+      "documents": "Documentos"
     },
     "matchRules": {
       "title": "Reglas de partido",
@@ -207,14 +272,104 @@
       "round": "Fecha",
       "team": "Equipo",
       "importFixture": "Importar Fixture",
+      "importResultsCsv": "Importar resultados CSV",
+      "importResultsImage": "Importar desde imagen",
+      "quickEntry": "Carga rápida",
+      "importSchedule": "Importar horarios/canchas",
+      "clearRoundResults": "Borrar resultados de la fecha",
+      "clearingRoundResults": "Borrando…",
+      "groupByField": "Agrupar por cancha",
+      "moreActions": "Más acciones",
       "noMatches": "No se encontraron partidos. Generá el fixture primero.",
       "roundTitle": "Fecha {{round}} — {{division}}",
       "editResult": "Editar Resultado",
+      "editSchedule": "Horario/cancha",
       "viewDetails": "Ver Detalles",
       "deleteMatch": "Eliminar",
       "deleting": "Eliminando…",
+      "deleteConfirmTitle": "Eliminar partido del fixture",
+      "deleteConfirmMatch": "{{home}} vs {{away}} (fecha {{round}})",
+      "deleteConfirmFixture": "Este partido se eliminará del fixture.",
+      "deleteConfirmNoReadd": "Después no se podrá volver a agregar, porque el fixture ya está creado.",
+      "deleteConfirmWrongOption": "Si querés editar el resultado, esta no es la opción correcta: usá “Editar resultado”.",
+      "deleteConfirmAction": "Sí, eliminar del fixture",
       "noLeague": "No hay liga seleccionada.",
       "goToLeagues": "Ir a Ligas"
+    },
+    "ads": {
+      "title": "{{league}} — Publicidad",
+      "create": "Nueva publicidad",
+      "createTitle": "Nueva publicidad",
+      "editTitle": "Editar publicidad",
+      "createAction": "Crear publicidad",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "activate": "Activar",
+      "deactivate": "Desactivar",
+      "empty": "No hay publicidades todavía. Creá una para empezar.",
+      "noLeague": "No hay liga seleccionada. Elegí una liga del menú.",
+      "goToLeagues": "Ir a Ligas",
+      "loadError": "Error al cargar las publicidades",
+      "created": "Publicidad creada. Ahora podés subir las imágenes.",
+      "updated": "Publicidad actualizada.",
+      "deleted": "Publicidad eliminada.",
+      "deleteFailed": "No se pudo eliminar la publicidad",
+      "toggled": "Estado de la publicidad actualizado.",
+      "deleteConfirmTitle": "Eliminar publicidad",
+      "deleteConfirm": "Se dará de baja \"{{name}}\" y se eliminarán sus imágenes asociadas.",
+      "noPeriod": "Sin período de vigencia",
+      "from": "Desde",
+      "until": "Hasta",
+      "status": {
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "scheduled": "Programado",
+        "expired": "Vencido"
+      },
+      "slots": {
+        "leagueTop": "Superior de liga",
+        "leagueMiddle": "Sección intermedia",
+        "resultsFixture": "Resultados / Fixture"
+      },
+      "fields": {
+        "name": "Nombre",
+        "advertiser": "Anunciante",
+        "slot": "Ubicación",
+        "targetUrl": "URL destino",
+        "targetUrlHelp": "Opcional. Debe empezar con http:// o https://.",
+        "startsAt": "Fecha de inicio",
+        "endsAt": "Fecha de fin",
+        "priority": "Prioridad",
+        "priorityHelp": "Número entero mayor o igual a 0. Mayor prioridad se muestra primero.",
+        "isActive": "Activo",
+        "period": "Vigencia"
+      },
+      "images": {
+        "title": "Imágenes",
+        "desktop": "Imagen desktop",
+        "mobile": "Imagen mobile",
+        "restrictions": "JPEG, PNG o WebP. Máximo 5 MB.",
+        "empty": "Sin imagen",
+        "upload": "Subir",
+        "replace": "Reemplazar",
+        "remove": "Eliminar",
+        "afterCreate": "Creá la publicidad para poder subir las imágenes desktop y mobile.",
+        "uploaded": "Imagen actualizada.",
+        "removed": "Imagen eliminada.",
+        "uploadFailed": "No se pudo subir la imagen",
+        "deleteFailed": "No se pudo eliminar la imagen",
+        "invalidFormat": "Solo se permiten imágenes JPEG, PNG o WebP.",
+        "tooLarge": "La imagen no puede superar 5 MB."
+      },
+      "validation": {
+        "nameRequired": "El nombre es obligatorio.",
+        "advertiserRequired": "El anunciante es obligatorio.",
+        "priorityInvalid": "La prioridad debe ser un número entero mayor o igual a 0.",
+        "startsInvalid": "La fecha de inicio no es válida.",
+        "endsInvalid": "La fecha de fin no es válida.",
+        "periodInvalid": "La fecha de fin no puede ser anterior a la de inicio.",
+        "targetUrlInvalid": "La URL destino debe empezar con http:// o https://."
+      }
     }
   }
 }

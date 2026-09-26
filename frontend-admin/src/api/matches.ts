@@ -14,6 +14,7 @@ export interface MatchListItem {
   status: string
   kickoffTime: string
   matchDate: string
+  fieldId: string | null
   fieldName: string
   homeTeamLogoUrl?: string | null
   awayTeamLogoUrl?: string | null
@@ -159,6 +160,18 @@ export const matchesService = {
       signal
     ),
 
+  updateSchedule: (
+    leagueId: string,
+    matchId: string,
+    body: { startTime: string; fieldId: string },
+    signal?: AbortSignal
+  ) =>
+    apiClient.put<void>(
+      `/api/leagues/${leagueId}/matches/${matchId}/schedule`,
+      body,
+      signal
+    ),
+
   addIncident: (
     leagueId: string,
     matchId: string,
@@ -179,6 +192,16 @@ export const matchesService = {
 
   deleteMatch: (leagueId: string, matchId: string, signal?: AbortSignal) =>
     apiClient.delete(`/api/leagues/${leagueId}/matches/${matchId}`, signal),
+
+  processResultImage: (leagueId: string, file: File, signal?: AbortSignal) => {
+    const form = new FormData()
+    form.append('file', file)
+    return apiClient.postForm<{ csv: string; fileName: string }>(
+      `/api/leagues/${leagueId}/matches/process-image`,
+      form,
+      signal
+    )
+  },
 
   importResults: (
     leagueId: string,

@@ -7,6 +7,7 @@ public class SitemapPublicDto
 {
     public DateTime GeneratedAtUtc { get; set; }
     public List<SitemapLeagueDto> Leagues { get; set; } = new();
+    public List<SitemapMatchDto> Matches { get; set; } = new();
 }
 
 public class SitemapLeagueDto
@@ -17,6 +18,12 @@ public class SitemapLeagueDto
 }
 
 public class SitemapTeamDto
+{
+    public string Slug { get; set; } = string.Empty;
+    public DateTime? UpdatedAtUtc { get; set; }
+}
+
+public class SitemapMatchDto
 {
     public string Slug { get; set; } = string.Empty;
     public DateTime? UpdatedAtUtc { get; set; }

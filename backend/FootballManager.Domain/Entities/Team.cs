@@ -15,6 +15,35 @@ namespace FootballManager.Domain.Entities
         public string Name { get; private set; }
         public string? Suffix { get; private set; }
         public string DisplayName => string.IsNullOrWhiteSpace(Suffix) ? Name : $"{Name} {Suffix}";
+
+        /// <summary>
+        /// Name shown in standings, fixtures and public pages: club + variant suffix (A/B, Negro/Rojo).
+        /// Falls back to <see cref="DisplayName"/> when the team has no club loaded.
+        /// </summary>
+        public string CompetitionName
+        {
+            get
+            {
+                var clubName = Club?.Name?.Trim();
+                if (string.IsNullOrWhiteSpace(clubName))
+                    return DisplayName;
+                return string.IsNullOrWhiteSpace(Suffix) ? clubName : $"{clubName} {Suffix}";
+            }
+        }
+
+        /// <summary>
+        /// Logo shown in standings, fixtures and public pages: the team's own logo if set, otherwise the club's.
+        /// </summary>
+        public string? EffectiveLogoUrl
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(LogoUrl))
+                    return LogoUrl;
+                var clubLogo = Club?.LogoUrl;
+                return string.IsNullOrWhiteSpace(clubLogo) ? null : clubLogo;
+            }
+        }
         public string Slug { get; private set; }
         public string ShortName { get; private set; }
         public string PrimaryColor { get; private set; }

@@ -65,7 +65,7 @@
     return !!data.following;
   }
 
-  function setUi(root, state, message) {
+  function setUi(root, state, message, opts = {}) {
     const btn = root.querySelector('[data-v2-follow-trigger]');
     const labelEl = root.querySelector('[data-v2-follow-label]');
     const hint = root.querySelector('[data-v2-follow-hint]');
@@ -99,6 +99,22 @@
         hint.hidden = true;
         hint.textContent = '';
       }
+    }
+
+    if (!opts.silent && (state === 'following' || state === 'not-following' || state === 'permission-denied' || state === 'error')) {
+      const scopeType = root.getAttribute('data-scope-type');
+      const scopeId = root.getAttribute('data-scope-id');
+      document.querySelectorAll('[data-v2-follow]').forEach((other) => {
+        if (other === root) return;
+        if (!(other instanceof HTMLElement)) return;
+        if (other.getAttribute('data-scope-type') !== scopeType) return;
+        if (other.getAttribute('data-scope-id') !== scopeId) return;
+        setUi(other, state, message, { silent: true });
+      });
+      root.dispatchEvent(new CustomEvent('v2-follow-state', {
+        bubbles: true,
+        detail: { state, scopeType, scopeId }
+      }));
     }
   }
 
@@ -184,7 +200,10 @@
   function bind(root) {
     if (!(root instanceof HTMLElement) || root.dataset.bound) return;
     root.dataset.bound = '1';
-    if (!supported()) return;
+    if (!supported()) {
+      root.dataset.state = 'unsupported';
+      return;
+    }
     root.hidden = false;
     const btn = root.querySelector('[data-v2-follow-trigger]');
     if (btn) btn.addEventListener('click', (e) => { e.preventDefault(); void onClick(root); });

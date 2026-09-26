@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Box, Typography } from '@mui/material'
 import { LeagueForm } from '../components/LeagueForm'
 import { leaguesService } from '../api/leagues'
-import type { LeagueFormData } from '../api/types'
+import type { LeagueFormData, LeagueFormFiles } from '../api/types'
 
 export function CreateLeaguePage() {
   const navigate = useNavigate()
@@ -12,14 +12,23 @@ export function CreateLeaguePage() {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const handleSubmit = async (data: LeagueFormData, logoFile?: File | null) => {
+  const handleSubmit = async (data: LeagueFormData, files?: LeagueFormFiles) => {
     setError(null)
     setSaving(true)
     try {
       const created = await leaguesService.create(data)
-      if (logoFile && created?.id) {
-        const upload = await leaguesService.uploadImage(created.id, logoFile)
-        await leaguesService.update(created.id, { ...data, logoUrl: upload.url })
+      if (created?.id && (files?.logoFile || files?.heroFile || files?.teamHeroFile)) {
+        const next = { ...data }
+        if (files?.logoFile) {
+          next.logoUrl = (await leaguesService.uploadImage(created.id, files.logoFile)).url
+        }
+        if (files?.heroFile) {
+          next.heroImageUrl = (await leaguesService.uploadImage(created.id, files.heroFile)).url
+        }
+        if (files?.teamHeroFile) {
+          next.teamHeroImageUrl = (await leaguesService.uploadImage(created.id, files.teamHeroFile)).url
+        }
+        await leaguesService.update(created.id, next)
       }
       void queryClient.invalidateQueries({ queryKey: ['leagues'] })
       navigate('/', { replace: true })

@@ -1,7 +1,7 @@
 {
   "translation": {
     "app": {
-      "title": "Ligap Admin"
+      "title": "MiLiga Admin"
     },
     "nav": {
       "leagues": "Leagues",
@@ -18,13 +18,78 @@
       "standings": "Standings",
       "competitionRules": "Competition rules",
       "matchRules": "Match rules",
-      "competitionSettings": "Competition settings"
+      "competitionSettings": "Competition settings",
+      "administration": "Administration",
+      "users": "Users",
+      "roles": "Roles",
+      "ads": "Advertising"
     },
     "common": {
       "save": "Save",
       "saveError": "Failed to save",
       "logout": "Log out",
       "cancel": "Cancel"
+    },
+    "users": {
+      "title": "League users",
+      "create": "New user",
+      "fullName": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "At least 6 characters. If the email already exists, the user is linked to this league and the password is updated when provided.",
+      "role": "Role",
+      "actions": "Actions",
+      "resetPassword": "Change password",
+      "resetPasswordTitle": "New password",
+      "resetPasswordHint": "At least 6 characters.",
+      "resetPasswordError": "Could not change the password",
+      "resetPasswordSuccess": "Password updated",
+      "remove": "Remove from league",
+      "removeConfirm": "Remove this user from the league?",
+      "hint": "Users are linked to the active league. The Carga role can only access Matches and Standings.",
+      "noLeague": "No league selected.",
+      "goToLeagues": "Go to Leagues",
+      "loadError": "Failed to load users",
+      "createError": "Could not create the user"
+    },
+    "roles": {
+      "title": "Roles and permissions",
+      "create": "New role",
+      "edit": "Edit role",
+      "name": "Name",
+      "description": "Description",
+      "permissions": "Permissions",
+      "system": "System",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this role?",
+      "adminLocked": "The Administrator role always has all permissions.",
+      "saveError": "Could not save the role",
+      "loadError": "Failed to load roles",
+      "noLeague": "No league selected.",
+      "goToLeagues": "Go to Leagues"
+    },
+    "permissionModules": {
+      "organization": "Organization",
+      "competition": "Competition",
+      "settings": "Settings",
+      "admin": "Administration"
+    },
+    "permissions": {
+      "leagues": "Leagues",
+      "seasons": "Seasons",
+      "season_setup": "Season setup",
+      "divisions": "Divisions",
+      "teams": "Teams",
+      "clubs": "Clubs",
+      "fields": "Fields",
+      "fixtures": "Fixtures",
+      "matches": "Matches",
+      "standings": "Standings",
+      "competition_rules": "Competition rules",
+      "match_rules": "Match rules",
+      "users": "Users",
+      "roles": "Roles",
+      "documents": "Documents"
     },
     "matchRules": {
       "title": "Match rules",
@@ -207,14 +272,104 @@
       "round": "Round",
       "team": "Team",
       "importFixture": "Import Fixture",
+      "importResultsCsv": "Import results CSV",
+      "importResultsImage": "Import from image",
+      "quickEntry": "Quick entry",
+      "importSchedule": "Import times/fields",
+      "clearRoundResults": "Clear round results",
+      "clearingRoundResults": "Clearing…",
+      "groupByField": "Group by field",
+      "moreActions": "More actions",
       "noMatches": "No matches found. Generate fixtures first.",
       "roundTitle": "Round {{round}} — {{division}}",
       "editResult": "Edit Result",
+      "editSchedule": "Time/field",
       "viewDetails": "View Details",
       "deleteMatch": "Delete",
       "deleting": "Deleting…",
+      "deleteConfirmTitle": "Delete match from the fixture",
+      "deleteConfirmMatch": "{{home}} vs {{away}} (round {{round}})",
+      "deleteConfirmFixture": "This match will be removed from the fixture.",
+      "deleteConfirmNoReadd": "You will not be able to add it again, because the fixture is already created.",
+      "deleteConfirmWrongOption": "If you want to edit the result, this is not the right option: use “Edit result”.",
+      "deleteConfirmAction": "Yes, delete from fixture",
       "noLeague": "No league selected.",
       "goToLeagues": "Go to Leagues"
+    },
+    "ads": {
+      "title": "{{league}} — Advertising",
+      "create": "New advertisement",
+      "createTitle": "New advertisement",
+      "editTitle": "Edit advertisement",
+      "createAction": "Create advertisement",
+      "edit": "Edit",
+      "delete": "Delete",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "empty": "No advertisements yet. Create one to get started.",
+      "noLeague": "No league selected. Choose a league from the menu.",
+      "goToLeagues": "Go to Leagues",
+      "loadError": "Failed to load advertisements",
+      "created": "Advertisement created. You can now upload the images.",
+      "updated": "Advertisement updated.",
+      "deleted": "Advertisement deleted.",
+      "deleteFailed": "Could not delete the advertisement",
+      "toggled": "Advertisement status updated.",
+      "deleteConfirmTitle": "Delete advertisement",
+      "deleteConfirm": "\"{{name}}\" will be removed and its images will be deleted.",
+      "noPeriod": "No schedule",
+      "from": "From",
+      "until": "Until",
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "scheduled": "Scheduled",
+        "expired": "Expired"
+      },
+      "slots": {
+        "leagueTop": "League top",
+        "leagueMiddle": "Middle section",
+        "resultsFixture": "Results / Fixture"
+      },
+      "fields": {
+        "name": "Name",
+        "advertiser": "Advertiser",
+        "slot": "Placement",
+        "targetUrl": "Target URL",
+        "targetUrlHelp": "Optional. Must start with http:// or https://.",
+        "startsAt": "Start date",
+        "endsAt": "End date",
+        "priority": "Priority",
+        "priorityHelp": "Integer greater than or equal to 0. Higher priority is shown first.",
+        "isActive": "Active",
+        "period": "Schedule"
+      },
+      "images": {
+        "title": "Images",
+        "desktop": "Desktop image",
+        "mobile": "Mobile image",
+        "restrictions": "JPEG, PNG or WebP. Maximum 5 MB.",
+        "empty": "No image",
+        "upload": "Upload",
+        "replace": "Replace",
+        "remove": "Remove",
+        "afterCreate": "Create the advertisement before uploading desktop and mobile images.",
+        "uploaded": "Image updated.",
+        "removed": "Image removed.",
+        "uploadFailed": "Could not upload the image",
+        "deleteFailed": "Could not delete the image",
+        "invalidFormat": "Only JPEG, PNG or WebP images are allowed.",
+        "tooLarge": "The image must be 5 MB or smaller."
+      },
+      "validation": {
+        "nameRequired": "Name is required.",
+        "advertiserRequired": "Advertiser is required.",
+        "priorityInvalid": "Priority must be an integer greater than or equal to 0.",
+        "startsInvalid": "Start date is invalid.",
+        "endsInvalid": "End date is invalid.",
+        "periodInvalid": "End date cannot be earlier than start date.",
+        "targetUrlInvalid": "Target URL must start with http:// or https://."
+      }
     }
   }
 }

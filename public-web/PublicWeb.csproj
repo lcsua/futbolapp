@@ -4,7 +4,18 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>miliga-public-web</UserSecretsId>
     <DefaultItemExcludes>$(DefaultItemExcludes);PublicWeb.Tests\**</DefaultItemExcludes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+    <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Seo\Fonts\*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Seo\Assets\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
 </Project>

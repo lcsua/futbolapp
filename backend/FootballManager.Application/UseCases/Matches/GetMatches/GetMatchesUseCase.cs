@@ -67,17 +67,18 @@ public sealed class GetMatchesUseCase : IGetMatchesUseCase
             f.DivisionSeasonId,
             f.DivisionSeason?.Division?.Name ?? "",
             f.RoundNumber,
-            homeTeam?.Name ?? "",
+            homeTeam?.CompetitionName ?? homeTeam?.DisplayName ?? homeTeam?.Name ?? "",
             homeTeam?.Id ?? Guid.Empty,
-            awayTeam?.Name ?? "",
+            awayTeam?.CompetitionName ?? awayTeam?.DisplayName ?? awayTeam?.Name ?? "",
             awayTeam?.Id ?? Guid.Empty,
             homeScore,
             awayScore,
             f.Status.ToString(),
             f.StartTime?.ToString("HH:mm") ?? "",
             f.MatchDate?.ToString("yyyy-MM-dd") ?? "",
+            f.FieldId,
             f.Field?.Name ?? "",
-            homeTeam?.LogoUrl,
-            awayTeam?.LogoUrl);
+            homeTeam?.EffectiveLogoUrl,
+            awayTeam?.EffectiveLogoUrl);
     }
 }
