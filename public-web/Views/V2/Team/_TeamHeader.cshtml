@@ -22,6 +22,9 @@
     }
 }
 <header class="v2-team-hero">
+    <div class="v2-team-hero__ad">
+        @await Component.InvokeAsync("LeagueAds", new { slot = "PageTop", variant = "in-hero" })
+    </div>
     <div class="v2-team-hero__inner">
         @if (league != null)
         {
