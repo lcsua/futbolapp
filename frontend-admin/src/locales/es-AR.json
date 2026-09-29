@@ -196,6 +196,7 @@
         "cancel": "Cancelar",
         "failed": "No se pudo replanificar"
       },
+      "teamsWithoutMatchesTitle": "Hay equipos en divisiones con fixture que todavía no tienen partidos. Replanificá sus zonas para que recuperen las fechas perdidas:",
       "interzonals": "Interzonales",
       "interzonalsSaved": "Interzonales de la fecha actualizados.",
       "interzonalModal": {

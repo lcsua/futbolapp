@@ -26,8 +26,10 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo'
 import SaveIcon from '@mui/icons-material/Save'
+import LockIcon from '@mui/icons-material/Lock'
+import LockOpenIcon from '@mui/icons-material/LockOpen'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import {
   DndContext,
@@ -55,6 +57,15 @@ type BoardDivision = {
   divisionName: string
   teams: TeamInSetup[]
   fixturesLocked?: boolean
+  teamIdsWithFixtures: string[]
+  savedTeamIds: string[]
+}
+
+type LockedDivisionChange = {
+  divisionId: string
+  divisionName: string
+  added: TeamInSetup[]
+  removed: TeamInSetup[]
 }
 
 function getTeamDisplayName(team: TeamInSetup): string {
@@ -152,6 +163,8 @@ function DroppableColumn({
   isSticky = false,
   groupByClub = false,
   locked = false,
+  fixturesLocked = false,
+  headerAction,
   onHeaderDoubleClick,
 }: {
   id: string
@@ -163,6 +176,8 @@ function DroppableColumn({
   isSticky?: boolean
   groupByClub?: boolean
   locked?: boolean
+  fixturesLocked?: boolean
+  headerAction?: React.ReactNode
   onHeaderDoubleClick?: () => void
 }) {
   const { isOver, setNodeRef } = useDroppable({ id, disabled: locked })
@@ -225,7 +240,15 @@ function DroppableColumn({
             {title}
           </Typography>
           <Chip label={`${teamIds.length} teams`} size="small" />
-          {locked && <Chip label="Fixtures locked" size="small" color="warning" variant="outlined" />}
+          {fixturesLocked && (
+            <Chip
+              label={locked ? 'Fixtures locked' : 'Agregando equipos'}
+              size="small"
+              color="warning"
+              variant={locked ? 'outlined' : 'filled'}
+            />
+          )}
+          {headerAction}
         </Box>
         <Box sx={{ flex: 1, overflowY: 'auto', minHeight: 120 }}>
           {teams.length === 0 ? (
@@ -266,6 +289,10 @@ export function AdvancedSeasonSetupPage() {
   const [groupByClub, setGroupByClub] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
   const [quickCreateDivision, setQuickCreateDivision] = useState<{ divisionId: string; divisionName: string } | null>(null)
+  const [unlockedDivisionIds, setUnlockedDivisionIds] = useState<Set<string>>(new Set())
+  const [pendingLockedChanges, setPendingLockedChanges] = useState<LockedDivisionChange[] | null>(null)
+  const [replanPrompt, setReplanPrompt] = useState<LockedDivisionChange[] | null>(null)
+  const navigate = useNavigate()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -285,7 +312,7 @@ export function AdvancedSeasonSetupPage() {
   })
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (lockedChanges: LockedDivisionChange[]) => {
       if (!leagueId || !seasonId || !board) return
       await seasonsService.saveSetup(
         leagueId,
@@ -295,11 +322,16 @@ export function AdvancedSeasonSetupPage() {
             divisionId: d.divisionId,
             teamIds: d.teams.map((t) => t.id),
           })),
+          allowChangesToLockedDivisions: lockedChanges.length > 0,
         }
       )
     },
-    onSuccess: () => {
+    onSuccess: (_, lockedChanges) => {
       setSnackbar({ message: 'Changes saved.', severity: 'success' })
+      setPendingLockedChanges(null)
+      setUnlockedDivisionIds(new Set())
+      const withAdditions = lockedChanges.filter((c) => c.added.length > 0)
+      if (withAdditions.length > 0) setReplanPrompt(withAdditions)
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'setup'] })
     },
     onError: (err) => {
@@ -332,8 +364,11 @@ export function AdvancedSeasonSetupPage() {
           divisionName: d.divisionName,
           teams: [...d.teams],
           fixturesLocked: !!d.fixturesLocked,
+          teamIdsWithFixtures: d.teamIdsWithFixtures ?? [],
+          savedTeamIds: d.teams.map((t) => t.id),
         })),
       })
+      setUnlockedDivisionIds(new Set())
     } else if (seasonId && !setupLoading) {
       setBoard(null)
     }
@@ -363,15 +398,21 @@ export function AdvancedSeasonSetupPage() {
     if (!source) return
     if (source.droppableId === targetId) return
 
-    const sourceLocked =
-      source.droppableId !== UNASSIGNED_ID &&
-      !!board.divisions.find((d) => d.divisionId === source.droppableId)?.fixturesLocked
-    const targetLocked =
-      targetId !== UNASSIGNED_ID &&
-      !!board.divisions.find((d) => d.divisionId === targetId)?.fixturesLocked
-    if (sourceLocked || targetLocked) {
+    const sourceDivision = board.divisions.find((d) => d.divisionId === source.droppableId)
+    const targetDivision = board.divisions.find((d) => d.divisionId === targetId)
+    if (sourceDivision?.teamIdsWithFixtures.includes(teamId)) {
       setSnackbar({
-        message: 'Cannot move teams in or out of a division with committed fixtures.',
+        message: `${getTeamDisplayName(team)} ya tiene partidos en el fixture de ${sourceDivision.divisionName}; no se puede sacar.`,
+        severity: 'error',
+      })
+      return
+    }
+    if (
+      (sourceDivision && isDivisionLocked(sourceDivision)) ||
+      (targetDivision && isDivisionLocked(targetDivision))
+    ) {
+      setSnackbar({
+        message: 'Esa división tiene fixture guardado. Usá "Agregar equipos" en su columna para habilitar cambios.',
         severity: 'error',
       })
       return
@@ -420,8 +461,49 @@ export function AdvancedSeasonSetupPage() {
     return null
   }
 
+  function isDivisionLocked(division: BoardDivision): boolean {
+    return seasonClosed || (!!division.fixturesLocked && !unlockedDivisionIds.has(division.divisionId))
+  }
+
+  function lockedDivisionChanges(): LockedDivisionChange[] {
+    if (!board) return []
+    const allTeams = [...board.unassignedTeams, ...board.divisions.flatMap((d) => d.teams)]
+    return board.divisions
+      .filter((d) => d.fixturesLocked)
+      .map((d) => {
+        const current = new Set(d.teams.map((t) => t.id))
+        const saved = new Set(d.savedTeamIds)
+        return {
+          divisionId: d.divisionId,
+          divisionName: d.divisionName,
+          added: d.teams.filter((t) => !saved.has(t.id)),
+          removed: allTeams.filter((t) => saved.has(t.id) && !current.has(t.id)),
+        }
+      })
+      .filter((c) => c.added.length > 0 || c.removed.length > 0)
+  }
+
+  const toggleUnlocked = (divisionId: string) => {
+    setUnlockedDivisionIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(divisionId)) next.delete(divisionId)
+      else next.add(divisionId)
+      return next
+    })
+  }
+
   const handleSave = () => {
-    saveMutation.mutate()
+    const changes = lockedDivisionChanges()
+    if (changes.length > 0) {
+      setPendingLockedChanges(changes)
+      return
+    }
+    saveMutation.mutate([])
+  }
+
+  const goToReplan = (changes: LockedDivisionChange[]) => {
+    const params = new URLSearchParams({ seasonId, divisionId: changes[0].divisionId, replan: '1' })
+    navigate(`/fixtures?${params.toString()}`)
   }
 
   const otherSeasons = useMemo(
@@ -486,6 +568,7 @@ export function AdvancedSeasonSetupPage() {
       {!seasonClosed && board?.divisions.some((d) => d.fixturesLocked) && (
         <Alert severity="info" sx={{ mb: 2 }}>
           Some divisions have committed fixtures and their team list is locked. You can still edit the other divisions.
+          Para sumar equipos nuevos a una de ellas usá "Agregar equipos" en su columna; al guardar se pide confirmación.
         </Alert>
       )}
 
@@ -608,6 +691,69 @@ export function AdvancedSeasonSetupPage() {
         </DialogActions>
       </Dialog>
 
+      <Dialog
+        open={!!pendingLockedChanges}
+        onClose={saveMutation.isPending ? undefined : () => setPendingLockedChanges(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Cambiar equipos de divisiones con fixture</DialogTitle>
+        <DialogContent>
+          {pendingLockedChanges?.map((c) => (
+            <Box key={c.divisionId} sx={{ mb: 1.5 }}>
+              <Typography variant="subtitle2">{c.divisionName}</Typography>
+              {c.added.length > 0 && (
+                <Typography variant="body2">Se agregan: {c.added.map(getTeamDisplayName).join(', ')}</Typography>
+              )}
+              {c.removed.length > 0 && (
+                <Typography variant="body2">Se quitan: {c.removed.map(getTeamDisplayName).join(', ')}</Typography>
+              )}
+            </Box>
+          ))}
+          <Alert severity="warning" sx={{ mt: 1 }}>
+            El fixture guardado no cambia: los equipos nuevos quedan sin partidos hasta que replanifiques esas zonas
+            desde Fixture. Lo jugado y los partidos del resto no se tocan.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingLockedChanges(null)} disabled={saveMutation.isPending}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={() => pendingLockedChanges && saveMutation.mutate(pendingLockedChanges)}
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? <CircularProgress size={20} color="inherit" /> : 'Confirmar y guardar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!replanPrompt} onClose={() => setReplanPrompt(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>Replanificar el fixture</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Se sumaron equipos a divisiones que ya tienen fixture:
+          </Typography>
+          {replanPrompt?.map((c) => (
+            <Typography key={c.divisionId} variant="body2">
+              <strong>{c.divisionName}:</strong> {c.added.map(getTeamDisplayName).join(', ')}
+            </Typography>
+          ))}
+          <Typography variant="body2" sx={{ mt: 1.5 }}>
+            Todavía no tienen partidos. Replanificá desde la próxima fecha para que recuperen los partidos perdidos
+            y, si hace falta, se completen las fechas con interzonales.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReplanPrompt(null)}>Más tarde</Button>
+          <Button variant="contained" onClick={() => replanPrompt && goToReplan(replanPrompt)}>
+            Replanificar ahora
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {snackbar && (
         <Snackbar
           open={!!snackbar}
@@ -680,7 +826,28 @@ export function AdvancedSeasonSetupPage() {
                   teams={div.teams}
                   teamIds={div.teams.map((t) => t.id)}
                   groupByClub={groupByClub}
-                  locked={!!div.fixturesLocked || seasonClosed}
+                  locked={isDivisionLocked(div)}
+                  fixturesLocked={!!div.fixturesLocked}
+                  headerAction={
+                    div.fixturesLocked && !seasonClosed ? (
+                      <Tooltip
+                        title={
+                          unlockedDivisionIds.has(div.divisionId)
+                            ? 'Volver a bloquear la columna. Lo que ya moviste se confirma igual al guardar.'
+                            : 'Habilita sumar equipos a esta división aunque tenga fixture. Los equipos con partidos no se pueden sacar.'
+                        }
+                      >
+                        <Button
+                          size="small"
+                          variant="text"
+                          startIcon={unlockedDivisionIds.has(div.divisionId) ? <LockIcon /> : <LockOpenIcon />}
+                          onClick={() => toggleUnlocked(div.divisionId)}
+                        >
+                          {unlockedDivisionIds.has(div.divisionId) ? 'Bloquear' : 'Agregar equipos'}
+                        </Button>
+                      </Tooltip>
+                    ) : undefined
+                  }
                   onHeaderDoubleClick={
                     div.fixturesLocked || seasonClosed
                       ? undefined
@@ -695,7 +862,7 @@ export function AdvancedSeasonSetupPage() {
                       key={team.id}
                       team={team}
                       divisionName={div.divisionName}
-                      disabled={!!div.fixturesLocked || seasonClosed}
+                      disabled={isDivisionLocked(div) || div.teamIdsWithFixtures.includes(team.id)}
                     />
                   )}
                 />

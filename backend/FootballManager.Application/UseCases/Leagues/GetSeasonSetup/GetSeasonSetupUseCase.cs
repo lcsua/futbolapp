@@ -50,6 +50,7 @@ namespace FootballManager.Application.UseCases.Leagues.GetSeasonSetup
             var divisions = await _divisionRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
             var teams = await _teamRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
             var divisionSeasons = await _divisionSeasonRepository.GetBySeasonIdAsync(request.SeasonId, cancellationToken);
+            var teamIdsWithFixtures = await _fixtureRepository.GetTeamIdsWithFixturesAsync(request.SeasonId, cancellationToken);
 
             var assignedTeamIds = new HashSet<Guid>();
             var divisionMap = new Dictionary<Guid, List<TeamDto>>();
@@ -83,7 +84,8 @@ namespace FootballManager.Application.UseCases.Leagues.GetSeasonSetup
                     d.Id,
                     d.Name,
                     divisionMap[d.Id],
-                    lockedDivisions.Contains(d.Id)))
+                    lockedDivisions.Contains(d.Id),
+                    divisionMap[d.Id].Where(t => teamIdsWithFixtures.Contains(t.Id)).Select(t => t.Id).ToList()))
                 .ToList();
 
             return new GetSeasonSetupResponse(unassignedTeams, divisionDtos);

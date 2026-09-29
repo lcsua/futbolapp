@@ -196,6 +196,7 @@
         "cancel": "Cancel",
         "failed": "Could not re-plan"
       },
+      "teamsWithoutMatchesTitle": "Some teams in divisions with fixtures have no matches yet. Re-plan their zones so they make up the missed rounds:",
       "interzonals": "Interzonal matches",
       "interzonalsSaved": "Round interzonal matches updated.",
       "interzonalModal": {

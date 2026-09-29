@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import {
   Alert,
@@ -34,7 +34,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
 import { alpha } from '@mui/material/styles'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useSearchParams } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import { fixturesService } from '../api/fixtures'
 import { matchesService } from '../api/matches'
@@ -120,13 +120,14 @@ export function FixturesPage() {
   const leagueId = useLeagueId()
   const activeLeague = useActiveLeague()
   const queryClient = useQueryClient()
-  const [seasonId, setSeasonId] = useState<string>('')
-  const [divisionId, setDivisionId] = useState<string>('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [seasonId, setSeasonId] = useState<string>(() => searchParams.get('seasonId') ?? '')
+  const [divisionId, setDivisionId] = useState<string>(() => searchParams.get('divisionId') ?? '')
   const [teamFilter, setTeamFilter] = useState<string>('')
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [copyModalOpen, setCopyModalOpen] = useState(false)
   const [assignDatesModalOpen, setAssignDatesModalOpen] = useState(false)
-  const [replanModalOpen, setReplanModalOpen] = useState(false)
+  const [replanModalOpen, setReplanModalOpen] = useState(() => searchParams.get('replan') === '1')
   const [interzonalModalOpen, setInterzonalModalOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
 
@@ -141,6 +142,31 @@ export function FixturesPage() {
     queryFn: ({ signal }) => divisionsService.getByLeagueId(leagueId!, signal),
     enabled: !!leagueId,
   })
+
+  useEffect(() => {
+    if (searchParams.toString()) setSearchParams({}, { replace: true })
+    // Deep-link params (from season setup) only seed the initial state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const { data: setupData } = useQuery({
+    queryKey: ['leagues', leagueId, 'seasons', seasonId, 'setup'],
+    queryFn: ({ signal }) => seasonsService.getSetup(leagueId!, seasonId, signal),
+    enabled: !!leagueId && !!seasonId,
+  })
+
+  const teamsWithoutMatches = useMemo(
+    () =>
+      (setupData?.divisions ?? [])
+        .filter((d) => d.fixturesLocked)
+        .flatMap((d) => {
+          const withFixtures = new Set(d.teamIdsWithFixtures ?? [])
+          return d.teams
+            .filter((tm) => !withFixtures.has(tm.id))
+            .map((tm) => ({ divisionId: d.divisionId, divisionName: d.divisionName, teamName: tm.displayName ?? tm.name }))
+        }),
+    [setupData],
+  )
 
   const { data: fixturesData, isLoading: fixturesLoading } = useQuery({
     queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'],
@@ -751,6 +777,34 @@ export function FixturesPage() {
             {t('fixtures.matchDaySourceMissing')}
           </Alert>
         )
+      )}
+
+      {!isDraft && teamsWithoutMatches.length > 0 && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          action={
+            !seasonClosed && (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => {
+                  setDivisionId(teamsWithoutMatches[0].divisionId)
+                  setReplanModalOpen(true)
+                }}
+              >
+                {t('fixtures.replan')}
+              </Button>
+            )
+          }
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {t('fixtures.teamsWithoutMatchesTitle')}
+          </Typography>
+          <Typography variant="body2">
+            {teamsWithoutMatches.map((tm) => `${tm.teamName} (${tm.divisionName})`).join(', ')}
+          </Typography>
+        </Alert>
       )}
 
       {replan && (

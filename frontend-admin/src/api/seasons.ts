@@ -7,6 +7,8 @@ export interface SeasonSetupDivision {
   teams: TeamInSetup[]
   /** True when this division already has committed fixtures for the season. */
   fixturesLocked?: boolean
+  /** Teams of this division that already play a fixture this season; they cannot leave it. */
+  teamIdsWithFixtures?: string[]
 }
 
 export interface TeamInSetup {
@@ -33,6 +35,8 @@ export interface SeasonSetupResponse {
 
 export interface SaveSeasonSetupBody {
   divisions: { divisionId: string; teamIds: string[] }[]
+  /** Explicit confirmation to add teams to (or remove teams without fixtures from) divisions with fixtures. */
+  allowChangesToLockedDivisions?: boolean
 }
 
 export const seasonsService = {

@@ -108,6 +108,15 @@ namespace FootballManager.Infrastructure.Repositories
                 .CountAsync(f => f.DivisionSeasonId == divisionSeasonId, cancellationToken);
         }
 
+        public async Task<HashSet<Guid>> GetTeamIdsWithFixturesAsync(Guid seasonId, CancellationToken cancellationToken = default)
+        {
+            var seasonFixtures = _context.Fixtures.Where(f => f.SeasonId == seasonId);
+            var ids = await seasonFixtures.Select(f => f.HomeTeamDivisionSeason.TeamId)
+                .Union(seasonFixtures.Select(f => f.AwayTeamDivisionSeason.TeamId))
+                .ToListAsync(cancellationToken);
+            return ids.ToHashSet();
+        }
+
         public async Task<List<Fixture>> GetBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default)
         {
             return await _context.Fixtures

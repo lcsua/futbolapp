@@ -78,87 +78,71 @@ namespace FootballManager.Application.UseCases.Leagues.SaveSeasonSetup
                     lockedDivisionIds.Add(ds.DivisionId);
             }
 
-            // Locked divisions with fixtures: allow save only if team set is unchanged.
-            foreach (var lockedDivisionId in lockedDivisionIds)
-            {
-                var existingTeams = existingByDivisionId[lockedDivisionId].TeamAssignments
-                    .Select(ta => ta.TeamId)
-                    .OrderBy(id => id)
-                    .ToList();
-                var requested = divisions.FirstOrDefault(d => d.DivisionId == lockedDivisionId);
-                var requestedTeams = (requested?.TeamIds ?? new List<Guid>())
-                    .OrderBy(id => id)
-                    .ToList();
+            var teamIdsWithFixtures = await _fixtureRepository.GetTeamIdsWithFixturesAsync(request.SeasonId, cancellationToken);
+            var requestedByDivisionId = divisions.ToDictionary(d => d.DivisionId, d => d.TeamIds.ToHashSet());
 
-                if (!existingTeams.SequenceEqual(requestedTeams))
-                {
-                    var name = existingByDivisionId[lockedDivisionId].Division?.Name ?? lockedDivisionId.ToString();
-                    throw new BusinessException(
-                        $"Cannot modify teams for division \"{name}\": fixtures have been committed for that division.");
-                }
-            }
-
-            // Update only unlocked divisions (and create new ones). Locked stay as-is.
-            foreach (var divDto in divisions)
+            // Validate every removal before touching anything.
+            foreach (var ds in existingDivisionSeasons)
             {
-                if (lockedDivisionIds.Contains(divDto.DivisionId))
+                var requestedTeams = requestedByDivisionId.GetValueOrDefault(ds.DivisionId) ?? new HashSet<Guid>();
+                var existingTeams = ds.TeamAssignments.Select(ta => ta.TeamId).ToHashSet();
+                if (existingTeams.SetEquals(requestedTeams))
                     continue;
 
-                var division = await _divisionRepository.GetByIdAsync(divDto.DivisionId, cancellationToken);
-                if (division == null)
-                    throw new KeyNotFoundException($"Division {divDto.DivisionId} not found.");
-                if (division.LeagueId != request.LeagueId)
-                    throw new ForbiddenAccessException("Division does not belong to this league.");
+                var divisionName = ds.Division?.Name ?? ds.DivisionId.ToString();
+                if (lockedDivisionIds.Contains(ds.DivisionId) && !request.AllowChangesToLockedDivisions)
+                    throw new BusinessException(
+                        $"La división \"{divisionName}\" tiene fixture guardado. Confirmá el cambio de equipos para continuar.");
 
-                if (!existingByDivisionId.TryGetValue(divDto.DivisionId, out var divisionSeason))
+                var removedWithFixtures = ds.TeamAssignments
+                    .Where(ta => !requestedTeams.Contains(ta.TeamId) && teamIdsWithFixtures.Contains(ta.TeamId))
+                    .Select(ta => ta.Team?.DisplayName ?? ta.TeamId.ToString())
+                    .ToList();
+                if (removedWithFixtures.Count > 0)
+                    throw new BusinessException(
+                        $"No se puede sacar de \"{divisionName}\" a {string.Join(", ", removedWithFixtures)}: ya tiene partidos en el fixture.");
+            }
+
+            // Incremental: keep the existing assignments (fixtures reference them), remove only the teams that
+            // leave and add only the new ones.
+            foreach (var ds in existingDivisionSeasons)
+            {
+                var requestedTeams = requestedByDivisionId.GetValueOrDefault(ds.DivisionId) ?? new HashSet<Guid>();
+                foreach (var ta in ds.TeamAssignments.Where(ta => !requestedTeams.Contains(ta.TeamId)).ToList())
+                    await _teamDivisionSeasonRepository.RemoveByTeamAndDivisionSeasonAsync(ta.TeamId, ds.Id, cancellationToken);
+            }
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            foreach (var divDto in divisions)
+            {
+                existingByDivisionId.TryGetValue(divDto.DivisionId, out var divisionSeason);
+                var existingTeams = divisionSeason?.TeamAssignments.Select(ta => ta.TeamId).ToHashSet() ?? new HashSet<Guid>();
+                var addedTeamIds = divDto.TeamIds.Where(id => !existingTeams.Contains(id)).Distinct().ToList();
+                if (addedTeamIds.Count == 0)
+                    continue;
+
+                if (divisionSeason == null)
                 {
-                    if (divDto.TeamIds.Count == 0)
-                        continue;
+                    var division = await _divisionRepository.GetByIdAsync(divDto.DivisionId, cancellationToken);
+                    if (division == null)
+                        throw new KeyNotFoundException($"Division {divDto.DivisionId} not found.");
+                    if (division.LeagueId != request.LeagueId)
+                        throw new ForbiddenAccessException("Division does not belong to this league.");
 
                     divisionSeason = new DivisionSeason(season, division);
                     await _divisionSeasonRepository.AddAsync(divisionSeason, cancellationToken);
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
                     existingByDivisionId[divDto.DivisionId] = divisionSeason;
                 }
-                else
-                {
-                    await _teamDivisionSeasonRepository.RemoveByDivisionSeasonIdAsync(
-                        divisionSeason.Id, cancellationToken);
-                    await _unitOfWork.SaveChangesAsync(cancellationToken);
-                }
 
-                foreach (var teamId in divDto.TeamIds)
+                foreach (var teamId in addedTeamIds)
                 {
                     var team = await _teamRepository.GetByIdAsync(teamId, cancellationToken);
                     if (team == null)
                         throw new KeyNotFoundException($"Team {teamId} not found.");
                     if (team.LeagueId != request.LeagueId)
                         throw new ForbiddenAccessException("Team does not belong to this league.");
-                    var assignment = new TeamDivisionSeason(team, divisionSeason);
-                    await _teamDivisionSeasonRepository.AddAsync(assignment, cancellationToken);
-                }
-            }
-
-            // Unlocked divisions that disappeared from the request (or emptied): clear teams.
-            foreach (var ds in existingDivisionSeasons)
-            {
-                if (lockedDivisionIds.Contains(ds.DivisionId))
-                    continue;
-
-                var requested = divisions.FirstOrDefault(d => d.DivisionId == ds.DivisionId);
-                if (requested != null && requested.TeamIds.Count > 0)
-                    continue;
-
-                // Already cleared above when requested with empty/non-empty rewrite;
-                // if omitted or empty and wasn't rewritten in the loop with teams, clear now.
-                if (requested == null || requested.TeamIds.Count == 0)
-                {
-                    // If requested with empty list, Remove already ran in the loop when divisionSeason existed.
-                    // If omitted from request, remove here.
-                    if (requested == null)
-                    {
-                        await _teamDivisionSeasonRepository.RemoveByDivisionSeasonIdAsync(ds.Id, cancellationToken);
-                    }
+                    await _teamDivisionSeasonRepository.AddAsync(new TeamDivisionSeason(team, divisionSeason), cancellationToken);
                 }
             }
 

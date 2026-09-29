@@ -12,6 +12,8 @@ public interface IFixtureRepository
     Task<Fixture?> FindPublicByTeamSlugsAsync(string homeSlug, string awayAndSeason, CancellationToken cancellationToken = default);
     Task<int> CountBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
     Task<int> CountByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default);
+    /// <summary>Teams that play at least one fixture (home or away, any division) in the season.</summary>
+    Task<HashSet<Guid>> GetTeamIdsWithFixturesAsync(Guid seasonId, CancellationToken cancellationToken = default);
     Task<List<Fixture>> GetBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
     /// <param name="includeInterzonal">Also return matches owned by another zone where a team of this division plays.</param>
     Task<List<Fixture>> GetBySeasonAndDivisionAndRoundAsync(Guid seasonId, Guid? divisionSeasonId, int? round, CancellationToken cancellationToken = default, bool includeInterzonal = false);
