@@ -29,6 +29,10 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import DownloadIcon from '@mui/icons-material/Download'
 import PrintIcon from '@mui/icons-material/Print'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
+import EventRepeatIcon from '@mui/icons-material/EventRepeat'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows'
+import { alpha } from '@mui/material/styles'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link as RouterLink } from 'react-router-dom'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -42,7 +46,23 @@ import { useActiveLeague, useLeagueId } from '../contexts/LeagueContext'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
 import { CopyFixturesModal } from '../components/CopyFixturesModal'
 import { AssignFixtureDatesModal } from '../components/AssignFixtureDatesModal'
+import { ReplanFixturesModal } from '../components/ReplanFixturesModal'
+import { RoundInterzonalModal } from '../components/RoundInterzonalModal'
+import type { FixtureDraftMatch } from '../api/fixtures'
 import { useTranslation } from 'react-i18next'
+
+function matchDivisionLabel(match: FixtureDraftMatch): string {
+  return match.isInterzonal && match.awayDivisionName
+    ? `${match.divisionName} / ${match.awayDivisionName}`
+    : match.divisionName
+}
+
+function todayIso(): string {
+  const now = new Date()
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  return `${now.getFullYear()}-${mm}-${dd}`
+}
 
 function formatTime(timeStr: string | null | undefined): string {
   if (!timeStr) return '-'
@@ -106,6 +126,8 @@ export function FixturesPage() {
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [copyModalOpen, setCopyModalOpen] = useState(false)
   const [assignDatesModalOpen, setAssignDatesModalOpen] = useState(false)
+  const [replanModalOpen, setReplanModalOpen] = useState(false)
+  const [interzonalModalOpen, setInterzonalModalOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
@@ -170,6 +192,17 @@ export function FixturesPage() {
     },
   })
 
+  const discardDraftMutation = useMutation({
+    mutationFn: () => fixturesService.discardDraft(leagueId!, seasonId),
+    onSuccess: () => {
+      setSnackbar({ message: t('fixtures.draftDiscarded'), severity: 'success' })
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
+    },
+    onError: (err) => {
+      setSnackbar({ message: err instanceof Error ? err.message : t('fixtures.discardDraftFailed'), severity: 'error' })
+    },
+  })
+
   const swapHomeAwayMutation = useMutation({
     mutationFn: () =>
       matchesService.swapHomeAway(leagueId!, {
@@ -205,6 +238,15 @@ export function FixturesPage() {
   const fixtures = fixturesData?.fixtures
   const isDraft = fixturesData?.isDraft ?? false
   const hasFixtures = fixtures && fixtures.rounds.length > 0
+  const replan = isDraft ? (fixtures?.replan ?? null) : null
+  const suggestedFromRound = useMemo(() => {
+    const rounds = fixtures?.rounds ?? []
+    const today = todayIso()
+    const upcoming = rounds.find((r) => !!r.matchDate && r.matchDate >= today)
+    if (upcoming) return upcoming.roundNumber
+    return rounds.length > 0 ? Math.max(...rounds.map((r) => r.roundNumber)) + 1 : 1
+  }, [fixtures])
+  const roundNumbers = useMemo(() => (fixtures?.rounds ?? []).map((r) => r.roundNumber), [fixtures])
   const selectedSeason = seasons.find((s) => s.id === seasonId)
   const seasonClosed = !!selectedSeason && selectedSeason.isActive === false
   const selectedDivisionName = divisionId ? (divisions.find((d) => d.id === divisionId)?.name ?? null) : null
@@ -241,7 +283,12 @@ export function FixturesPage() {
     if (!fixtures) return []
     return fixtures.rounds
       .map((round) => {
-        const matches = round.matches.filter((m) => !selectedDivisionName || m.divisionName === selectedDivisionName)
+        const matches = round.matches.filter(
+          (m) =>
+            !selectedDivisionName ||
+            m.divisionName === selectedDivisionName ||
+            (m.isInterzonal && m.awayDivisionName === selectedDivisionName),
+        )
         const byeTeams = (round.byeTeams ?? []).filter(
           (b) => !selectedDivisionName || b.divisionName === selectedDivisionName,
         )
@@ -310,7 +357,7 @@ export function FixturesPage() {
             [
               String(round.roundNumber),
               round.matchDate ? formatDate(round.matchDate, dateLocale) : '',
-              match.divisionName,
+              matchDivisionLabel(match),
               match.fieldName || '-',
               formatTime(match.kickoffTime),
               match.homeTeamName,
@@ -362,7 +409,7 @@ export function FixturesPage() {
         ...round.matches.map((match) => [
           round.roundNumber,
           round.matchDate ? formatDate(round.matchDate, dateLocale) : '',
-          match.divisionName,
+          matchDivisionLabel(match),
           match.fieldName || '-',
           formatTime(match.kickoffTime),
           match.homeTeamName,
@@ -583,6 +630,22 @@ export function FixturesPage() {
             >
               {t('fixtures.assignDates')}
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<EventRepeatIcon />}
+              onClick={() => setReplanModalOpen(true)}
+              disabled={seasonClosed || !hasFixtures || (isDraft && !replan)}
+            >
+              {t('fixtures.replan')}
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<CompareArrowsIcon />}
+              onClick={() => setInterzonalModalOpen(true)}
+              disabled={seasonClosed || !hasFixtures || isDraft}
+            >
+              {t('fixtures.interzonals')}
+            </Button>
             {hasFixtures && !isDraft && (
               <Button
                 variant="outlined"
@@ -618,6 +681,17 @@ export function FixturesPage() {
                 disabled={seasonClosed || commitMutation.isPending || !isDraft}
               >
                 {t('fixtures.save')}
+              </Button>
+            )}
+            {isDraft && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={() => discardDraftMutation.mutate()}
+                disabled={discardDraftMutation.isPending}
+              >
+                {t('fixtures.discardDraft')}
               </Button>
             )}
             {hasFixtures && isDraft && (
@@ -677,6 +751,61 @@ export function FixturesPage() {
             {t('fixtures.matchDaySourceMissing')}
           </Alert>
         )
+      )}
+
+      {replan && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {t('fixtures.replanDraftTitle', { round: replan.fromRound })}
+          </Typography>
+          <Typography variant="body2">
+            {t('fixtures.replanDraftBody', { removed: replan.removedFixtureIds.length })}
+          </Typography>
+          {replan.warnings.map((w) => (
+            <Typography key={w} variant="body2" sx={{ mt: 0.5 }}>
+              • {w}
+            </Typography>
+          ))}
+        </Alert>
+      )}
+
+      {leagueId && seasonId && (
+        <ReplanFixturesModal
+          open={replanModalOpen}
+          onClose={() => setReplanModalOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          initialDivisionId={divisionId}
+          divisions={divisions}
+          suggestedFromRound={suggestedFromRound}
+          onSuccess={() => {
+            setSnackbar({ message: t('fixtures.replanGenerated'), severity: 'success' })
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
+          }}
+        />
+      )}
+
+      {leagueId && seasonId && (
+        <RoundInterzonalModal
+          open={interzonalModalOpen}
+          onClose={() => setInterzonalModalOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          initialDivisionId={divisionId}
+          divisions={divisions}
+          roundNumbers={roundNumbers}
+          initialRound={
+            roundNumbers.includes(suggestedFromRound) ? suggestedFromRound : (roundNumbers.at(-1) ?? 1)
+          }
+          onSaved={(warnings) => {
+            setSnackbar({
+              message: [t('fixtures.interzonalsSaved'), ...warnings].join(' '),
+              severity: 'success',
+            })
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
+          }}
+        />
       )}
 
       {leagueId && seasonId && divisionId && (
@@ -749,10 +878,18 @@ export function FixturesPage() {
               {visibleRounds.map((round) => (
                 <Fragment key={`round-${round.roundNumber}-${round.matchDate ?? 'no-date'}`}>
                   {round.matches.map((m, idx) => (
-                    <TableRow key={`${round.roundNumber}-${idx}-${m.homeTeamDivisionSeasonId}-${m.awayTeamDivisionSeasonId}`}>
+                    <TableRow
+                      key={`${round.roundNumber}-${idx}-${m.homeTeamDivisionSeasonId}-${m.awayTeamDivisionSeasonId}`}
+                      sx={m.isReplanned ? { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.08) } : undefined}
+                    >
                       <TableCell>{idx === 0 ? round.roundNumber : ''}</TableCell>
                       <TableCell>{idx === 0 ? formatDate(round.matchDate, dateLocale) : ''}</TableCell>
-                      <TableCell>{m.divisionName}</TableCell>
+                      <TableCell>
+                        {matchDivisionLabel(m)}
+                        {m.isInterzonal && (
+                          <Chip label={t('fixtures.interzonal')} size="small" color="info" sx={{ ml: 1 }} />
+                        )}
+                      </TableCell>
                       <TableCell>{m.fieldName || '-'}</TableCell>
                       <TableCell>{formatTime(m.kickoffTime)}</TableCell>
                       <TableCell>{m.homeTeamName}</TableCell>

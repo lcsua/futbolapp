@@ -30,6 +30,7 @@ import { matchesService, type MatchListItem } from '../api/matches'
 import { seasonsService, type TeamInSetup } from '../api/seasons'
 import { teamNameAliasesService } from '../api/teamNameAliases'
 import { parseScheduleCsv, type ScheduleCsvRow } from '../utils/parseScheduleCsv'
+import { zoneGroupTeams } from '../utils/zones'
 import {
   matchCsvNamesToTeams,
   type TeamCsvRowMapping,
@@ -290,7 +291,7 @@ export function ImportScheduleModal({
 
   const divisionTeams = useMemo(() => {
     if (!setupData || !divisionId) return [] as TeamInSetup[]
-    return setupData.divisions.find((d) => d.divisionId === divisionId)?.teams ?? []
+    return zoneGroupTeams(setupData.divisions, divisionId)
   }, [setupData, divisionId])
 
   const teamsSorted = useMemo(

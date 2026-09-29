@@ -41,7 +41,7 @@ public sealed class GetMatchesUseCase : IGetMatchesUseCase
         }
 
         var fixtures = await _fixtureRepository.GetBySeasonAndDivisionAndRoundAsync(
-            request.SeasonId, divisionSeasonId, request.Round, cancellationToken);
+            request.SeasonId, divisionSeasonId, request.Round, cancellationToken, includeInterzonal: true);
 
         var groups = fixtures
             .GroupBy(f => (f.RoundNumber, f.DivisionSeason.Division.Name))

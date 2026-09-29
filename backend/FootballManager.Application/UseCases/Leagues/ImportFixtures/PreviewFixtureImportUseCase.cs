@@ -45,6 +45,10 @@ public sealed class PreviewFixtureImportUseCase : IPreviewFixtureImportUseCase
         var aliasLookup = await _aliasService.GetNormalizedLookupAsync(request.LeagueId, cancellationToken);
         var divisionName = divisionSeason.Division.Name;
         var teamAssignments = divisionSeason.TeamAssignments.ToList();
+        var seasonDivisions = await _divisionSeasonRepository.GetBySeasonIdAsync(request.SeasonId, cancellationToken);
+        var siblingTeams = DivisionCategory.SiblingZones(divisionSeason, seasonDivisions)
+            .SelectMany(z => z.TeamAssignments)
+            .ToList();
         var previewRows = new List<PreviewFixtureRowDto>();
         var rowErrors = new List<string>();
 
@@ -58,10 +62,13 @@ public sealed class PreviewFixtureImportUseCase : IPreviewFixtureImportUseCase
                 rowError = "Home and away team cannot be the same.";
             else
             {
-                var homeTds = TeamDivisionSeasonMatcher.Find(teamAssignments, row.HomeTeam, aliasLookup);
-                var awayTds = TeamDivisionSeasonMatcher.Find(teamAssignments, row.AwayTeam, aliasLookup);
+                var homeOwn = TeamDivisionSeasonMatcher.Find(teamAssignments, row.HomeTeam, aliasLookup);
+                var awayOwn = TeamDivisionSeasonMatcher.Find(teamAssignments, row.AwayTeam, aliasLookup);
+                var homeTds = homeOwn ?? (siblingTeams.Count > 0 ? TeamDivisionSeasonMatcher.Find(siblingTeams, row.HomeTeam, aliasLookup) : null);
+                var awayTds = awayOwn ?? (siblingTeams.Count > 0 ? TeamDivisionSeasonMatcher.Find(siblingTeams, row.AwayTeam, aliasLookup) : null);
                 if (homeTds == null) rowError = $"Team '{row.HomeTeam.Trim()}' does not belong to division {divisionName}.";
                 else if (awayTds == null) rowError = $"Team '{row.AwayTeam.Trim()}' does not belong to division {divisionName}.";
+                else if (homeOwn == null && awayOwn == null) rowError = $"Neither team belongs to division {divisionName}.";
             }
 
             if (rowError == null && !string.IsNullOrWhiteSpace(row.Date) && !DateOnly.TryParse(row.Date, CultureInfo.InvariantCulture, DateTimeStyles.None, out _))

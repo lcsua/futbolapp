@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Domain.Entities;
 using FootballManager.Domain.Enums;
 
 namespace FootballManager.Application.UseCases.Seasons.GetStandings;
@@ -33,57 +34,20 @@ public sealed class GetStandingsUseCase : IGetStandingsUseCase
             .Where(f => f.Status == MatchStatus.COMPLETED && f.Result != null)
             .ToList();
 
-        var byDivision = completed
-            .GroupBy(f => (f.DivisionSeason.DivisionId, f.DivisionSeason.Division.Name))
-            .ToList();
+        // Each side counts in its own zone, so interzonal results land in both zone tables.
+        var byDivision = new Dictionary<(Guid DivisionId, string Name), Dictionary<Guid, (Guid TeamId, string TeamName, int Played, int W, int D, int L, int GF, int GA)>>();
+
+        foreach (var f in completed)
+        {
+            var homeGoals = f.Result!.HomeTeamGoals;
+            var awayGoals = f.Result!.AwayTeamGoals;
+            AddSide(byDivision, f.HomeTeamDivisionSeason, f.DivisionSeason, homeGoals, awayGoals);
+            AddSide(byDivision, f.AwayTeamDivisionSeason, f.DivisionSeason, awayGoals, homeGoals);
+        }
 
         var result = new List<DivisionStandingsDto>();
-        foreach (var divGroup in byDivision.OrderBy(g => g.Key.Name))
+        foreach (var (divisionKey, teamStats) in byDivision.OrderBy(g => g.Key.Name))
         {
-            var teamStats = new Dictionary<Guid, (Guid TeamId, string TeamName, int Played, int W, int D, int L, int GF, int GA)>();
-
-            foreach (var f in divGroup)
-            {
-                var homeTeamId = f.HomeTeamDivisionSeason.TeamId;
-                var homeTeamName = f.HomeTeamDivisionSeason.Team.CompetitionName;
-                var awayTeamId = f.AwayTeamDivisionSeason.TeamId;
-                var awayTeamName = f.AwayTeamDivisionSeason.Team.CompetitionName;
-                var homeGoals = f.Result!.HomeTeamGoals;
-                var awayGoals = f.Result!.AwayTeamGoals;
-
-                EnsureTeam(teamStats, homeTeamId, homeTeamName);
-                EnsureTeam(teamStats, awayTeamId, awayTeamName);
-
-                var (_, _h, hp, hw, hd, hl, hgf, hga) = teamStats[homeTeamId];
-                var (_, _a, ap, aw, ad, al, agf, aga) = teamStats[awayTeamId];
-
-                hp += 1;
-                ap += 1;
-                hgf += homeGoals;
-                hga += awayGoals;
-                agf += awayGoals;
-                aga += homeGoals;
-
-                if (homeGoals > awayGoals)
-                {
-                    hw += 1;
-                    al += 1;
-                }
-                else if (homeGoals < awayGoals)
-                {
-                    aw += 1;
-                    hl += 1;
-                }
-                else
-                {
-                    hd += 1;
-                    ad += 1;
-                }
-
-                teamStats[homeTeamId] = (homeTeamId, homeTeamName, hp, hw, hd, hl, hgf, hga);
-                teamStats[awayTeamId] = (awayTeamId, awayTeamName, ap, aw, ad, al, agf, aga);
-            }
-
             var standings = teamStats.Values
                 .Select(t =>
                 {
@@ -97,18 +61,32 @@ public sealed class GetStandingsUseCase : IGetStandingsUseCase
                 .Select((x, i) => new TeamStandingDto(i + 1, x.TeamId, x.TeamName, x.pts, x.Played, x.W, x.D, x.L, x.GF, x.GA, x.gd))
                 .ToList();
 
-            result.Add(new DivisionStandingsDto(divGroup.Key.DivisionId, divGroup.Key.Name, standings));
+            result.Add(new DivisionStandingsDto(divisionKey.DivisionId, divisionKey.Name, standings));
         }
 
         return new GetStandingsResponse(result);
     }
 
-    private static void EnsureTeam(
-        Dictionary<Guid, (Guid TeamId, string TeamName, int Played, int W, int D, int L, int GF, int GA)> teamStats,
-        Guid teamId,
-        string teamName)
+    private static void AddSide(
+        Dictionary<(Guid DivisionId, string Name), Dictionary<Guid, (Guid TeamId, string TeamName, int Played, int W, int D, int L, int GF, int GA)>> byDivision,
+        TeamDivisionSeason side,
+        DivisionSeason fixtureDivisionSeason,
+        int goalsFor,
+        int goalsAgainst)
     {
-        if (!teamStats.ContainsKey(teamId))
-            teamStats[teamId] = (teamId, teamName, 0, 0, 0, 0, 0, 0);
+        var teamDivisionSeason = side.DivisionSeason ?? fixtureDivisionSeason;
+        var key = (teamDivisionSeason.DivisionId, teamDivisionSeason.Division.Name);
+        if (!byDivision.TryGetValue(key, out var teamStats))
+            byDivision[key] = teamStats = new Dictionary<Guid, (Guid, string, int, int, int, int, int, int)>();
+
+        var (_, _, played, w, d, l, gf, ga) = teamStats.TryGetValue(side.TeamId, out var current)
+            ? current
+            : (side.TeamId, side.Team.CompetitionName, 0, 0, 0, 0, 0, 0);
+
+        if (goalsFor > goalsAgainst) w++;
+        else if (goalsFor < goalsAgainst) l++;
+        else d++;
+
+        teamStats[side.TeamId] = (side.TeamId, side.Team.CompetitionName, played + 1, w, d, l, gf + goalsFor, ga + goalsAgainst);
     }
 }

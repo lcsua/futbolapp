@@ -13,7 +13,9 @@ public interface IFixtureRepository
     Task<int> CountBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
     Task<int> CountByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default);
     Task<List<Fixture>> GetBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
-    Task<List<Fixture>> GetBySeasonAndDivisionAndRoundAsync(Guid seasonId, Guid? divisionSeasonId, int? round, CancellationToken cancellationToken = default);
+    /// <param name="includeInterzonal">Also return matches owned by another zone where a team of this division plays.</param>
+    Task<List<Fixture>> GetBySeasonAndDivisionAndRoundAsync(Guid seasonId, Guid? divisionSeasonId, int? round, CancellationToken cancellationToken = default, bool includeInterzonal = false);
+    Task RemoveRangeAsync(IEnumerable<Guid> fixtureIds, CancellationToken cancellationToken = default);
     Task RemoveBySeasonIdAsync(Guid seasonId, CancellationToken cancellationToken = default);
     Task RemoveByDivisionSeasonIdAsync(Guid divisionSeasonId, CancellationToken cancellationToken = default);
     Task RemoveByDivisionIdAsync(Guid divisionId, CancellationToken cancellationToken = default);

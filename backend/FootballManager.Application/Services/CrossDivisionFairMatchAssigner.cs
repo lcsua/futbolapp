@@ -13,6 +13,7 @@ namespace FootballManager.Application.Services;
 public static class CrossDivisionFairMatchAssigner
 {
     /// <summary>Returns one slot per match in the same order as <paramref name="matches"/>.</summary>
+    /// <param name="reservedSlots">Field time already taken on <paramref name="matchDate"/> by matches outside this batch.</param>
     public static IReadOnlyList<(Guid FieldId, DateOnly Date, TimeOnly StartTime)>? Assign(
         IReadOnlyList<(DivisionSeason Ds, TeamDivisionSeason Home, TeamDivisionSeason Away, EffectiveMatchRulesDto Rules)> matches,
         DateOnly matchDate,
@@ -21,7 +22,8 @@ public static class CrossDivisionFairMatchAssigner
         IReadOnlyDictionary<Guid, Field> fieldsById,
         TeamFieldUsage teamFieldUsage,
         Func<Guid, TimeOnly, bool> isKickoffAllowedForDivision,
-        Random? random = null)
+        Random? random = null,
+        IEnumerable<(Guid FieldId, TimeOnly Start, int BlockMinutes)>? reservedSlots = null)
     {
         if (matches.Count == 0)
             return Array.Empty<(Guid, DateOnly, TimeOnly)>();
@@ -40,7 +42,9 @@ public static class CrossDivisionFairMatchAssigner
             .ToList();
 
         var outputs = new (Guid FieldId, DateOnly Date, TimeOnly Start)?[matches.Count];
-        var occupations = new List<FieldOccupation>();
+        var occupations = (reservedSlots ?? Enumerable.Empty<(Guid FieldId, TimeOnly Start, int BlockMinutes)>())
+            .Select(s => new FieldOccupation(s.FieldId, matchDate, ToMinutesFromMidnight(s.Start), ToMinutesFromMidnight(s.Start) + s.BlockMinutes))
+            .ToList();
         var preferredKickoffByDivision = new Dictionary<Guid, TimeOnly>();
         var divisionFieldSeenInRound = new HashSet<(Guid DivisionSeasonId, Guid FieldId)>();
 

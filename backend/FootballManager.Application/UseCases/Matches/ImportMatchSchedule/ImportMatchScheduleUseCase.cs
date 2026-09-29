@@ -80,7 +80,10 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
         if (divisionSeason == null)
             throw new BusinessException($"La división \"{division.Name}\" no tiene equipos asignados en esta temporada.");
 
+        var seasonDivisions = await _divisionSeasonRepository.GetBySeasonIdAsync(request.SeasonId, cancellationToken);
+        var ownTeamIds = divisionSeason.TeamAssignments.Select(ta => ta.TeamId).ToHashSet();
         var tdsByTeamId = divisionSeason.TeamAssignments
+            .Concat(DivisionCategory.SiblingZones(divisionSeason, seasonDivisions).SelectMany(z => z.TeamAssignments))
             .GroupBy(ta => ta.TeamId)
             .ToDictionary(g => g.Key, g => g.First());
 
@@ -90,7 +93,7 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         var fixtures = await _fixtureRepository.GetBySeasonAndDivisionAndRoundAsync(
-            request.SeasonId, divisionSeason.Id, request.Round, cancellationToken);
+            request.SeasonId, divisionSeason.Id, request.Round, cancellationToken, includeInterzonal: true);
 
         var fixtureByPair = new Dictionary<(Guid HomeTeamId, Guid AwayTeamId), Fixture>();
         foreach (var f in fixtures)
@@ -110,7 +113,8 @@ public sealed class ImportMatchScheduleUseCase : IImportMatchScheduleUseCase
 
         foreach (var row in request.Rows ?? new List<ImportMatchScheduleRowDto>())
         {
-            if (!tdsByTeamId.ContainsKey(row.HomeTeamId) || !tdsByTeamId.ContainsKey(row.AwayTeamId))
+            if (!tdsByTeamId.ContainsKey(row.HomeTeamId) || !tdsByTeamId.ContainsKey(row.AwayTeamId)
+                || (!ownTeamIds.Contains(row.HomeTeamId) && !ownTeamIds.Contains(row.AwayTeamId)))
             {
                 warnings.Add($"Equipos no pertenecientes a {division.Name}: {row.HomeTeamId} / {row.AwayTeamId}.");
                 continue;

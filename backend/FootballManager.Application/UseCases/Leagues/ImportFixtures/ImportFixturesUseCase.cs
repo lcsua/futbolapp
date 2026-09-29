@@ -66,10 +66,27 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
         var fields = await _fieldRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken);
         var aliasLookup = await _aliasService.GetNormalizedLookupAsync(request.LeagueId, cancellationToken);
         var divisionName = divisionSeason.Division.Name;
+        var seasonDivisions = await _divisionSeasonRepository.GetBySeasonIdAsync(request.SeasonId, cancellationToken);
+        var siblingZones = DivisionCategory.SiblingZones(divisionSeason, seasonDivisions);
+        var siblingTeams = siblingZones.SelectMany(z => z.TeamAssignments).ToList();
         var (resolvedRows, validationErrors) = ValidateAndResolve(
-            parsedRows, importType, divisionSeason, fields, divisionName, aliasLookup);
+            parsedRows, importType, divisionSeason, siblingTeams, fields, divisionName, aliasLookup);
         if (validationErrors.Count > 0)
             return ImportFixturesResponse.WithErrors(validationErrors);
+
+        if (siblingZones.Count > 0)
+        {
+            // An interzonal already imported from the other zone's CSV must not be duplicated.
+            var siblingIds = siblingZones.Select(z => z.Id).ToHashSet();
+            var seasonFixtures = await _fixtureRepository.GetBySeasonIdAsync(request.SeasonId, cancellationToken);
+            var ownedBySibling = seasonFixtures
+                .Where(f => siblingIds.Contains(f.DivisionSeasonId))
+                .Select(f => (f.RoundNumber, PairKey(f.HomeTeamDivisionSeasonId, f.AwayTeamDivisionSeasonId)))
+                .ToHashSet();
+            resolvedRows = resolvedRows
+                .Where(r => !ownedBySibling.Contains((r.Round, PairKey(r.HomeTds.Id, r.AwayTds.Id))))
+                .ToList();
+        }
 
         await _fixtureRepository.RemoveByDivisionSeasonIdAsync(divisionSeason.Id, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -221,10 +238,13 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
         return result;
     }
 
+    private static (Guid, Guid) PairKey(Guid a, Guid b) => a.CompareTo(b) <= 0 ? (a, b) : (b, a);
+
     private static (List<ResolvedFixtureRow> rows, List<string> errors) ValidateAndResolve(
         List<ParsedFixtureRow> parsed,
         string importType,
         DivisionSeason divisionSeason,
+        IReadOnlyList<TeamDivisionSeason> siblingZoneTeams,
         List<Field> fields,
         string divisionName,
         IReadOnlyDictionary<string, Guid> aliasLookup)
@@ -232,6 +252,7 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
         var errors = new List<string>();
         var resolved = new List<ResolvedFixtureRow>();
         var teamAssignments = divisionSeason.TeamAssignments.ToList();
+        var siblingTeams = siblingZoneTeams.ToList();
 
         for (var i = 0; i < parsed.Count; i++)
         {
@@ -244,8 +265,10 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
                 continue;
             }
 
-            var homeTds = TeamDivisionSeasonMatcher.Find(teamAssignments, row.HomeTeam, aliasLookup);
-            var awayTds = TeamDivisionSeasonMatcher.Find(teamAssignments, row.AwayTeam, aliasLookup);
+            var homeOwn = TeamDivisionSeasonMatcher.Find(teamAssignments, row.HomeTeam, aliasLookup);
+            var awayOwn = TeamDivisionSeasonMatcher.Find(teamAssignments, row.AwayTeam, aliasLookup);
+            var homeTds = homeOwn ?? (siblingTeams.Count > 0 ? TeamDivisionSeasonMatcher.Find(siblingTeams, row.HomeTeam, aliasLookup) : null);
+            var awayTds = awayOwn ?? (siblingTeams.Count > 0 ? TeamDivisionSeasonMatcher.Find(siblingTeams, row.AwayTeam, aliasLookup) : null);
 
             if (homeTds == null)
             {
@@ -255,6 +278,11 @@ public sealed class ImportFixturesUseCase : IImportFixturesUseCase
             if (awayTds == null)
             {
                 errors.Add($"Team '{row.AwayTeam.Trim()}' does not belong to division {divisionName}.");
+                continue;
+            }
+            if (homeOwn == null && awayOwn == null)
+            {
+                errors.Add($"Row {rowNum}: neither '{row.HomeTeam.Trim()}' nor '{row.AwayTeam.Trim()}' belongs to division {divisionName}.");
                 continue;
             }
 

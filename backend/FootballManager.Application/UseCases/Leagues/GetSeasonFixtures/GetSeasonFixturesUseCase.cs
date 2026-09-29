@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FootballManager.Application.Dtos;
 using FootballManager.Application.Exceptions;
+using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
 using FootballManager.Application.Services;
 using FootballManager.Domain.Entities;
@@ -54,9 +55,7 @@ public sealed class GetSeasonFixturesUseCase : IGetSeasonFixturesUseCase
             return new GetSeasonFixturesResponse(new FixtureDraftDto(Array.Empty<FixtureDraftRoundDto>()), isDraft: false);
 
         var divisionSeasons = await _divisionSeasonRepository.GetBySeasonIdAsync(request.SeasonId, cancellationToken);
-        var oddDivisions = divisionSeasons
-            .Where(ds => ds.TeamAssignments.Count % 2 == 1)
-            .ToDictionary(ds => ds.Id);
+        var divisionsById = divisionSeasons.ToDictionary(ds => ds.Id);
 
         var rounds = fixtures
             .GroupBy(f => new { f.RoundNumber, f.MatchDate })
@@ -65,20 +64,10 @@ public sealed class GetSeasonFixturesUseCase : IGetSeasonFixturesUseCase
             .Select(g =>
             {
                 var matches = g.OrderBy(f => f.StartTime ?? TimeOnly.MaxValue).ThenBy(f => f.Field?.Name ?? "")
-                    .Select(f => new FixtureDraftMatchDto(
-                        f.DivisionSeasonId,
-                        f.DivisionSeason.Division.Name,
-                        f.HomeTeamDivisionSeasonId,
-                        f.HomeTeamDivisionSeason.Team.CompetitionName,
-                        f.AwayTeamDivisionSeasonId,
-                        f.AwayTeamDivisionSeason.Team.CompetitionName,
-                        f.FieldId,
-                        f.Field?.Name,
-                        f.MatchDate,
-                        f.StartTime
-                    )).ToList();
+                    .Select(FixtureDraftMapper.ToDraftMatch)
+                    .ToList();
 
-                var byes = InferByesForRound(g.ToList(), oddDivisions);
+                var byes = InferByesForRound(g.ToList(), divisionsById);
                 return new FixtureDraftRoundDto(g.Key.RoundNumber, g.Key.MatchDate, matches, byes);
             })
             .ToList();
@@ -88,20 +77,17 @@ public sealed class GetSeasonFixturesUseCase : IGetSeasonFixturesUseCase
 
     private static List<FixtureDraftByeDto> InferByesForRound(
         List<Fixture> roundFixtures,
-        Dictionary<Guid, DivisionSeason> oddDivisions)
+        Dictionary<Guid, DivisionSeason> divisionsById)
     {
-        if (oddDivisions.Count == 0) return new List<FixtureDraftByeDto>();
-
         var byes = new List<FixtureDraftByeDto>();
-        foreach (var (dsId, ds) in oddDivisions)
-        {
-            var playing = roundFixtures
-                .Where(f => f.DivisionSeasonId == dsId)
-                .SelectMany(f => new[] { f.HomeTeamDivisionSeasonId, f.AwayTeamDivisionSeasonId })
-                .ToHashSet();
+        var playing = roundFixtures
+            .SelectMany(f => new[] { f.HomeTeamDivisionSeasonId, f.AwayTeamDivisionSeasonId })
+            .ToHashSet();
 
+        foreach (var ds in divisionsById.Values)
+        {
             // Only infer when this round has matches for the division (import/generate scope).
-            if (playing.Count == 0) continue;
+            if (!ds.TeamAssignments.Any(ta => playing.Contains(ta.Id))) continue;
 
             foreach (var ta in ds.TeamAssignments)
             {

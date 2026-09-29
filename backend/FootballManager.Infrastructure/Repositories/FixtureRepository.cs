@@ -114,6 +114,8 @@ namespace FootballManager.Infrastructure.Repositories
                 .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
                 .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
                 .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.Team).ThenInclude(team => team.Club)
+                .Include(f => f.HomeTeamDivisionSeason).ThenInclude(t => t.DivisionSeason).ThenInclude(ds => ds.Division)
+                .Include(f => f.AwayTeamDivisionSeason).ThenInclude(t => t.DivisionSeason).ThenInclude(ds => ds.Division)
                 .Include(f => f.Field)
                 .Include(f => f.Result)
                 .Where(f => f.SeasonId == seasonId)
@@ -123,7 +125,7 @@ namespace FootballManager.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<List<Fixture>> GetBySeasonAndDivisionAndRoundAsync(Guid seasonId, Guid? divisionSeasonId, int? round, CancellationToken cancellationToken = default)
+        public async Task<List<Fixture>> GetBySeasonAndDivisionAndRoundAsync(Guid seasonId, Guid? divisionSeasonId, int? round, CancellationToken cancellationToken = default, bool includeInterzonal = false)
         {
             var query = _context.Fixtures
                 .Include(f => f.DivisionSeason).ThenInclude(ds => ds.Division)
@@ -134,7 +136,14 @@ namespace FootballManager.Infrastructure.Repositories
                 .Where(f => f.SeasonId == seasonId);
 
             if (divisionSeasonId.HasValue)
-                query = query.Where(f => f.DivisionSeasonId == divisionSeasonId.Value);
+            {
+                var dsId = divisionSeasonId.Value;
+                query = includeInterzonal
+                    ? query.Where(f => f.DivisionSeasonId == dsId
+                                       || f.HomeTeamDivisionSeason.DivisionSeasonId == dsId
+                                       || f.AwayTeamDivisionSeason.DivisionSeasonId == dsId)
+                    : query.Where(f => f.DivisionSeasonId == dsId);
+            }
             if (round.HasValue)
                 query = query.Where(f => f.RoundNumber == round.Value);
 
@@ -170,6 +179,15 @@ namespace FootballManager.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
             var toRemove = await _context.Fixtures
                 .Where(f => divisionSeasonIds.Contains(f.DivisionSeasonId))
+                .ToListAsync(cancellationToken);
+            _context.Fixtures.RemoveRange(toRemove);
+        }
+
+        public async Task RemoveRangeAsync(IEnumerable<Guid> fixtureIds, CancellationToken cancellationToken = default)
+        {
+            var ids = fixtureIds.ToList();
+            var toRemove = await _context.Fixtures
+                .Where(f => ids.Contains(f.Id))
                 .ToListAsync(cancellationToken);
             _context.Fixtures.RemoveRange(toRemove);
         }

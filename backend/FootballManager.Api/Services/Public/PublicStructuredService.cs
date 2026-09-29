@@ -444,7 +444,9 @@ public class PublicStructuredService
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Result)
             .Include(f => f.Field)
-            .Where(f => f.DivisionSeasonId == divSeason.Id &&
+            .Where(f => (f.DivisionSeasonId == divSeason.Id ||
+                         f.HomeTeamDivisionSeason.DivisionSeasonId == divSeason.Id ||
+                         f.AwayTeamDivisionSeason.DivisionSeasonId == divSeason.Id) &&
                         (f.Status == Domain.Enums.MatchStatus.COMPLETED ||
                          f.Status == Domain.Enums.MatchStatus.PLAYED ||
                          f.Status == Domain.Enums.MatchStatus.SUSPENDED))
@@ -473,7 +475,9 @@ public class PublicStructuredService
             .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
             .Include(f => f.Field)
-            .Where(f => f.DivisionSeasonId == divSeason.Id &&
+            .Where(f => (f.DivisionSeasonId == divSeason.Id ||
+                         f.HomeTeamDivisionSeason.DivisionSeasonId == divSeason.Id ||
+                         f.AwayTeamDivisionSeason.DivisionSeasonId == divSeason.Id) &&
                         f.Status != Domain.Enums.MatchStatus.COMPLETED &&
                         f.Status != Domain.Enums.MatchStatus.PLAYED &&
                         f.Status != Domain.Enums.MatchStatus.SUSPENDED &&
@@ -484,6 +488,11 @@ public class PublicStructuredService
 
         return fixtures.Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
     }
+
+    private static bool BelongsToDivisionSeason(Fixture f, Guid divisionSeasonId) =>
+        f.DivisionSeasonId == divisionSeasonId
+        || f.HomeTeamDivisionSeason?.DivisionSeasonId == divisionSeasonId
+        || f.AwayTeamDivisionSeason?.DivisionSeasonId == divisionSeasonId;
 
     private MatchPublicDto MapToMatchDto(Fixture match, string? leagueSlug = null, bool includeLogos = true, string? seasonSlug = null)
     {
@@ -697,7 +706,7 @@ public class PublicStructuredService
 
         foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
         {
-            var matchesForDiv = allFixtures.Where(f => f.DivisionSeasonId == ds.Id).Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
+            var matchesForDiv = allFixtures.Where(f => BelongsToDivisionSeason(f, ds.Id)).Select(f => MapToMatchDto(f, league.Slug, seasonSlug: SlugHelper.NormalizeSlug(season.Name))).ToList();
             if (matchesForDiv.Any())
             {
                 var matchdays = matchesForDiv.GroupBy(m => allFixtures.First(f => f.Id == m.Id).RoundNumber)
@@ -746,7 +755,7 @@ public class PublicStructuredService
 
         foreach (var ds in divSeasons.OrderBy(x => x.Division.Name))
         {
-            var divFixtures = seasonFixtures.Where(f => f.DivisionSeasonId == ds.Id).ToList();
+            var divFixtures = seasonFixtures.Where(f => BelongsToDivisionSeason(f, ds.Id)).ToList();
             var lastSettledRound = divFixtures
                 .Where(f => CountsAsPublishedResult(f.Status))
                 .Select(f => f.RoundNumber)

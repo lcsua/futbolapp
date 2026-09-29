@@ -37,6 +37,7 @@ import {
   type JsonDivisionRoundBlock,
 } from '../utils/parseMatchResultsJson'
 import { aliasUpsertsFromMappings, type TeamCsvRowMapping } from '../utils/teamNameMatch'
+import { zoneGroupTeams } from '../utils/zones'
 
 const CREATE_VALUE = '__missing__'
 const ALL_DIVISIONS = ''
@@ -182,8 +183,8 @@ export function ImportMatchResultsModal({
       }
 
       const setupDiv = setupDivisions.find((d) => d.divisionId === matched.divisionId)
-      const teams = setupDiv?.teams ?? []
-      if (teams.length === 0) {
+      const teams = zoneGroupTeams(setupDivisions, matched.divisionId)
+      if ((setupDiv?.teams ?? []).length === 0) {
         result.push({
           jsonDivision: block.division,
           divisionId: matched.divisionId,
@@ -400,7 +401,7 @@ export function ImportMatchResultsModal({
   const updateDivisionId = (planIndex: number, divisionId: string) => {
     const div = divisions.find((d) => d.id === divisionId)
     const setupDiv = setupData?.divisions.find((d) => d.divisionId === divisionId)
-    const teams = setupDiv?.teams ?? []
+    const teams = (setupDiv?.teams ?? []).length > 0 ? zoneGroupTeams(setupData?.divisions ?? [], divisionId) : []
     setPlans((prev) => {
       if (!prev) return prev
       return prev.map((plan, i) => {
@@ -430,7 +431,7 @@ export function ImportMatchResultsModal({
   const mappedTeamLabel = (plan: DivisionPlan, csvName: string): string => {
     const row = plan.teamMappings.find((m) => m.csvName === csvName)
     if (!row || row.action !== 'match' || !row.teamId) return csvName
-    const setupTeams = setupData?.divisions.find((d) => d.divisionId === plan.divisionId)?.teams ?? []
+    const setupTeams = plan.divisionId ? zoneGroupTeams(setupData?.divisions ?? [], plan.divisionId) : []
     const team = setupTeams.find((t) => t.id === row.teamId)
     return team ? displayName(team) : csvName
   }
@@ -617,8 +618,9 @@ export function ImportMatchResultsModal({
                     </TableHead>
                     <TableBody>
                       {plan.teamMappings.map((row, mappingIndex) => {
-                        const setupTeams =
-                          setupData?.divisions.find((d) => d.divisionId === plan.divisionId)?.teams ?? []
+                        const setupTeams = plan.divisionId
+                          ? zoneGroupTeams(setupData?.divisions ?? [], plan.divisionId)
+                          : []
                         return (
                           <TableRow
                             key={`${row.csvName}-${mappingIndex}`}

@@ -49,6 +49,9 @@ using FootballManager.Application.UseCases.Leagues.CommitSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.ImportFixtures;
 using FootballManager.Application.UseCases.Leagues.CopyFixturesFromSeason;
+using FootballManager.Application.UseCases.Leagues.ReplanSeasonFixtures;
+using FootballManager.Application.UseCases.Leagues.RoundInterzonalMatches;
+using FootballManager.Application.UseCases.Leagues.DiscardSeasonFixtureDraft;
 using FootballManager.Application.UseCases.Leagues.AssignFixtureDates;
 using FootballManager.Application.UseCases.Leagues.GetSchedulingEffectiveForDivision;
 using FootballManager.Application.UseCases.Leagues.GetDivisionSchedulingExtras;
@@ -1049,6 +1052,83 @@ namespace FootballManager.Api.Controllers
             return NoContent();
         }
 
+        [HttpPost("{leagueId}/seasons/{seasonId}/fixtures/replan")]
+        public async Task<IActionResult> ReplanSeasonFixtures(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid seasonId,
+            [FromBody] ReplanSeasonFixturesBody body,
+            [FromServices] IReplanSeasonFixturesUseCase replanSeasonFixturesUseCase,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var request = new ReplanSeasonFixturesRequest
+            {
+                LeagueId = leagueId,
+                SeasonId = seasonId,
+                UserId = userId,
+                DivisionIds = body.DivisionIds ?? new List<Guid>(),
+                FromRound = body.FromRound,
+                FillByesWithInterzonal = body.FillByesWithInterzonal,
+            };
+            var draft = await replanSeasonFixturesUseCase.ExecuteAsync(request, cancellationToken);
+            return Ok(draft);
+        }
+
+        [HttpGet("{leagueId}/seasons/{seasonId}/fixtures/rounds/{round}/interzonal")]
+        public async Task<IActionResult> GetRoundInterzonalMatches(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid seasonId,
+            [FromRoute] int round,
+            [FromQuery] List<Guid> divisionIds,
+            [FromServices] IRoundInterzonalMatchesUseCase roundInterzonalMatchesUseCase,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var result = await roundInterzonalMatchesUseCase.GetAsync(leagueId, seasonId, round, divisionIds, userId, cancellationToken);
+            return Ok(result);
+        }
+
+        [HttpPut("{leagueId}/seasons/{seasonId}/fixtures/rounds/{round}/interzonal")]
+        public async Task<IActionResult> SetRoundInterzonalMatches(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid seasonId,
+            [FromRoute] int round,
+            [FromBody] SetRoundInterzonalMatchesBody body,
+            [FromServices] IRoundInterzonalMatchesUseCase roundInterzonalMatchesUseCase,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var result = await roundInterzonalMatchesUseCase.SetAsync(
+                leagueId,
+                seasonId,
+                round,
+                body.DivisionIds ?? new List<Guid>(),
+                body.Pairs ?? new List<SetRoundInterzonalPairDto>(),
+                userId,
+                cancellationToken);
+            return Ok(result);
+        }
+
+        [HttpDelete("{leagueId}/seasons/{seasonId}/fixtures/draft")]
+        public async Task<IActionResult> DiscardSeasonFixtureDraft(
+            [FromRoute] Guid leagueId,
+            [FromRoute] Guid seasonId,
+            [FromServices] IDiscardSeasonFixtureDraftUseCase discardSeasonFixtureDraftUseCase,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            await discardSeasonFixtureDraftUseCase.ExecuteAsync(leagueId, seasonId, userId, cancellationToken);
+            return NoContent();
+        }
+
         [HttpPost("{leagueId}/fixtures/import/preview")]
         public async Task<IActionResult> PreviewFixtureImport([FromRoute] Guid leagueId, [FromBody] PreviewFixtureImportBody body, CancellationToken cancellationToken)
         {
@@ -1180,6 +1260,19 @@ namespace FootballManager.Api.Controllers
     public class GenerateSeasonFixturesBody
     {
         public Guid? DivisionId { get; set; }
+    }
+
+    public class SetRoundInterzonalMatchesBody
+    {
+        public List<Guid>? DivisionIds { get; set; }
+        public List<SetRoundInterzonalPairDto>? Pairs { get; set; }
+    }
+
+    public class ReplanSeasonFixturesBody
+    {
+        public List<Guid>? DivisionIds { get; set; }
+        public int FromRound { get; set; }
+        public bool FillByesWithInterzonal { get; set; } = true;
     }
 
     public class CopyFixturesFromSeasonBody

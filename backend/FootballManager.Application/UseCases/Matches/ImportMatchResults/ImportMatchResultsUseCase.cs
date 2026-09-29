@@ -71,6 +71,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             var notCreated = 0;
             var warnings = new List<string>();
             var learned = new HashSet<(Guid TeamId, string Normalized)>();
+            List<DivisionSeason>? seasonDivisions = null;
 
             foreach (var divDto in divisions)
             {
@@ -88,12 +89,15 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                     throw new BusinessException(
                         $"Division \"{division.Name}\" is not set up for this season (no team assignments).");
 
+                seasonDivisions ??= await _divisionSeasonRepository.GetBySeasonIdAsync(request.SeasonId, cancellationToken);
+                var ownTeamIds = divisionSeason.TeamAssignments.Select(ta => ta.TeamId).ToHashSet();
                 var tdsByTeamId = divisionSeason.TeamAssignments
+                    .Concat(DivisionCategory.SiblingZones(divisionSeason, seasonDivisions).SelectMany(z => z.TeamAssignments))
                     .GroupBy(ta => ta.TeamId)
                     .ToDictionary(g => g.Key, g => g.First());
 
                 var existingFixtures = await _fixtureRepository.GetBySeasonAndDivisionAndRoundAsync(
-                    request.SeasonId, divisionSeason.Id, null, cancellationToken);
+                    request.SeasonId, divisionSeason.Id, null, cancellationToken, includeInterzonal: true);
 
                 var csvRound = divDto.Round is > 0 ? divDto.Round.Value : (int?)null;
                 var scopedFixtures = csvRound.HasValue
@@ -128,6 +132,11 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                     if (!tdsByTeamId.TryGetValue(item.AwayTeamId, out var awayTds))
                     {
                         warnings.Add($"{division.Name}: away team {item.AwayTeamId} is not assigned to this division.");
+                        continue;
+                    }
+                    if (!ownTeamIds.Contains(item.HomeTeamId) && !ownTeamIds.Contains(item.AwayTeamId))
+                    {
+                        warnings.Add($"{division.Name}: ninguno de los dos equipos ({item.HomeCsvName} / {item.AwayCsvName}) es de esta zona.");
                         continue;
                     }
 

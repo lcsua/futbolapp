@@ -43,6 +43,7 @@ import {
   matchCsvNamesToTeams,
   type TeamCsvRowMapping,
 } from '../utils/teamNameMatch'
+import { zoneGroupTeams } from '../utils/zones'
 
 const CSV_PLACEHOLDER = `round,home_team,away_team
 1,TIGRES,LEONES
@@ -106,10 +107,15 @@ export function ImportFixtureModal({
     return map
   }, [aliasesData])
 
-  const divisionTeams = useMemo(() => {
+  const ownTeams = useMemo(() => {
     const div = setupData?.divisions.find((d) => d.divisionId === divisionId)
     return div?.teams ?? []
   }, [setupData, divisionId])
+
+  const divisionTeams = useMemo(
+    () => (ownTeams.length > 0 ? zoneGroupTeams(setupData?.divisions ?? [], divisionId) : ownTeams),
+    [ownTeams, setupData, divisionId],
+  )
 
   const divisionName = useMemo(() => {
     return setupData?.divisions.find((d) => d.divisionId === divisionId)?.divisionName ?? ''
@@ -181,7 +187,7 @@ export function ImportFixtureModal({
         setError('Cargando equipos de la división… esperá un momento y reintentá.')
         return
       }
-      if (divisionTeams.length === 0) {
+      if (ownTeams.length === 0) {
         setError(
           divisionName
             ? `La división “${divisionName}” no tiene equipos asignados en esta temporada.`
@@ -268,12 +274,12 @@ export function ImportFixtureModal({
     (mappingsNeedReview(teamMappings) || teamMappings.some((m) => m.action === 'create' || !m.teamId))
 
   const inferredByes = useMemo(() => {
-    if (!previewRows || divisionTeams.length === 0) return []
+    if (!previewRows || ownTeams.length === 0) return []
     return inferRoundByes(
       previewRows,
-      divisionTeams.map((t) => displayName(t)),
+      ownTeams.map((t) => displayName(t)),
     )
-  }, [previewRows, divisionTeams])
+  }, [previewRows, ownTeams])
 
   const matchPreviewRows = useMemo(
     () => (previewRows ?? []).filter((r) => !r.isBye),
@@ -340,7 +346,7 @@ export function ImportFixtureModal({
         {divisionName && (
           <Typography variant="body2" sx={{ mb: 1.5 }}>
             División: <strong>{divisionName}</strong>
-            {divisionTeams.length > 0 ? ` · ${divisionTeams.length} equipos` : ''}
+            {ownTeams.length > 0 ? ` · ${ownTeams.length} equipos` : ''}
           </Typography>
         )}
 
