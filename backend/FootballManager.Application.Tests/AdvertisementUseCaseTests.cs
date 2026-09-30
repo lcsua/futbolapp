@@ -40,6 +40,9 @@ public class AdvertisementUseCaseTests
         Assert.Equal(AdvertisementSlot.LeagueTop, ad.Slot);
         Assert.Equal(0, ad.Priority);
         Assert.True(ad.IsActive);
+        Assert.True(ad.IsVisible(starts.AddHours(1)));
+        Assert.False(ad.IsVisible(starts.AddDays(-1)));
+        Assert.False(ad.IsVisible(ends.AddMinutes(1)));
     }
 
     [Fact]

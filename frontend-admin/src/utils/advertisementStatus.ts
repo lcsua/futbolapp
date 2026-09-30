@@ -22,6 +22,7 @@ export function getAdvertisementVisualStatus(
 }
 
 export const AD_SLOT_OPTIONS: { value: AdvertisementSlot; labelKey: string }[] = [
+  { value: AdvertisementSlot.PageTop, labelKey: 'ads.slots.pageTop' },
   { value: AdvertisementSlot.LeagueTop, labelKey: 'ads.slots.leagueTop' },
   { value: AdvertisementSlot.LeagueMiddle, labelKey: 'ads.slots.leagueMiddle' },
   { value: AdvertisementSlot.ResultsFixture, labelKey: 'ads.slots.resultsFixture' },

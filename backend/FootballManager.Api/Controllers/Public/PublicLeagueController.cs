@@ -83,6 +83,15 @@ public class PublicLeagueController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("publicidad")]
+    public async Task<IActionResult> GetAdvertisements(string leagueSlug)
+    {
+        var result = await _service.GetActiveAdvertisementsAsync(leagueSlug);
+        if (result == null) return NotFound();
+        Response.Headers.CacheControl = "public, max-age=120";
+        return Ok(result);
+    }
+
     [HttpGet("documentos")]
     public async Task<IActionResult> GetDocuments(string leagueSlug)
     {
