@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using FootballManager.Application.Exceptions;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.Interfaces.Repositories;
+using FootballManager.Application.Push;
 using FootballManager.Application.Services;
 using FootballManager.Domain.Entities;
 using FootballManager.Domain.Enums;
@@ -23,6 +24,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
         private readonly IResultRepository _resultRepository;
         private readonly ITeamNameAliasService _aliasService;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IPushNotificationService _pushNotifications;
 
         public ImportMatchResultsUseCase(
             IUserLeagueRepository userLeagueRepository,
@@ -33,7 +35,8 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             IFixtureRepository fixtureRepository,
             IResultRepository resultRepository,
             ITeamNameAliasService aliasService,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            IPushNotificationService pushNotifications)
         {
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
             _seasonRepository = seasonRepository ?? throw new ArgumentNullException(nameof(seasonRepository));
@@ -44,6 +47,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             _resultRepository = resultRepository ?? throw new ArgumentNullException(nameof(resultRepository));
             _aliasService = aliasService ?? throw new ArgumentNullException(nameof(aliasService));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _pushNotifications = pushNotifications ?? throw new ArgumentNullException(nameof(pushNotifications));
         }
 
         public async Task<ImportMatchResultsResponse> ExecuteAsync(ImportMatchResultsRequest request, CancellationToken cancellationToken = default)
@@ -71,6 +75,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             var notCreated = 0;
             var warnings = new List<string>();
             var learned = new HashSet<(Guid TeamId, string Normalized)>();
+            var completed = new List<(Fixture Fixture, int HomeScore, int AwayScore)>();
             List<DivisionSeason>? seasonDivisions = null;
 
             foreach (var divDto in divisions)
@@ -151,7 +156,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                             skippedThisDivision++;
                             continue;
                         }
-                        await ApplyResultAsync(fixture, item.HomeScore, item.AwayScore, item.Status, swap: false, cancellationToken);
+                        await ApplyResultAsync(fixture, item.HomeScore, item.AwayScore, item.Status, swap: false, completed, cancellationToken);
                         updated++;
                         continue;
                     }
@@ -164,7 +169,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                             skippedThisDivision++;
                             continue;
                         }
-                        await ApplyResultAsync(inverted, item.HomeScore, item.AwayScore, item.Status, swap: true, cancellationToken);
+                        await ApplyResultAsync(inverted, item.HomeScore, item.AwayScore, item.Status, swap: true, completed, cancellationToken);
                         updated++;
                         continue;
                     }
@@ -207,7 +212,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                             await _fixtureRepository.AddAsync(fixture, cancellationToken);
                             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                            await ApplyResultAsync(fixture, item.HomeScore, item.AwayScore, item.Status, swap: false, cancellationToken);
+                            await ApplyResultAsync(fixture, item.HomeScore, item.AwayScore, item.Status, swap: false, completed, cancellationToken);
                             created++;
 
                             fixtureByPair[(homeTds.Id, awayTds.Id)] = fixture;
@@ -217,7 +222,42 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            foreach (var (fixture, homeScore, awayScore) in completed)
+                await TryNotifyResultAsync(league, fixture, homeScore, awayScore, cancellationToken);
+
             return new ImportMatchResultsResponse(updated, created, warnings, skipped, notCreated);
+        }
+
+        private async Task TryNotifyResultAsync(League league, Fixture fixture, int homeScore, int awayScore, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var home = fixture.HomeTeamDivisionSeason?.Team;
+                var away = fixture.AwayTeamDivisionSeason?.Team;
+                if (home == null || away == null) return;
+
+                await _pushNotifications.NotifyResultUpdatedAsync(new ResultUpdatedPushEvent
+                {
+                    LeagueId = league.Id,
+                    LeagueSlug = league.Slug ?? string.Empty,
+                    LeagueName = league.Name ?? string.Empty,
+                    FixtureId = fixture.Id,
+                    RoundNumber = fixture.RoundNumber,
+                    HomeTeamId = home.Id,
+                    AwayTeamId = away.Id,
+                    HomeTeamName = home.DisplayName,
+                    AwayTeamName = away.DisplayName,
+                    HomeTeamSlug = home.Slug,
+                    AwayTeamSlug = away.Slug,
+                    HomeScore = homeScore,
+                    AwayScore = awayScore
+                }, cancellationToken);
+            }
+            catch
+            {
+                // Push must never fail the results import.
+            }
         }
 
         /// <summary>
@@ -244,6 +284,7 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
             int? awayScore,
             string? jsonStatus,
             bool swap,
+            List<(Fixture Fixture, int HomeScore, int AwayScore)> completed,
             CancellationToken cancellationToken)
         {
             var hs = homeScore;
@@ -270,6 +311,8 @@ namespace FootballManager.Application.UseCases.Matches.ImportMatchResults
                 {
                     await _resultRepository.AddAsync(new Result(fixture, hs.Value, ascore.Value), cancellationToken);
                 }
+
+                completed.Add((fixture, hs.Value, ascore.Value));
             }
 
             fixture.ChangeStatus(status);
