@@ -4351,6 +4351,33 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   max-width: 100%;
 }
 
+.v2-league-hero__socials {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+}
+
+.v2-league-hero__socials a {
+  padding: 0.18rem 0.48rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.34);
+  color: #fff;
+  font-size: 0.64rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.v2-league-hero__socials a:hover,
+.v2-league-hero__socials a:focus-visible {
+  border-color: var(--v2-gold);
+  background: color-mix(in srgb, var(--v2-gold) 18%, rgba(15, 23, 42, 0.5));
+  color: #fff;
+}
+
 .v2-league-hero__stats {
   display: flex;
   flex-wrap: wrap;

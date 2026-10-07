@@ -58,7 +58,11 @@ namespace FootballManager.Application.UseCases.Leagues.GetUserLeagues
                 l.PrimaryColor,
                 l.FontKey,
                 l.HeroImageUrl,
-                l.TeamHeroImageUrl));
+                l.TeamHeroImageUrl,
+                l.FacebookUrl,
+                l.InstagramUrl,
+                l.YouTubeUrl,
+                l.TikTokUrl));
             return new GetUserLeaguesResponse(leagueDtos);
         }
     }

@@ -63,7 +63,11 @@ public class PublicLeagueService
             PrimaryColor = string.IsNullOrWhiteSpace(league.PrimaryColor) ? null : league.PrimaryColor,
             FontKey = string.IsNullOrWhiteSpace(league.FontKey) ? null : league.FontKey,
             HeroImageUrl = string.IsNullOrWhiteSpace(league.HeroImageUrl) ? null : league.HeroImageUrl,
-            TeamHeroImageUrl = string.IsNullOrWhiteSpace(league.TeamHeroImageUrl) ? null : league.TeamHeroImageUrl
+            TeamHeroImageUrl = string.IsNullOrWhiteSpace(league.TeamHeroImageUrl) ? null : league.TeamHeroImageUrl,
+            FacebookUrl = league.FacebookUrl,
+            InstagramUrl = league.InstagramUrl,
+            YouTubeUrl = league.YouTubeUrl,
+            TikTokUrl = league.TikTokUrl
         };
     }
 

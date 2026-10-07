@@ -22,6 +22,10 @@ namespace FootballManager.Domain.Entities
         public string? HeroImageUrl { get; private set; }
         /// <summary>Team detail hero background. Null means the product photo.</summary>
         public string? TeamHeroImageUrl { get; private set; }
+        public string? FacebookUrl { get; private set; }
+        public string? InstagramUrl { get; private set; }
+        public string? YouTubeUrl { get; private set; }
+        public string? TikTokUrl { get; private set; }
 
         private readonly List<Season> _seasons = new();
         public virtual IReadOnlyCollection<Season> Seasons => _seasons.AsReadOnly();
@@ -83,6 +87,25 @@ namespace FootballManager.Domain.Entities
             HeroImageUrl = LeagueAppearance.NormalizeImageUrl(heroImageUrl);
             TeamHeroImageUrl = LeagueAppearance.NormalizeImageUrl(teamHeroImageUrl);
             UpdateTimestamp();
+        }
+
+        public void UpdateSocialLinks(string? facebookUrl, string? instagramUrl, string? youTubeUrl, string? tikTokUrl)
+        {
+            FacebookUrl = NormalizeSocialUrl(facebookUrl, nameof(facebookUrl));
+            InstagramUrl = NormalizeSocialUrl(instagramUrl, nameof(instagramUrl));
+            YouTubeUrl = NormalizeSocialUrl(youTubeUrl, nameof(youTubeUrl));
+            TikTokUrl = NormalizeSocialUrl(tikTokUrl, nameof(tikTokUrl));
+            UpdateTimestamp();
+        }
+
+        private static string? NormalizeSocialUrl(string? value, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            var normalized = value.Trim();
+            if (normalized.Length > 500 || !Uri.TryCreate(normalized, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+                throw new ArgumentException("Social media links must be valid HTTP or HTTPS URLs.", parameterName);
+            return normalized;
         }
 
         public void Deactivate()

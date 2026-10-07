@@ -52,6 +52,10 @@ const defaultValues: LeagueFormData = {
   fontKey: '',
   heroImageUrl: '',
   teamHeroImageUrl: '',
+  facebookUrl: '',
+  instagramUrl: '',
+  youtubeUrl: '',
+  tiktokUrl: '',
 }
 
 export function LeagueForm({
@@ -93,6 +97,10 @@ export function LeagueForm({
   const [teamHeroPreview, setTeamHeroPreview] = useState<string | null>(values.teamHeroImageUrl?.trim() || null)
   const [teamHeroRemoved, setTeamHeroRemoved] = useState(false)
   const teamHeroInputRef = useRef<HTMLInputElement>(null)
+  const [facebookUrl, setFacebookUrl] = useState(values.facebookUrl ?? '')
+  const [instagramUrl, setInstagramUrl] = useState(values.instagramUrl ?? '')
+  const [youtubeUrl, setYoutubeUrl] = useState(values.youtubeUrl ?? '')
+  const [tiktokUrl, setTiktokUrl] = useState(values.tiktokUrl ?? '')
 
   const checkSlug = useCallback(async (s: string) => {
     if (!s.trim()) {
@@ -134,6 +142,10 @@ export function LeagueForm({
       setTeamHeroFile(null)
       setTeamHeroPreview(initialValues.teamHeroImageUrl?.trim() || null)
       setTeamHeroRemoved(false)
+      setFacebookUrl(initialValues.facebookUrl ?? '')
+      setInstagramUrl(initialValues.instagramUrl ?? '')
+      setYoutubeUrl(initialValues.youtubeUrl ?? '')
+      setTiktokUrl(initialValues.tiktokUrl ?? '')
     }
   }, [
     initialValues?.name,
@@ -147,6 +159,10 @@ export function LeagueForm({
     initialValues?.fontKey,
     initialValues?.heroImageUrl,
     initialValues?.teamHeroImageUrl,
+    initialValues?.facebookUrl,
+    initialValues?.instagramUrl,
+    initialValues?.youtubeUrl,
+    initialValues?.tiktokUrl,
   ])
 
   useEffect(() => {
@@ -206,6 +222,10 @@ export function LeagueForm({
       fontKey: fontKey.trim(),
       heroImageUrl: heroRemoved ? '' : heroImageUrl.trim(),
       teamHeroImageUrl: teamHeroRemoved ? '' : teamHeroImageUrl.trim(),
+      facebookUrl: facebookUrl.trim(),
+      instagramUrl: instagramUrl.trim(),
+      youtubeUrl: youtubeUrl.trim(),
+      tiktokUrl: tiktokUrl.trim(),
     }
     void onSubmit(data, {
       logoFile: logoRemoved ? null : logoFile,
@@ -481,6 +501,32 @@ export function LeagueForm({
           </Button>
         </Box>
       )}
+
+      <Typography variant="h6" component="h3" sx={{ mt: 1, mb: 1, fontWeight: 600 }}>
+        Redes sociales
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Los enlaces cargados se muestran en la cabecera pública de la liga.
+      </Typography>
+      {[
+        ['Facebook', facebookUrl, setFacebookUrl, 'https://www.facebook.com/tu-liga'],
+        ['Instagram', instagramUrl, setInstagramUrl, 'https://www.instagram.com/tu-liga'],
+        ['YouTube', youtubeUrl, setYoutubeUrl, 'https://www.youtube.com/@tu-liga'],
+        ['TikTok', tiktokUrl, setTiktokUrl, 'https://www.tiktok.com/@tu-liga'],
+      ].map(([label, value, setter, placeholder]) => (
+        <TextField
+          key={label as string}
+          fullWidth
+          type="url"
+          label={`${label} (opcional)`}
+          value={value as string}
+          onChange={(e) => (setter as (value: string) => void)(e.target.value)}
+          placeholder={placeholder as string}
+          disabled={loading}
+          inputProps={{ maxLength: 500 }}
+          sx={{ mb: 2 }}
+        />
+      ))}
 
       <Tooltip title="Inactive leagues may be hidden from lists and selection">
         <FormControlLabel

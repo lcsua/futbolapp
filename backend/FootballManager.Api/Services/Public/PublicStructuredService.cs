@@ -120,7 +120,11 @@ public class PublicStructuredService
                 PrimaryColor = string.IsNullOrWhiteSpace(l.PrimaryColor) ? null : l.PrimaryColor,
                 FontKey = string.IsNullOrWhiteSpace(l.FontKey) ? null : l.FontKey,
                 HeroImageUrl = string.IsNullOrWhiteSpace(l.HeroImageUrl) ? null : l.HeroImageUrl,
-                TeamHeroImageUrl = string.IsNullOrWhiteSpace(l.TeamHeroImageUrl) ? null : l.TeamHeroImageUrl
+                TeamHeroImageUrl = string.IsNullOrWhiteSpace(l.TeamHeroImageUrl) ? null : l.TeamHeroImageUrl,
+                FacebookUrl = l.FacebookUrl,
+                InstagramUrl = l.InstagramUrl,
+                YouTubeUrl = l.YouTubeUrl,
+                TikTokUrl = l.TikTokUrl
             })
             .ToListAsync(cancellationToken);
     }
@@ -892,7 +896,11 @@ public class PublicStructuredService
             PrimaryColor = string.IsNullOrWhiteSpace(league.PrimaryColor) ? null : league.PrimaryColor,
             FontKey = string.IsNullOrWhiteSpace(league.FontKey) ? null : league.FontKey,
             HeroImageUrl = string.IsNullOrWhiteSpace(league.HeroImageUrl) ? null : league.HeroImageUrl,
-            TeamHeroImageUrl = string.IsNullOrWhiteSpace(league.TeamHeroImageUrl) ? null : league.TeamHeroImageUrl
+            TeamHeroImageUrl = string.IsNullOrWhiteSpace(league.TeamHeroImageUrl) ? null : league.TeamHeroImageUrl,
+            FacebookUrl = league.FacebookUrl,
+            InstagramUrl = league.InstagramUrl,
+            YouTubeUrl = league.YouTubeUrl,
+            TikTokUrl = league.TikTokUrl
         };
     }
 

@@ -14,7 +14,11 @@ namespace FootballManager.Application.Dtos
         string? PrimaryColor = null,
         string? FontKey = null,
         string? HeroImageUrl = null,
-        string? TeamHeroImageUrl = null);
+        string? TeamHeroImageUrl = null,
+        string? FacebookUrl = null,
+        string? InstagramUrl = null,
+        string? YouTubeUrl = null,
+        string? TikTokUrl = null);
     public record SeasonDto(Guid Id, string Name, DateOnly StartDate, DateOnly? EndDate, bool IsActive, bool IsPublic);
     public record ClubDto(Guid Id, string Name, string LogoUrl);
     public record TeamDto(

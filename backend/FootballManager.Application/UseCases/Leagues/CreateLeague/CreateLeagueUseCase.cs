@@ -57,6 +57,7 @@ namespace FootballManager.Application.UseCases.Leagues.CreateLeague
 
             var league = new League(request.Name, request.Country, slug, request.Description, request.LogoUrl, request.IsPublic, request.IsActive);
             league.UpdateAppearance(request.PrimaryColor, request.FontKey, request.HeroImageUrl, request.TeamHeroImageUrl);
+            league.UpdateSocialLinks(request.FacebookUrl, request.InstagramUrl, request.YouTubeUrl, request.TikTokUrl);
             await _leagueRepository.AddAsync(league, cancellationToken);
 
             var adminRole = await _roleRepository.GetByCodeAsync(RoleCodes.Admin, cancellationToken);
