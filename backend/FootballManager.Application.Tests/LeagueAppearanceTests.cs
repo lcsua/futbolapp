@@ -59,4 +59,53 @@ public class LeagueAppearanceTests
         Assert.Equal("/uploads/leagues/x/hero.jpg", league.HeroImageUrl);
         Assert.Equal("https://cdn.example/team.webp", league.TeamHeroImageUrl);
     }
+
+    [Fact]
+    public void UpdateSocialLinks_trims_and_stores_valid_http_urls()
+    {
+        var league = new League("Liga Test", "AR", "liga-test");
+
+        league.UpdateSocialLinks(
+            "  https://www.facebook.com/liga.test  ",
+            "http://instagram.com/liga.test",
+            null,
+            null);
+
+        Assert.Equal("https://www.facebook.com/liga.test", league.FacebookUrl);
+        Assert.Equal("http://instagram.com/liga.test", league.InstagramUrl);
+    }
+
+    [Fact]
+    public void UpdateSocialLinks_normalizes_empty_values_to_null()
+    {
+        var league = new League("Liga Test", "AR", "liga-test");
+
+        league.UpdateSocialLinks(null, "", "  ", null);
+
+        Assert.Null(league.FacebookUrl);
+        Assert.Null(league.InstagramUrl);
+        Assert.Null(league.YouTubeUrl);
+        Assert.Null(league.TikTokUrl);
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("ftp://example.com/liga")]
+    [InlineData("facebook.com/liga")]
+    public void UpdateSocialLinks_rejects_non_http_or_relative_urls(string url)
+    {
+        var league = new League("Liga Test", "AR", "liga-test");
+
+        Assert.Throws<ArgumentException>(() => league.UpdateSocialLinks(url, null, null, null));
+    }
+
+    [Fact]
+    public void UpdateSocialLinks_rejects_urls_longer_than_500_characters()
+    {
+        var league = new League("Liga Test", "AR", "liga-test");
+        var url = "https://example.com/" + new string('a', 481);
+
+        Assert.True(url.Length > 500);
+        Assert.Throws<ArgumentException>(() => league.UpdateSocialLinks(url, null, null, null));
+    }
 }
