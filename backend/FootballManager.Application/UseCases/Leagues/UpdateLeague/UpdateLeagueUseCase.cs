@@ -46,6 +46,7 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateLeague
 
             league.UpdateDetails(request.Name, request.Country, slug, request.Description ?? string.Empty, request.LogoUrl ?? string.Empty, request.IsPublic, request.IsActive);
             league.UpdateAppearance(request.PrimaryColor, request.FontKey, request.HeroImageUrl, request.TeamHeroImageUrl);
+            league.UpdateSocialLinks(request.FacebookUrl, request.InstagramUrl, request.YouTubeUrl, request.TikTokUrl);
             _leagueRepository.Update(league);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }

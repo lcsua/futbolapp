@@ -12,6 +12,10 @@ public class LeagueViewModel
     public string? FontKey { get; set; }
     public string? HeroImageUrl { get; set; }
     public string? TeamHeroImageUrl { get; set; }
+    public string? FacebookUrl { get; set; }
+    public string? InstagramUrl { get; set; }
+    public string? YouTubeUrl { get; set; }
+    public string? TikTokUrl { get; set; }
 }
 
 public class TeamViewModel

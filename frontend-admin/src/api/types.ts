@@ -11,6 +11,10 @@ export interface League {
   fontKey?: string | null
   heroImageUrl?: string | null
   teamHeroImageUrl?: string | null
+  facebookUrl?: string | null
+  instagramUrl?: string | null
+  youtubeUrl?: string | null
+  tiktokUrl?: string | null
 }
 
 export interface LeagueFormData {
@@ -25,6 +29,10 @@ export interface LeagueFormData {
   fontKey?: string
   heroImageUrl?: string
   teamHeroImageUrl?: string
+  facebookUrl?: string
+  instagramUrl?: string
+  youtubeUrl?: string
+  tiktokUrl?: string
 }
 
 export interface LeagueFormFiles {

@@ -38,6 +38,10 @@ namespace FootballManager.Infrastructure.Persistence.Configurations
             builder.Property(e => e.FontKey).HasMaxLength(32).HasColumnName("font_key");
             builder.Property(e => e.HeroImageUrl).HasMaxLength(1000).HasColumnName("hero_image_url");
             builder.Property(e => e.TeamHeroImageUrl).HasMaxLength(1000).HasColumnName("team_hero_image_url");
+            builder.Property(e => e.FacebookUrl).HasMaxLength(500).HasColumnName("facebook_url");
+            builder.Property(e => e.InstagramUrl).HasMaxLength(500).HasColumnName("instagram_url");
+            builder.Property(e => e.YouTubeUrl).HasMaxLength(500).HasColumnName("youtube_url");
+            builder.Property(e => e.TikTokUrl).HasMaxLength(500).HasColumnName("tiktok_url");
             builder.Property(e => e.IsActive).HasDefaultValue(true).HasColumnName("is_active");
 
             builder.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");

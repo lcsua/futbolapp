@@ -94,6 +94,10 @@ export function EditLeaguePage() {
     fontKey: league.fontKey ?? '',
     heroImageUrl: league.heroImageUrl ?? '',
     teamHeroImageUrl: league.teamHeroImageUrl ?? '',
+    facebookUrl: league.facebookUrl ?? '',
+    instagramUrl: league.instagramUrl ?? '',
+    youtubeUrl: league.youtubeUrl ?? '',
+    tiktokUrl: league.tiktokUrl ?? '',
   }
 
   return (

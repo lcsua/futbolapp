@@ -15,6 +15,10 @@ namespace FootballManager.Application.UseCases.Leagues.UpdateLeague
         public string? FontKey { get; set; }
         public string? HeroImageUrl { get; set; }
         public string? TeamHeroImageUrl { get; set; }
+        public string? FacebookUrl { get; set; }
+        public string? InstagramUrl { get; set; }
+        public string? YouTubeUrl { get; set; }
+        public string? TikTokUrl { get; set; }
         public bool IsPublic { get; set; }
         public bool IsActive { get; set; }
     }

@@ -68,6 +68,30 @@
                     <span>@location</span>
                 </p>
             }
+            @if (league != null && (!string.IsNullOrWhiteSpace(league.FacebookUrl) ||
+                !string.IsNullOrWhiteSpace(league.InstagramUrl) ||
+                !string.IsNullOrWhiteSpace(league.YouTubeUrl) ||
+                !string.IsNullOrWhiteSpace(league.TikTokUrl)))
+            {
+                <nav class="v2-league-hero__socials" aria-label="Redes sociales de la liga">
+                    @if (!string.IsNullOrWhiteSpace(league.FacebookUrl))
+                    {
+                        <a href="@league.FacebookUrl" target="_blank" rel="noopener noreferrer" aria-label="Facebook de @league.Name">Facebook</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(league.InstagramUrl))
+                    {
+                        <a href="@league.InstagramUrl" target="_blank" rel="noopener noreferrer" aria-label="Instagram de @league.Name">Instagram</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(league.YouTubeUrl))
+                    {
+                        <a href="@league.YouTubeUrl" target="_blank" rel="noopener noreferrer" aria-label="YouTube de @league.Name">YouTube</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(league.TikTokUrl))
+                    {
+                        <a href="@league.TikTokUrl" target="_blank" rel="noopener noreferrer" aria-label="TikTok de @league.Name">TikTok</a>
+                    }
+                </nav>
+            }
 
             @if (stats != null && (stats.DivisionCount.HasValue || stats.TeamCount.HasValue || stats.CurrentRound.HasValue))
             {
