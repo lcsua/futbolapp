@@ -9,9 +9,6 @@
     var h1 = ViewBag.SeoH1 as string ?? league?.Name ?? "Liga";
     var logoAlt = league != null ? $"Logo {league.Name}" : "Logo de la liga";
     var stats = ViewBag.LeagueHeroStats as PublicWeb.Models.Public.LeagueHeroStatsViewModel;
-    var location = league?.Country;
-    var showLocation = !string.IsNullOrWhiteSpace(location);
-
     var nameLead = (string?)null;
     var nameMain = h1;
     if (nameMain.StartsWith("Liga de ", StringComparison.OrdinalIgnoreCase))
@@ -59,13 +56,6 @@
                 <p class="v2-league-hero__season">
                     <span class="v2-ui-icon v2-ui-icon--trophy" aria-hidden="true"></span>
                     <span>@seasonName</span>
-                </p>
-            }
-            @if (showLocation)
-            {
-                <p class="v2-league-hero__location">
-                    <span class="v2-ui-icon v2-ui-icon--location v2-ui-icon--sm" aria-hidden="true"></span>
-                    <span>@location</span>
                 </p>
             }
             @if (league != null && (!string.IsNullOrWhiteSpace(league.FacebookUrl) ||

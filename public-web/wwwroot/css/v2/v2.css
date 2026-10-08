@@ -4340,17 +4340,6 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   height: 0.75rem;
 }
 
-.v2-league-hero__location {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 0.7rem;
-  line-height: 1.2;
-  max-width: 100%;
-}
-
 .v2-league-hero__socials {
   display: flex;
   flex-wrap: wrap;
