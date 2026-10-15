@@ -193,6 +193,17 @@ export const matchesService = {
   deleteMatch: (leagueId: string, matchId: string, signal?: AbortSignal) =>
     apiClient.delete(`/api/leagues/${leagueId}/matches/${matchId}`, signal),
 
+  deleteDivisionRound: (
+    leagueId: string,
+    body: { seasonId: string; divisionId: string; round: number; confirmation: string },
+    signal?: AbortSignal
+  ) =>
+    apiClient.post<{ deletedCount: number; resultsRemovedCount: number }>(
+      `/api/leagues/${leagueId}/matches/delete-division-round`,
+      body,
+      signal
+    ),
+
   processResultImage: (leagueId: string, file: File, signal?: AbortSignal) => {
     const form = new FormData()
     form.append('file', file)
