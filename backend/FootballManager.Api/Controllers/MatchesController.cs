@@ -12,6 +12,7 @@ using FootballManager.Application.UseCases.Matches.SwapDivisionHomeAway;
 using FootballManager.Application.UseCases.Matches.AddMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatchIncident;
 using FootballManager.Application.UseCases.Matches.DeleteMatch;
+using FootballManager.Application.UseCases.Matches.DeleteDivisionRound;
 using FootballManager.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -33,6 +34,7 @@ namespace FootballManager.Api.Controllers
         private readonly IAddMatchIncidentUseCase _addMatchIncidentUseCase;
         private readonly IDeleteMatchIncidentUseCase _deleteMatchIncidentUseCase;
         private readonly IDeleteMatchUseCase _deleteMatchUseCase;
+        private readonly IDeleteDivisionRoundUseCase _deleteDivisionRoundUseCase;
         private readonly MatchProcessorService _matchProcessorService;
 
         public MatchesController(
@@ -47,6 +49,7 @@ namespace FootballManager.Api.Controllers
             IAddMatchIncidentUseCase addMatchIncidentUseCase,
             IDeleteMatchIncidentUseCase deleteMatchIncidentUseCase,
             IDeleteMatchUseCase deleteMatchUseCase,
+            IDeleteDivisionRoundUseCase deleteDivisionRoundUseCase,
             MatchProcessorService matchProcessorService)
         {
             _getMatchesUseCase = getMatchesUseCase ?? throw new ArgumentNullException(nameof(getMatchesUseCase));
@@ -60,6 +63,7 @@ namespace FootballManager.Api.Controllers
             _addMatchIncidentUseCase = addMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(addMatchIncidentUseCase));
             _deleteMatchIncidentUseCase = deleteMatchIncidentUseCase ?? throw new ArgumentNullException(nameof(deleteMatchIncidentUseCase));
             _deleteMatchUseCase = deleteMatchUseCase ?? throw new ArgumentNullException(nameof(deleteMatchUseCase));
+            _deleteDivisionRoundUseCase = deleteDivisionRoundUseCase ?? throw new ArgumentNullException(nameof(deleteDivisionRoundUseCase));
             _matchProcessorService = matchProcessorService ?? throw new ArgumentNullException(nameof(matchProcessorService));
         }
 
@@ -239,6 +243,28 @@ namespace FootballManager.Api.Controllers
             return NoContent();
         }
 
+        [HttpPost("delete-division-round")]
+        public async Task<IActionResult> DeleteDivisionRound(
+            [FromRoute] Guid leagueId,
+            [FromBody] DeleteDivisionRoundBody body,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            if (userId == Guid.Empty) return Unauthorized();
+
+            var response = await _deleteDivisionRoundUseCase.ExecuteAsync(new DeleteDivisionRoundRequest
+            {
+                LeagueId = leagueId,
+                UserId = userId,
+                SeasonId = body.SeasonId,
+                DivisionId = body.DivisionId,
+                Round = body.Round,
+                Confirmation = body.Confirmation,
+            }, cancellationToken);
+
+            return Ok(response);
+        }
+
         [HttpDelete("{matchId}")]
         public async Task<IActionResult> DeleteMatch(
             [FromRoute] Guid leagueId,
@@ -303,6 +329,14 @@ namespace FootballManager.Api.Controllers
                 return Guid.Empty;
             return userId;
         }
+    }
+
+    public class DeleteDivisionRoundBody
+    {
+        public Guid SeasonId { get; set; }
+        public Guid DivisionId { get; set; }
+        public int Round { get; set; }
+        public string? Confirmation { get; set; }
     }
 
     public class ClearRoundResultsBody

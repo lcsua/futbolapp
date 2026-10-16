@@ -48,6 +48,7 @@ import { CopyFixturesModal } from '../components/CopyFixturesModal'
 import { AssignFixtureDatesModal } from '../components/AssignFixtureDatesModal'
 import { ReplanFixturesModal } from '../components/ReplanFixturesModal'
 import { RoundInterzonalModal } from '../components/RoundInterzonalModal'
+import { DeleteDivisionRoundDialog } from '../components/DeleteDivisionRoundDialog'
 import type { FixtureDraftMatch } from '../api/fixtures'
 import { useTranslation } from 'react-i18next'
 
@@ -129,6 +130,7 @@ export function FixturesPage() {
   const [assignDatesModalOpen, setAssignDatesModalOpen] = useState(false)
   const [replanModalOpen, setReplanModalOpen] = useState(() => searchParams.get('replan') === '1')
   const [interzonalModalOpen, setInterzonalModalOpen] = useState(false)
+  const [deleteRoundOpen, setDeleteRoundOpen] = useState(false)
   const [snackbar, setSnackbar] = useState<{ message: string; severity: 'success' | 'error' } | null>(null)
 
   const { data: seasons = [], isLoading: seasonsLoading } = useQuery({
@@ -675,6 +677,17 @@ export function FixturesPage() {
             {hasFixtures && !isDraft && (
               <Button
                 variant="outlined"
+                color="error"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={() => setDeleteRoundOpen(true)}
+                disabled={seasonClosed}
+              >
+                {t('fixtures.deleteRound.button')}
+              </Button>
+            )}
+            {hasFixtures && !isDraft && (
+              <Button
+                variant="outlined"
                 color="warning"
                 startIcon={
                   swapHomeAwayMutation.isPending ? (
@@ -836,6 +849,20 @@ export function FixturesPage() {
             setSnackbar({ message: t('fixtures.replanGenerated'), severity: 'success' })
             void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
           }}
+        />
+      )}
+
+      {leagueId && seasonId && (
+        <DeleteDivisionRoundDialog
+          open={deleteRoundOpen}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          divisions={divisions.map((d) => ({ id: d.id, name: d.name }))}
+          initialDivisionId={divisionId}
+          rounds={fixtures?.rounds ?? []}
+          onClose={() => setDeleteRoundOpen(false)}
+          onDeleted={(message) => setSnackbar({ message, severity: 'success' })}
+          onError={(message) => setSnackbar({ message, severity: 'error' })}
         />
       )}
 
