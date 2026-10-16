@@ -257,9 +257,14 @@ namespace FootballManager.Api.Controllers
                 LeagueId = leagueId,
                 UserId = userId,
                 SeasonId = body.SeasonId,
-                DivisionId = body.DivisionId,
-                Round = body.Round,
                 Confirmation = body.Confirmation,
+                Targets = (body.Targets ?? new List<DeleteDivisionRoundTargetBody>())
+                    .Select(t => new DeleteDivisionRoundTarget
+                    {
+                        DivisionId = t.DivisionId,
+                        Rounds = t.Rounds ?? new List<int>(),
+                    })
+                    .ToList(),
             }, cancellationToken);
 
             return Ok(response);
@@ -334,9 +339,14 @@ namespace FootballManager.Api.Controllers
     public class DeleteDivisionRoundBody
     {
         public Guid SeasonId { get; set; }
-        public Guid DivisionId { get; set; }
-        public int Round { get; set; }
         public string? Confirmation { get; set; }
+        public List<DeleteDivisionRoundTargetBody> Targets { get; set; } = new();
+    }
+
+    public class DeleteDivisionRoundTargetBody
+    {
+        public Guid DivisionId { get; set; }
+        public List<int> Rounds { get; set; } = new();
     }
 
     public class ClearRoundResultsBody

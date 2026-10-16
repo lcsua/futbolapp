@@ -195,7 +195,11 @@ export const matchesService = {
 
   deleteDivisionRound: (
     leagueId: string,
-    body: { seasonId: string; divisionId: string; round: number; confirmation: string },
+    body: {
+      seasonId: string
+      confirmation: string
+      targets: Array<{ divisionId: string; rounds: number[] }>
+    },
     signal?: AbortSignal
   ) =>
     apiClient.post<{ deletedCount: number; resultsRemovedCount: number }>(
