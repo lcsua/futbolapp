@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,14 +10,19 @@ public interface IDeleteDivisionRoundUseCase
     Task<DeleteDivisionRoundResponse> ExecuteAsync(DeleteDivisionRoundRequest request, CancellationToken cancellationToken = default);
 }
 
+public class DeleteDivisionRoundTarget
+{
+    public Guid DivisionId { get; set; }
+    public List<int> Rounds { get; set; } = new();
+}
+
 public class DeleteDivisionRoundRequest
 {
     public Guid LeagueId { get; set; }
     public Guid UserId { get; set; }
     public Guid SeasonId { get; set; }
-    public Guid DivisionId { get; set; }
-    public int Round { get; set; }
     public string? Confirmation { get; set; }
+    public List<DeleteDivisionRoundTarget> Targets { get; set; } = new();
 }
 
 public class DeleteDivisionRoundResponse

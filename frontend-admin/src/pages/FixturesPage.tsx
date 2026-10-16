@@ -858,7 +858,6 @@ export function FixturesPage() {
           leagueId={leagueId}
           seasonId={seasonId}
           divisions={divisions.map((d) => ({ id: d.id, name: d.name }))}
-          initialDivisionId={divisionId}
           rounds={fixtures?.rounds ?? []}
           onClose={() => setDeleteRoundOpen(false)}
           onDeleted={(message) => setSnackbar({ message, severity: 'success' })}
