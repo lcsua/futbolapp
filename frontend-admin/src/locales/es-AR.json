@@ -174,6 +174,10 @@
       "copySuccess": "Se copiaron {{count}} enfrentamientos.",
       "assignDates": "Asignar fechas",
       "assignDatesSuccess": "Se actualizaron {{count}} partidos en {{rounds}} fechas.",
+      "shiftDates": "Correr una semana",
+      "shiftDatesHint": "Mueve una semana hacia adelante todos los partidos desde una fecha, en todas las divisiones.",
+      "shiftDatesSuccess": "Se corrieron {{count}} partidos una semana hacia adelante.",
+      "shiftDatesSkipped": "{{count}} partidos ya jugados, en curso o cancelados quedaron en su fecha.",
       "replan": "Replanificar",
       "replanGenerated": "Borrador de replanificación generado. Revisalo y guardalo.",
       "replanDraftTitle": "Borrador de replanificación desde la fecha {{round}}",
@@ -231,6 +235,18 @@
         "submit": "Asignar fechas",
         "cancel": "Cancelar",
         "failed": "No se pudieron asignar las fechas"
+      },
+      "shiftDatesModal": {
+        "title": "Correr las fechas una semana",
+        "description": "Cuando una fecha completa no se puede jugar, por ejemplo por lluvia, elegí ese día. Desde esa fecha inclusive, todos los partidos de todas las divisiones pasan al mismo día de la semana siguiente. Las fechas anteriores no cambian. El horario y la cancha se mantienen.",
+        "fromDate": "Desde",
+        "option": "{{date}} · {{count}} partidos",
+        "noDates": "No hay partidos con fecha para correr.",
+        "preview": "Desde el {{date}} hay {{count}} partidos, en todas las divisiones. Los que todavía no se jugaron pasan 7 días más adelante.",
+        "playedWarning": "Los partidos que ya tienen resultado, están en juego o fueron cancelados no se mueven.",
+        "submit": "Correr una semana",
+        "cancel": "Cancelar",
+        "failed": "No se pudieron correr las fechas"
       },
       "copyModal": {
         "title": "Copiar fixture desde otra temporada",

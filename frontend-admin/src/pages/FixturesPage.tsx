@@ -26,6 +26,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import UploadFileIcon from '@mui/icons-material/UploadFile'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
+import MoreTimeIcon from '@mui/icons-material/MoreTime'
 import DownloadIcon from '@mui/icons-material/Download'
 import PrintIcon from '@mui/icons-material/Print'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
@@ -46,6 +47,7 @@ import { useActiveLeague, useLeagueId } from '../contexts/LeagueContext'
 import { ImportFixtureModal } from '../components/ImportFixtureModal'
 import { CopyFixturesModal } from '../components/CopyFixturesModal'
 import { AssignFixtureDatesModal } from '../components/AssignFixtureDatesModal'
+import { ShiftFixtureDatesModal } from '../components/ShiftFixtureDatesModal'
 import { ReplanFixturesModal } from '../components/ReplanFixturesModal'
 import { RoundInterzonalModal } from '../components/RoundInterzonalModal'
 import { DeleteDivisionRoundDialog } from '../components/DeleteDivisionRoundDialog'
@@ -128,6 +130,7 @@ export function FixturesPage() {
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [copyModalOpen, setCopyModalOpen] = useState(false)
   const [assignDatesModalOpen, setAssignDatesModalOpen] = useState(false)
+  const [shiftDatesModalOpen, setShiftDatesModalOpen] = useState(false)
   const [replanModalOpen, setReplanModalOpen] = useState(() => searchParams.get('replan') === '1')
   const [interzonalModalOpen, setInterzonalModalOpen] = useState(false)
   const [deleteRoundOpen, setDeleteRoundOpen] = useState(false)
@@ -264,6 +267,20 @@ export function FixturesPage() {
   const handleSave = () => commitMutation.mutate()
 
   const fixtures = fixturesData?.fixtures
+  const shiftDateOptions = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const round of fixtures?.rounds ?? []) {
+      for (const match of round.matches) {
+        const raw = match.date || round.matchDate
+        if (!raw) continue
+        const iso = raw.slice(0, 10)
+        counts.set(iso, (counts.get(iso) ?? 0) + 1)
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, count]) => ({ date, count }))
+  }, [fixtures])
   const isDraft = fixturesData?.isDraft ?? false
   const hasFixtures = fixtures && fixtures.rounds.length > 0
   const replan = isDraft ? (fixtures?.replan ?? null) : null
@@ -660,6 +677,15 @@ export function FixturesPage() {
             </Button>
             <Button
               variant="outlined"
+              startIcon={<MoreTimeIcon />}
+              onClick={() => setShiftDatesModalOpen(true)}
+              disabled={seasonClosed || !hasFixtures}
+              title={t('fixtures.shiftDatesHint')}
+            >
+              {t('fixtures.shiftDates')}
+            </Button>
+            <Button
+              variant="outlined"
               startIcon={<EventRepeatIcon />}
               onClick={() => setReplanModalOpen(true)}
               disabled={seasonClosed || !hasFixtures || (isDraft && !replan)}
@@ -934,6 +960,26 @@ export function FixturesPage() {
             void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
             setSnackbar({
               message: t('fixtures.assignDatesSuccess', { count: updatedCount, rounds: roundCount }),
+              severity: 'success',
+            })
+          }}
+        />
+      )}
+
+      {leagueId && seasonId && (
+        <ShiftFixtureDatesModal
+          open={shiftDatesModalOpen}
+          onClose={() => setShiftDatesModalOpen(false)}
+          leagueId={leagueId}
+          seasonId={seasonId}
+          dates={shiftDateOptions}
+          onSuccess={(updatedCount, skippedCount) => {
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'seasons', seasonId, 'fixtures'] })
+            void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'matches'] })
+            const skipped =
+              skippedCount > 0 ? ` ${t('fixtures.shiftDatesSkipped', { count: skippedCount })}` : ''
+            setSnackbar({
+              message: `${t('fixtures.shiftDatesSuccess', { count: updatedCount })}${skipped}`,
               severity: 'success',
             })
           }}
