@@ -59,6 +59,7 @@ using FootballManager.Application.UseCases.Leagues.GetSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.ImportFixtures;
 using FootballManager.Application.UseCases.Leagues.CopyFixturesFromSeason;
 using FootballManager.Application.UseCases.Leagues.AssignFixtureDates;
+using FootballManager.Application.UseCases.Leagues.ShiftFixtureDates;
 using FootballManager.Application.UseCases.Leagues.ReplanSeasonFixtures;
 using FootballManager.Application.UseCases.Leagues.RoundInterzonalMatches;
 using FootballManager.Application.UseCases.Leagues.DiscardSeasonFixtureDraft;
@@ -179,6 +180,7 @@ namespace FootballManager.Application
             services.AddScoped<IPreviewFixtureImportUseCase, PreviewFixtureImportUseCase>();
             services.AddScoped<ICopyFixturesFromSeasonUseCase, CopyFixturesFromSeasonUseCase>();
             services.AddScoped<IAssignFixtureDatesUseCase, AssignFixtureDatesUseCase>();
+            services.AddScoped<IShiftFixtureDatesUseCase, ShiftFixtureDatesUseCase>();
             services.AddScoped<IRoundSlotAssignerFactory, RoundSlotAssignerFactory>();
             services.AddScoped<IReplanSeasonFixturesUseCase, ReplanSeasonFixturesUseCase>();
             services.AddScoped<IRoundInterzonalMatchesUseCase, RoundInterzonalMatchesUseCase>();

@@ -134,6 +134,16 @@ export interface AssignFixtureDatesResponse {
   errors: string[]
 }
 
+export interface ShiftFixtureDatesBody {
+  fromDate: string // yyyy-MM-dd
+}
+
+export interface ShiftFixtureDatesResponse {
+  updatedCount: number
+  skippedCount: number
+  errors: string[]
+}
+
 export interface FixtureImportBody {
   seasonId: string
   divisionId: string
@@ -214,6 +224,18 @@ export const fixturesService = {
   ) =>
     apiClient.post<AssignFixtureDatesResponse>(
       `/api/leagues/${leagueId}/seasons/${seasonId}/fixtures/assign-dates`,
+      body,
+      signal
+    ),
+
+  shiftDates: (
+    leagueId: string,
+    seasonId: string,
+    body: ShiftFixtureDatesBody,
+    signal?: AbortSignal
+  ) =>
+    apiClient.post<ShiftFixtureDatesResponse>(
+      `/api/leagues/${leagueId}/seasons/${seasonId}/fixtures/shift-dates`,
       body,
       signal
     ),

@@ -174,6 +174,10 @@
       "copySuccess": "Copied {{count}} matchups.",
       "assignDates": "Assign dates",
       "assignDatesSuccess": "Updated {{count}} matches across {{rounds}} rounds.",
+      "shiftDates": "Shift one week",
+      "shiftDatesHint": "Moves every match from a chosen date forward by one week, in every division.",
+      "shiftDatesSuccess": "Shifted {{count}} matches one week forward.",
+      "shiftDatesSkipped": "{{count}} played, in-progress or cancelled matches stayed on their date.",
       "replan": "Re-plan",
       "replanGenerated": "Re-plan draft generated. Review it and save.",
       "replanDraftTitle": "Re-plan draft from round {{round}}",
@@ -231,6 +235,18 @@
         "submit": "Assign dates",
         "cancel": "Cancel",
         "failed": "Could not assign dates"
+      },
+      "shiftDatesModal": {
+        "title": "Shift dates one week",
+        "description": "When a full match day cannot be played, for example because of rain, pick that day. From that date on, every match in every division moves to the same weekday one week later. Earlier dates stay put. Kickoff times and fields stay the same.",
+        "fromDate": "From",
+        "option": "{{date}} · {{count}} matches",
+        "noDates": "There are no dated matches to shift.",
+        "preview": "From {{date}} there are {{count}} matches, across every division. The ones not yet played move 7 days forward.",
+        "playedWarning": "Matches that already have a result, are in progress, or were cancelled are not moved.",
+        "submit": "Shift one week",
+        "cancel": "Cancel",
+        "failed": "Could not shift the dates"
       },
       "copyModal": {
         "title": "Copy fixtures from another season",
