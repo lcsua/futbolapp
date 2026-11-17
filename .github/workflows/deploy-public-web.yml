@@ -232,12 +232,42 @@ jobs:
 
               return re.sub(pattern, replacer, text)
 
+          def read_config(path: Path):
+              try:
+                  return path.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  print(f"Skipping non-utf8 nginx config: {path}")
+                  return None
+
+          def miliga_signal(text: str) -> bool:
+              if "BEGIN FUTBOLNET PUBLIC WEB" in text or "BEGIN FUTBOLNET UPLOADS" in text:
+                  return True
+              if re.search(r"proxy_pass\s+http://127\.0\.0\.1:500[12]\b", text):
+                  return True
+              return "location = /robots.txt" in text
+
+          def strip_public_web_block(text: str) -> str:
+              begin = "# BEGIN FUTBOLNET PUBLIC WEB"
+              end = "# END FUTBOLNET PUBLIC WEB"
+              start = text.find(begin)
+              if start == -1:
+                  return text
+              stop = text.find(end, start)
+              if stop == -1:
+                  raise SystemExit(f"Found {begin!r} without {end!r}")
+              chunk = text[start:stop]
+              if (
+                  "127.0.0.1:5001" not in chunk
+                  and "127.0.0.1:5002" not in chunk
+                  and "/public-web" not in chunk
+              ):
+                  return text
+              return strip_marked_blocks(text, begin, end)
+
           def plan_pericompras_cleanup(path: Path, text: str):
-              if "pericompras.com.ar" not in text.lower():
+              if "pericompras.com.ar" not in text.lower() or not miliga_signal(text):
                   return None
-              if "BEGIN FUTBOLNET PUBLIC WEB" not in text and "location = /robots.txt" not in text:
-                  return None
-              cleaned = strip_marked_blocks(text, "# BEGIN FUTBOLNET PUBLIC WEB", "# END FUTBOLNET PUBLIC WEB")
+              cleaned = strip_public_web_block(text)
               for location in (
                   "= /public-web",
                   "/public-web/",
@@ -251,12 +281,12 @@ jobs:
                   cleaned = strip_foreign_miliga_location(cleaned, location)
               cleaned = re.sub(r"(?m)^[ \t]*# BEGIN FUTBOLNET UPLOADS[ \t]*(?:\n|$)", "", cleaned)
               cleaned = re.sub(r"(?m)^[ \t]*# END FUTBOLNET UPLOADS[ \t]*(?:\n|$)", "", cleaned)
+              if cleaned == text:
+                  return None
               if "127.0.0.1:5001" in cleaned or "127.0.0.1:5002" in cleaned:
                   raise SystemExit(f"Refusing to leave MiLiga ports in {path}")
               if not has_uploads_to_5101(cleaned):
                   raise SystemExit(f"Refusing to drop PeriCompras uploads from {path}")
-              if cleaned == text:
-                  return None
               return cleaned
 
           candidates = [
@@ -271,8 +301,8 @@ jobs:
               resolved = path.resolve()
               if resolved in seen:
                   continue
-              text = path.read_text()
-              if not is_miliga_apex(path, text):
+              text = read_config(path)
+              if text is None or not is_miliga_apex(path, text):
                   continue
               seen.add(resolved)
               matches.append(path)
@@ -293,7 +323,10 @@ jobs:
               if resolved in seen_foreign:
                   continue
               seen_foreign.add(resolved)
-              cleaned = plan_pericompras_cleanup(path, path.read_text())
+              foreign_text = read_config(path)
+              if foreign_text is None:
+                  continue
+              cleaned = plan_pericompras_cleanup(path, foreign_text)
               if cleaned is not None:
                   pending.append((path, cleaned))
 
