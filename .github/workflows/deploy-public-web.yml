@@ -330,7 +330,9 @@ jobs:
               if cleaned is not None:
                   pending.append((path, cleaned))
 
-          text = target.read_text()
+          text = read_config(target)
+          if text is None:
+              raise SystemExit(f"Refusing to patch non-utf8 nginx config: {target}")
           text = strip_marked_blocks(text, "# BEGIN FUTBOLNET PUBLIC WEB", "# END FUTBOLNET PUBLIC WEB")
           text = strip_marked_blocks(text, "# BEGIN FUTBOLNET UPLOADS", "# END FUTBOLNET UPLOADS")
           text = strip_location(text, "= /public-web")
@@ -356,17 +358,20 @@ jobs:
                   old.unlink()
 
           def backup_file(path: Path) -> None:
+              original = read_config(path)
+              if original is None:
+                  raise SystemExit(f"Refusing to back up non-utf8 nginx config: {path}")
               dest = backup_dir / f"{path.parent.name}--{path.name}"
               if not dest.exists():
-                  dest.write_text(path.read_text())
+                  dest.write_text(original, encoding="utf-8")
 
           for path, cleaned in pending:
               backup_file(path)
           backup_file(target)
           for path, cleaned in pending:
-              path.write_text(cleaned)
+              path.write_text(cleaned, encoding="utf-8")
               print(f"Removed MiLiga locations from {path}")
-          target.write_text(text)
+          target.write_text(text, encoding="utf-8")
           print(f"Patched nginx config: {target}")
           PY
             set -euo pipefail
@@ -383,7 +388,11 @@ jobs:
           for backup in backup_dir.glob("*--*"):
               folder_name, site_name = backup.name.split("--", 1)
               restore_target = Path("/etc/nginx") / folder_name / site_name
-              restore_target.write_text(backup.read_text())
+              try:
+                  saved = backup.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  raise SystemExit(f"Refusing to restore non-utf8 nginx backup: {backup}")
+              restore_target.write_text(saved, encoding="utf-8")
               print(f"Restored {restore_target}")
               restored = True
           if not restored:
