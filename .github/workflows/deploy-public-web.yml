@@ -181,23 +181,158 @@ jobs:
               pattern = rf"(?m)^\s*location\s+{re.escape(location)}\s*\{{(?:[^{{}}]|{{[^{{}}]*}})*\}}\s*\n?"
               return re.sub(pattern, "", text)
 
+          def server_name_hosts(text: str):
+              hosts = set()
+              for match in re.finditer(r"(?ms)(?:^|[;{])\s*server_name\s+(.*?);", text):
+                  for part in match.group(1).split():
+                      hosts.add(part.lower().rstrip("."))
+              return hosts
+
+          def file_names(path: Path):
+              names = {path.name}
+              try:
+                  names.add(path.resolve().name)
+              except OSError:
+                  pass
+              return names
+
+          def is_protected(path: Path) -> bool:
+              # Other vhosts on this VPS. Never select or rewrite them.
+              protected = ("futbolnet-dev", "glosve", "presupuester", "bv-validation")
+              for name in file_names(path):
+                  for prefix in protected:
+                      if name == prefix or name.startswith(prefix + ".") or name.startswith(prefix + "-"):
+                          return True
+              return False
+
+          def is_backup(path: Path) -> bool:
+              return any(".bak" in name for name in file_names(path))
+
+          def is_miliga_apex(path: Path, text: str) -> bool:
+              # Only sites-available/futbolnet. A substring such as glosve.miliga.com.ar is not the apex.
+              if "futbolnet" not in file_names(path) or "pericompras.com.ar" in text.lower():
+                  return False
+              return "miliga.com.ar" in server_name_hosts(text)
+
+          def has_uploads_to_5101(text: str) -> bool:
+              blocks = re.findall(
+                  r"(?m)^\s*location\s+(?:\^~\s+)?/uploads/\s*\{(?:[^{}]|\{[^{}]*\})*\}",
+                  text,
+              )
+              return any("proxy_pass" in block and "127.0.0.1:5101" in block for block in blocks)
+
+          def strip_foreign_miliga_location(text: str, location: str) -> str:
+              pattern = rf"(?m)^\s*location\s+{re.escape(location)}\s*\{{(?:[^{{}}]|{{[^{{}}]*}})*\}}\s*\n?"
+
+              def replacer(match):
+                  block = match.group(0)
+                  if "127.0.0.1:5002" in block or "/public-web" in block:
+                      return ""
+                  return block
+
+              return re.sub(pattern, replacer, text)
+
+          def read_config(path: Path):
+              try:
+                  return path.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  print(f"Skipping non-utf8 nginx config: {path}")
+                  return None
+
+          def miliga_signal(text: str) -> bool:
+              if "BEGIN FUTBOLNET PUBLIC WEB" in text or "BEGIN FUTBOLNET UPLOADS" in text:
+                  return True
+              if re.search(r"proxy_pass\s+http://127\.0\.0\.1:500[12]\b", text):
+                  return True
+              return "location = /robots.txt" in text
+
+          def strip_public_web_block(text: str) -> str:
+              begin = "# BEGIN FUTBOLNET PUBLIC WEB"
+              end = "# END FUTBOLNET PUBLIC WEB"
+              start = text.find(begin)
+              if start == -1:
+                  return text
+              stop = text.find(end, start)
+              if stop == -1:
+                  raise SystemExit(f"Found {begin!r} without {end!r}")
+              chunk = text[start:stop]
+              if (
+                  "127.0.0.1:5001" not in chunk
+                  and "127.0.0.1:5002" not in chunk
+                  and "/public-web" not in chunk
+              ):
+                  return text
+              return strip_marked_blocks(text, begin, end)
+
+          def plan_pericompras_cleanup(path: Path, text: str):
+              if "pericompras.com.ar" not in text.lower() or not miliga_signal(text):
+                  return None
+              cleaned = strip_public_web_block(text)
+              for location in (
+                  "= /public-web",
+                  "/public-web/",
+                  "= /sitemap.xml",
+                  "= /robots.txt",
+                  "= /contacto",
+                  "= /gracias",
+                  "/sitemaps/",
+                  "/og/",
+              ):
+                  cleaned = strip_foreign_miliga_location(cleaned, location)
+              cleaned = re.sub(r"(?m)^[ \t]*# BEGIN FUTBOLNET UPLOADS[ \t]*(?:\n|$)", "", cleaned)
+              cleaned = re.sub(r"(?m)^[ \t]*# END FUTBOLNET UPLOADS[ \t]*(?:\n|$)", "", cleaned)
+              if cleaned == text:
+                  return None
+              if "127.0.0.1:5001" in cleaned or "127.0.0.1:5002" in cleaned:
+                  raise SystemExit(f"Refusing to leave MiLiga ports in {path}")
+              if not has_uploads_to_5101(cleaned):
+                  raise SystemExit(f"Refusing to drop PeriCompras uploads from {path}")
+              return cleaned
+
           candidates = [
               *Path("/etc/nginx/sites-enabled").glob("*"),
               *Path("/etc/nginx/conf.d").glob("*.conf"),
           ]
-          target = None
+          matches = []
+          seen = set()
           for path in candidates:
-              if not path.is_file() or path.name == "futbolnet-public-web.conf":
+              if not path.is_file() or is_protected(path) or is_backup(path):
                   continue
-              text = path.read_text()
-              if "/backoffice/" in text or "ROOT OK" in text:
-                  target = path
-                  break
+              resolved = path.resolve()
+              if resolved in seen:
+                  continue
+              text = read_config(path)
+              if text is None or not is_miliga_apex(path, text):
+                  continue
+              seen.add(resolved)
+              matches.append(path)
 
-          if target is None:
-              raise SystemExit("Could not find existing futbolnet nginx server config")
+          if len(matches) != 1:
+              if not matches:
+                  raise SystemExit("Could not find existing futbolnet nginx server config")
+              listed = ", ".join(str(path) for path in matches)
+              raise SystemExit(f"Refusing to choose among multiple futbolnet nginx server configs: {listed}")
 
-          text = target.read_text()
+          target = matches[0]
+          pending = []
+          seen_foreign = {target.resolve()}
+          for path in candidates:
+              if not path.is_file() or is_protected(path) or is_backup(path):
+                  continue
+              resolved = path.resolve()
+              if resolved in seen_foreign:
+                  continue
+              seen_foreign.add(resolved)
+              foreign_text = read_config(path)
+              if foreign_text is None:
+                  continue
+              cleaned = plan_pericompras_cleanup(path, foreign_text)
+              if cleaned is not None:
+                  pending.append((path, cleaned))
+
+          text = read_config(target)
+          if text is None:
+              raise SystemExit(f"Refusing to patch non-utf8 nginx config: {target}")
           text = strip_marked_blocks(text, "# BEGIN FUTBOLNET PUBLIC WEB", "# END FUTBOLNET PUBLIC WEB")
           text = strip_marked_blocks(text, "# BEGIN FUTBOLNET UPLOADS", "# END FUTBOLNET UPLOADS")
           text = strip_location(text, "= /public-web")
@@ -210,22 +345,68 @@ jobs:
           text = strip_location(text, "/og/")
           text = strip_location(text, "/uploads/")
 
-          marker = text.find("    location /backoffice/")
-          if marker == -1:
-              marker = text.rfind("}")
-          if marker == -1:
-              raise SystemExit(f"Could not find insertion point in {target}")
-
+          marker_match = re.search(r"(?m)^[ \t]*location[ \t]+/backoffice/", text)
+          if marker_match is None:
+              raise SystemExit(f"Could not find location /backoffice/ in {target}")
+          marker = marker_match.start()
           text = text[:marker] + public_web_block + "\n" + uploads_block + "\n" + text[marker:]
-          target.write_text(text)
+
+          backup_dir = Path("/tmp/nginx-public-web-bak")
+          backup_dir.mkdir(parents=True, exist_ok=True)
+          for old in list(backup_dir.iterdir()):
+              if old.is_file():
+                  old.unlink()
+
+          def backup_file(path: Path) -> None:
+              original = read_config(path)
+              if original is None:
+                  raise SystemExit(f"Refusing to back up non-utf8 nginx config: {path}")
+              dest = backup_dir / f"{path.parent.name}--{path.name}"
+              if not dest.exists():
+                  dest.write_text(original, encoding="utf-8")
+
+          for path, cleaned in pending:
+              backup_file(path)
+          backup_file(target)
+          for path, cleaned in pending:
+              path.write_text(cleaned, encoding="utf-8")
+              print(f"Removed MiLiga locations from {path}")
+          target.write_text(text, encoding="utf-8")
           print(f"Patched nginx config: {target}")
           PY
             set -euo pipefail
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' mv "$service_file" /etc/systemd/system/futbolnet-web.service
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' rm -f /etc/nginx/conf.d/futbolnet-public-web.conf
+            nginx_restore="$(mktemp)"
+            cat > "$nginx_restore" <<'PY'
+          from pathlib import Path
+
+          backup_dir = Path("/tmp/nginx-public-web-bak")
+          if not backup_dir.is_dir():
+              raise SystemExit("No public-web nginx backups to restore")
+          restored = False
+          for backup in backup_dir.glob("*--*"):
+              folder_name, site_name = backup.name.split("--", 1)
+              restore_target = Path("/etc/nginx") / folder_name / site_name
+              try:
+                  saved = backup.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  raise SystemExit(f"Refusing to restore non-utf8 nginx backup: {backup}")
+              restore_target.write_text(saved, encoding="utf-8")
+              print(f"Restored {restore_target}")
+              restored = True
+          if not restored:
+              raise SystemExit("No public-web nginx backups to restore")
+          PY
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' python3 "$nginx_patch"
             rm -f "$nginx_patch"
-            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' nginx -t
+            if ! printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' nginx -t; then
+              echo "nginx -t failed; restoring nginx configs"
+              printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' python3 "$nginx_restore"
+              rm -f "$nginx_restore"
+              exit 1
+            fi
+            rm -f "$nginx_restore"
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl reload nginx
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl daemon-reload
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl enable futbolnet-web

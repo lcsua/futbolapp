@@ -153,17 +153,44 @@ jobs:
           NGINX_DIRS = [Path("/etc/nginx/sites-enabled"), Path("/etc/nginx/conf.d")]
           BACKUP_DIR = Path("/tmp/nginx-planilla-bak")
           BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+          for stale in list(BACKUP_DIR.glob("*--*.bak-planilla")):
+              stale.unlink()
+
+          HANDS_OFF = ("pericompras", "glosve", "presupuester", "bv-validation")
+
+          def read_config(path: Path):
+              try:
+                  return path.read_text(encoding="utf-8")
+              except UnicodeDecodeError:
+                  print(f"Skipping non-utf8 nginx config: {path}")
+                  return None
+
+          def hands_off(path: Path, text: str) -> bool:
+              name = path.name.lower()
+              return any(token in name for token in HANDS_OFF) or "pericompras.com.ar" in text.lower()
 
           def api_locations(text: str):
               return list(LOCATION.finditer(text))
 
+          def server_name_hosts(text: str):
+              hosts = set()
+              for match in re.finditer(r"(?ms)(?:^|[;{])\s*server_name\s+(.*?);", text):
+                  for part in match.group(1).split():
+                      hosts.add(part.lower().rstrip("."))
+              return hosts
+
+          def is_pericompras(path: Path, text: str) -> bool:
+              return "pericompras" in path.name.lower() or "pericompras.com.ar" in text.lower()
+
           def is_miliga(path: Path, text: str) -> bool:
-              if "presupuester" in path.name:
+              # /backoffice/ also exists on PeriCompras. Match the MiLiga vhost only.
+              if "presupuester" in path.name.lower() or is_pericompras(path, text):
                   return False
+              hosts = server_name_hosts(text)
               return (
-                  "miliga.com.ar" in text
-                  or "/backoffice/" in text
-                  or path.name.startswith("futbolnet")
+                  path.name.startswith("futbolnet")
+                  or "miliga.com.ar" in hosts
+                  or "www.miliga.com.ar" in hosts
               )
 
           def patch(text: str) -> str:
@@ -195,40 +222,64 @@ jobs:
               if not folder.is_dir():
                   continue
               for backup in list(folder.glob("*.bak-planilla")):
+                  saved = read_config(backup)
+                  if saved is None:
+                      backup.unlink()
+                      print(f"Removed leftover {backup}")
+                      continue
                   dest = BACKUP_DIR / f"{folder.name}--{backup.name}"
-                  if not dest.exists():
-                      dest.write_text(backup.read_text())
+                  dest.write_text(saved)
                   site_name = backup.name[: -len(".bak-planilla")]
                   target = folder / site_name
-                  if target.exists() and not is_miliga(target, target.read_text()):
-                      target.write_text(backup.read_text())
-                      print(f"Restored unrelated site {target}")
+                  if target.exists():
+                      current = read_config(target)
+                      if current is None or hands_off(target, current):
+                          print(f"Leaving {target} unchanged")
+                      elif not is_miliga(target, current):
+                          target.write_text(saved)
+                          print(f"Restored unrelated site {target}")
                   backup.unlink()
                   print(f"Removed leftover {backup}")
 
-          updated = []
+          planned = []
+          already = []
           for folder in NGINX_DIRS:
               if not folder.is_dir():
                   continue
               for path in folder.iterdir():
                   if not path.is_file() or path.name.endswith(".bak-planilla"):
                       continue
-                  original = path.read_text()
+                  original = read_config(path)
+                  if original is None:
+                      continue
                   if not is_miliga(path, original) or not api_locations(original):
                       continue
                   patched = patch(original)
                   if patched == original:
                       print(f"{path} already allows a long /api/ read")
-                      updated.append(str(path))
+                      already.append((path, original))
                       continue
-                  dest = BACKUP_DIR / f"{folder.name}--{path.name}.bak-planilla"
-                  if not dest.exists():
-                      dest.write_text(original)
-                  path.write_text(patched)
-                  updated.append(str(path))
-                  print(f"Updated {path}")
-          if not updated:
+                  planned.append((folder, path, original, patched))
+
+          def covers_apex(path: Path, text: str) -> bool:
+              names = {path.name}
+              try:
+                  names.add(path.resolve().name)
+              except OSError:
+                  pass
+              if "futbolnet" in names:
+                  return True
+              return "miliga.com.ar" in server_name_hosts(text)
+
+          considered = already + [(item[1], item[2]) for item in planned]
+          if not any(covers_apex(path, text) for path, text in considered):
               raise SystemExit("No nginx location /api/ found for miliga")
+
+          for folder, path, original, patched in planned:
+              dest = BACKUP_DIR / f"{folder.name}--{path.name}.bak-planilla"
+              dest.write_text(original)
+              path.write_text(patched)
+              print(f"Updated {path}")
           PY
           cat > "$restore_py" << 'PY'
           from pathlib import Path
@@ -240,7 +291,14 @@ jobs:
               folder_name, file_name = backup.name.split("--", 1)
               site_name = file_name[: -len(".bak-planilla")]
               target = Path("/etc/nginx") / folder_name / site_name
-              target.write_text(backup.read_text())
+              saved = backup.read_text()
+              if (
+                  any(token in site_name.lower() for token in ("pericompras", "glosve", "presupuester", "bv-validation"))
+                  or "pericompras.com.ar" in saved.lower()
+              ):
+                  print(f"Leaving {target} unchanged")
+                  continue
+              target.write_text(saved)
               print(f"Restored {target}")
           PY
           sudo_run python3 "$nginx_py"
