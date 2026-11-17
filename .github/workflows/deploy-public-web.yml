@@ -181,21 +181,114 @@ jobs:
               pattern = rf"(?m)^\s*location\s+{re.escape(location)}\s*\{{(?:[^{{}}]|{{[^{{}}]*}})*\}}\s*\n?"
               return re.sub(pattern, "", text)
 
+          def server_name_hosts(text: str):
+              hosts = set()
+              for match in re.finditer(r"(?ms)^\s*server_name\s+(.*?);", text):
+                  for part in match.group(1).split():
+                      hosts.add(part.lower().rstrip("."))
+              return hosts
+
+          def file_names(path: Path):
+              names = {path.name}
+              try:
+                  names.add(path.resolve().name)
+              except OSError:
+                  pass
+              return names
+
+          def is_protected(path: Path) -> bool:
+              # Other vhosts on this VPS. Never select or rewrite them.
+              protected = ("futbolnet-dev", "glosve", "presupuester", "bv-validation")
+              for name in file_names(path):
+                  for prefix in protected:
+                      if name == prefix or name.startswith(prefix + ".") or name.startswith(prefix + "-"):
+                          return True
+              return False
+
+          def is_backup(path: Path) -> bool:
+              return any(".bak" in name for name in file_names(path))
+
+          def is_miliga_apex(path: Path, text: str) -> bool:
+              # Only sites-available/futbolnet. A substring such as glosve.miliga.com.ar is not the apex.
+              if "futbolnet" not in file_names(path) or "pericompras.com.ar" in text.lower():
+                  return False
+              return "miliga.com.ar" in server_name_hosts(text)
+
+          def has_uploads_to_5101(text: str) -> bool:
+              blocks = re.findall(
+                  r"(?m)^\s*location\s+(?:\^~\s+)?/uploads/\s*\{(?:[^{}]|\{[^{}]*\})*\}",
+                  text,
+              )
+              return any("proxy_pass" in block and "127.0.0.1:5101" in block for block in blocks)
+
+          def plan_pericompras_cleanup(path: Path, text: str):
+              if "pericompras.com.ar" not in text.lower():
+                  return None
+              if "BEGIN FUTBOLNET PUBLIC WEB" not in text and "location = /robots.txt" not in text:
+                  return None
+              cleaned = strip_marked_blocks(text, "# BEGIN FUTBOLNET PUBLIC WEB", "# END FUTBOLNET PUBLIC WEB")
+              for location in (
+                  "= /public-web",
+                  "/public-web/",
+                  "= /sitemap.xml",
+                  "= /robots.txt",
+                  "= /contacto",
+                  "= /gracias",
+                  "/sitemaps/",
+                  "/og/",
+              ):
+                  cleaned = strip_location(cleaned, location)
+              cleaned = re.sub(r"(?m)^[ \t]*# BEGIN FUTBOLNET UPLOADS[ \t]*(?:\n|$)", "", cleaned)
+              cleaned = re.sub(r"(?m)^[ \t]*# END FUTBOLNET UPLOADS[ \t]*(?:\n|$)", "", cleaned)
+              if "127.0.0.1:5001" in cleaned or "127.0.0.1:5002" in cleaned:
+                  raise SystemExit(f"Refusing to leave MiLiga ports in {path}")
+              if not has_uploads_to_5101(cleaned):
+                  raise SystemExit(f"Refusing to drop PeriCompras uploads from {path}")
+              if cleaned == text:
+                  return None
+              return cleaned
+
           candidates = [
               *Path("/etc/nginx/sites-enabled").glob("*"),
               *Path("/etc/nginx/conf.d").glob("*.conf"),
           ]
-          target = None
+          matches = []
+          seen = set()
           for path in candidates:
-              if not path.is_file() or path.name == "futbolnet-public-web.conf":
+              if not path.is_file() or is_protected(path) or is_backup(path):
+                  continue
+              resolved = path.resolve()
+              if resolved in seen:
                   continue
               text = path.read_text()
-              if "/backoffice/" in text or "ROOT OK" in text:
-                  target = path
-                  break
+              if not is_miliga_apex(path, text):
+                  continue
+              seen.add(resolved)
+              matches.append(path)
 
-          if target is None:
-              raise SystemExit("Could not find existing futbolnet nginx server config")
+          if len(matches) != 1:
+              if not matches:
+                  raise SystemExit("Could not find existing futbolnet nginx server config")
+              listed = ", ".join(str(path) for path in matches)
+              raise SystemExit(f"Refusing to choose among multiple futbolnet nginx server configs: {listed}")
+
+          target = matches[0]
+          pending = []
+          seen_foreign = {target.resolve()}
+          for path in candidates:
+              if not path.is_file() or is_protected(path) or is_backup(path):
+                  continue
+              resolved = path.resolve()
+              if resolved in seen_foreign:
+                  continue
+              seen_foreign.add(resolved)
+              cleaned = plan_pericompras_cleanup(path, path.read_text())
+              if cleaned is not None:
+                  pending.append((path, cleaned))
+
+          for path, cleaned in pending:
+              path.write_text(cleaned)
+              print(f"Removed MiLiga locations from {path}")
 
           text = target.read_text()
           text = strip_marked_blocks(text, "# BEGIN FUTBOLNET PUBLIC WEB", "# END FUTBOLNET PUBLIC WEB")

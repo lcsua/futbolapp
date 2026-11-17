@@ -157,13 +157,25 @@ jobs:
           def api_locations(text: str):
               return list(LOCATION.finditer(text))
 
+          def server_name_hosts(text: str):
+              hosts = set()
+              for match in re.finditer(r"(?ms)^\s*server_name\s+(.*?);", text):
+                  for part in match.group(1).split():
+                      hosts.add(part.lower().rstrip("."))
+              return hosts
+
+          def is_pericompras(path: Path, text: str) -> bool:
+              return "pericompras" in path.name.lower() or "pericompras.com.ar" in text.lower()
+
           def is_miliga(path: Path, text: str) -> bool:
-              if "presupuester" in path.name:
+              # /backoffice/ also exists on PeriCompras. Match the MiLiga vhost only.
+              if "presupuester" in path.name.lower() or is_pericompras(path, text):
                   return False
+              hosts = server_name_hosts(text)
               return (
-                  "miliga.com.ar" in text
-                  or "/backoffice/" in text
-                  or path.name.startswith("futbolnet")
+                  path.name.startswith("futbolnet")
+                  or "miliga.com.ar" in hosts
+                  or "www.miliga.com.ar" in hosts
               )
 
           def patch(text: str) -> str:
@@ -200,9 +212,13 @@ jobs:
                       dest.write_text(backup.read_text())
                   site_name = backup.name[: -len(".bak-planilla")]
                   target = folder / site_name
-                  if target.exists() and not is_miliga(target, target.read_text()):
-                      target.write_text(backup.read_text())
-                      print(f"Restored unrelated site {target}")
+                  if target.exists():
+                      current = target.read_text()
+                      if is_pericompras(target, current):
+                          print(f"Leaving PeriCompras unchanged: {target}")
+                      elif not is_miliga(target, current):
+                          target.write_text(backup.read_text())
+                          print(f"Restored unrelated site {target}")
                   backup.unlink()
                   print(f"Removed leftover {backup}")
 
