@@ -183,7 +183,7 @@ jobs:
 
           def server_name_hosts(text: str):
               hosts = set()
-              for match in re.finditer(r"(?ms)^\s*server_name\s+(.*?);", text):
+              for match in re.finditer(r"(?ms)(?:^|[;{])\s*server_name\s+(.*?);", text):
                   for part in match.group(1).split():
                       hosts.add(part.lower().rstrip("."))
               return hosts
@@ -221,6 +221,17 @@ jobs:
               )
               return any("proxy_pass" in block and "127.0.0.1:5101" in block for block in blocks)
 
+          def strip_foreign_miliga_location(text: str, location: str) -> str:
+              pattern = rf"(?m)^\s*location\s+{re.escape(location)}\s*\{{(?:[^{{}}]|{{[^{{}}]*}})*\}}\s*\n?"
+
+              def replacer(match):
+                  block = match.group(0)
+                  if "127.0.0.1:5002" in block or "/public-web" in block:
+                      return ""
+                  return block
+
+              return re.sub(pattern, replacer, text)
+
           def plan_pericompras_cleanup(path: Path, text: str):
               if "pericompras.com.ar" not in text.lower():
                   return None
@@ -237,7 +248,7 @@ jobs:
                   "/sitemaps/",
                   "/og/",
               ):
-                  cleaned = strip_location(cleaned, location)
+                  cleaned = strip_foreign_miliga_location(cleaned, location)
               cleaned = re.sub(r"(?m)^[ \t]*# BEGIN FUTBOLNET UPLOADS[ \t]*(?:\n|$)", "", cleaned)
               cleaned = re.sub(r"(?m)^[ \t]*# END FUTBOLNET UPLOADS[ \t]*(?:\n|$)", "", cleaned)
               if "127.0.0.1:5001" in cleaned or "127.0.0.1:5002" in cleaned:
@@ -286,10 +297,6 @@ jobs:
               if cleaned is not None:
                   pending.append((path, cleaned))
 
-          for path, cleaned in pending:
-              path.write_text(cleaned)
-              print(f"Removed MiLiga locations from {path}")
-
           text = target.read_text()
           text = strip_marked_blocks(text, "# BEGIN FUTBOLNET PUBLIC WEB", "# END FUTBOLNET PUBLIC WEB")
           text = strip_marked_blocks(text, "# BEGIN FUTBOLNET UPLOADS", "# END FUTBOLNET UPLOADS")
@@ -303,22 +310,61 @@ jobs:
           text = strip_location(text, "/og/")
           text = strip_location(text, "/uploads/")
 
-          marker = text.find("    location /backoffice/")
-          if marker == -1:
-              marker = text.rfind("}")
-          if marker == -1:
-              raise SystemExit(f"Could not find insertion point in {target}")
-
+          marker_match = re.search(r"(?m)^[ \t]*location[ \t]+/backoffice/", text)
+          if marker_match is None:
+              raise SystemExit(f"Could not find location /backoffice/ in {target}")
+          marker = marker_match.start()
           text = text[:marker] + public_web_block + "\n" + uploads_block + "\n" + text[marker:]
+
+          backup_dir = Path("/tmp/nginx-public-web-bak")
+          backup_dir.mkdir(parents=True, exist_ok=True)
+          for old in list(backup_dir.iterdir()):
+              if old.is_file():
+                  old.unlink()
+
+          def backup_file(path: Path) -> None:
+              dest = backup_dir / f"{path.parent.name}--{path.name}"
+              if not dest.exists():
+                  dest.write_text(path.read_text())
+
+          for path, cleaned in pending:
+              backup_file(path)
+          backup_file(target)
+          for path, cleaned in pending:
+              path.write_text(cleaned)
+              print(f"Removed MiLiga locations from {path}")
           target.write_text(text)
           print(f"Patched nginx config: {target}")
           PY
             set -euo pipefail
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' mv "$service_file" /etc/systemd/system/futbolnet-web.service
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' rm -f /etc/nginx/conf.d/futbolnet-public-web.conf
+            nginx_restore="$(mktemp)"
+            cat > "$nginx_restore" <<'PY'
+          from pathlib import Path
+
+          backup_dir = Path("/tmp/nginx-public-web-bak")
+          if not backup_dir.is_dir():
+              raise SystemExit("No public-web nginx backups to restore")
+          restored = False
+          for backup in backup_dir.glob("*--*"):
+              folder_name, site_name = backup.name.split("--", 1)
+              restore_target = Path("/etc/nginx") / folder_name / site_name
+              restore_target.write_text(backup.read_text())
+              print(f"Restored {restore_target}")
+              restored = True
+          if not restored:
+              raise SystemExit("No public-web nginx backups to restore")
+          PY
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' python3 "$nginx_patch"
             rm -f "$nginx_patch"
-            printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' nginx -t
+            if ! printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' nginx -t; then
+              echo "nginx -t failed; restoring nginx configs"
+              printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' python3 "$nginx_restore"
+              rm -f "$nginx_restore"
+              exit 1
+            fi
+            rm -f "$nginx_restore"
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl reload nginx
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl daemon-reload
             printf '%s\n' "$SUDO_PASSWORD" | sudo -S -p '' systemctl enable futbolnet-web

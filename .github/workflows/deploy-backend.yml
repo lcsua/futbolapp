@@ -159,7 +159,7 @@ jobs:
 
           def server_name_hosts(text: str):
               hosts = set()
-              for match in re.finditer(r"(?ms)^\s*server_name\s+(.*?);", text):
+              for match in re.finditer(r"(?ms)(?:^|[;{])\s*server_name\s+(.*?);", text):
                   for part in match.group(1).split():
                       hosts.add(part.lower().rstrip("."))
               return hosts
@@ -243,7 +243,19 @@ jobs:
                   path.write_text(patched)
                   updated.append(str(path))
                   print(f"Updated {path}")
-          if not updated:
+
+          def covers_apex(path_str: str) -> bool:
+              path = Path(path_str)
+              names = {path.name}
+              try:
+                  names.add(path.resolve().name)
+              except OSError:
+                  pass
+              if "futbolnet" in names:
+                  return True
+              return "miliga.com.ar" in server_name_hosts(path.read_text())
+
+          if not any(covers_apex(item) for item in updated):
               raise SystemExit("No nginx location /api/ found for miliga")
           PY
           cat > "$restore_py" << 'PY'
@@ -256,7 +268,14 @@ jobs:
               folder_name, file_name = backup.name.split("--", 1)
               site_name = file_name[: -len(".bak-planilla")]
               target = Path("/etc/nginx") / folder_name / site_name
-              target.write_text(backup.read_text())
+              saved = backup.read_text()
+              if (
+                  any(token in site_name.lower() for token in ("pericompras", "glosve", "presupuester", "bv-validation"))
+                  or "pericompras.com.ar" in saved.lower()
+              ):
+                  print(f"Leaving {target} unchanged")
+                  continue
+              target.write_text(saved)
               print(f"Restored {target}")
           PY
           sudo_run python3 "$nginx_py"
