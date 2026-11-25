@@ -260,6 +260,32 @@ public static class TeamDisplayHelper
         return raw;
     }
 
+    public static string FormatMatchShareTitle(MatchViewModel match)
+    {
+        if (IsUpcomingShare(match))
+            return FormatUpcomingOgTitle(match);
+        if (match.HomeScore.HasValue && match.AwayScore.HasValue)
+            return $"{match.HomeTeam.Name} {match.HomeScore} — {match.AwayScore} {match.AwayTeam.Name}";
+        return $"{match.HomeTeam.Name} vs {match.AwayTeam.Name}";
+    }
+
+    public static string FormatMatchShareText(MatchViewModel match, string? leagueName)
+    {
+        if (IsUpcomingShare(match))
+            return FormatUpcomingShareText(match, leagueName);
+
+        var lines = new List<string> { FormatMatchShareTitle(match) };
+        var details = FormatUpcomingShareDetails(match);
+        if (!string.IsNullOrWhiteSpace(details))
+            lines.Add(details);
+        if (!string.IsNullOrWhiteSpace(leagueName))
+            lines.Add(leagueName.Trim());
+        return string.Join("\n", lines);
+    }
+
+    private static bool IsUpcomingShare(MatchViewModel match) =>
+        IsScheduled(match.Status) && !(match.HomeScore.HasValue && match.AwayScore.HasValue);
+
     public static string FormatUpcomingShareText(MatchViewModel match, string? leagueName)
     {
         var vs = $"{match.HomeTeam.Name} vs {match.AwayTeam.Name}";

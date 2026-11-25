@@ -63,6 +63,36 @@ public class TeamDisplayHelperTests
     }
 
     [Fact]
+    public void FormatMatchShare_UsesThePreviewCopy_WhenTheMatchIsScheduled()
+    {
+        var match = UpcomingMatch();
+        match.Status = "SCHEDULED";
+
+        Assert.Equal(
+            TeamDisplayHelper.FormatUpcomingOgTitle(match),
+            TeamDisplayHelper.FormatMatchShareTitle(match));
+        Assert.Equal(
+            TeamDisplayHelper.FormatUpcomingShareText(match, "Liga de Veteranos de Perico"),
+            TeamDisplayHelper.FormatMatchShareText(match, "Liga de Veteranos de Perico"));
+    }
+
+    [Fact]
+    public void FormatMatchShare_UsesTheScore_WhenTheMatchIsFinished()
+    {
+        var match = UpcomingMatch();
+        match.Status = "COMPLETED";
+        match.HomeScore = 2;
+        match.AwayScore = 1;
+
+        Assert.Equal(
+            "DEP ELUNEY POPULAR 2 — 1 JUEVES DE SOMETIDOS",
+            TeamDisplayHelper.FormatMatchShareTitle(match));
+        Assert.Equal(
+            "DEP ELUNEY POPULAR 2 — 1 JUEVES DE SOMETIDOS\n29 AGO · 13:10 · Cancha F\nLiga de Veteranos de Perico",
+            TeamDisplayHelper.FormatMatchShareText(match, "Liga de Veteranos de Perico"));
+    }
+
+    [Fact]
     public void FormatUpcomingOgDescription_OmitsMidnightAsKickoffTime()
     {
         var match = UpcomingMatch();
