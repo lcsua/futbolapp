@@ -208,6 +208,19 @@
                 <div class="v2-empty">Sin próximo partido programado.</div>
             }
         </div>
+        @{
+            var dashboard = PublicWeb.Services.Public.TeamDashboardBuilder.Build(summary);
+            string? scorersHref = null;
+            if (!string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(teamSlug))
+            {
+                var seasonQs = string.IsNullOrWhiteSpace(seasonSlug)
+                    ? string.Empty
+                    : "&season=" + Uri.EscapeDataString(seasonSlug);
+                scorersHref = Url.Content($"~/ligas/{leagueSlug}/{teamSlug}?tab=goleadores{seasonQs}");
+            }
+            ViewData["ScorersHref"] = scorersHref;
+        }
+        @await Html.PartialAsync("~/Views/V2/Team/_Dashboard.cshtml", dashboard)
     </section>
 
     <section id="panel-partidos"
@@ -347,4 +360,5 @@
 
 @section Scripts {
     <script src="~/js/v2/team-tabs.js" asp-append-version="true"></script>
+    <script src="~/js/v2/team-summary.js" asp-append-version="true"></script>
 }

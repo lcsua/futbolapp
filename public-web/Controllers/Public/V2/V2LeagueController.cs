@@ -11,7 +11,9 @@ namespace PublicWeb.Controllers.Public.V2;
 [Route("ligas")]
 public class V2LeagueController : Controller
 {
-    private const int SummaryPageSize = 5;
+    // The Resumen chart uses the newest finished matches. Page 1 already
+    // asks for PartidosPageSize; this covers the separate summary call.
+    private const int SummaryPageSize = 10;
     private const int PartidosPageSize = 10;
 
     private readonly LeaguePublicService _leagueService;
