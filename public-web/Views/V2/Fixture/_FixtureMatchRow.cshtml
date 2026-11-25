@@ -15,8 +15,16 @@
             : null;
     var homeUrl = TeamUrl(Model.HomeTeam);
     var awayUrl = TeamUrl(Model.AwayTeam);
+    var matchLabel = $"{Model.HomeTeam.Name} vs {Model.AwayTeam.Name}";
+    if (suspended)
+        matchLabel += ", suspendido";
+    else if (showScore)
+        matchLabel += $", {Model.HomeScore} a {Model.AwayScore}";
+    else if (time != null)
+        matchLabel += $", {time}";
 }
 <article class="v2-fixture-row @(showScore ? "is-result" : "is-upcoming")">
+    <a class="v2-fixture-row__open" href="@Url.Content(MatchSlugHelper.AppRelative(Model))" aria-label="Ver partido @matchLabel"></a>
     <div class="v2-fixture-row__inner">
         <div class="v2-fixture-row__home">
             @if (homeUrl != null)
@@ -36,7 +44,7 @@
         </div>
 
         <div class="v2-fixture-row__mid">
-            <a class="v2-fixture-row__info" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
+            <div class="v2-fixture-row__info">
                 @if (suspended)
                 {
                     <span class="v2-fixture-row__status is-warn">Suspendido</span>
@@ -57,7 +65,7 @@
                 {
                     <span class="v2-fixture-row__venue">@await Html.PartialAsync("~/Views/Shared/V2/_FieldLabel.cshtml", venue)</span>
                 }
-            </a>
+            </div>
         </div>
 
         <div class="v2-fixture-row__away">
