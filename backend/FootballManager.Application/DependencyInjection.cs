@@ -27,6 +27,7 @@ using FootballManager.Application.UseCases.Leagues.DeleteDivision;
 using FootballManager.Application.UseCases.Leagues.UpdateSeason;
 using FootballManager.Application.UseCases.Leagues.GetLeagueDivisions;
 using FootballManager.Application.UseCases.Leagues.GetLeagueClubs;
+using FootballManager.Application.UseCases.Leagues.LeagueChampions;
 using FootballManager.Application.UseCases.Leagues.CreateDivision;
 using FootballManager.Application.UseCases.Leagues.CreateClub;
 using FootballManager.Application.UseCases.Leagues.UpdateClub;
@@ -227,6 +228,15 @@ namespace FootballManager.Application
             services.AddScoped<IDeleteAdvertisementUseCase, DeleteAdvertisementUseCase>();
             services.AddScoped<ISetAdvertisementImageUseCase, SetAdvertisementImageUseCase>();
             services.AddScoped<IRemoveAdvertisementImageUseCase, RemoveAdvertisementImageUseCase>();
+            services.AddScoped<IGetLeagueChampionsUseCase, GetLeagueChampionsUseCase>();
+            services.AddScoped<IGetLeagueChampionUseCase, GetLeagueChampionUseCase>();
+            services.AddScoped<IGetLeagueChampionOptionsUseCase, GetLeagueChampionOptionsUseCase>();
+            services.AddScoped<ICreateLeagueChampionUseCase, CreateLeagueChampionUseCase>();
+            services.AddScoped<IUpdateLeagueChampionUseCase, UpdateLeagueChampionUseCase>();
+            services.AddScoped<IDeleteLeagueChampionUseCase, DeleteLeagueChampionUseCase>();
+            services.AddScoped<IAddLeagueChampionPhotosUseCase, AddLeagueChampionPhotosUseCase>();
+            services.AddScoped<IUpdateLeagueChampionGalleryUseCase, UpdateLeagueChampionGalleryUseCase>();
+            services.AddScoped<IDeleteLeagueChampionPhotoUseCase, DeleteLeagueChampionPhotoUseCase>();
 
             services.AddSingleton<IFixtureDraftStore, FixtureDraftStore>();
 

@@ -12,24 +12,27 @@ public sealed class DeleteDivisionUseCase : IDeleteDivisionUseCase
     private readonly IDivisionRepository _divisionRepository;
     private readonly IFixtureRepository _fixtureRepository;
     private readonly ITeamDivisionSeasonRepository _teamDivisionSeasonRepository;
-    private readonly IDivisionSeasonRepository _divisionSeasonRepository;
-    private readonly IUnitOfWork _unitOfWork;
+        private readonly IDivisionSeasonRepository _divisionSeasonRepository;
+        private readonly ILeagueChampionRepository _leagueChampionRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-    public DeleteDivisionUseCase(
-        IUserLeagueRepository userLeagueRepository,
-        IDivisionRepository divisionRepository,
-        IFixtureRepository fixtureRepository,
-        ITeamDivisionSeasonRepository teamDivisionSeasonRepository,
-        IDivisionSeasonRepository divisionSeasonRepository,
-        IUnitOfWork unitOfWork)
-    {
-        _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
-        _divisionRepository = divisionRepository ?? throw new ArgumentNullException(nameof(divisionRepository));
-        _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
-        _teamDivisionSeasonRepository = teamDivisionSeasonRepository ?? throw new ArgumentNullException(nameof(teamDivisionSeasonRepository));
-        _divisionSeasonRepository = divisionSeasonRepository ?? throw new ArgumentNullException(nameof(divisionSeasonRepository));
-        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-    }
+        public DeleteDivisionUseCase(
+            IUserLeagueRepository userLeagueRepository,
+            IDivisionRepository divisionRepository,
+            IFixtureRepository fixtureRepository,
+            ITeamDivisionSeasonRepository teamDivisionSeasonRepository,
+            IDivisionSeasonRepository divisionSeasonRepository,
+            ILeagueChampionRepository leagueChampionRepository,
+            IUnitOfWork unitOfWork)
+        {
+            _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
+            _divisionRepository = divisionRepository ?? throw new ArgumentNullException(nameof(divisionRepository));
+            _fixtureRepository = fixtureRepository ?? throw new ArgumentNullException(nameof(fixtureRepository));
+            _teamDivisionSeasonRepository = teamDivisionSeasonRepository ?? throw new ArgumentNullException(nameof(teamDivisionSeasonRepository));
+            _divisionSeasonRepository = divisionSeasonRepository ?? throw new ArgumentNullException(nameof(divisionSeasonRepository));
+            _leagueChampionRepository = leagueChampionRepository ?? throw new ArgumentNullException(nameof(leagueChampionRepository));
+            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        }
 
     public async Task ExecuteAsync(DeleteDivisionRequest request, CancellationToken cancellationToken = default)
     {
@@ -52,6 +55,9 @@ public sealed class DeleteDivisionUseCase : IDeleteDivisionUseCase
 
         // Cascades DivisionSeasonField + DivisionMatchRules.
         await _divisionSeasonRepository.RemoveByDivisionIdAsync(request.DivisionId, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await _leagueChampionRepository.UnlinkDivisionAsync(request.DivisionId, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         await _divisionRepository.RemoveByIdAsync(request.DivisionId, cancellationToken);

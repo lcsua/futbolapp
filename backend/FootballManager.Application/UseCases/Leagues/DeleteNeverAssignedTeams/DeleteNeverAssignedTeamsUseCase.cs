@@ -30,17 +30,20 @@ namespace FootballManager.Application.UseCases.Leagues.DeleteNeverAssignedTeams
     {
         private readonly ITeamRepository _teamRepository;
         private readonly IMatchIncidentRepository _matchIncidentRepository;
+        private readonly ILeagueChampionRepository _leagueChampionRepository;
         private readonly IUserLeagueRepository _userLeagueRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public DeleteNeverAssignedTeamsUseCase(
             ITeamRepository teamRepository,
             IMatchIncidentRepository matchIncidentRepository,
+            ILeagueChampionRepository leagueChampionRepository,
             IUserLeagueRepository userLeagueRepository,
             IUnitOfWork unitOfWork)
         {
             _teamRepository = teamRepository ?? throw new ArgumentNullException(nameof(teamRepository));
             _matchIncidentRepository = matchIncidentRepository ?? throw new ArgumentNullException(nameof(matchIncidentRepository));
+            _leagueChampionRepository = leagueChampionRepository ?? throw new ArgumentNullException(nameof(leagueChampionRepository));
             _userLeagueRepository = userLeagueRepository ?? throw new ArgumentNullException(nameof(userLeagueRepository));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         }
@@ -73,6 +76,12 @@ namespace FootballManager.Application.UseCases.Leagues.DeleteNeverAssignedTeams
                 {
                     throw new BusinessException(
                         $"Cannot delete team \"{team.DisplayName}\": it has match incidents.");
+                }
+
+                if (await _leagueChampionRepository.TeamHasActiveTitleAsync(teamId, cancellationToken))
+                {
+                    throw new BusinessException(
+                        $"No se puede eliminar el equipo \"{team.DisplayName}\" porque conserva títulos de campeón.");
                 }
 
                 await _teamRepository.RemoveAsync(team, cancellationToken);

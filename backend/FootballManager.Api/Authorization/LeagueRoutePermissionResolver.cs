@@ -75,6 +75,9 @@ namespace FootballManager.Api.Authorization
             if (afterId.StartsWith("advertisements"))
                 return PermissionRequirement.One(PermissionCodes.Leagues);
 
+            if (afterId.StartsWith("champions"))
+                return PermissionRequirement.One(PermissionCodes.Leagues);
+
             if (afterId.Contains("document"))
                 return PermissionRequirement.One(PermissionCodes.Documents);
 

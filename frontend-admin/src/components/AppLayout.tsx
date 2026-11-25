@@ -32,6 +32,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile'
 import PeopleIcon from '@mui/icons-material/People'
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings'
 import CampaignIcon from '@mui/icons-material/Campaign'
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium'
 import { useAuth } from '../contexts/AuthContext'
 import { LeagueSelector } from './LeagueSelector'
 import { useTranslation } from 'react-i18next'
@@ -42,6 +43,7 @@ const DRAWER_WIDTH = 260
 const NAV_ITEMS = [
   { to: '/', txKey: 'nav.leagues', icon: <EmojiEventsIcon />, permission: null },
   { to: '/seasons', txKey: 'nav.seasons', icon: <CalendarMonthIcon />, permission: 'seasons' },
+  { to: '/champions', txKey: 'nav.champions', icon: <WorkspacePremiumIcon />, permission: 'leagues' },
   { to: '/season-setup', txKey: 'nav.seasonSetup', icon: <SettingsIcon />, permission: 'season_setup' },
   { to: '/season-setup/advanced', txKey: 'nav.advancedSeasonSetup', icon: <SettingsIcon />, permission: 'season_setup' },
   { to: '/divisions', txKey: 'nav.divisions', icon: <ViewListIcon />, permission: 'divisions' },
@@ -77,6 +79,7 @@ function permissionForPath(pathname: string): string | null {
   if (path.startsWith('/fixtures')) return 'fixtures'
   if (path.startsWith('/fields')) return 'fields'
   if (path.startsWith('/ads')) return 'leagues'
+  if (path.startsWith('/champions')) return 'leagues'
   if (path.startsWith('/clubs')) return 'clubs'
   if (path.startsWith('/teams')) return 'teams'
   if (path.startsWith('/divisions')) return 'divisions'
@@ -114,7 +117,9 @@ export function AppLayout() {
           const scopedPath = location.pathname.replace(/^\/leagues\/[^/]+/, '') || location.pathname
           const selected =
             to === '/'
-              ? location.pathname === '/' || location.pathname.startsWith('/leagues')
+              ? location.pathname === '/' || (location.pathname.startsWith('/leagues') && !location.pathname.includes('/champions'))
+              : to === '/champions'
+                ? scopedPath === '/champions' || scopedPath.startsWith('/champions/')
               : to === '/teams'
                 ? location.pathname === '/teams' || (location.pathname.startsWith('/teams/') && location.pathname !== '/teams/bulk')
                 : to === '/ads'

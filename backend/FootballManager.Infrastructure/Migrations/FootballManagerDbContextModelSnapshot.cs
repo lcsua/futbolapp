@@ -677,6 +677,26 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("description");
 
+                    b.Property<string>("FacebookUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("facebook_url");
+
+                    b.Property<string>("FontKey")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("font_key");
+
+                    b.Property<string>("HeroImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("hero_image_url");
+
+                    b.Property<string>("InstagramUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("instagram_url");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -688,26 +708,6 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_public");
-
-                    b.Property<string>("FontKey")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("font_key");
-
-                    b.Property<string>("FacebookUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("facebook_url");
-
-                    b.Property<string>("HeroImageUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("hero_image_url");
-
-                    b.Property<string>("InstagramUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("instagram_url");
 
                     b.Property<string>("LogoUrl")
                         .IsRequired()
@@ -741,16 +741,16 @@ namespace FootballManager.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("tiktok_url");
 
-                    b.Property<string>("YouTubeUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("youtube_url");
-
                     b.Property<DateTime>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at")
                         .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("YouTubeUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("youtube_url");
 
                     b.HasKey("Id");
 
@@ -761,6 +761,154 @@ namespace FootballManager.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("leagues", (string)null);
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.LeagueChampion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ChampionshipName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("championship_name");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DivisionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("division_id");
+
+                    b.Property<string>("DivisionName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("division_name");
+
+                    b.Property<string>("IdentityKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("identity_key");
+
+                    b.Property<Guid>("LeagueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("league_id");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid?>("SeasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("team_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateOnly?>("WonAt")
+                        .HasColumnType("date")
+                        .HasColumnName("won_at");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DivisionId");
+
+                    b.HasIndex("LeagueId");
+
+                    b.HasIndex("SeasonId");
+
+                    b.HasIndex("TeamId");
+
+                    b.HasIndex("Year");
+
+                    b.HasIndex("LeagueId", "IdentityKey")
+                        .IsUnique()
+                        .HasDatabaseName("UX_league_champions_identity")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("league_champions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_league_champions_season_requires_division", "season_id IS NULL OR division_id IS NOT NULL");
+
+                            t.HasCheckConstraint("CK_league_champions_year", "year >= 1900 AND year <= 2100");
+                        });
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.LeagueChampionPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("caption");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("image_url");
+
+                    b.Property<bool>("IsCover")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_cover");
+
+                    b.Property<Guid>("LeagueChampionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("league_champion_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueChampionId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_league_champion_photos_one_cover")
+                        .HasFilter("is_cover = true AND deleted_at IS NULL");
+
+                    b.HasIndex("LeagueChampionId", "DisplayOrder");
+
+                    b.ToTable("league_champion_photos", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_league_champion_photos_display_order", "display_order >= 0");
+                        });
                 });
 
             modelBuilder.Entity("FootballManager.Domain.Entities.LeagueDocument", b =>
@@ -2119,6 +2267,50 @@ namespace FootballManager.Infrastructure.Migrations
                     b.Navigation("Season");
                 });
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.LeagueChampion", b =>
+                {
+                    b.HasOne("FootballManager.Domain.Entities.Division", "Division")
+                        .WithMany()
+                        .HasForeignKey("DivisionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("FootballManager.Domain.Entities.League", "League")
+                        .WithMany()
+                        .HasForeignKey("LeagueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FootballManager.Domain.Entities.Season", "Season")
+                        .WithMany()
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("FootballManager.Domain.Entities.Team", "Team")
+                        .WithMany()
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Division");
+
+                    b.Navigation("League");
+
+                    b.Navigation("Season");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.LeagueChampionPhoto", b =>
+                {
+                    b.HasOne("FootballManager.Domain.Entities.LeagueChampion", "LeagueChampion")
+                        .WithMany("Photos")
+                        .HasForeignKey("LeagueChampionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LeagueChampion");
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.LeagueDocument", b =>
                 {
                     b.HasOne("FootballManager.Domain.Entities.LeagueDocumentCategory", "Category")
@@ -2407,6 +2599,11 @@ namespace FootballManager.Infrastructure.Migrations
                     b.Navigation("Teams");
 
                     b.Navigation("UserLeagues");
+                });
+
+            modelBuilder.Entity("FootballManager.Domain.Entities.LeagueChampion", b =>
+                {
+                    b.Navigation("Photos");
                 });
 
             modelBuilder.Entity("FootballManager.Domain.Entities.PushSubscription", b =>
