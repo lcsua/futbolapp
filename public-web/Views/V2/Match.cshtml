@@ -10,6 +10,14 @@
     var crumbs = ViewBag.SeoBreadcrumbs as IReadOnlyList<PublicWeb.Seo.SeoBreadcrumbItem>;
     ViewData["LeagueSlug"] = leagueSlug;
     ViewData["BadgeSize"] = "md";
+    var preview = ViewBag.MatchPreview as PublicWeb.Models.Public.MatchPreviewViewModel;
+    ViewData["MatchPreview"] = preview;
+    var scheduled = PublicWeb.Helpers.TeamDisplayHelper.IsScheduled(Model.Status);
+    var seasonName = ViewBag.SeasonName as string;
+    var contextBits = new List<string>();
+    if (!string.IsNullOrWhiteSpace(seasonName)) contextBits.Add(seasonName.Trim());
+    if (!string.IsNullOrWhiteSpace(Model.DivisionName)) contextBits.Add(Model.DivisionName.Trim());
+    if (Model.RoundNumber > 0) contextBits.Add($"Fecha {Model.RoundNumber}");
 
     PublicWeb.Seo.SeoPageApplicator.Apply(
         PublicWeb.Seo.SeoCopy.MatchPage(
@@ -61,26 +69,36 @@
 
     <section class="v2-home-section v2-match-page__hero" aria-labelledby="match-heading">
         <h2 id="match-heading" class="v2-section-title visually-hidden">@ViewBag.SeoH1</h2>
-        @if (Model.RoundNumber > 0 || !string.IsNullOrWhiteSpace(Model.DivisionName))
+        @if (contextBits.Count > 0)
         {
             <p class="v2-match-page__context">
-                @if (Model.RoundNumber > 0)
+                @for (var i = 0; i < contextBits.Count; i++)
                 {
-                    <span>Fecha @Model.RoundNumber</span>
-                }
-                @if (Model.RoundNumber > 0 && !string.IsNullOrWhiteSpace(Model.DivisionName))
-                {
-                    <span aria-hidden="true">·</span>
-                }
-                @if (!string.IsNullOrWhiteSpace(Model.DivisionName))
-                {
-                    <span>@Model.DivisionName</span>
+                    if (i > 0)
+                    {
+                        <span aria-hidden="true">·</span>
+                    }
+                    <span>@contextBits[i]</span>
                 }
             </p>
         }
         @await Html.PartialAsync("~/Views/V2/Match/_MatchHero.cshtml", Model)
     </section>
 
+    @if (preview?.HasComparison == true)
+    {
+        @await Html.PartialAsync("~/Views/V2/Match/_MatchCompare.cshtml", preview)
+    }
+    @if (preview?.Insights is { Count: > 0 })
+    {
+        @await Html.PartialAsync("~/Views/V2/Match/_MatchInsights.cshtml", preview.Insights)
+    }
+
+    @{
+        var hasIncidents = Model.Incidents is { Count: > 0 };
+    }
+    @if (hasIncidents || !scheduled)
+    {
     <section class="v2-home-section" aria-labelledby="match-incidents">
         <h2 id="match-incidents" class="v2-section-title">Incidencias</h2>
         @if (Model.Incidents != null && Model.Incidents.Count > 0)
@@ -117,4 +135,5 @@
             <p class="v2-empty">Las incidencias (goles, tarjetas, cambios) aparecerán aquí.</p>
         }
     </section>
+    }
 </article>

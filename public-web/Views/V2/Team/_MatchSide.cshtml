@@ -1,0 +1,45 @@
+@model PublicWeb.Models.Public.MatchSideViewModel
+@{
+    var arrival = Model.Arrival;
+}
+@await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Team)
+<span class="v2-match-card__name">@Model.Team.Name</span>
+@if (Model.ShowPlace)
+{
+    <span class="v2-match-card__place">
+        @if (arrival?.HasStanding == true)
+        {
+            if (Model.FullPlace)
+            {
+                <span class="v2-match-card__place-full">@PublicWeb.Helpers.TeamDisplayHelper.FormatPlaceFull(arrival.Position, arrival.Points)</span>
+                <span class="v2-match-card__place-compact">@PublicWeb.Helpers.TeamDisplayHelper.FormatPlaceCompact(arrival.Position, arrival.Points)</span>
+            }
+            else
+            {
+                @PublicWeb.Helpers.TeamDisplayHelper.FormatPlaceCompact(arrival.Position, arrival.Points)
+            }
+        }
+        else
+        {
+            <text>—</text>
+        }
+    </span>
+}
+@if (Model.ShowForm)
+{
+    if (arrival?.FormKnown == true)
+    {
+        var form = new PublicWeb.Models.Public.FormSlotsViewModel
+        {
+            Letters = arrival.Form,
+            Slots = 5,
+            PadEmpty = true,
+            Modifier = "v2-form--compact"
+        };
+        @await Html.PartialAsync("~/Views/V2/Team/_FormSlots.cshtml", form)
+    }
+    else
+    {
+        <span class="v2-match-card__place">—</span>
+    }
+}

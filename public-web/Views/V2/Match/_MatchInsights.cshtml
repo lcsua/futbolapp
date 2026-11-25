@@ -1,0 +1,47 @@
+@model IReadOnlyList<PublicWeb.Models.Public.MatchInsight>
+<section class="v2-home-section v2-insights" aria-labelledby="match-insights">
+    <h2 id="match-insights" class="v2-section-title">¿Sabías que...?</h2>
+    <ul class="v2-insights__list">
+        @foreach (var insight in Model)
+        {
+            <li class="v2-insights__item">
+                <span class="v2-insights__icon" aria-hidden="true">
+                    @switch (insight.Icon)
+                    {
+                        case "flame":
+                            <svg viewBox="0 0 24 24" focusable="false"><path d="M12 2s1 4 1 6c1.2-.8 2-2.2 2-2.2S18 8.2 18 12a6 6 0 1 1-12 0c0-2.2 1.2-4 2.4-5.2C8.4 8.2 9 10 9 10c0-2.4 1.2-5.2 3-8z"/></svg>
+                            break;
+                        case "shield":
+                            <svg viewBox="0 0 24 24" focusable="false"><path d="M12 2 5 5v6c0 5 3.2 8.6 7 11 3.8-2.4 7-6 7-11V5l-7-3z"/></svg>
+                            break;
+                        case "swords":
+                            <svg viewBox="0 0 24 24" focusable="false"><path d="M14.5 3.5 13 5l6 6 1.5-1.5L14.5 3.5zM4 20l6.2-6.2-1.5-1.5L2.5 18.5 4 20zm7.3-8.7 1.4 1.4-5.2 5.2H6v-1.5l5.3-5.1zM16.2 6.3l1.5 1.5-6.4 6.4-1.5-1.5 6.4-6.4z"/></svg>
+                            break;
+                        case "trophy":
+                            <svg viewBox="0 0 24 24" focusable="false"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 15.9V18h3v2H8v-2h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3V3zm-1 4v1a2 2 0 0 0 2 2V7H6zm12 0h-3v3a2 2 0 0 0 2-2V7z"/></svg>
+                            break;
+                        case "scale":
+                            <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3v2.1a8 8 0 0 1 0 13.8V21h-1v-2.1a8 8 0 0 1 0-13.8V3h1zm-6 6 3 5h-6l3-5zm12 0 3 5h-6l3-5zM11 7h2v10h-2V7z"/></svg>
+                            break;
+                        case "down":
+                            <svg viewBox="0 0 24 24" focusable="false"><path d="M3 6h2.4l4.3 5.4 3.2-3.2L20 15.8V12h2v8h-8v-2h3.8l-6.1-6.6-3.2 3.2L3 8.6V6z"/></svg>
+                            break;
+                        case "contrast":
+                            <svg viewBox="0 0 24 24" focusable="false"><path d="M4 16 10 4l2.2 4.4L16 4l4 12H4zm2.2 0h11.6L14 8.8 12.2 12 10 7.6 6.2 16z"/></svg>
+                            break;
+case "trend":
+    <svg viewBox="0 0 24 24" focusable="false"><path d="M4 16l6-6 4 4 6-8v3h2V3h-6v2h3l-5 6-4-4-7 7z"/></svg>
+    break;
+default:
+    <svg viewBox="0 0 24 24" focusable="false"><path d="M4 16 10 6l4 6 2-3 4 7H4z"/></svg>
+    break;
+                    }
+                </span>
+                <div class="v2-insights__body">
+                    <p class="v2-insights__title">@insight.Title</p>
+                    <p class="v2-insights__text">@insight.Description</p>
+                </div>
+            </li>
+        }
+    </ul>
+</section>

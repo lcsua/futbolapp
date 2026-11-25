@@ -1,13 +1,28 @@
 @model PublicWeb.Models.Public.MatchViewModel
 @{
-    ViewData["BadgeSize"] = "md";
+    ViewData["BadgeSize"] = "featured";
+    ViewData["BadgePlain"] = true;
+    ViewData["PreferFullLogo"] = true;
+    ViewData["BadgeEager"] = true;
     var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
     var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(Model.Kickoff);
     var sharePath = ViewData["UpcomingSharePath"] as string;
     var shareLeague = ViewData["UpcomingShareLeague"] as string;
     var shareText = PublicWeb.Helpers.TeamDisplayHelper.FormatUpcomingShareText(Model, shareLeague);
+    var preview = ViewData["CardPreview"] as PublicWeb.Models.Public.MatchCardPreview;
+    var showPlace = preview?.ShowPlace == true;
+    var showForm = preview?.ShowForm == true;
+
+    PublicWeb.Models.Public.MatchSideViewModel Side(bool home) => new()
+    {
+        Team = home ? Model.HomeTeam : Model.AwayTeam,
+        Arrival = home ? preview?.Home : preview?.Away,
+        ShowPlace = showPlace,
+        ShowForm = showForm,
+        FullPlace = false
+    };
 }
-<article class="v2-match-card v2-match-card--upcoming">
+<article class="v2-match-card v2-match-card--upcoming v2-match-card--featured">
     <a class="v2-match-card__link" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
         <div class="v2-match-card__meta v2-match-card__meta--upcoming">
             <span class="v2-match-card__meta-desktop">Próximo partido</span>
@@ -40,17 +55,16 @@
 
         <div class="v2-match-card__board">
             <div class="v2-match-card__side is-home">
-                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.HomeTeam)
-                <span class="v2-match-card__name">@Model.HomeTeam.Name</span>
+                @await Html.PartialAsync("~/Views/V2/Team/_MatchSide.cshtml", Side(true))
             </div>
             <div class="v2-match-card__center">
                 <span class="v2-match-card__vs">VS</span>
             </div>
             <div class="v2-match-card__side is-away">
-                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.AwayTeam)
-                <span class="v2-match-card__name">@Model.AwayTeam.Name</span>
+                @await Html.PartialAsync("~/Views/V2/Team/_MatchSide.cshtml", Side(false))
             </div>
         </div>
+        <span class="v2-match-card__preview">Ver previa <span aria-hidden="true">›</span></span>
     </a>
     @if (!string.IsNullOrWhiteSpace(sharePath))
     {
@@ -65,3 +79,9 @@
         </div>
     }
 </article>
+@{
+    ViewData["BadgeSize"] = "md";
+    ViewData["BadgePlain"] = false;
+    ViewData["PreferFullLogo"] = false;
+    ViewData["BadgeEager"] = false;
+}

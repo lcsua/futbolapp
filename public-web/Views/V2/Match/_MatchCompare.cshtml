@@ -1,0 +1,31 @@
+@model PublicWeb.Models.Public.MatchPreviewViewModel
+@{
+    string Value(int? number) => number?.ToString(System.Globalization.CultureInfo.GetCultureInfo("es-AR")) ?? "—";
+    string Width(double share)
+    {
+        var pct = Math.Clamp(share, 0, 1) * 100;
+        return pct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+    }
+}
+<section class="v2-home-section v2-compare" aria-labelledby="match-arrival">
+    <h2 id="match-arrival" class="v2-section-title">Así llegan al encuentro</h2>
+    <p class="v2-compare__note">Rendimiento en el campeonato actual</p>
+    <div class="v2-compare__list">
+        @foreach (var row in Model.Rows)
+        {
+            var homeValue = Value(row.Home);
+            var awayValue = Value(row.Away);
+            <div class="v2-compare__row" role="group" aria-label="@($"{row.Label}: {Model.HomeName} {homeValue}, {Model.AwayName} {awayValue}")">
+                <span class="v2-compare__value is-home v2-nums">@homeValue</span>
+                <span class="v2-compare__track is-home" aria-hidden="true">
+                    <span class="v2-compare__bar" style="width:@(Width(row.HomeShare))%"></span>
+                </span>
+                <span class="v2-compare__label">@row.Label</span>
+                <span class="v2-compare__track is-away" aria-hidden="true">
+                    <span class="v2-compare__bar" style="width:@(Width(row.AwayShare))%"></span>
+                </span>
+                <span class="v2-compare__value is-away v2-nums">@awayValue</span>
+            </div>
+        }
+    </div>
+</section>

@@ -27,6 +27,7 @@ builder.Services.AddHttpClient("BackendApi", client =>
 builder.Services.AddScoped<PublicWeb.Services.Public.LeaguePublicService>();
 builder.Services.AddScoped<PublicWeb.Services.Public.TeamPublicService>();
 builder.Services.AddScoped<PublicWeb.Services.Public.MatchPublicService>();
+builder.Services.AddScoped<PublicWeb.Services.Public.MatchPreviewService>();
 builder.Services.AddScoped<PublicWeb.Services.Public.ProfessionalFootballPublicService>();
 
 var app = builder.Build();

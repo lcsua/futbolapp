@@ -116,6 +116,16 @@ public static class TeamDisplayHelper
     public static bool IsSuspended(string? status) =>
         string.Equals(status, "SUSPENDED", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Programado, sin resultado. La previa solo aplica a este estado.</summary>
+    public static bool IsScheduled(string? status) =>
+        string.Equals(status?.Trim(), "SCHEDULED", StringComparison.OrdinalIgnoreCase);
+
+    public static string FormatPlaceCompact(int position, int points) =>
+        $"{position}.º · {points} pts";
+
+    public static string FormatPlaceFull(int position, int points) =>
+        $"{position}.º en la tabla · {points} pts";
+
     public static string FormatStatusLabel(string? status)
     {
         var s = (status ?? string.Empty).Trim().ToUpperInvariant();

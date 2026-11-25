@@ -1,0 +1,42 @@
+@model PublicWeb.Models.Public.FormSlotsViewModel
+@{
+    var letters = Model.Letters ?? Array.Empty<char>();
+    var slots = Model.PadEmpty ? Model.Slots : Math.Min(Model.Slots, letters.Count);
+    string Title(char? letter) => letter switch
+    {
+        'G' => "Ganado",
+        'E' => "Empate",
+        'P' => "Perdido",
+        _ => "Sin partido"
+    };
+}
+<div class="v2-form @Model.Modifier" aria-label="@(string.IsNullOrWhiteSpace(Model.Label) ? "Racha" : Model.Label)">
+    @if (!string.IsNullOrWhiteSpace(Model.Label))
+    {
+        <span class="v2-form__label">@Model.Label</span>
+    }
+    @if (slots > 0)
+    {
+        <div class="v2-form__slots" role="list">
+            @for (var i = 0; i < slots; i++)
+            {
+                if (i < letters.Count && (letters[i] == 'G' || letters[i] == 'E' || letters[i] == 'P'))
+                {
+                    var letter = letters[i];
+                    var cls = letter switch
+                    {
+                        'G' => "is-win",
+                        'E' => "is-draw",
+                        'P' => "is-loss",
+                        _ => ""
+                    };
+                    <span class="v2-form__slot @cls" role="listitem" title="@Title(letter)">@letter</span>
+                }
+                else
+                {
+                    <span class="v2-form__slot is-empty" role="listitem" title="@Title(null)">-</span>
+                }
+            }
+        </div>
+    }
+</div>
