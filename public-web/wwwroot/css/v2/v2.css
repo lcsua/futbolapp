@@ -660,7 +660,12 @@ body {
 .v2-team-badge img {
   width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
+  object-position: center;
   padding: 0.25rem;
   grid-area: 1 / 1;
 }
