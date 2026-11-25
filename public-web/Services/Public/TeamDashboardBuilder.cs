@@ -142,9 +142,17 @@ public static class TeamDashboardBuilder
             .ToList();
 
         var shown = new List<TeamScorerSpotlight>();
-        foreach (var scorer in ordered)
+        var rank = 0;
+        var previousGoals = -1;
+        for (var index = 0; index < ordered.Count; index++)
         {
-            var rank = 1 + ordered.Count(s => s.Goals > scorer.Goals);
+            var scorer = ordered[index];
+            if (scorer.Goals != previousGoals)
+            {
+                rank = index + 1;
+                previousGoals = scorer.Goals;
+            }
+
             if (rank > SpotlightPlaces) break;
 
             shown.Add(new TeamScorerSpotlight

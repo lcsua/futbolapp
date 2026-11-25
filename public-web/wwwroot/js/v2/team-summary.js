@@ -13,6 +13,9 @@
       if (href) {
         link.href = href;
         link.hidden = false;
+      } else {
+        link.hidden = true;
+        link.removeAttribute("href");
       }
     }
   }
