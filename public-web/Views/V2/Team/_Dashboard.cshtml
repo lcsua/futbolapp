@@ -1,0 +1,180 @@
+@model PublicWeb.Models.Public.TeamDashboard
+@{
+    var scorersHref = ViewData["ScorersHref"] as string;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var numbers = Model.Numbers;
+    var showSplit = Model.Scorers.Count > 0 || Model.Road != null;
+}
+@if (numbers != null)
+{
+    <section class="v2-dash-card" aria-labelledby="team-numbers">
+        <h2 id="team-numbers" class="v2-section-title"><span class="v2-ui-icon v2-ui-icon--trophy" aria-hidden="true"></span>El equipo en números</h2>
+        @if (numbers.Played <= 0)
+        {
+            <p class="v2-dash-note">@numbers.BalanceLabel</p>
+        }
+        else
+        {
+            <div class="v2-dash-metrics">
+                <p><strong class="v2-nums">@numbers.WinPercent%</strong><span>Victorias</span></p>
+                <p><strong class="v2-nums">@numbers.GoalsFor</strong><span>Goles a favor</span></p>
+                <p><strong class="v2-nums">@numbers.GoalsAgainst</strong><span>Goles en contra</span></p>
+                <p><strong class="v2-nums">@numbers.GoalsForAverage</strong><span>Promedio a favor</span></p>
+                <p><strong class="v2-nums">@numbers.GoalsAgainstAverage</strong><span>Promedio en contra</span></p>
+                <p><strong class="v2-nums">@numbers.PointsPercent%</strong><span>Efectividad de puntos</span></p>
+            </div>
+            <div class="v2-dash-balance" role="img" aria-label="@numbers.BalanceLabel">
+                @if (numbers.Wins > 0)
+                {
+                    <span class="is-win" style="flex:@numbers.Wins @numbers.Wins 0"></span>
+                }
+                @if (numbers.Draws > 0)
+                {
+                    <span class="is-draw" style="flex:@numbers.Draws @numbers.Draws 0"></span>
+                }
+                @if (numbers.Losses > 0)
+                {
+                    <span class="is-loss" style="flex:@numbers.Losses @numbers.Losses 0"></span>
+                }
+            </div>
+            <p class="v2-dash-balance__legend">
+                <span class="is-win">@numbers.WinsLabel</span>
+                <span class="is-draw">@numbers.DrawsLabel</span>
+                <span class="is-loss">@numbers.LossesLabel</span>
+            </p>
+        }
+    </section>
+}
+
+@if (Model.Insights.Count > 0)
+{
+    <section class="v2-dash-card" aria-labelledby="team-moment">
+        <h2 id="team-moment" class="v2-section-title"><span class="v2-ui-icon v2-ui-icon--flame" aria-hidden="true"></span>El momento del equipo</h2>
+        <ul class="v2-dash-insights">
+            @foreach (var insight in Model.Insights)
+            {
+                <li>
+                    <p class="v2-dash-insights__title">@insight.Title</p>
+                    <p class="v2-dash-insights__text">@insight.Description</p>
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+@if (Model.Evolution != null)
+{
+    var evolution = Model.Evolution;
+    <section class="v2-dash-card" aria-labelledby="team-evolution">
+        <h2 id="team-evolution" class="v2-section-title"><span class="v2-ui-icon v2-ui-icon--calendar" aria-hidden="true"></span>@evolution.Title</h2>
+        <div class="v2-evo" data-v2-evo>
+            <div class="v2-evo__plot">
+                <div class="v2-evo__scale" aria-hidden="true">
+                    @foreach (var tick in evolution.Ticks)
+                    {
+                        <span>@tick</span>
+                    }
+                </div>
+                <div class="v2-evo__matches" role="group" aria-label="@evolution.Title">
+                    @foreach (var match in evolution.Matches)
+                    {
+                        <button type="button"
+                                class="v2-evo__match"
+                                data-v2-evo-match
+                                data-v2-evo-text="@match.Detail"
+                                data-v2-evo-href="@Url.Content(match.Path)"
+                                aria-pressed="false"
+                                title="@match.Detail">
+                            <span class="v2-evo__pair" aria-hidden="true">
+                                <span class="v2-evo__bar is-for" style="height:@(match.ForShare.ToString("0.##", inv))%"></span>
+                                <span class="v2-evo__bar is-against" style="height:@(match.AgainstShare.ToString("0.##", inv))%"></span>
+                            </span>
+                            <span class="v2-evo__tick">@match.Label</span>
+                        </button>
+                    }
+                </div>
+            </div>
+            <p class="v2-evo__legend">
+                <span class="is-for">Goles a favor</span>
+                <span class="is-against">Goles en contra</span>
+            </p>
+            <p class="v2-evo__detail" data-v2-evo-detail>Elegí un partido para ver el rival y el resultado.</p>
+            <a class="v2-dash-link" data-v2-evo-link hidden href="#">Ver partido</a>
+        </div>
+    </section>
+}
+
+@if (showSplit)
+{
+    <div class="v2-dash-split">
+        @if (Model.Scorers.Count > 0)
+        {
+            <section class="v2-dash-card" aria-labelledby="team-top-scorers">
+                <h2 id="team-top-scorers" class="v2-section-title"><span class="v2-ui-icon v2-ui-icon--scorers" aria-hidden="true"></span>Goleadores</h2>
+                <ol class="v2-podium">
+                    @foreach (var scorer in Model.Scorers)
+                    {
+                        <li class="v2-podium__row @(scorer.Rank == 1 ? "is-first" : null)">
+                            <span class="v2-podium__rank v2-nums">@scorer.Rank</span>
+                            <span class="v2-podium__avatar" aria-hidden="true">
+                                @if (!string.IsNullOrWhiteSpace(scorer.PhotoUrl))
+                                {
+                                    <img src="@scorer.PhotoUrl" alt="" width="36" height="36" />
+                                }
+                                else
+                                {
+                                    @scorer.Initials
+                                }
+                            </span>
+                            <span class="v2-podium__name">@scorer.Name</span>
+                            <span class="v2-podium__goals v2-nums">@scorer.GoalsLabel</span>
+                        </li>
+                    }
+                </ol>
+                @if (!string.IsNullOrWhiteSpace(scorersHref))
+                {
+                    <a class="v2-dash-link" href="@scorersHref">Ver todos los goleadores</a>
+                }
+            </section>
+        }
+
+        @if (Model.Road != null)
+        {
+            var road = Model.Road;
+            <section class="v2-dash-card" aria-labelledby="team-road">
+                <h2 id="team-road" class="v2-section-title"><span class="v2-ui-icon v2-ui-icon--@(road.Finished ? "trophy" : "clock")" aria-hidden="true"></span>@(road.Finished ? "Rendimiento final" : "El camino que queda")</h2>
+                <p class="v2-dash-road__headline">@road.Headline</p>
+                @if (!string.IsNullOrWhiteSpace(road.Detail))
+                {
+                    <p class="v2-dash-road__detail">@road.Detail</p>
+                }
+                @if (!string.IsNullOrWhiteSpace(road.Extra))
+                {
+                    <p class="v2-dash-road__extra">@road.Extra</p>
+                }
+                @if (road.Rivals.Count > 0)
+                {
+                    <h3 class="v2-dash-road__rivals-title">Próximos rivales</h3>
+                    <div class="v2-dash-rivals">
+                        @foreach (var rival in road.Rivals)
+                        {
+                            ViewData["BadgeSize"] = "sm";
+                            ViewData["BadgePlain"] = false;
+                            ViewData["PreferFullLogo"] = false;
+                            ViewData["BadgeDecorative"] = true;
+                            ViewData["BadgeEager"] = false;
+                            ViewData["RequireRealLogo"] = true;
+                            <a class="v2-dash-rival" href="@Url.Content(MatchSlugHelper.AppRelative(rival.Match))">
+                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", rival.Team)
+                                <span class="v2-dash-rival__body">
+                                    <span class="v2-dash-rival__name">@rival.Team.Name</span>
+                                    <span class="v2-dash-rival__when">@rival.When</span>
+                                </span>
+                            </a>
+                        }
+                    </div>
+                }
+            </section>
+        }
+    </div>
+}

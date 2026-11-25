@@ -351,9 +351,17 @@ public class PublicStructuredService
                     i.PlayerName,
                     Nickname = i.Player != null ? i.Player.Nickname : null,
                     FirstName = i.Player != null ? i.Player.FirstName : null,
-                    LastName = i.Player != null ? i.Player.LastName : null
+                    LastName = i.Player != null ? i.Player.LastName : null,
+                    PhotoUrl = i.Player != null ? i.Player.PhotoUrl : null
                 })
                 .ToListAsync(cancellationToken);
+
+            var photos = goalRows
+                .Where(g => g.PlayerId.HasValue)
+                .GroupBy(g => g.PlayerId!.Value)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(row => row.PhotoUrl).FirstOrDefault(url => !string.IsNullOrWhiteSpace(url)));
 
             response.Scorers = GoalScorerAggregator
                 .Aggregate(goalRows.Select(g => (
@@ -363,7 +371,10 @@ public class PublicStructuredService
                 {
                     PlayerId = s.PlayerId,
                     PlayerName = s.PlayerName,
-                    Goals = s.Goals
+                    Goals = s.Goals,
+                    PhotoUrl = s.PlayerId.HasValue && photos.TryGetValue(s.PlayerId.Value, out var photo)
+                        ? photo
+                        : null
                 })
                 .ToList();
         }
@@ -532,6 +543,7 @@ public class PublicStructuredService
             SeasonSlug = resolvedSeason,
             HomeTeam = home,
             AwayTeam = away,
+            RoundNumber = match.RoundNumber,
             Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : default,
             FieldName = string.IsNullOrWhiteSpace(match.Field?.Name) ? null : match.Field.Name.Trim()
         };
