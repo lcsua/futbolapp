@@ -117,6 +117,19 @@
             </div>
         }
     </div>
+
+    @{
+        var leagueName = (ViewBag.League as PublicWeb.Models.Public.LeagueViewModel)?.Name;
+        ViewData["ShareTitle"] = PublicWeb.Helpers.TeamDisplayHelper.FormatMatchShareTitle(Model);
+        ViewData["ShareText"] = PublicWeb.Helpers.TeamDisplayHelper.FormatMatchShareText(Model, leagueName);
+        ViewData["SharePath"] = MatchSlugHelper.Path(Model);
+        ViewData["ShareUrl"] = null;
+        ViewData["ShareCompact"] = true;
+        ViewData["ShareIconOnly"] = false;
+    }
+    <div class="v2-match-card__share">
+        @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
+    </div>
 </article>
 @{
     ViewData["BadgeSize"] = "md";

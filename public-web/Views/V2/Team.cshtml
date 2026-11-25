@@ -25,19 +25,21 @@
     var standing = Model.Standing ?? summary.Standing;
     var scorers = (summary.Scorers != null && summary.Scorers.Count > 0 ? summary.Scorers : Model.Scorers)
         ?? new List<PublicWeb.Models.Public.TeamScorerViewModel>();
-    var upcomingSharePath = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(teamSlug)
-        ? $"/ligas/{leagueSlug}/{teamSlug}?share=proximo"
+    var upcomingSharePath = nextMatch != null
+        ? MatchSlugHelper.Path(nextMatch)
         : null;
 
-    // WhatsApp/Facebook follow canonical/og:url. Keep the query on this variant so
-    // the preview stays on the match OG instead of bouncing to the generic team page.
+    // Links already shared as ?share=proximo keep that preview. New shares open the match page.
+    var legacySharePath = !string.IsNullOrWhiteSpace(leagueSlug) && !string.IsNullOrWhiteSpace(teamSlug)
+        ? $"/ligas/{leagueSlug}/{teamSlug}?share=proximo"
+        : null;
     var shareUpcoming = string.Equals(Context.Request.Query["share"], "proximo", StringComparison.OrdinalIgnoreCase);
     if (nextMatch != null && shareUpcoming)
     {
         ViewData["OgTitle"] = PublicWeb.Helpers.TeamDisplayHelper.FormatUpcomingOgTitle(nextMatch);
         ViewData["Description"] = PublicWeb.Helpers.TeamDisplayHelper.FormatUpcomingOgDescription(nextMatch, league?.Name);
-        if (upcomingSharePath != null)
-            ViewData["CanonicalPath"] = upcomingSharePath;
+        if (legacySharePath != null)
+            ViewData["CanonicalPath"] = legacySharePath;
         ViewData["NoIndex"] = true;
     }
 }
