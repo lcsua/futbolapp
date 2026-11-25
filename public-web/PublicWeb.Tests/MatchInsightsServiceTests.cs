@@ -325,6 +325,8 @@ public class MatchInsightsServiceTests
         Assert.Null(played.Away);
         Assert.Equal(1d, played.HomeShare);
         Assert.False(preview.Away.HasStanding);
+        Assert.True(preview.Home.FormKnown);
+        Assert.False(preview.Away.FormKnown);
         Assert.Null(preview.Rows.SingleOrDefault(r => r.Label == "Puntos en los últimos 5 partidos")?.Away);
     }
 

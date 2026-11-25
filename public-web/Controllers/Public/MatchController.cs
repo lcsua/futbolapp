@@ -61,7 +61,8 @@ public class MatchController : Controller
         ViewBag.League = league;
         ViewBag.LeagueSlug = leagueSlug;
         ViewBag.SeasonName = await ResolveSeasonNameAsync(model);
-        if (TeamDisplayHelper.IsScheduled(model.Status))
+        var hasScores = model.HomeScore.HasValue && model.AwayScore.HasValue;
+        if (TeamDisplayHelper.IsScheduled(model.Status) && !hasScores)
             ViewBag.MatchPreview = await _previewService.BuildAsync(model);
         ViewBag.V2ActiveNav = "ligas";
         ViewBag.V2LeagueTab = finished ? "resultados" : "fixture";

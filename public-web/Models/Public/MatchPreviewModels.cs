@@ -87,6 +87,8 @@ public sealed class TeamArrivalDisplay
     public bool HasStanding { get; init; }
     public int Position { get; init; }
     public int Points { get; init; }
+    /// <summary>False when recent matches could not be loaded. Empty form then means "unknown", not "no matches".</summary>
+    public bool FormKnown { get; init; }
     public IReadOnlyList<char> Form { get; init; } = Array.Empty<char>();
 }
 

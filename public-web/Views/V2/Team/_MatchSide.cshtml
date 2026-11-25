@@ -27,12 +27,19 @@
 }
 @if (Model.ShowForm)
 {
-    var form = new PublicWeb.Models.Public.FormSlotsViewModel
+    if (arrival?.FormKnown == true)
     {
-        Letters = arrival?.Form ?? Array.Empty<char>(),
-        Slots = 5,
-        PadEmpty = true,
-        Modifier = "v2-form--compact"
-    };
-    @await Html.PartialAsync("~/Views/V2/Team/_FormSlots.cshtml", form)
+        var form = new PublicWeb.Models.Public.FormSlotsViewModel
+        {
+            Letters = arrival.Form,
+            Slots = 5,
+            PadEmpty = true,
+            Modifier = "v2-form--compact"
+        };
+        @await Html.PartialAsync("~/Views/V2/Team/_FormSlots.cshtml", form)
+    }
+    else
+    {
+        <span class="v2-match-card__place">—</span>
+    }
 }

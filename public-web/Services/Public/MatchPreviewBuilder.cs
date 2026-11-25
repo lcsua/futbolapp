@@ -157,6 +157,7 @@ public static class MatchPreviewBuilder
                 HasStanding = input.HasStanding,
                 Position = input.Position,
                 Points = input.Points,
+                FormKnown = input.RecentKnown,
                 Form = recent.Take(FormSlots).Select(Letter).ToList()
             },
             RecentPoints = recentPoints
