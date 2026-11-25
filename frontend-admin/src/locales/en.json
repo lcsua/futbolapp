@@ -22,7 +22,8 @@
       "administration": "Administration",
       "users": "Users",
       "roles": "Roles",
-      "ads": "Advertising"
+      "ads": "Advertising",
+      "champions": "Champions"
     },
     "common": {
       "save": "Save",
@@ -460,6 +461,85 @@
         "endsInvalid": "End date is invalid.",
         "periodInvalid": "End date cannot be earlier than start date.",
         "targetUrlInvalid": "Target URL must start with http:// or https://."
+      }
+    },
+    "champions": {
+      "title": "Champions of {{league}}",
+      "intro": "History is entered by hand. Matches, results and statistics are not required, and the top of the table is not marked as champion automatically.",
+      "create": "New champion",
+      "edit": "Edit",
+      "delete": "Delete",
+      "createTitle": "Register champion",
+      "editTitle": "Edit champion",
+      "created": "Champion saved. You can add photographs now.",
+      "updated": "Champion updated.",
+      "deleted": "Champion deleted.",
+      "deleteFailed": "Could not delete the champion",
+      "deleteConfirmTitle": "Delete champion",
+      "deleteConfirm": "Delete {{team}}'s title in {{championship}} {{year}} ({{division}})? Photographs are deleted too.",
+      "empty": "No champions match these filters yet.",
+      "loadError": "Could not load champions",
+      "noLeague": "No league is selected.",
+      "goToLeagues": "Go to Leagues",
+      "filter": "Filter",
+      "clearFilters": "Clear",
+      "inactive": "Inactive",
+      "archived": "Archived",
+      "modes": {
+        "existing": "Existing championship",
+        "historical": "Historical championship"
+      },
+      "existingHelp": "Year and name come from the selected championship. The team must be one of that division's participants.",
+      "noParticipants": "That division has no teams in this championship. The champion is chosen from the participants, so assign them first.",
+      "historicalHelp": "A season, fixture or matches are not required. You can type a division that no longer exists and pick inactive teams.",
+      "columns": {
+        "shield": "Badge",
+        "team": "Team",
+        "year": "Year",
+        "championship": "Championship",
+        "division": "Division",
+        "photos": "Photos",
+        "actions": "Actions"
+      },
+      "fields": {
+        "year": "Year",
+        "championship": "Championship",
+        "championshipName": "Championship name",
+        "championshipHelp": "For example: Apertura, Clausura or Anual.",
+        "division": "Division",
+        "divisionHelp": "Pick a current division or type a historical name.",
+        "team": "Champion team",
+        "wonAt": "Date of the title",
+        "notes": "Notes",
+        "linkHelp": "Optional: later link this title to an existing championship and division without duplicating it.",
+        "linkChampionship": "Link to championship",
+        "linkDivision": "Link to division"
+      },
+      "validation": {
+        "team": "Choose the champion team.",
+        "existing": "Choose the championship and the division.",
+        "year": "Year must be between 1900 and 2100.",
+        "championship": "Championship name is required.",
+        "division": "Division name is required.",
+        "link": "Choose a division as well to link the title."
+      },
+      "photos": {
+        "title": "Photographs",
+        "help": "JPEG, PNG or WebP. Maximum 5 MB. You can upload several at once. The gallery is optional.",
+        "add": "Add photographs",
+        "empty": "No photographs. You can add them now or later.",
+        "afterCreate": "Save the champion before adding photographs. They are optional.",
+        "caption": "Description",
+        "cover": "Set as cover",
+        "coverLabel": "Cover",
+        "coverHint": "Set cover",
+        "reorder": "Reorder",
+        "remove": "Remove photograph",
+        "deleteConfirm": "Remove this photograph?",
+        "alt": "Champion photograph",
+        "uploadFailed": "Could not upload the photographs",
+        "deleteFailed": "Could not remove the photograph",
+        "saveFailed": "Could not update the gallery"
       }
     }
   }

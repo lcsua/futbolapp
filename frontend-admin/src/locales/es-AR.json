@@ -22,7 +22,8 @@
       "administration": "Administración",
       "users": "Usuarios",
       "roles": "Roles",
-      "ads": "Publicidad"
+      "ads": "Publicidad",
+      "champions": "Campeones"
     },
     "common": {
       "save": "Guardar",
@@ -460,6 +461,85 @@
         "endsInvalid": "La fecha de fin no es válida.",
         "periodInvalid": "La fecha de fin no puede ser anterior a la de inicio.",
         "targetUrlInvalid": "La URL destino debe empezar con http:// o https://."
+      }
+    },
+    "champions": {
+      "title": "Campeones de {{league}}",
+      "intro": "El historial se carga a mano. No hace falta que existan partidos, resultados ni estadísticas, y el primero de la tabla no se marca solo como campeón.",
+      "create": "Nuevo campeón",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "createTitle": "Registrar campeón",
+      "editTitle": "Editar campeón",
+      "created": "Campeón registrado. Ya podés agregar fotografías.",
+      "updated": "Campeón actualizado.",
+      "deleted": "Campeón eliminado.",
+      "deleteFailed": "No se pudo eliminar el campeón",
+      "deleteConfirmTitle": "Eliminar campeón",
+      "deleteConfirm": "¿Eliminar el título de {{team}} en {{championship}} {{year}} ({{division}})? También se borran sus fotografías.",
+      "empty": "Todavía no hay campeones cargados para estos filtros.",
+      "loadError": "No se pudieron cargar los campeones",
+      "noLeague": "No hay liga seleccionada.",
+      "goToLeagues": "Ir a Ligas",
+      "filter": "Filtrar",
+      "clearFilters": "Limpiar",
+      "inactive": "Inactivo",
+      "archived": "Archivado",
+      "modes": {
+        "existing": "Campeonato existente",
+        "historical": "Campeonato histórico"
+      },
+      "existingHelp": "El año y el nombre salen del campeonato elegido. El equipo tiene que ser uno de los participantes de esa división.",
+      "noParticipants": "Esa división no tiene equipos cargados en el campeonato. El campeón se elige entre los participantes, así que primero hay que asignarlos.",
+      "historicalHelp": "No hace falta temporada, fixture ni partidos. Podés usar una división que ya no exista o haya cambiado de nombre, y elegir equipos inactivos.",
+      "columns": {
+        "shield": "Escudo",
+        "team": "Equipo",
+        "year": "Año",
+        "championship": "Campeonato",
+        "division": "División",
+        "photos": "Fotos",
+        "actions": "Acciones"
+      },
+      "fields": {
+        "year": "Año",
+        "championship": "Campeonato",
+        "championshipName": "Nombre del campeonato",
+        "championshipHelp": "Por ejemplo: Apertura, Clausura o Anual.",
+        "division": "División",
+        "divisionHelp": "Elegí una división actual o escribí el nombre histórico.",
+        "team": "Equipo campeón",
+        "wonAt": "Fecha de consagración",
+        "notes": "Observaciones",
+        "linkHelp": "Opcional: vinculá después este título con un campeonato y una división que ya existan, sin duplicarlo.",
+        "linkChampionship": "Vincular con campeonato",
+        "linkDivision": "Vincular con división"
+      },
+      "validation": {
+        "team": "Elegí el equipo campeón.",
+        "existing": "Elegí el campeonato y la división.",
+        "year": "El año tiene que estar entre 1900 y 2100.",
+        "championship": "El nombre del campeonato es obligatorio.",
+        "division": "El nombre de la división es obligatorio.",
+        "link": "Para vincular el título elegí también la división."
+      },
+      "photos": {
+        "title": "Fotografías",
+        "help": "JPEG, PNG o WebP. Máximo 5 MB. Podés cargar varias a la vez. La galería es opcional.",
+        "add": "Agregar fotografías",
+        "empty": "Sin fotografías. Podés agregarlas ahora o más adelante.",
+        "afterCreate": "Guardá el campeón para poder sumar fotografías. No son obligatorias.",
+        "caption": "Descripción",
+        "cover": "Elegir como portada",
+        "coverLabel": "Portada",
+        "coverHint": "Marcar portada",
+        "reorder": "Reordenar",
+        "remove": "Quitar fotografía",
+        "deleteConfirm": "¿Quitar esta fotografía?",
+        "alt": "Fotografía del campeón",
+        "uploadFailed": "No se pudieron cargar las fotografías",
+        "deleteFailed": "No se pudo quitar la fotografía",
+        "saveFailed": "No se pudo actualizar la galería"
       }
     }
   }

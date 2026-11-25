@@ -53,6 +53,7 @@ namespace FootballManager.Infrastructure
             services.AddScoped<ILeagueDocumentCategoryRepository, LeagueDocumentCategoryRepository>();
             services.AddScoped<ILeagueDocumentRepository, LeagueDocumentRepository>();
             services.AddScoped<IAdvertisementRepository, AdvertisementRepository>();
+            services.AddScoped<ILeagueChampionRepository, LeagueChampionRepository>();
             services.AddScoped<ITeamNameAliasRepository, TeamNameAliasRepository>();
 
             services.AddScoped<IUnitOfWork, UnitOfWork>();
