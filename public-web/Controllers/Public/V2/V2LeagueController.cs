@@ -16,11 +16,16 @@ public class V2LeagueController : Controller
 
     private readonly LeaguePublicService _leagueService;
     private readonly TeamPublicService _teamService;
+    private readonly MatchPreviewService _previewService;
 
-    public V2LeagueController(LeaguePublicService leagueService, TeamPublicService teamService)
+    public V2LeagueController(
+        LeaguePublicService leagueService,
+        TeamPublicService teamService,
+        MatchPreviewService previewService)
     {
         _leagueService = leagueService;
         _teamService = teamService;
+        _previewService = previewService;
     }
 
     /// <summary>League home / Resumen — must be registered before Team ({slug}/{teamSlug}).</summary>
@@ -285,6 +290,8 @@ public class V2LeagueController : Controller
         ViewBag.V2ActiveNav = "ligas";
         ViewBag.V2TeamTab = activeTab;
         ViewBag.V2Summary = summary;
+        if (summary.NextMatches.FirstOrDefault() is { } nextMatch)
+            ViewBag.UpcomingPreview = await _previewService.BuildCardAsync(summary, nextMatch);
 
         return View("~/Views/V2/Team.cshtml", partidos);
     }

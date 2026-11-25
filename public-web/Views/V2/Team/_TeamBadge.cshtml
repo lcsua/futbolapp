@@ -12,14 +12,19 @@
     var hasLogo = !isPlaceholder;
     var initials = PublicWeb.Helpers.TeamDisplayHelper.GetInitials(Model.Name);
     var size = (ViewData["BadgeSize"] as string ?? "md").ToLowerInvariant();
+    var plain = ViewData["BadgePlain"] as bool? == true;
     var sizeClass = size switch
     {
+        "hero" => "v2-team-badge--hero",
+        "featured" => "v2-team-badge--featured",
         "lg" => "v2-team-badge--lg",
         "sm" => "v2-team-badge--sm",
         _ => "v2-team-badge--md"
     };
     var (w, h) = size switch
     {
+        "hero" => (96, 96),
+        "featured" => (72, 72),
         "lg" => (88, 88),
         "sm" => (28, 28),
         _ => (40, 40)
@@ -36,7 +41,7 @@
             ? full
             : null;
 }
-<div class="v2-team-badge @sizeClass @(hasLogo ? "has-logo" : "is-fallback")"
+<div class="v2-team-badge @sizeClass @(plain ? "v2-team-badge--plain" : null) @(hasLogo ? "has-logo" : "is-fallback")"
      data-v2-team-badge
      aria-hidden="@(decorative ? "true" : "false")"
      title="@Model.Name">

@@ -7,28 +7,13 @@
         .Select(c => c!.Value)
         .Take(slots)
         .ToList();
+    var form = new PublicWeb.Models.Public.FormSlotsViewModel
+    {
+        Letters = letters,
+        Slots = slots,
+        PadEmpty = true,
+        Label = "Racha reciente",
+        Modifier = "v2-form--header"
+    };
 }
-<div class="v2-form v2-form--header" aria-label="Racha reciente">
-    <span class="v2-form__label">Racha reciente</span>
-    <div class="v2-form__slots" role="list">
-        @for (var i = 0; i < slots; i++)
-        {
-            if (i < letters.Count)
-            {
-                var letter = letters[i];
-                var cls = letter switch
-                {
-                    'G' => "is-win",
-                    'E' => "is-draw",
-                    'P' => "is-loss",
-                    _ => ""
-                };
-                <span class="v2-form__slot @cls" role="listitem" title="@(letter == 'G' ? "Ganado" : letter == 'E' ? "Empate" : "Perdido")">@letter</span>
-            }
-            else
-            {
-                <span class="v2-form__slot is-empty" role="listitem" title="Sin partido disponible">-</span>
-            }
-        }
-    </div>
-</div>
+@await Html.PartialAsync("~/Views/V2/Team/_FormSlots.cshtml", form)

@@ -198,6 +198,7 @@
             {
                 ViewData["UpcomingSharePath"] = upcomingSharePath;
                 ViewData["UpcomingShareLeague"] = league?.Name;
+                ViewData["CardPreview"] = ViewBag.UpcomingPreview as PublicWeb.Models.Public.MatchCardPreview;
                 @await Html.PartialAsync("~/Views/V2/Team/_FeaturedUpcoming.cshtml", nextMatch)
             }
             else

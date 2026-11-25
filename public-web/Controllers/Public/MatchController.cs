@@ -10,11 +10,16 @@ public class MatchController : Controller
 {
     private readonly MatchPublicService _matchService;
     private readonly LeaguePublicService _leagueService;
+    private readonly MatchPreviewService _previewService;
 
-    public MatchController(MatchPublicService matchService, LeaguePublicService leagueService)
+    public MatchController(
+        MatchPublicService matchService,
+        LeaguePublicService leagueService,
+        MatchPreviewService previewService)
     {
         _matchService = matchService;
         _leagueService = leagueService;
+        _previewService = previewService;
     }
 
     [HttpGet("{slug}")]
@@ -56,6 +61,8 @@ public class MatchController : Controller
         ViewBag.League = league;
         ViewBag.LeagueSlug = leagueSlug;
         ViewBag.SeasonName = await ResolveSeasonNameAsync(model);
+        if (TeamDisplayHelper.IsScheduled(model.Status))
+            ViewBag.MatchPreview = await _previewService.BuildAsync(model);
         ViewBag.V2ActiveNav = "ligas";
         ViewBag.V2LeagueTab = finished ? "resultados" : "fixture";
         ViewBag.BackHref = ResolveBackHref(leagueSlug, finished);

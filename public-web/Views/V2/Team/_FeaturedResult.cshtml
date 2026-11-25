@@ -1,10 +1,13 @@
 @model PublicWeb.Models.Public.MatchViewModel
 @{
     var suspended = PublicWeb.Helpers.TeamDisplayHelper.IsSuspended(Model.Status);
-    ViewData["BadgeSize"] = "md";
+    ViewData["BadgeSize"] = "featured";
+    ViewData["BadgePlain"] = true;
+    ViewData["PreferFullLogo"] = true;
+    ViewData["BadgeEager"] = true;
     var venue = PublicWeb.Helpers.TeamDisplayHelper.FormatFieldLabel(Model.FieldName);
 }
-<a class="v2-match-card v2-match-card--result" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
+<a class="v2-match-card v2-match-card--result v2-match-card--featured" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
     <div class="v2-match-card__meta">
         <span class="v2-match-card__meta-desktop">@(suspended ? "Suspendido" : "Finalizado")</span>
         <span class="v2-match-card__meta-mobile">
@@ -44,3 +47,9 @@
         }
     </div>
 </a>
+@{
+    ViewData["BadgeSize"] = "md";
+    ViewData["BadgePlain"] = false;
+    ViewData["PreferFullLogo"] = false;
+    ViewData["BadgeEager"] = false;
+}
