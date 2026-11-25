@@ -6869,8 +6869,23 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   .v2-dash-split > :only-child { grid-column: 1 / -1; }
 }
 
+@media (max-width: 768px) {
+  .v2-evo__matches,
+  .v2-evo__scale { height: 11rem; }
+  .v2-evo__scale { padding-bottom: 3.45rem; }
+  .v2-evo__tick {
+    height: 3.45rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    writing-mode: vertical-rl;
+    font-size: 0.62rem;
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
+}
+
 @media (max-width: 380px) {
   .v2-dash-metrics strong { font-size: 1.2rem; }
-  .v2-evo__tick { font-size: 0.58rem; }
 }
 
