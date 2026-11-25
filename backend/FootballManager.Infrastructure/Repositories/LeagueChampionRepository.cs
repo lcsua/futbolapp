@@ -49,14 +49,14 @@ namespace FootballManager.Infrastructure.Repositories
 
             if (!string.IsNullOrWhiteSpace(filter.Championship))
             {
-                var championship = filter.Championship.Trim().ToLower();
-                query = query.Where(c => c.ChampionshipName.ToLower().Contains(championship));
+                var championship = "%" + EscapeLike(filter.Championship.Trim()) + "%";
+                query = query.Where(c => EF.Functions.ILike(c.ChampionshipName, championship, "\\"));
             }
 
             if (!string.IsNullOrWhiteSpace(filter.Division))
             {
-                var division = filter.Division.Trim().ToLower();
-                query = query.Where(c => c.DivisionName.ToLower().Contains(division));
+                var division = "%" + EscapeLike(filter.Division.Trim()) + "%";
+                query = query.Where(c => EF.Functions.ILike(c.DivisionName, division, "\\"));
             }
 
             return await query
@@ -196,5 +196,11 @@ namespace FootballManager.Infrastructure.Repositories
             foreach (var champion in champions)
                 champion.ClearStructuralLink();
         }
+
+        private static string EscapeLike(string value)
+            => value
+                .Replace("\\", "\\\\", StringComparison.Ordinal)
+                .Replace("%", "\\%", StringComparison.Ordinal)
+                .Replace("_", "\\_", StringComparison.Ordinal);
     }
 }

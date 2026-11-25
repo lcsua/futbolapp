@@ -17,7 +17,6 @@ namespace FootballManager.Api.Services
             => Path.Combine("uploads", "leagues", leagueId.ToString(), "champions", championId.ToString());
 
         public static async Task<string> SaveAsync(
-            HttpRequest request,
             Guid leagueId,
             Guid championId,
             IFormFile file,
@@ -81,8 +80,7 @@ namespace FootballManager.Api.Services
                 // The original remains usable if the thumbnail cannot be written.
             }
 
-            var relativeUrl = $"/{relativeDir.Replace('\\', '/')}/{fileName}";
-            return $"{request.Scheme}://{request.Host}{relativeUrl}";
+            return $"/{relativeDir.Replace('\\', '/')}/{fileName}";
         }
 
         public static void TryDeleteWithThumb(string? imageUrl)

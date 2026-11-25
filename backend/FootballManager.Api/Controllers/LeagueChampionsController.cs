@@ -174,7 +174,7 @@ namespace FootballManager.Api.Controllers
             {
                 foreach (var file in files)
                 {
-                    var url = await ChampionPhotoStorage.SaveAsync(Request, leagueId, championId, file, cancellationToken);
+                    var url = await ChampionPhotoStorage.SaveAsync(leagueId, championId, file, cancellationToken);
                     savedUrls.Add(url);
                 }
 
