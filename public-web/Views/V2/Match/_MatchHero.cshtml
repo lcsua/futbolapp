@@ -37,7 +37,21 @@
 
 <article class="v2-match-card v2-match-card--detail @(showAsResult ? "v2-match-card--result" : "v2-match-card--upcoming")">
     <div class="v2-match-card__meta">
-        <span class="v2-match-card__status">@statusLabel</span>
+        <div class="v2-match-card__status-row">
+            <span class="v2-match-card__status">@statusLabel</span>
+            @{
+                var leagueName = (ViewBag.League as PublicWeb.Models.Public.LeagueViewModel)?.Name;
+                ViewData["ShareTitle"] = PublicWeb.Helpers.TeamDisplayHelper.FormatMatchShareTitle(Model);
+                ViewData["ShareText"] = PublicWeb.Helpers.TeamDisplayHelper.FormatMatchShareText(Model, leagueName);
+                ViewData["SharePath"] = MatchSlugHelper.Path(Model);
+                ViewData["ShareUrl"] = null;
+                ViewData["ShareCompact"] = true;
+                ViewData["ShareIconOnly"] = false;
+            }
+            <div class="v2-match-card__share">
+                @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
+            </div>
+        </div>
         @if (when != null || time != null || !string.IsNullOrWhiteSpace(venue))
         {
             <p class="v2-match-card__when">
@@ -116,19 +130,6 @@
                 @await Html.PartialAsync("~/Views/V2/Team/_MatchSide.cshtml", awaySide)
             </div>
         }
-    </div>
-
-    @{
-        var leagueName = (ViewBag.League as PublicWeb.Models.Public.LeagueViewModel)?.Name;
-        ViewData["ShareTitle"] = PublicWeb.Helpers.TeamDisplayHelper.FormatMatchShareTitle(Model);
-        ViewData["ShareText"] = PublicWeb.Helpers.TeamDisplayHelper.FormatMatchShareText(Model, leagueName);
-        ViewData["SharePath"] = MatchSlugHelper.Path(Model);
-        ViewData["ShareUrl"] = null;
-        ViewData["ShareCompact"] = true;
-        ViewData["ShareIconOnly"] = false;
-    }
-    <div class="v2-match-card__share">
-        @await Html.PartialAsync("~/Views/Shared/V2/_ShareButton.cshtml")
     </div>
 </article>
 @{
