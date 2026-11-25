@@ -11,9 +11,13 @@
             : null;
     var homeUrl = TeamUrl(Model.HomeTeam);
     var awayUrl = TeamUrl(Model.AwayTeam);
+    var matchLabel = $"{Model.HomeTeam.Name} vs {Model.AwayTeam.Name}";
+    if (time != null)
+        matchLabel += $", {time}";
 }
 <article class="v2-home-match">
-    <a class="v2-home-match__meta" href="@Url.Content(MatchSlugHelper.AppRelative(Model))">
+    <a class="v2-home-match__open" href="@Url.Content(MatchSlugHelper.AppRelative(Model))" aria-label="Ver partido @matchLabel"></a>
+    <div class="v2-home-match__meta">
         @if (time != null)
         {
             <span class="v2-home-match__time v2-nums">
@@ -31,7 +35,7 @@
         {
             <span class="v2-home-match__pending">Horario a confirmar</span>
         }
-    </a>
+    </div>
     <div class="v2-home-match__teams">
         @if (homeUrl != null)
         {

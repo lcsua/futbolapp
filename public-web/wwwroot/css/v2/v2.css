@@ -5272,6 +5272,7 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-home-match {
+  position: relative;
   display: grid;
   grid-template-columns: 4.6rem minmax(0, 1fr);
   gap: 0.5rem;
@@ -5280,15 +5281,29 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
   border-bottom: 1px solid var(--border);
 }
 
+.v2-home-match__open {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.v2-home-match__open:focus-visible {
+  outline: 2px solid var(--v2-brand);
+  outline-offset: -2px;
+}
+
 .v2-home-match:last-child { border-bottom: 0; }
 
 .v2-home-match__meta {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 0.08rem;
   color: inherit;
   text-decoration: none;
   min-width: 0;
+  pointer-events: none;
 }
 
 .v2-home-match__time {
@@ -5312,11 +5327,18 @@ a.v2-match-card__side:focus-visible .v2-match-card__name {
 }
 
 .v2-home-match__teams {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 0.3rem;
   min-width: 0;
+  pointer-events: none;
+}
+
+a.v2-home-match__team {
+  pointer-events: auto;
 }
 
 .v2-home-match__team {
