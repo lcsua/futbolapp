@@ -6263,6 +6263,50 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   gap: 0.35rem;
 }
 
+.v2-match-card--detail .v2-match-card__status-row {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 2.15rem;
+}
+
+.v2-match-card--detail .v2-match-card__share {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  transform: translateY(-50%);
+}
+
+.v2-match-card--detail .v2-match-card__share .v2-share-toast {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+@media (max-width: 768.98px) {
+  .v2-match-card--detail .v2-share-btn__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .v2-match-card--detail .v2-share-btn {
+    min-width: 2.15rem;
+    padding: 0.32rem;
+  }
+}
+
 .v2-match-card--detail .v2-match-card__status {
   font-size: var(--font-size-label);
   font-weight: 700;
