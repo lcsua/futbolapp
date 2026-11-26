@@ -184,7 +184,8 @@ public static class PredictionComposer
         var previous = rounds[^2].Teams.FirstOrDefault(item => item.TeamId == teamId);
         if (now == null || previous == null)
             return null;
-        return now.TitleProbability - previous.TitleProbability;
+        var delta = now.TitleProbability - previous.TitleProbability;
+        return FootballManager.Application.Predictions.PredictionChance.IsNoChange(delta) ? null : delta;
     }
 
     private static PredictionRacePublicDto? MapRace(TitleRaceReport? race) =>

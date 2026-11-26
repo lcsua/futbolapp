@@ -14,9 +14,9 @@ public sealed record MatchForecastScoreSummary(
     double LogLoss);
 
 /// <summary>
-/// Internal scoring helpers over immutable pre-kickoff forecasts.
+/// Internal scoring helpers over pre-kickoff forecasts.
 /// The valid forecast for a finished match is the latest row with
-/// CalculatedAt &lt;= Kickoff (or any row if kickoff is unknown).
+/// CalculatedAt &lt;= Kickoff UTC (or any row if kickoff is unknown).
 /// </summary>
 public sealed class MatchForecastScorecard
 {
@@ -97,9 +97,9 @@ public sealed class MatchForecastScorecard
         var ordered = forecasts.OrderByDescending(item => item.CalculatedAt).ToList();
         if (kickoff == null)
             return ordered.FirstOrDefault();
-        var utc = kickoff.Value.Kind == DateTimeKind.Unspecified
-            ? DateTime.SpecifyKind(kickoff.Value, DateTimeKind.Utc)
-            : kickoff.Value.ToUniversalTime();
+        var utc = MatchForecastTime.ToUtc(kickoff);
+        if (utc == null)
+            return ordered.FirstOrDefault();
         return ordered.FirstOrDefault(item => item.CalculatedAt <= utc) ?? ordered.LastOrDefault();
     }
 }

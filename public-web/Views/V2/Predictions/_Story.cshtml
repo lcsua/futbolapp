@@ -155,7 +155,15 @@
                         </dl>
                         @if (path.PointsToClinch is int needed)
                         {
-                            <p class="v2-story-path__need">Le hacen falta <strong>@(needed - path.CurrentPoints)</strong> puntos más para llegar a @needed y asegurar el primer puesto aunque cada rival gane lo suyo.</p>
+                            var missing = Math.Max(0, needed - path.CurrentPoints);
+                            if (missing == 0)
+                            {
+                                <p class="v2-story-path__need">Con los puntos que ya tiene alcanza para asegurar el primer puesto aunque cada rival gane lo suyo.</p>
+                            }
+                            else
+                            {
+                                <p class="v2-story-path__need">Le hacen falta <strong>@missing</strong> puntos más para llegar a @needed y asegurar el primer puesto aunque cada rival gane lo suyo.</p>
+                            }
                         }
                         else
                         {

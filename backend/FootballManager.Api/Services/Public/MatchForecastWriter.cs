@@ -6,9 +6,8 @@ using Microsoft.EntityFrameworkCore;
 namespace FootballManager.Api.Services.Public;
 
 /// <summary>
-/// Persists the first pre-kickoff forecast per match and model version.
-/// Later cache refreshes never overwrite an existing row, so scoring can pick
-/// the last forecast calculated before the match kickoff.
+/// Persists the latest pre-kickoff forecast per match and model version.
+/// Rows refresh while kickoff is still in the future; after kickoff they stay frozen.
 /// </summary>
 public sealed class MatchForecastWriter
 {
@@ -36,16 +35,31 @@ public sealed class MatchForecastWriter
             var matchIds = outlook.NextRound.Select(item => item.MatchId).ToList();
             var existing = await _db.MatchPredictionForecasts
                 .Where(item => matchIds.Contains(item.MatchId) && item.ModelVersion == outlook.ModelVersion)
-                .Select(item => item.MatchId)
                 .ToListAsync(cancellationToken);
-            var known = existing.ToHashSet();
+            var byMatch = existing.ToDictionary(item => item.MatchId);
             var now = DateTime.UtcNow;
+
             foreach (var match in outlook.NextRound)
             {
-                if (match.MatchId == Guid.Empty || known.Contains(match.MatchId))
+                if (match.MatchId == Guid.Empty)
                     continue;
-                if (match.Kickoff is DateTime kickoff && kickoff.ToUniversalTime() <= now)
+                if (MatchForecastTime.IsStarted(match.Kickoff, now))
                     continue;
+
+                if (byMatch.TryGetValue(match.MatchId, out var row))
+                {
+                    row.RefreshPreKickoff(
+                        match.HomeWin,
+                        match.Draw,
+                        match.AwayWin,
+                        match.LikelyHomeGoals,
+                        match.LikelyAwayGoals,
+                        match.HomeLambda,
+                        match.AwayLambda,
+                        match.Kickoff,
+                        now);
+                    continue;
+                }
 
                 _db.MatchPredictionForecasts.Add(MatchPredictionForecast.Create(
                     leagueSlug,
@@ -72,6 +86,40 @@ public sealed class MatchForecastWriter
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "No se pudieron guardar los pronósticos de partido de {Division}", divisionSlug);
+        }
+    }
+}
+
+internal static class MatchForecastTime
+{
+    public static DateTime? ToUtc(DateTime? kickoff)
+    {
+        if (kickoff == null)
+            return null;
+        var value = kickoff.Value;
+        if (value.Kind == DateTimeKind.Utc)
+            return value;
+        if (value.Kind == DateTimeKind.Local)
+            return value.ToUniversalTime();
+        // Unspecified kickoffs in MiLiga are wall-clock Argentina time.
+        return TimeZoneInfo.ConvertTimeToUtc(value, ArgentinaZone());
+    }
+
+    public static bool IsStarted(DateTime? kickoff, DateTime utcNow)
+    {
+        var utc = ToUtc(kickoff);
+        return utc != null && utc <= utcNow;
+    }
+
+    private static TimeZoneInfo ArgentinaZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Argentina Standard Time");
         }
     }
 }

@@ -95,7 +95,12 @@
         for (var i = 0; i < Math.Min(3, team.PositionProbability.Count); i++)
         {
             var value = team.PositionProbability[i];
-            var label = value * 100 < 0.1 ? "<0,1%" : value * 100 > 99.9 ? ">99,9%" : (value * 100).ToString("0.##", culture) + "%";
+            string label;
+            if (value <= 0) label = "0%";
+            else if (value >= 1) label = "100%";
+            else if (value * 100 < 0.1) label = "<0,1%";
+            else if (value * 100 > 99.9) label = ">99,9%";
+            else label = (value * 100).ToString("0.##", culture) + "%";
             bits.Add($"{i + 1}º {label}");
         }
         return string.Join(" · ", bits);

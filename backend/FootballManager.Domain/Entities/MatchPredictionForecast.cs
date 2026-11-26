@@ -3,9 +3,8 @@ using FootballManager.Domain.Common;
 namespace FootballManager.Domain.Entities;
 
 /// <summary>
-/// Immutable pre-kickoff match forecast. Once stored for a match and model version,
-/// later recalculations do not overwrite it so scoring can use the last valid
-/// prediction published before the match starts.
+/// Pre-kickoff match forecast. Rows may be refreshed while the match has not started;
+/// after kickoff they stay frozen so scoring uses the last valid prediction.
 /// </summary>
 public class MatchPredictionForecast : Entity
 {
@@ -65,4 +64,26 @@ public class MatchPredictionForecast : Entity
             ModelVersion = modelVersion,
             CalculatedAt = calculatedAt
         };
+
+    public void RefreshPreKickoff(
+        double homeWin,
+        double draw,
+        double awayWin,
+        int likelyHomeGoals,
+        int likelyAwayGoals,
+        double expectedHomeGoals,
+        double expectedAwayGoals,
+        DateTime? kickoff,
+        DateTime calculatedAt)
+    {
+        HomeWin = homeWin;
+        Draw = draw;
+        AwayWin = awayWin;
+        LikelyHomeGoals = likelyHomeGoals;
+        LikelyAwayGoals = likelyAwayGoals;
+        ExpectedHomeGoals = expectedHomeGoals;
+        ExpectedAwayGoals = expectedAwayGoals;
+        Kickoff = kickoff;
+        CalculatedAt = calculatedAt;
+    }
 }

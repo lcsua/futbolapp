@@ -152,10 +152,15 @@
 
         function appendPath(from, to, dashed) {
           var parts = [];
+          var drawing = false;
           for (var i = from; i <= to; i++) {
             var value = item.points[i];
-            if (value == null) continue;
-            parts.push((parts.length ? "L" : "M") + xAt(i).toFixed(1) + " " + yAt(value).toFixed(1));
+            if (value == null) {
+              drawing = false;
+              continue;
+            }
+            parts.push((drawing ? "L" : "M") + xAt(i).toFixed(1) + " " + yAt(value).toFixed(1));
+            drawing = true;
           }
           if (!parts.length) return;
           var path = ns("path");
@@ -203,11 +208,20 @@
       var prev = index > 0 ? item.points[index - 1] : null;
       var change = prev == null ? null : value - prev;
       tip.hidden = false;
-      tip.innerHTML =
-        "<strong>" + item.name + "</strong><br>Fecha " + rounds[index].round +
-        (rounds[index].reconstructed ? "*" : "") +
-        "<br>" + percent(value) +
-        (change == null ? "" : " · " + delta(change));
+      tip.replaceChildren();
+      var name = document.createElement("strong");
+      name.textContent = item.name;
+      tip.appendChild(name);
+      tip.appendChild(document.createElement("br"));
+      tip.appendChild(
+        document.createTextNode(
+          "Fecha " + rounds[index].round + (rounds[index].reconstructed ? "*" : "")
+        )
+      );
+      tip.appendChild(document.createElement("br"));
+      tip.appendChild(
+        document.createTextNode(percent(value) + (change == null ? "" : " · " + delta(change)))
+      );
       var shell = root.querySelector(".v2-story-chart-shell");
       var rect = shell.getBoundingClientRect();
       tip.style.left = Math.min(rect.width - 140, Math.max(8, event.clientX - rect.left + 8)) + "px";
@@ -226,9 +240,16 @@
         if (!row) return;
         var now = item.points[index];
         var before = item.points[prevIndex];
-        if (now == null) return;
         var pctNode = row.querySelector("[data-move-pct]");
         var ppNode = row.querySelector("[data-move-pp]") || row.querySelector("b");
+        if (now == null) {
+          if (pctNode) pctNode.textContent = "–";
+          if (ppNode) {
+            ppNode.textContent = "–";
+            ppNode.className = "";
+          }
+          return;
+        }
         if (pctNode) pctNode.textContent = percent(now);
         if (!ppNode) return;
         if (before == null || index === 0) {

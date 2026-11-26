@@ -266,7 +266,12 @@ public static class ChampionshipPredictor
 
             var title = crowned ? 1d : eliminated ? 0d : distribution[0];
             var (label, kind) = TitleLabel(title, crowned, eliminated);
-            var expectedPosition = positionSum[i] / samples;
+            // Keep expected place aligned with the adjusted distribution (crowned/eliminated).
+            var expectedPosition = 0d;
+            for (var place = 0; place < distribution.Length; place++)
+                expectedPosition += (place + 1) * distribution[place];
+            if (expectedPosition <= 0)
+                expectedPosition = positionSum[i] / samples;
             var official = teams[i].OfficialPosition;
 
             rows.Add(new TeamOutlook(

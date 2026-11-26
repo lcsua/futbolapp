@@ -30,15 +30,18 @@ public static class DecisiveMatchCalculator
             return Array.Empty<DecisiveMatchReport>();
 
         var byTeam = teams.ToDictionary(team => team.TeamId);
-        var byWhatIf = whatIfs.ToDictionary(item => item.TeamId);
+        var byWhatIf = whatIfs
+            .GroupBy(item => item.MatchId)
+            .ToDictionary(group => group.Key, group => group.ToList());
         var reports = new List<DecisiveMatchReport>();
 
         foreach (var match in nextRound)
         {
             byTeam.TryGetValue(match.HomeTeamId, out var home);
             byTeam.TryGetValue(match.AwayTeamId, out var away);
-            byWhatIf.TryGetValue(match.HomeTeamId, out var homeIf);
-            byWhatIf.TryGetValue(match.AwayTeamId, out var awayIf);
+            byWhatIf.TryGetValue(match.MatchId, out var matchWhatIfs);
+            var homeIf = matchWhatIfs?.FirstOrDefault(item => item.TeamId == match.HomeTeamId);
+            var awayIf = matchWhatIfs?.FirstOrDefault(item => item.TeamId == match.AwayTeamId);
 
             var homeSwing = Swing(home?.TitleProbability ?? 0, homeIf);
             var awaySwing = Swing(away?.TitleProbability ?? 0, awayIf);
