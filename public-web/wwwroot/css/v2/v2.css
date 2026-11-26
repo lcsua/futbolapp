@@ -7447,7 +7447,7 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 .v2-story-race { background: var(--v2-primary-dark); color: #fff; }
 .v2-story-race h4, .v2-story-path h4, .v2-story-if h4, .v2-story-history h4 { margin: 0 0 0.35rem; }
 .v2-story-race__duel { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem; }
-.v2-story-race__duel article { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; text-align: center; }
+.v2-story-race__duel article { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; text-align: center; }
 .v2-story-race__duel b { font-size: 1.45rem; }
 .v2-story-race__facts, .v2-story-path__nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; margin: 0.75rem 0 0; }
 .v2-story-race__facts div, .v2-story-path__nums div { margin: 0; text-align: center; }
