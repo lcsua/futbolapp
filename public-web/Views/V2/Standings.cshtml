@@ -96,9 +96,9 @@
 
 @if (!string.IsNullOrWhiteSpace(leagueSlug))
 {
-    var simulatorHref = Url.Content(PublicWeb.Helpers.LeagueLinks.Section(leagueSlug, "predicciones", seasonSlug, selectedDivision));
+    var predictionsHref = Url.Content(PublicWeb.Helpers.LeagueLinks.Section(leagueSlug, "predicciones", seasonSlug, selectedDivision));
     <p class="v2-sim-entry">
-        <a class="v2-sim-entry__link" href="@simulatorHref">
+        <a class="v2-sim-entry__link" href="@predictionsHref">
             <span class="v2-ui-icon v2-ui-icon--simulate" aria-hidden="true"></span>
             Ver las predicciones del campeonato
         </a>
