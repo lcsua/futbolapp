@@ -94,6 +94,7 @@ public sealed class SitemapDocumentService
                 list.Add(new SitemapUrlEntry { Loc = _urls.LeagueHome(league.Slug), LastMod = leagueMod });
                 list.Add(new SitemapUrlEntry { Loc = _urls.LeagueFixture(league.Slug), LastMod = leagueMod });
                 list.Add(new SitemapUrlEntry { Loc = _urls.LeagueStandings(league.Slug), LastMod = leagueMod });
+                list.Add(new SitemapUrlEntry { Loc = _urls.LeaguePredictions(league.Slug), LastMod = leagueMod });
                 list.Add(new SitemapUrlEntry { Loc = _urls.LeagueResults(league.Slug), LastMod = leagueMod });
                 list.Add(new SitemapUrlEntry { Loc = _urls.LeagueInformation(league.Slug), LastMod = leagueMod });
 

@@ -59,6 +59,24 @@ public class PublicLeagueController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("predicciones")]
+    public async Task<IActionResult> GetPredictions(string leagueSlug, [FromQuery] string? season, [FromQuery] string? division)
+    {
+        var result = await _service.GetPredictionsAsync(leagueSlug, season, division);
+        if (result == null) return NotFound();
+        Response.Headers.CacheControl = "public, max-age=300";
+        return Ok(result);
+    }
+
+    [HttpGet("simulador")]
+    public async Task<IActionResult> GetSimulator(string leagueSlug, [FromQuery] string? season, [FromQuery] string? division)
+    {
+        var result = await _service.GetSimulatorAsync(leagueSlug, season, division);
+        if (result == null) return NotFound();
+        Response.Headers.CacheControl = "public, max-age=60";
+        return Ok(result);
+    }
+
     [HttpGet("tabla")]
     public async Task<IActionResult> GetStandings(string leagueSlug, [FromQuery] string? season, [FromQuery] string? division)
     {

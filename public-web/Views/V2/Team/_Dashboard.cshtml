@@ -179,6 +179,10 @@
                 {
                     <a class="v2-dash-link" href="@upcomingHref">Ver más partidos</a>
                 }
+                @if (!road.Finished && !string.IsNullOrWhiteSpace(ViewData["SimulatorHref"] as string))
+                {
+                    <a class="v2-dash-link" href="@ViewData["SimulatorHref"]">Ver las predicciones del campeonato</a>
+                }
             </section>
         }
     </div>

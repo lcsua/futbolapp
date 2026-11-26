@@ -123,6 +123,62 @@ public class LeaguePublicService
         return null;
     }
 
+    public async Task<SimulatorPageViewModel?> GetSimulatorAsync(string leagueSlug, string? seasonSlug, string? divisionSlug)
+    {
+        string querySeason = string.IsNullOrWhiteSpace(seasonSlug) ? "" : $"season={Uri.EscapeDataString(seasonSlug)}";
+        string queryDiv = string.IsNullOrWhiteSpace(divisionSlug) || divisionSlug == "all" ? "" : $"division={Uri.EscapeDataString(divisionSlug)}";
+        string query = string.Join("&", new[] { querySeason, queryDiv }.Where(q => !string.IsNullOrEmpty(q)));
+        query = string.IsNullOrEmpty(query) ? "" : "?" + query;
+
+        string cacheKey = $"simulador_{leagueSlug}_{seasonSlug ?? "default"}_{divisionSlug ?? "all"}";
+        if (_cache.TryGetValue(cacheKey, out SimulatorPageViewModel? cached)) return cached;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient("BackendApi");
+            var model = await client.GetFromJsonAsync<SimulatorPageViewModel>($"liga/{leagueSlug}/simulador{query}");
+            if (model != null)
+            {
+                _cache.Set(cacheKey, model, TimeSpan.FromMinutes(1));
+                return model;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calling backend API for simulator in league {Slug}", leagueSlug);
+        }
+
+        return null;
+    }
+
+    public async Task<PredictionsPageViewModel?> GetPredictionsAsync(string leagueSlug, string? seasonSlug, string? divisionSlug)
+    {
+        string querySeason = string.IsNullOrWhiteSpace(seasonSlug) ? "" : $"season={Uri.EscapeDataString(seasonSlug)}";
+        string queryDiv = string.IsNullOrWhiteSpace(divisionSlug) || divisionSlug == "all" ? "" : $"division={Uri.EscapeDataString(divisionSlug)}";
+        string query = string.Join("&", new[] { querySeason, queryDiv }.Where(q => !string.IsNullOrEmpty(q)));
+        query = string.IsNullOrEmpty(query) ? "" : "?" + query;
+
+        string cacheKey = $"predicciones_{leagueSlug}_{seasonSlug ?? "default"}_{divisionSlug ?? "all"}";
+        if (_cache.TryGetValue(cacheKey, out PredictionsPageViewModel? cached)) return cached;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient("PredictionsApi");
+            var model = await client.GetFromJsonAsync<PredictionsPageViewModel>($"liga/{leagueSlug}/predicciones{query}");
+            if (model != null)
+            {
+                _cache.Set(cacheKey, model, TimeSpan.FromMinutes(5));
+                return model;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calling backend API for predictions in league {Slug}", leagueSlug);
+        }
+
+        return null;
+    }
+
     public async Task<SeasonGroupedViewModel<MatchdayGroupViewModel>?> GetResultsAsync(string leagueSlug, string? seasonSlug, string? divisionSlug, int? round)
     {
         string querySeason = string.IsNullOrWhiteSpace(seasonSlug) ? "" : $"season={seasonSlug}";

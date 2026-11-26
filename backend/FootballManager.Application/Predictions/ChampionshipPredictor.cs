@@ -1,0 +1,1038 @@
+using System.Diagnostics;
+using System.Globalization;
+using System.Text;
+using FootballManager.Application.Standings;
+
+namespace FootballManager.Application.Predictions;
+
+public sealed record TeamOutlook(
+    Guid TeamId,
+    string Name,
+    int OfficialPosition,
+    int CurrentPoints,
+    int Played,
+    int GoalsFor,
+    int GoalsAgainst,
+    double ExpectedPoints,
+    double ExpectedPosition,
+    int ProjectedRank,
+    int PlacesDelta,
+    double TitleProbability,
+    string TitleLabel,
+    string TitleKind,
+    bool MathematicallyCrowned,
+    bool MathematicallyEliminated,
+    string Form,
+    IReadOnlyList<double> PositionProbability);
+
+public sealed record MatchOutlook(
+    Guid MatchId,
+    int Round,
+    DateTime? Kickoff,
+    Guid HomeTeamId,
+    string HomeName,
+    Guid AwayTeamId,
+    string AwayName,
+    double HomeWin,
+    double Draw,
+    double AwayWin,
+    string HomeWinLabel,
+    string DrawLabel,
+    string AwayWinLabel,
+    int LikelyHomeGoals,
+    int LikelyAwayGoals,
+    string HomeForm,
+    string AwayForm,
+    double HomeLambda,
+    double AwayLambda);
+
+public sealed record DivisionOutlook(
+    bool Supported,
+    string? Limitation,
+    bool Published,
+    bool Finished,
+    string? UnpublishedReason,
+    string Maturity,
+    string MaturityNote,
+    int CompletedMatches,
+    int PendingMatches,
+    int PendingRounds,
+    double PlayedRatio,
+    int Simulations,
+    long ElapsedMilliseconds,
+    string ModelVersion,
+    bool ChampionMeansFirstPlace,
+    string ChampionNote,
+    bool PromotionSupported,
+    string PromotionNote,
+    IReadOnlyList<TeamOutlook> Teams,
+    int? NextRoundNumber,
+    IReadOnlyList<MatchOutlook> NextRound);
+
+public static class ChampionshipPredictor
+{
+    private static readonly CultureInfo EsAr = CultureInfo.GetCultureInfo("es-AR");
+
+    public const string MaturityExplanation =
+        "Este porcentaje mide cuánto del campeonato ya se jugó. No es una precisión estadística validada.";
+
+    public const string ChampionExplanation =
+        "Salir campeón, en este cálculo, es terminar primero. No hay playoffs ni finales cargados: si existieran, el primero de la tabla no sería automáticamente el campeón.";
+
+    public const string PromotionExplanation =
+        "No hay reglas de ascenso ni descenso cargadas para esta división, así que no se publican esas probabilidades.";
+
+    public static DivisionOutlook Predict(PredictionDivision division, PredictionOptions? options = null, StandingsRules? rules = null)
+    {
+        options ??= PredictionModel.Default;
+        rules ??= StandingsRules.Official;
+        var watch = Stopwatch.StartNew();
+        var limitation = rules.UnsupportedReason();
+        if (limitation != null)
+        {
+            watch.Stop();
+            return Empty(division, supported: false, published: false, finished: false, limitation, null, options, watch.ElapsedMilliseconds);
+        }
+
+        var completed = division.Fixtures.Where(IsCountedResult).OrderBy(Chronology).ToList();
+        var pending = division.Fixtures.Where(IsPending).OrderBy(Chronology).ToList();
+        var finished = pending.Count == 0;
+        var pendingRounds = pending.Select(match => match.Round).Distinct().Count();
+        var ratio = completed.Count + pending.Count == 0
+            ? 0
+            : completed.Count / (double)(completed.Count + pending.Count);
+
+        if (finished)
+        {
+            watch.Stop();
+            return Empty(
+                division,
+                supported: true,
+                published: false,
+                finished: true,
+                limitation: null,
+                unpublished: "Este campeonato no tiene partidos pendientes. La tabla oficial es el resultado, no una predicción.",
+                options,
+                watch.ElapsedMilliseconds,
+                completed.Count,
+                pending.Count,
+                pendingRounds,
+                ratio);
+        }
+
+        if (completed.Count < options.MinCompletedMatches)
+        {
+            watch.Stop();
+            return Empty(
+                division,
+                supported: true,
+                published: false,
+                finished: false,
+                limitation: null,
+                unpublished: $"Todavía no hay suficiente información para publicar predicciones. Hacen falta al menos {options.MinCompletedMatches} partidos finalizados en la división y hay {completed.Count}.",
+                options,
+                watch.ElapsedMilliseconds,
+                completed.Count,
+                pending.Count,
+                pendingRounds,
+                ratio);
+        }
+
+        var teams = BuildTeams(division, completed, pending);
+        var rates = Strengths(teams, completed, options);
+        var outlooks = pending.Select(match => ScoreMatch(match, rates, teams, options)).ToList();
+        var nextRound = NextFixtureRound(pending);
+        var next = outlooks.Where(match => match.Round == nextRound).ToList();
+
+        var samples = Math.Max(1, options.Simulations);
+        var positionHits = new int[teams.Count, teams.Count];
+        var pointsSum = new double[teams.Count];
+        var positionSum = new double[teams.Count];
+        var random = new Random(options.Seed);
+        var pendingIndexed = pending.Select(match => (
+            Home: IndexOf(teams, match.Home.TeamId),
+            Away: IndexOf(teams, match.Away.TeamId),
+            HomeCounts: match.Home.Counts,
+            AwayCounts: match.Away.Counts,
+            HomePmf: Pmf(rates.Lambda(match.Home.TeamId, match.Away.TeamId, home: true, options), options.MaxGoals),
+            AwayPmf: Pmf(rates.Lambda(match.Away.TeamId, match.Home.TeamId, home: false, options), options.MaxGoals)
+        )).ToList();
+
+        var points = new int[teams.Count];
+        var goalsFor = new int[teams.Count];
+        var goalsAgainst = new int[teams.Count];
+        var order = new int[teams.Count];
+
+        for (var sample = 0; sample < samples; sample++)
+        {
+            for (var i = 0; i < teams.Count; i++)
+            {
+                points[i] = teams[i].Points;
+                goalsFor[i] = teams[i].GoalsFor;
+                goalsAgainst[i] = teams[i].GoalsAgainst;
+                order[i] = i;
+            }
+
+            foreach (var match in pendingIndexed)
+            {
+                var homeGoals = Sample(match.HomePmf, random.NextDouble());
+                var awayGoals = Sample(match.AwayPmf, random.NextDouble());
+                if (match.HomeCounts && match.Home >= 0)
+                    Apply(points, goalsFor, goalsAgainst, match.Home, homeGoals, awayGoals);
+                if (match.AwayCounts && match.Away >= 0)
+                    Apply(points, goalsFor, goalsAgainst, match.Away, awayGoals, homeGoals);
+            }
+
+            Array.Sort(order, (a, b) => Compare(teams, points, goalsFor, goalsAgainst, a, b));
+            for (var place = 0; place < order.Length; place++)
+            {
+                var team = order[place];
+                positionHits[team, place]++;
+                pointsSum[team] += points[team];
+                positionSum[team] += place + 1;
+            }
+        }
+
+        var rows = new List<TeamOutlook>(teams.Count);
+        for (var i = 0; i < teams.Count; i++)
+        {
+            var distribution = new double[teams.Count];
+            for (var place = 0; place < teams.Count; place++)
+                distribution[place] = positionHits[i, place] / (double)samples;
+
+            var title = distribution[0];
+            var crowned = teams[i].MathematicallyCrowned;
+            var eliminated = teams[i].MathematicallyEliminated;
+            var (label, kind) = TitleLabel(title, crowned, eliminated);
+            var expectedPosition = positionSum[i] / samples;
+            var official = teams[i].OfficialPosition;
+            var rounded = (int)Math.Round(expectedPosition, MidpointRounding.AwayFromZero);
+            var delta = official > 0 ? official - rounded : 0;
+
+            rows.Add(new TeamOutlook(
+                teams[i].Id,
+                teams[i].Name,
+                official,
+                teams[i].Points,
+                teams[i].Played,
+                teams[i].GoalsFor,
+                teams[i].GoalsAgainst,
+                pointsSum[i] / samples,
+                expectedPosition,
+                ProjectedRank: 0,
+                delta,
+                title,
+                label,
+                kind,
+                crowned,
+                eliminated,
+                teams[i].Form,
+                distribution));
+        }
+
+        var ranked = rows
+            .OrderBy(team => team.ExpectedPosition)
+            .ThenByDescending(team => team.ExpectedPoints)
+            .ThenBy(team => team.Name, StringComparer.OrdinalIgnoreCase)
+            .Select((team, index) => team with { ProjectedRank = index + 1 })
+            .ToList();
+
+        watch.Stop();
+        return new DivisionOutlook(
+            Supported: true,
+            Limitation: null,
+            Published: true,
+            Finished: false,
+            UnpublishedReason: null,
+            Maturity: MaturityOf(ratio),
+            MaturityNote: MaturityExplanation,
+            CompletedMatches: completed.Count,
+            PendingMatches: pending.Count,
+            PendingRounds: pendingRounds,
+            PlayedRatio: ratio,
+            Simulations: samples,
+            ElapsedMilliseconds: watch.ElapsedMilliseconds,
+            ModelVersion: PredictionModel.Version,
+            ChampionMeansFirstPlace: true,
+            ChampionNote: ChampionExplanation,
+            PromotionSupported: false,
+            PromotionNote: PromotionExplanation,
+            Teams: ranked,
+            NextRoundNumber: nextRound,
+            NextRound: next);
+    }
+
+    /// <summary>
+    /// Ranks one hypothetical sample with the same tie-break as <see cref="StandingsProjector.FromBaseline"/>.
+    /// Tests use it to keep the Monte Carlo path honest.
+    /// </summary>
+    public static IReadOnlyList<ProjectedTeam> ProjectSample(
+        PredictionDivision division,
+        IReadOnlyList<SimulatedScore> scores,
+        StandingsRules? rules = null)
+    {
+        var baseline = division.Baseline.Select(team => new BaselineTeam(
+            team.TeamId,
+            team.Name,
+            team.Position,
+            team.Played,
+            0,
+            0,
+            0,
+            team.GoalsFor,
+            team.GoalsAgainst,
+            team.Points));
+        return StandingsProjector
+            .FromBaseline(division.DivisionId, division.DivisionName, baseline, scores, rules: rules)
+            .Divisions[0].Teams;
+    }
+
+    public static IReadOnlyList<MatchOutlook> EstimateUpcoming(
+        PredictionDivision division,
+        IReadOnlyList<PredictionFixture> upcoming,
+        PredictionOptions? options = null)
+    {
+        options ??= PredictionModel.Default;
+        var completed = division.Fixtures.Where(IsCountedResult).OrderBy(Chronology).ToList();
+        var teams = BuildTeams(division, completed, upcoming);
+        var rates = Strengths(teams, completed, options);
+        return upcoming.Select(match => ScoreMatch(match, rates, teams, options)).ToList();
+    }
+
+    public static string FormatChance(double probability)
+    {
+        if (double.IsNaN(probability) || probability <= 0 || probability * 100 < 0.1)
+            return "<0,1%";
+        if (probability >= 1 || probability * 100 > 99.9)
+            return ">99,9%";
+        return (probability * 100).ToString("0.0", EsAr) + "%";
+    }
+
+    /// <summary>One sample through the Monte Carlo ranker, for comparison with the official projector.</summary>
+    public static IReadOnlyList<(Guid TeamId, int Position, int Points, int GoalsFor, int GoalsAgainst)> RankFast(
+        PredictionDivision division,
+        IReadOnlyList<SimulatedScore> scores)
+    {
+        var completed = division.Fixtures.Where(IsCountedResult).OrderBy(Chronology).ToList();
+        var teams = BuildTeams(division, completed, Array.Empty<PredictionFixture>());
+        var points = teams.Select(team => team.Points).ToArray();
+        var goalsFor = teams.Select(team => team.GoalsFor).ToArray();
+        var goalsAgainst = teams.Select(team => team.GoalsAgainst).ToArray();
+        foreach (var score in scores)
+        {
+            if (!StandingsProjector.TryReadScore(score.HomeGoals, score.AwayGoals, out var homeGoals, out var awayGoals))
+                continue;
+            var home = IndexOf(teams, score.HomeTeamId);
+            var away = IndexOf(teams, score.AwayTeamId);
+            if (score.HomeCounts && home >= 0)
+                Apply(points, goalsFor, goalsAgainst, home, homeGoals, awayGoals);
+            if (score.AwayCounts && away >= 0)
+                Apply(points, goalsFor, goalsAgainst, away, awayGoals, homeGoals);
+        }
+
+        var order = Enumerable.Range(0, teams.Count).ToArray();
+        Array.Sort(order, (a, b) => Compare(teams, points, goalsFor, goalsAgainst, a, b));
+        return order.Select((index, place) => (
+            teams[index].Id,
+            place + 1,
+            points[index],
+            goalsFor[index],
+            goalsAgainst[index])).ToList();
+    }
+
+    private static (string Label, string Kind) TitleLabel(double probability, bool crowned, bool eliminated)
+    {
+        if (crowned)
+            return ("Consagrado", "certain");
+        if (eliminated)
+            return ("Eliminado", "eliminated");
+        if (probability <= 0 || probability * 100 < 0.1)
+            return ("<0,1%", "below");
+        if (probability >= 1 || probability * 100 > 99.9)
+            return (">99,9%", "above");
+        return (FormatChance(probability), "chance");
+    }
+
+    private static string MaturityOf(double ratio)
+    {
+        if (ratio < 0.25) return "Temprana";
+        if (ratio < 0.60) return "Intermedia";
+        return "Avanzada";
+    }
+
+    private static DivisionOutlook Empty(
+        PredictionDivision division,
+        bool supported,
+        bool published,
+        bool finished,
+        string? limitation,
+        string? unpublished,
+        PredictionOptions options,
+        long elapsed,
+        int completed = 0,
+        int pending = 0,
+        int pendingRounds = 0,
+        double ratio = 0)
+    {
+        var teams = division.Baseline
+            .OrderBy(team => team.Position <= 0 ? int.MaxValue : team.Position)
+            .ThenBy(team => team.Name, StringComparer.OrdinalIgnoreCase)
+            .Select((team, index) => new TeamOutlook(
+                team.TeamId,
+                team.Name,
+                team.Position,
+                team.Points,
+                team.Played,
+                team.GoalsFor,
+                team.GoalsAgainst,
+                team.Points,
+                team.Position,
+                index + 1,
+                0,
+                0,
+                string.Empty,
+                "hidden",
+                false,
+                false,
+                string.Empty,
+                Array.Empty<double>()))
+            .ToList();
+
+        return new DivisionOutlook(
+            supported,
+            limitation,
+            published,
+            finished,
+            unpublished,
+            finished ? "Cerrado" : MaturityOf(ratio),
+            MaturityExplanation,
+            completed,
+            pending,
+            pendingRounds,
+            ratio,
+            0,
+            elapsed,
+            PredictionModel.Version,
+            true,
+            ChampionExplanation,
+            false,
+            PromotionExplanation,
+            teams,
+            null,
+            Array.Empty<MatchOutlook>());
+    }
+
+    /// <summary>
+    /// The public "next round" is the earliest pending round that is still ahead.
+    /// A suspended or postponed match from an earlier date stays in the simulation,
+    /// but it does not replace the upcoming jornada.
+    /// </summary>
+    private static int NextFixtureRound(IReadOnlyList<PredictionFixture> pending)
+    {
+        var today = DateTime.Today;
+        var upcoming = pending
+            .Where(match => match.Kickoff == null || match.Kickoff.Value.Date >= today)
+            .ToList();
+        var pool = upcoming.Count > 0 ? upcoming : pending;
+        return pool.Min(match => match.Round);
+    }
+
+    private static List<TeamState> BuildTeams(
+        PredictionDivision division,
+        IReadOnlyList<PredictionFixture> completed,
+        IReadOnlyList<PredictionFixture> pending)
+    {
+        var map = new Dictionary<Guid, TeamState>();
+        foreach (var team in division.Baseline)
+        {
+            map[team.TeamId] = new TeamState
+            {
+                Id = team.TeamId,
+                Name = string.IsNullOrWhiteSpace(team.Name) ? "Equipo" : team.Name,
+                OfficialPosition = team.Position,
+                Seen = team.Position > 0 ? team.Position : int.MaxValue,
+                Played = team.Played,
+                GoalsFor = team.GoalsFor,
+                GoalsAgainst = team.GoalsAgainst,
+                Points = team.Points
+            };
+        }
+
+        void Touch(PredictionSide side)
+        {
+            if (!side.Counts || side.TeamId == Guid.Empty)
+                return;
+            if (map.ContainsKey(side.TeamId))
+            {
+                if (!string.IsNullOrWhiteSpace(side.Name))
+                    map[side.TeamId].Name = side.Name;
+                return;
+            }
+
+            map[side.TeamId] = new TeamState
+            {
+                Id = side.TeamId,
+                Name = string.IsNullOrWhiteSpace(side.Name) ? "Equipo" : side.Name,
+                Seen = int.MaxValue
+            };
+        }
+
+        foreach (var match in completed.Concat(pending))
+        {
+            Touch(match.Home);
+            Touch(match.Away);
+        }
+
+        var form = new Dictionary<Guid, List<char>>();
+        foreach (var match in completed)
+        {
+            NoteForm(form, match.Home, match.HomeGoals!.Value, match.AwayGoals!.Value);
+            NoteForm(form, match.Away, match.AwayGoals!.Value, match.HomeGoals!.Value);
+        }
+
+        foreach (var team in map.Values)
+        {
+            if (form.TryGetValue(team.Id, out var marks) && marks.Count > 0)
+            {
+                var last = marks.Skip(Math.Max(0, marks.Count - PredictionModel.RecentWindow));
+                team.Form = string.Join(' ', last);
+            }
+            else
+            {
+                team.Form = "Sin partidos";
+            }
+        }
+
+        var pendingLeft = new Dictionary<Guid, int>();
+        foreach (var match in pending)
+        {
+            if (match.Home.Counts)
+                pendingLeft[match.Home.TeamId] = pendingLeft.GetValueOrDefault(match.Home.TeamId) + 1;
+            if (match.Away.Counts)
+                pendingLeft[match.Away.TeamId] = pendingLeft.GetValueOrDefault(match.Away.TeamId) + 1;
+        }
+
+        foreach (var team in map.Values)
+            team.Remaining = pendingLeft.GetValueOrDefault(team.Id);
+
+        var list = map.Values.OrderBy(team => team.Id).ToList();
+        for (var i = 0; i < list.Count; i++)
+        {
+            var mine = list[i].Points + 3 * list[i].Remaining;
+            var crowned = true;
+            var eliminated = false;
+            for (var j = 0; j < list.Count; j++)
+            {
+                if (i == j) continue;
+                var otherMax = list[j].Points + 3 * list[j].Remaining;
+                if (otherMax >= list[i].Points)
+                    crowned = false;
+                if (list[j].Points > mine)
+                    eliminated = true;
+            }
+
+            if (list.Count < 2)
+                crowned = false;
+            list[i].MathematicallyCrowned = crowned;
+            list[i].MathematicallyEliminated = eliminated && !crowned;
+        }
+
+        return list;
+    }
+
+    private static void NoteForm(Dictionary<Guid, List<char>> form, PredictionSide side, int goalsFor, int goalsAgainst)
+    {
+        if (!side.Counts || side.TeamId == Guid.Empty)
+            return;
+        if (!form.TryGetValue(side.TeamId, out var marks))
+        {
+            marks = new List<char>();
+            form[side.TeamId] = marks;
+        }
+
+        marks.Add(goalsFor > goalsAgainst ? 'G' : goalsFor < goalsAgainst ? 'P' : 'E');
+    }
+
+    private static Rates Strengths(List<TeamState> teams, IReadOnlyList<PredictionFixture> completed, PredictionOptions options)
+    {
+        var appearances = new Dictionary<Guid, List<Appearance>>();
+        foreach (var team in teams)
+            appearances[team.Id] = new List<Appearance>();
+
+        foreach (var match in completed)
+        {
+            if (match.Home.Counts && appearances.ContainsKey(match.Home.TeamId))
+            {
+                appearances[match.Home.TeamId].Add(new Appearance(
+                    match.Away.TeamId,
+                    match.Away.TeamId != Guid.Empty && appearances.ContainsKey(match.Away.TeamId),
+                    match.HomeGoals!.Value,
+                    match.AwayGoals!.Value));
+            }
+
+            if (match.Away.Counts && appearances.ContainsKey(match.Away.TeamId))
+            {
+                appearances[match.Away.TeamId].Add(new Appearance(
+                    match.Home.TeamId,
+                    match.Home.TeamId != Guid.Empty && appearances.ContainsKey(match.Home.TeamId),
+                    match.AwayGoals!.Value,
+                    match.HomeGoals!.Value));
+            }
+        }
+
+        var totalGoals = 0;
+        var totalAppearances = 0;
+        foreach (var list in appearances.Values)
+        {
+            totalAppearances += list.Count;
+            totalGoals += list.Sum(item => item.GoalsFor);
+        }
+
+        var mu = totalAppearances == 0 ? options.GoalsPrior : totalGoals / (double)totalAppearances;
+        if (mu < 0.05) mu = options.GoalsPrior;
+
+        var attackRate = new Dictionary<Guid, double>();
+        var defenseRate = new Dictionary<Guid, double>();
+        foreach (var team in teams)
+        {
+            var (attack, defense) = Blended(appearances[team.Id], options, mu, adjust: false, attackRate, defenseRate);
+            attackRate[team.Id] = attack;
+            defenseRate[team.Id] = defense;
+        }
+
+        var attackStrength = new Dictionary<Guid, double>();
+        var defenseStrength = new Dictionary<Guid, double>();
+        foreach (var team in teams)
+        {
+            var (attack, defense) = Blended(appearances[team.Id], options, mu, adjust: true, attackRate, defenseRate);
+            attackStrength[team.Id] = Clamp(attack / mu, PredictionModel.MinStrength, PredictionModel.MaxStrength);
+            defenseStrength[team.Id] = Clamp(defense / mu, PredictionModel.MinStrength, PredictionModel.MaxStrength);
+        }
+
+        return new Rates(mu, attackStrength, defenseStrength);
+    }
+
+    private static (double Attack, double Defense) Blended(
+        List<Appearance> matches,
+        PredictionOptions options,
+        double mu,
+        bool adjust,
+        Dictionary<Guid, double> attackRate,
+        Dictionary<Guid, double> defenseRate)
+    {
+        if (matches.Count == 0)
+            return (mu, mu);
+
+        double allGf = 0, allGa = 0, allW = 0, recentGf = 0, recentGa = 0, recentW = 0;
+        var start = Math.Max(0, matches.Count - Math.Max(1, options.RecentWindow));
+        for (var i = 0; i < matches.Count; i++)
+        {
+            var weight = Math.Pow(options.RecencyDecay, matches.Count - 1 - i);
+            var item = matches[i];
+            double gf = item.GoalsFor;
+            double ga = item.GoalsAgainst;
+            if (adjust)
+            {
+                var oppDefense = mu;
+                if (item.OpponentKnown && defenseRate.TryGetValue(item.OpponentId, out var knownDefense))
+                    oppDefense = Math.Max(knownDefense, mu * 0.25);
+                var oppAttack = mu;
+                if (item.OpponentKnown && attackRate.TryGetValue(item.OpponentId, out var knownAttack))
+                    oppAttack = Math.Max(knownAttack, mu * 0.25);
+                gf = item.GoalsFor * mu / oppDefense;
+                ga = item.GoalsAgainst * mu / oppAttack;
+            }
+
+            allGf += weight * gf;
+            allGa += weight * ga;
+            allW += weight;
+            if (i >= start)
+            {
+                recentGf += weight * gf;
+                recentGa += weight * ga;
+                recentW += weight;
+            }
+        }
+
+        var seasonGf = allGf / allW;
+        var seasonGa = allGa / allW;
+        var windowGf = recentW > 0 ? recentGf / recentW : seasonGf;
+        var windowGa = recentW > 0 ? recentGa / recentW : seasonGa;
+        var blendGf = options.RecentBlend * windowGf + (1 - options.RecentBlend) * seasonGf;
+        var blendGa = options.RecentBlend * windowGa + (1 - options.RecentBlend) * seasonGa;
+        var n = matches.Count;
+        var prior = Math.Max(0, options.PriorMatches);
+        var attack = (n * blendGf + prior * mu) / (n + prior);
+        var defense = (n * blendGa + prior * mu) / (n + prior);
+        return (attack, defense);
+    }
+
+    private static MatchOutlook ScoreMatch(
+        PredictionFixture match,
+        Rates rates,
+        List<TeamState> teams,
+        PredictionOptions options)
+    {
+        var homeLambda = rates.Lambda(match.Home.TeamId, match.Away.TeamId, home: true, options);
+        var awayLambda = rates.Lambda(match.Away.TeamId, match.Home.TeamId, home: false, options);
+        var homePmf = Pmf(homeLambda, options.MaxGoals);
+        var awayPmf = Pmf(awayLambda, options.MaxGoals);
+        double home = 0, draw = 0, away = 0, best = -1;
+        var likelyHome = 0;
+        var likelyAway = 0;
+        for (var hg = 0; hg < homePmf.Length; hg++)
+        {
+            for (var ag = 0; ag < awayPmf.Length; ag++)
+            {
+                var probability = homePmf[hg] * awayPmf[ag];
+                if (hg > ag) home += probability;
+                else if (hg == ag) draw += probability;
+                else away += probability;
+                if (probability > best)
+                {
+                    best = probability;
+                    likelyHome = hg;
+                    likelyAway = ag;
+                }
+            }
+        }
+
+        var homeState = teams.FirstOrDefault(team => team.Id == match.Home.TeamId);
+        var awayState = teams.FirstOrDefault(team => team.Id == match.Away.TeamId);
+        return new MatchOutlook(
+            match.Id,
+            match.Round,
+            match.Kickoff,
+            match.Home.TeamId,
+            match.Home.Name,
+            match.Away.TeamId,
+            match.Away.Name,
+            home,
+            draw,
+            away,
+            FormatChance(home),
+            FormatChance(draw),
+            FormatChance(away),
+            likelyHome,
+            likelyAway,
+            homeState?.Form ?? "Sin partidos",
+            awayState?.Form ?? "Sin partidos",
+            homeLambda,
+            awayLambda);
+    }
+
+    private static int Compare(List<TeamState> teams, int[] points, int[] goalsFor, int[] goalsAgainst, int a, int b)
+    {
+        var byPoints = points[b].CompareTo(points[a]);
+        if (byPoints != 0) return byPoints;
+        var byDifference = (goalsFor[b] - goalsAgainst[b]).CompareTo(goalsFor[a] - goalsAgainst[a]);
+        if (byDifference != 0) return byDifference;
+        var byGoals = goalsFor[b].CompareTo(goalsFor[a]);
+        if (byGoals != 0) return byGoals;
+        var bySeen = teams[a].Seen.CompareTo(teams[b].Seen);
+        if (bySeen != 0) return bySeen;
+        var byName = string.Compare(teams[a].Name, teams[b].Name, StringComparison.OrdinalIgnoreCase);
+        if (byName != 0) return byName;
+        return teams[a].Id.CompareTo(teams[b].Id);
+    }
+
+    private static void Apply(int[] points, int[] goalsFor, int[] goalsAgainst, int index, int scored, int conceded)
+    {
+        goalsFor[index] += scored;
+        goalsAgainst[index] += conceded;
+        if (scored > conceded) points[index] += 3;
+        else if (scored == conceded) points[index] += 1;
+    }
+
+    private static int IndexOf(List<TeamState> teams, Guid id)
+    {
+        for (var i = 0; i < teams.Count; i++)
+        {
+            if (teams[i].Id == id)
+                return i;
+        }
+
+        return -1;
+    }
+
+    private static double[] Pmf(double lambda, int max)
+    {
+        var pmf = new double[max + 1];
+        var term = Math.Exp(-lambda);
+        var sum = 0d;
+        for (var k = 0; k <= max; k++)
+        {
+            pmf[k] = term;
+            sum += term;
+            term *= lambda / (k + 1);
+            if (double.IsNaN(term) || double.IsInfinity(term))
+                break;
+        }
+
+        if (sum <= 0)
+        {
+            pmf[0] = 1;
+            return pmf;
+        }
+
+        for (var k = 0; k <= max; k++)
+            pmf[k] /= sum;
+        return pmf;
+    }
+
+    private static int Sample(double[] pmf, double draw)
+    {
+        var cumulative = 0d;
+        for (var k = 0; k < pmf.Length; k++)
+        {
+            cumulative += pmf[k];
+            if (draw <= cumulative)
+                return k;
+        }
+
+        return pmf.Length - 1;
+    }
+
+    private static bool IsCountedResult(PredictionFixture fixture) =>
+        fixture.Completed
+        && fixture.HomeGoals is >= 0 and <= 99
+        && fixture.AwayGoals is >= 0 and <= 99
+        && (fixture.Home.Counts || fixture.Away.Counts);
+
+    private static bool IsPending(PredictionFixture fixture) =>
+        !fixture.Completed
+        && fixture.Home.TeamId != Guid.Empty
+        && fixture.Away.TeamId != Guid.Empty
+        && (fixture.Home.Counts || fixture.Away.Counts);
+
+    private static (int Round, DateTime Kickoff, Guid Id) Chronology(PredictionFixture fixture) =>
+        (fixture.Round, fixture.Kickoff ?? DateTime.MaxValue, fixture.Id);
+
+    private static double Clamp(double value, double min, double max) => Math.Min(max, Math.Max(min, value));
+
+    private sealed class TeamState
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int OfficialPosition { get; set; }
+        public int Seen { get; set; }
+        public int Played { get; set; }
+        public int GoalsFor { get; set; }
+        public int GoalsAgainst { get; set; }
+        public int Points { get; set; }
+        public int Remaining { get; set; }
+        public bool MathematicallyCrowned { get; set; }
+        public bool MathematicallyEliminated { get; set; }
+        public string Form { get; set; } = "Sin partidos";
+    }
+
+    private readonly record struct Appearance(Guid OpponentId, bool OpponentKnown, int GoalsFor, int GoalsAgainst);
+
+    private sealed class Rates
+    {
+        private readonly double _mu;
+        private readonly Dictionary<Guid, double> _attack;
+        private readonly Dictionary<Guid, double> _defense;
+
+        public Rates(double mu, Dictionary<Guid, double> attack, Dictionary<Guid, double> defense)
+        {
+            _mu = mu;
+            _attack = attack;
+            _defense = defense;
+        }
+
+        public double Lambda(Guid attackTeam, Guid defenseTeam, bool home, PredictionOptions options)
+        {
+            var attack = _attack.TryGetValue(attackTeam, out var attackStrength) ? attackStrength : 1;
+            var defense = _defense.TryGetValue(defenseTeam, out var defenseStrength) ? defenseStrength : 1;
+            var lambda = _mu * attack * defense * (home ? options.HomeAdvantage : 1);
+            return Clamp(lambda, PredictionModel.MinLambda, PredictionModel.MaxLambda);
+        }
+    }
+}
+
+public static class PredictionFingerprint
+{
+    public static string Compute(PredictionDivision division)
+    {
+        var builder = new StringBuilder(PredictionModel.Version);
+        builder.Append('|').Append(division.DivisionId);
+        foreach (var team in division.Baseline.OrderBy(team => team.TeamId))
+        {
+            builder.Append(';')
+                .Append(team.TeamId).Append(':')
+                .Append(team.Position).Append(':')
+                .Append(team.Points).Append(':')
+                .Append(team.GoalsFor).Append(':')
+                .Append(team.GoalsAgainst).Append(':')
+                .Append(team.Played);
+        }
+
+        foreach (var match in division.Fixtures.OrderBy(match => match.Id))
+        {
+            builder.Append('|')
+                .Append(match.Id).Append(':')
+                .Append(match.Round).Append(':')
+                .Append(match.Completed ? '1' : '0').Append(':')
+                .Append(match.HomeGoals).Append('-').Append(match.AwayGoals).Append(':')
+                .Append(match.Home.TeamId).Append(':').Append(match.Home.Counts ? '1' : '0').Append(':')
+                .Append(match.Away.TeamId).Append(':').Append(match.Away.Counts ? '1' : '0');
+        }
+
+        ulong hash = 14695981039346656037UL;
+        foreach (var character in builder.ToString())
+        {
+            hash ^= character;
+            hash *= 1099511628211UL;
+        }
+
+        return hash.ToString("x16");
+    }
+}
+
+public static class PredictionBacktester
+{
+    public sealed record Report(
+        int Matches,
+        int Rounds,
+        double PoissonAccuracy,
+        double PointsBaselineAccuracy,
+        double AlwaysDrawAccuracy,
+        double PoissonBrier,
+        double PointsBaselineBrier,
+        double AlwaysDrawBrier);
+
+    public static Report Run(IReadOnlyList<PredictionFixture> completedInOrder, PredictionOptions? options = null, int minHistory = 4)
+    {
+        options ??= PredictionModel.Default;
+        var rounds = completedInOrder.Select(match => match.Round).Distinct().OrderBy(round => round).ToList();
+        var poissonHits = 0;
+        var baselineHits = 0;
+        var drawHits = 0;
+        double poissonBrier = 0, baselineBrier = 0, drawBrier = 0;
+        var matches = 0;
+        var usedRounds = 0;
+
+        foreach (var round in rounds)
+        {
+            var history = completedInOrder.Where(match => match.Completed && match.Round < round).ToList();
+            var target = completedInOrder.Where(match => match.Completed && match.Round == round).ToList();
+            if (history.Count < minHistory || target.Count == 0)
+                continue;
+
+            usedRounds++;
+            var points = PointsSoFar(history);
+            var division = new PredictionDivision(Guid.Empty, "Backtest", BaselineFrom(history), history);
+            var estimates = ChampionshipPredictor.EstimateUpcoming(division, target, options);
+            foreach (var match in target)
+            {
+                var estimate = estimates.First(item => item.MatchId == match.Id);
+                var homeGoals = match.HomeGoals!.Value;
+                var awayGoals = match.AwayGoals!.Value;
+                var outcome = homeGoals > awayGoals ? 0 : homeGoals == awayGoals ? 1 : 2;
+                if (Hit(estimate.HomeWin, estimate.Draw, estimate.AwayWin, outcome))
+                    poissonHits++;
+                poissonBrier += Brier(estimate.HomeWin, estimate.Draw, estimate.AwayWin, outcome);
+
+                var homePoints = points.GetValueOrDefault(match.Home.TeamId);
+                var awayPoints = points.GetValueOrDefault(match.Away.TeamId);
+                var baseline = homePoints > awayPoints ? 0 : awayPoints > homePoints ? 2 : 1;
+                if (baseline == outcome)
+                    baselineHits++;
+                baselineBrier += Brier(baseline == 0 ? 1 : 0, baseline == 1 ? 1 : 0, baseline == 2 ? 1 : 0, outcome);
+
+                if (outcome == 1)
+                    drawHits++;
+                drawBrier += Brier(0, 1, 0, outcome);
+                matches++;
+            }
+        }
+
+        if (matches == 0)
+            return new Report(0, 0, 0, 0, 0, 0, 0, 0);
+
+        return new Report(
+            matches,
+            usedRounds,
+            poissonHits / (double)matches,
+            baselineHits / (double)matches,
+            drawHits / (double)matches,
+            poissonBrier / matches,
+            baselineBrier / matches,
+            drawBrier / matches);
+    }
+
+    private static Dictionary<Guid, int> PointsSoFar(IReadOnlyList<PredictionFixture> history)
+    {
+        var points = new Dictionary<Guid, int>();
+        foreach (var match in history)
+        {
+            Add(points, match.Home, match.HomeGoals!.Value, match.AwayGoals!.Value);
+            Add(points, match.Away, match.AwayGoals!.Value, match.HomeGoals!.Value);
+        }
+
+        return points;
+    }
+
+    private static void Add(Dictionary<Guid, int> points, PredictionSide side, int goalsFor, int goalsAgainst)
+    {
+        if (!side.Counts || side.TeamId == Guid.Empty)
+            return;
+        var gain = goalsFor > goalsAgainst ? 3 : goalsFor == goalsAgainst ? 1 : 0;
+        points[side.TeamId] = points.GetValueOrDefault(side.TeamId) + gain;
+    }
+
+    private static List<PredictionBaseline> BaselineFrom(IReadOnlyList<PredictionFixture> history)
+    {
+        var map = new Dictionary<Guid, (string Name, int Played, int Gf, int Ga, int Points)>();
+        foreach (var match in history)
+        {
+            Acc(map, match.Home, match.HomeGoals!.Value, match.AwayGoals!.Value);
+            Acc(map, match.Away, match.AwayGoals!.Value, match.HomeGoals!.Value);
+        }
+
+        return map.Select(item => new PredictionBaseline(
+            item.Key,
+            item.Value.Name,
+            0,
+            item.Value.Played,
+            item.Value.Gf,
+            item.Value.Ga,
+            item.Value.Points)).ToList();
+    }
+
+    private static void Acc(
+        Dictionary<Guid, (string Name, int Played, int Gf, int Ga, int Points)> map,
+        PredictionSide side,
+        int goalsFor,
+        int goalsAgainst)
+    {
+        if (!side.Counts || side.TeamId == Guid.Empty)
+            return;
+        map.TryGetValue(side.TeamId, out var current);
+        var points = current.Points + (goalsFor > goalsAgainst ? 3 : goalsFor == goalsAgainst ? 1 : 0);
+        map[side.TeamId] = (
+            string.IsNullOrWhiteSpace(side.Name) ? current.Name : side.Name,
+            current.Played + 1,
+            current.Gf + goalsFor,
+            current.Ga + goalsAgainst,
+            points);
+    }
+
+    private static bool Hit(double home, double draw, double away, int outcome)
+    {
+        var probs = new[] { home, draw, away };
+        var best = probs.Max();
+        return Math.Abs(probs[outcome] - best) < 1e-9;
+    }
+
+    private static double Brier(double home, double draw, double away, int outcome)
+    {
+        var actualHome = outcome == 0 ? 1 : 0;
+        var actualDraw = outcome == 1 ? 1 : 0;
+        var actualAway = outcome == 2 ? 1 : 0;
+        return (home - actualHome) * (home - actualHome)
+            + (draw - actualDraw) * (draw - actualDraw)
+            + (away - actualAway) * (away - actualAway);
+    }
+}

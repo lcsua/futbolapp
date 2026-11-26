@@ -24,6 +24,17 @@ builder.Services.AddHttpClient("BackendApi", client =>
         client.DefaultRequestHeaders.Host = hostHeader;
 });
 
+builder.Services.AddHttpClient("PredictionsApi", client =>
+{
+    var baseUrl = builder.Configuration["PredictionsApi:BaseUrl"];
+    if (string.IsNullOrWhiteSpace(baseUrl))
+        baseUrl = builder.Configuration["BackendApi:BaseUrl"] ?? "http://127.0.0.1:5001/api/public/";
+    if (!baseUrl.EndsWith('/'))
+        baseUrl += "/";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+
 builder.Services.AddScoped<PublicWeb.Services.Public.LeaguePublicService>();
 builder.Services.AddScoped<PublicWeb.Services.Public.TeamPublicService>();
 builder.Services.AddScoped<PublicWeb.Services.Public.MatchPublicService>();
