@@ -63,6 +63,7 @@ public sealed class TeamRoadDisplay
     public string Headline { get; init; } = string.Empty;
     public string? Detail { get; init; }
     public string? Extra { get; init; }
+    public bool HasMoreMatches { get; init; }
     public IReadOnlyList<TeamUpcomingRival> Rivals { get; init; } = Array.Empty<TeamUpcomingRival>();
 }
 

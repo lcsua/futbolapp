@@ -1,6 +1,7 @@
 @model PublicWeb.Models.Public.TeamDashboard
 @{
     var scorersHref = ViewData["ScorersHref"] as string;
+    var upcomingHref = ViewData["UpcomingHref"] as string;
     var inv = System.Globalization.CultureInfo.InvariantCulture;
     var numbers = Model.Numbers;
     var showSplit = Model.Scorers.Count > 0 || Model.Road != null;
@@ -173,6 +174,10 @@
                             </a>
                         }
                     </div>
+                }
+                @if (road.HasMoreMatches && !string.IsNullOrWhiteSpace(upcomingHref))
+                {
+                    <a class="v2-dash-link" href="@upcomingHref">Ver más partidos</a>
                 }
             </section>
         }
