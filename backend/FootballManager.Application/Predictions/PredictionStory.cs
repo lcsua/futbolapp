@@ -80,35 +80,42 @@ public static class TitleRaceCalculator
         var second = alive.Count > 1 ? alive[1] : null;
         var gap = second == null ? leader.TitleProbability : leader.TitleProbability - second.TitleProbability;
         var close = alive.Where(team => team.TitleProbability >= 0.10).Take(4).ToList();
+        var leaderPct = PredictionChance.Format(leader.TitleProbability);
+        var secondPct = second == null ? null : PredictionChance.Format(second.TitleProbability);
         string kind;
         string headline;
         string summary;
         if (leader.MathematicallyCrowned || leader.TitleKind == "certain")
         {
             kind = "dominant";
-            headline = $"{leader.Name} ya es campeón en la cuenta matemática.";
-            summary = "Los puntos que tiene no los puede alcanzar el resto. No es una estimación.";
+            headline = $"{leader.Name} ya aseguró el título en la cuenta matemática ({leaderPct}).";
+            summary = "Los puntos que tiene no los puede alcanzar el resto.";
         }
         else if (leader.TitleProbability >= 0.60 && gap >= 0.25)
         {
             kind = "dominant";
-            headline = $"{leader.Name} concentra la mayor parte de las chances.";
+            headline = second == null
+                ? $"{leader.Name} concentra la pelea con {leaderPct} de chances de título."
+                : $"{leader.Name} lidera con {leaderPct}; {second.Name} lo persigue con {secondPct}.";
             summary = second == null
                 ? "El resto del campeonato queda lejos en la simulación."
-                : $"{second.Name} es el principal perseguidor, con una diferencia clara de probabilidad.";
+                : $"Ventaja de {PredictionChance.FormatPoints(gap * 100).Replace("+", string.Empty)} sobre el principal perseguidor.";
         }
         else if (close.Count is >= 2 and <= 3)
         {
             kind = "few";
-            headline = close.Count == 2
-                ? "Dos equipos concentran la mayor parte de las posibilidades."
+            headline = string.Join(" · ", close.Select(team => $"{team.Name} {PredictionChance.Format(team.TitleProbability)}"));
+            summary = close.Count == 2
+                ? "Dos equipos concentran la pelea por el título."
                 : "Un grupo chico concentra la lucha por el título.";
-            summary = string.Join(" y ", close.Select(team => team.Name)) + " son los candidatos que la simulación separa del resto.";
         }
         else
         {
             kind = "open";
-            headline = "El campeonato sigue abierto.";
+            var top = alive.Take(Math.Min(3, alive.Count)).ToList();
+            headline = top.Count <= 1
+                ? "El campeonato sigue abierto."
+                : $"Campeonato abierto: {string.Join(", ", top.Select(team => $"{team.Name} {PredictionChance.Format(team.TitleProbability)}"))}.";
             summary = "Ningún equipo concentra la simulación. Varios todavía pueden terminar primeros.";
         }
 
