@@ -7508,6 +7508,7 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 .v2-pred-split span:nth-child(3) { background: var(--v2-danger, #c4473a); }
 .v2-pred-match__tone { margin: 0.2rem 0 0.35rem; font-size: var(--font-size-label); color: var(--v2-text-secondary); }
 .v2-pred-more summary { cursor: pointer; margin: 0.4rem 0; }
+.v2-pred-more .v2-pred-matches { margin-top: 0.35rem; }
 .v2-projection__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; margin: 0; }
 .v2-projection__grid div { margin: 0; padding: 0.55rem; border-radius: 0.7rem; background: var(--v2-background); }
 .v2-projection__grid dt { font-size: 1.15rem; font-weight: var(--font-weight-bold); }

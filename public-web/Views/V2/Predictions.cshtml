@@ -279,6 +279,16 @@
 
                 <section class="v2-pred-block" aria-labelledby="pred-table-@div.DivisionSlug">
                     <h4 id="pred-table-@div.DivisionSlug">Tabla final proyectada</h4>
+                    @{
+                        var ranked = div.Teams.OrderBy(team => team.ProjectedRank).ToList();
+                        var withChance = ranked.Count(team => team.PodiumProbability >= 0.01);
+                        var visibleCount = Math.Min(ranked.Count, Math.Max(4, withChance));
+                        var shown = ranked.Take(visibleCount).ToList();
+                        var hiddenTeams = ranked.Skip(visibleCount).ToList();
+                        var restHasFocus = hiddenTeams.Any(team =>
+                            !string.IsNullOrWhiteSpace(focusTeam)
+                            && string.Equals(team.Team.Slug, focusTeam, StringComparison.OrdinalIgnoreCase));
+                    }
                     <div class="v2-pred-scroll">
                         <table class="v2-pred-table">
                             <caption class="visually-hidden">Tabla proyectada de @div.DivisionName. Es una estimación y no modifica los resultados oficiales.</caption>
@@ -297,37 +307,54 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var team in div.Teams.OrderBy(team => team.ProjectedRank))
+                                @foreach (var team in shown)
                                 {
-                                    var focused = !string.IsNullOrWhiteSpace(focusTeam)
+                                    ViewData["RowFocused"] = !string.IsNullOrWhiteSpace(focusTeam)
                                         && string.Equals(team.Team.Slug, focusTeam, StringComparison.OrdinalIgnoreCase);
-                                    var places = Places(team);
-                                    <tr class="@(focused ? "is-focus" : null)">
-                                        <td>@team.ProjectedRank</td>
-                                        <td class="v2-pred-team">
-                                            <span class="v2-pred-team__line">
-                                                @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
-                                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team.Team)
-                                                <span>@team.Team.Name</span>
-                                            </span>
-                                            @if (!string.IsNullOrWhiteSpace(places))
-                                            {
-                                                <span class="v2-pred-team__places">@places</span>
-                                            }
-                                        </td>
-                                        <td class="v2-pred-col--more">@team.Played</td>
-                                        <td>@team.CurrentPoints</td>
-                                        <td class="v2-pred-col--more">@team.ExpectedPoints.ToString("0.0", culture)</td>
-                                        <td class="v2-pred-col--more">@team.ExpectedPosition.ToString("0.0", culture)</td>
-                                        <td>@(team.PositionLow)º–@(team.PositionHigh)º</td>
-                                        <td class="v2-pred-col--more">@team.PointsLow–@team.PointsHigh</td>
-                                        <td>@((team.PodiumProbability * 100) < 0.1 ? "<0,1%" : (team.PodiumProbability * 100).ToString("0.#", culture) + "%")</td>
-                                        <td class="v2-pred-col--more v2-pred-move @MoveClass(team)">@Move(team)</td>
-                                    </tr>
+                                    ViewData["RowPlaces"] = Places(team);
+                                    ViewData["RowMove"] = Move(team);
+                                    ViewData["RowMoveClass"] = MoveClass(team);
+                                    @await Html.PartialAsync("~/Views/V2/Predictions/_ProjectedRow.cshtml", team)
                                 }
                             </tbody>
                         </table>
                     </div>
+                    @if (hiddenTeams.Count > 0)
+                    {
+                        <details class="v2-pred-more" @(restHasFocus ? "open" : null)>
+                            <summary>Ver el resto de los equipos</summary>
+                            <div class="v2-pred-scroll">
+                                <table class="v2-pred-table">
+                                    <caption class="visually-hidden">Resto de la tabla proyectada de @div.DivisionName.</caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Pos</th>
+                                            <th scope="col">Equipo</th>
+                                            <th scope="col" class="v2-pred-col--more">PJ</th>
+                                            <th scope="col">Pts</th>
+                                            <th scope="col" class="v2-pred-col--more">Pts esp.</th>
+                                            <th scope="col" class="v2-pred-col--more">Pos esp.</th>
+                                            <th scope="col">Rango</th>
+                                            <th scope="col" class="v2-pred-col--more">Pts fin.</th>
+                                            <th scope="col">Podio</th>
+                                            <th scope="col" class="v2-pred-col--more">Mov.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var team in hiddenTeams)
+                                        {
+                                            ViewData["RowFocused"] = !string.IsNullOrWhiteSpace(focusTeam)
+                                                && string.Equals(team.Team.Slug, focusTeam, StringComparison.OrdinalIgnoreCase);
+                                            ViewData["RowPlaces"] = Places(team);
+                                            ViewData["RowMove"] = Move(team);
+                                            ViewData["RowMoveClass"] = MoveClass(team);
+                                            @await Html.PartialAsync("~/Views/V2/Predictions/_ProjectedRow.cshtml", team)
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    }
                 </section>
 
                 @if (div.NextRound.Count > 0)
@@ -335,46 +362,45 @@
                     <section class="v2-pred-block" aria-labelledby="pred-round-@div.DivisionSlug">
                         <h4 id="pred-round-@div.DivisionSlug">Próxima fecha @(div.NextRoundNumber?.ToString() ?? "")</h4>
                         <p class="v2-pred-note">El marcador es el más repetido. Puede no coincidir con quién tiene más chances de ganar el partido.</p>
+                        @{
+                            var positionById = div.Teams.ToDictionary(
+                                team => team.Team.Id,
+                                team => team.OfficialPosition > 0 ? team.OfficialPosition : team.ProjectedRank > 0 ? team.ProjectedRank : int.MaxValue);
+                            int Place(Guid id) => positionById.GetValueOrDefault(id, int.MaxValue);
+                            var byStanding = div.NextRound
+                                .OrderBy(match => Math.Min(Place(match.Home.Id), Place(match.Away.Id)))
+                                .ThenBy(match => Math.Max(Place(match.Home.Id), Place(match.Away.Id)))
+                                .ThenBy(match => match.Kickoff ?? DateTime.MaxValue)
+                                .ToList();
+                            var featuredMatches = byStanding.Take(Math.Min(byStanding.Count, 5)).ToList();
+                            var featuredKeys = featuredMatches.Select(match => (match.Home.Id, match.Away.Id)).ToHashSet();
+                            var otherMatches = div.NextRound
+                                .Where(match => !featuredKeys.Contains((match.Home.Id, match.Away.Id)))
+                                .OrderBy(match => match.Kickoff ?? DateTime.MaxValue)
+                                .ToList();
+                            var restMatchHasFocus = otherMatches.Any(match =>
+                                !string.IsNullOrWhiteSpace(focusTeam)
+                                && (string.Equals(match.Home.Slug, focusTeam, StringComparison.OrdinalIgnoreCase)
+                                    || string.Equals(match.Away.Slug, focusTeam, StringComparison.OrdinalIgnoreCase)));
+                        }
                         <div class="v2-pred-matches">
-                            @foreach (var match in div.NextRound)
+                            @foreach (var match in featuredMatches)
                             {
-                                <article class="v2-pred-match">
-                                    <p class="v2-pred-match__when">Fecha @match.Round@(match.Kickoff.HasValue ? " · " + match.Kickoff.Value.ToString("ddd d MMM HH:mm", culture) : "")</p>
-                                    @if (!string.IsNullOrWhiteSpace(match.ToneLabel))
-                                    {
-                                        <p class="v2-pred-match__tone">@match.ToneLabel · Favorito: @match.FavoriteLabel</p>
-                                    }
-                                    <div class="v2-pred-split" aria-hidden="true">
-                                        <span style="width:@((match.HomeWin * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
-                                        <span style="width:@((match.Draw * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
-                                        <span style="width:@((match.AwayWin * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
-                                    </div>
-                                    <div class="v2-pred-match__teams">
-                                        <div>
-                                            @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
-                                            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", match.Home)
-                                            <strong>@match.Home.Name</strong>
-                                            <span title="Últimos partidos">@match.HomeForm</span>
-                                        </div>
-                                        <p class="v2-pred-match__score">
-                                            <span class="v2-pred-match__score-label">Más probable</span>
-                                            <span class="v2-pred-match__score-line">@match.LikelyHomeGoals<i>-</i>@match.LikelyAwayGoals</span>
-                                        </p>
-                                        <div>
-                                            @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
-                                            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", match.Away)
-                                            <strong>@match.Away.Name</strong>
-                                            <span title="Últimos partidos">@match.AwayForm</span>
-                                        </div>
-                                    </div>
-                                    <dl class="v2-pred-probs">
-                                        <div><dt>Local</dt><dd>@match.HomeWinLabel</dd></div>
-                                        <div><dt>Empate</dt><dd>@match.DrawLabel</dd></div>
-                                        <div><dt>Visita</dt><dd>@match.AwayWinLabel</dd></div>
-                                    </dl>
-                                </article>
+                                @await Html.PartialAsync("~/Views/V2/Predictions/_MatchCard.cshtml", match)
                             }
                         </div>
+                        @if (otherMatches.Count > 0)
+                        {
+                            <details class="v2-pred-more" @(restMatchHasFocus ? "open" : null)>
+                                <summary>Ver el resto de la fecha</summary>
+                                <div class="v2-pred-matches">
+                                    @foreach (var match in otherMatches)
+                                    {
+                                        @await Html.PartialAsync("~/Views/V2/Predictions/_MatchCard.cshtml", match)
+                                    }
+                                </div>
+                            </details>
+                        }
                     </section>
                 }
             }
