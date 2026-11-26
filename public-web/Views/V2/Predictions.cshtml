@@ -362,45 +362,12 @@
                     <section class="v2-pred-block" aria-labelledby="pred-round-@div.DivisionSlug">
                         <h4 id="pred-round-@div.DivisionSlug">Próxima fecha @(div.NextRoundNumber?.ToString() ?? "")</h4>
                         <p class="v2-pred-note">El marcador es el más repetido. Puede no coincidir con quién tiene más chances de ganar el partido.</p>
-                        @{
-                            var positionById = div.Teams.ToDictionary(
-                                team => team.Team.Id,
-                                team => team.OfficialPosition > 0 ? team.OfficialPosition : team.ProjectedRank > 0 ? team.ProjectedRank : int.MaxValue);
-                            int Place(Guid id) => positionById.GetValueOrDefault(id, int.MaxValue);
-                            var byStanding = div.NextRound
-                                .OrderBy(match => Math.Min(Place(match.Home.Id), Place(match.Away.Id)))
-                                .ThenBy(match => Math.Max(Place(match.Home.Id), Place(match.Away.Id)))
-                                .ThenBy(match => match.Kickoff ?? DateTime.MaxValue)
-                                .ToList();
-                            var featuredMatches = byStanding.Take(Math.Min(byStanding.Count, 5)).ToList();
-                            var featuredKeys = featuredMatches.Select(match => (match.Home.Id, match.Away.Id)).ToHashSet();
-                            var otherMatches = div.NextRound
-                                .Where(match => !featuredKeys.Contains((match.Home.Id, match.Away.Id)))
-                                .OrderBy(match => match.Kickoff ?? DateTime.MaxValue)
-                                .ToList();
-                            var restMatchHasFocus = otherMatches.Any(match =>
-                                !string.IsNullOrWhiteSpace(focusTeam)
-                                && (string.Equals(match.Home.Slug, focusTeam, StringComparison.OrdinalIgnoreCase)
-                                    || string.Equals(match.Away.Slug, focusTeam, StringComparison.OrdinalIgnoreCase)));
-                        }
                         <div class="v2-pred-matches">
-                            @foreach (var match in featuredMatches)
+                            @foreach (var match in div.NextRound)
                             {
                                 @await Html.PartialAsync("~/Views/V2/Predictions/_MatchCard.cshtml", match)
                             }
                         </div>
-                        @if (otherMatches.Count > 0)
-                        {
-                            <details class="v2-pred-more" @(restMatchHasFocus ? "open" : null)>
-                                <summary>Ver el resto de la fecha</summary>
-                                <div class="v2-pred-matches">
-                                    @foreach (var match in otherMatches)
-                                    {
-                                        @await Html.PartialAsync("~/Views/V2/Predictions/_MatchCard.cshtml", match)
-                                    }
-                                </div>
-                            </details>
-                        }
                     </section>
                 }
             }
