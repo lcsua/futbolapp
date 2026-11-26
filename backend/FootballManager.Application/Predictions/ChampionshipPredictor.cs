@@ -206,8 +206,6 @@ public static class ChampionshipPredictor
             var (label, kind) = TitleLabel(title, crowned, eliminated);
             var expectedPosition = positionSum[i] / samples;
             var official = teams[i].OfficialPosition;
-            var rounded = (int)Math.Round(expectedPosition, MidpointRounding.AwayFromZero);
-            var delta = official > 0 ? official - rounded : 0;
 
             rows.Add(new TeamOutlook(
                 teams[i].Id,
@@ -219,8 +217,8 @@ public static class ChampionshipPredictor
                 teams[i].GoalsAgainst,
                 pointsSum[i] / samples,
                 expectedPosition,
-                ProjectedRank: 0,
-                delta,
+                0,
+                0,
                 title,
                 label,
                 kind,
@@ -234,7 +232,12 @@ public static class ChampionshipPredictor
             .OrderBy(team => team.ExpectedPosition)
             .ThenByDescending(team => team.ExpectedPoints)
             .ThenBy(team => team.Name, StringComparer.OrdinalIgnoreCase)
-            .Select((team, index) => team with { ProjectedRank = index + 1 })
+            .Select((team, index) =>
+            {
+                var rank = index + 1;
+                var delta = team.OfficialPosition > 0 ? team.OfficialPosition - rank : 0;
+                return team with { ProjectedRank = rank, PlacesDelta = delta };
+            })
             .ToList();
 
         watch.Stop();
@@ -429,7 +432,7 @@ public static class ChampionshipPredictor
     /// </summary>
     private static int NextFixtureRound(IReadOnlyList<PredictionFixture> pending)
     {
-        var today = DateTime.Today;
+        var today = ArgentinaClock.Today();
         var upcoming = pending
             .Where(match => match.Kickoff == null || match.Kickoff.Value.Date >= today)
             .ToList();
@@ -805,8 +808,8 @@ public static class ChampionshipPredictor
         && fixture.Away.TeamId != Guid.Empty
         && (fixture.Home.Counts || fixture.Away.Counts);
 
-    private static (int Round, DateTime Kickoff, Guid Id) Chronology(PredictionFixture fixture) =>
-        (fixture.Round, fixture.Kickoff ?? DateTime.MaxValue, fixture.Id);
+    private static (DateTime Kickoff, int Round, Guid Id) Chronology(PredictionFixture fixture) =>
+        (fixture.Kickoff ?? DateTime.MinValue, fixture.Round, fixture.Id);
 
     private static double Clamp(double value, double min, double max) => Math.Min(max, Math.Max(min, value));
 
@@ -851,11 +854,30 @@ public static class ChampionshipPredictor
     }
 }
 
+internal static class ArgentinaClock
+{
+    public static DateTime Today()
+    {
+        TimeZoneInfo zone;
+        try
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("Argentina Standard Time");
+        }
+
+        return TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, zone).Date;
+    }
+}
+
 public static class PredictionFingerprint
 {
     public static string Compute(PredictionDivision division)
     {
         var builder = new StringBuilder(PredictionModel.Version);
+        builder.Append('|').Append(ArgentinaClock.Today().ToString("yyyyMMdd", CultureInfo.InvariantCulture));
         builder.Append('|').Append(division.DivisionId);
         foreach (var team in division.Baseline.OrderBy(team => team.TeamId))
         {
@@ -873,6 +895,7 @@ public static class PredictionFingerprint
             builder.Append('|')
                 .Append(match.Id).Append(':')
                 .Append(match.Round).Append(':')
+                .Append(match.Kickoff?.ToString("yyyyMMddHHmm", CultureInfo.InvariantCulture)).Append(':')
                 .Append(match.Completed ? '1' : '0').Append(':')
                 .Append(match.HomeGoals).Append('-').Append(match.AwayGoals).Append(':')
                 .Append(match.Home.TeamId).Append(':').Append(match.Home.Counts ? '1' : '0').Append(':')

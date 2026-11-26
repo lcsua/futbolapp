@@ -108,6 +108,11 @@ public sealed class RemotePredictionSource
                 client,
                 $"liga/{Uri.EscapeDataString(leagueSlug)}/partidos?season={Uri.EscapeDataString(season.Slug)}&division={Uri.EscapeDataString(division.Slug)}",
                 cancellationToken);
+            if (results == null || upcoming == null)
+            {
+                page.Warning = "No se pudieron leer los partidos de esta división. No se publica una predicción para no presentar el campeonato como terminado.";
+                continue;
+            }
 
             var matches = new Dictionary<Guid, MatchPublicDto>();
             Collect(results, division.Slug, matches);
@@ -271,7 +276,9 @@ public sealed class RemotePredictionSource
         Guid teamId,
         IReadOnlyDictionary<Guid, Guid> teamDivision)
     {
-        if (teamId == Guid.Empty || !teamDivision.TryGetValue(teamId, out var known) || known == divisionId)
+        if (teamId == Guid.Empty || !teamDivision.TryGetValue(teamId, out var known))
+            return Mix(seasonId, Guid.Empty);
+        if (known == divisionId)
             return divisionSeasonId;
         return Mix(seasonId, known);
     }

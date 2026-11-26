@@ -13,6 +13,30 @@
     var selectedDivision = ViewBag.Division as string ?? "all";
     var focusTeam = ViewBag.FocusTeam as string;
     var culture = CultureInfo.GetCultureInfo("es-AR");
+    DateTime ArgentinaTime(DateTime value)
+    {
+        TimeZoneInfo zone;
+        try
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("Argentina Standard Time");
+        }
+        catch (InvalidTimeZoneException)
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("Argentina Standard Time");
+        }
+
+        var instant = value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
+        return TimeZoneInfo.ConvertTimeFromUtc(instant, zone);
+    }
 
     ViewData["Title"] = "Predicciones" + (league != null ? $" · {league.Name}" : string.Empty);
     ViewBag.PageLabel = "Predicciones";
@@ -69,7 +93,7 @@
         for (var i = 0; i < Math.Min(3, team.PositionProbability.Count); i++)
         {
             var value = team.PositionProbability[i];
-            var label = value * 100 < 0.1 ? "<0,1%" : value * 100 > 99.9 ? ">99,9%" : (value * 100).ToString("0", culture) + "%";
+            var label = value * 100 < 0.1 ? "<0,1%" : value * 100 > 99.9 ? ">99,9%" : (value * 100).ToString("0.##", culture) + "%";
             bits.Add($"{i + 1}º {label}");
         }
         return string.Join(" · ", bits);
@@ -177,7 +201,7 @@
                 <p>@div.MaturityNote</p>
                 @if (updated != default)
                 {
-                    <p class="v2-pred-updated">Actualizado el @updated.ToLocalTime().ToString("dd/MM/yyyy HH:mm", culture)</p>
+                    <p class="v2-pred-updated">Actualizado el @ArgentinaTime(updated).ToString("dd/MM/yyyy HH:mm", culture)</p>
                 }
             </div>
 
