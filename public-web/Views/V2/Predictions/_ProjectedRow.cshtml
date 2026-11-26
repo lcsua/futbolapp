@@ -1,0 +1,31 @@
+@model PublicWeb.Models.Public.PredictionTeamViewModel
+@using System.Globalization
+@{
+    var culture = CultureInfo.GetCultureInfo("es-AR");
+    var focused = ViewData["RowFocused"] as bool? == true;
+    var places = ViewData["RowPlaces"] as string;
+    var move = ViewData["RowMove"] as string ?? "–";
+    var moveClass = ViewData["RowMoveClass"] as string ?? "is-same";
+}
+<tr class="@(focused ? "is-focus" : null)">
+    <td>@Model.ProjectedRank</td>
+    <td class="v2-pred-team">
+        <span class="v2-pred-team__line">
+            @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Team)
+            <span>@Model.Team.Name</span>
+        </span>
+        @if (!string.IsNullOrWhiteSpace(places))
+        {
+            <span class="v2-pred-team__places">@places</span>
+        }
+    </td>
+    <td class="v2-pred-col--more">@Model.Played</td>
+    <td>@Model.CurrentPoints</td>
+    <td class="v2-pred-col--more">@Model.ExpectedPoints.ToString("0.0", culture)</td>
+    <td class="v2-pred-col--more">@Model.ExpectedPosition.ToString("0.0", culture)</td>
+    <td>@(Model.PositionLow)º–@(Model.PositionHigh)º</td>
+    <td class="v2-pred-col--more">@Model.PointsLow–@Model.PointsHigh</td>
+    <td>@((Model.PodiumProbability * 100) < 0.1 ? "<0,1%" : (Model.PodiumProbability * 100).ToString("0.#", culture) + "%")</td>
+    <td class="v2-pred-col--more v2-pred-move @moveClass">@move</td>
+</tr>

@@ -100,13 +100,36 @@
                 <dl class="v2-story-path__nums">
                     <div><dt>@path.CurrentPoints</dt><dd>Puntos actuales</dd></div>
                     <div><dt>@path.MaxPoints</dt><dd>Máximo posible</dd></div>
-                    <div><dt>@path.RivalMax</dt><dd>Máximo del rival si este equipo gana todo</dd></div>
+                    <div><dt>@path.RivalMax</dt><dd>Tope del rival</dd></div>
                 </dl>
                 <p class="v2-story-note">@(path.PointsToClinch is int needed ? $"Para asegurar el título aun si cada rival gana lo suyo harían falta {needed} puntos." : path.PointsNote)</p>
-                <p class="v2-story-note">Posición por puntos: @(path.BestPosition)º a @(path.WorstPosition)º. @path.PositionNote</p>
+                @{
+                    var outlook = byId.GetValueOrDefault(path.TeamId);
+                    var likelyLow = outlook?.PositionLow ?? path.BestPosition;
+                    var likelyHigh = outlook?.PositionHigh ?? path.WorstPosition;
+                    var floorNote = path.PositionNote.Contains("puede mover", StringComparison.OrdinalIgnoreCase)
+                        ? "Un desempate puede mover ese piso."
+                        : path.PositionNote.Contains("más abajo", StringComparison.OrdinalIgnoreCase)
+                            ? "Ese piso puede quedar más abajo de lo que el fixture permite."
+                            : null;
+                }
+                <p class="v2-story-note">
+                    Puesto esperable: @(likelyLow)º a @(likelyHigh)º.
+                    @if (path.WorstPosition > likelyHigh)
+                    {
+                        @:Por puntos, el peor escenario llega al @(path.WorstPosition)º.
+                    }
+                    @floorNote
+                </p>
                 @if (path.Campaigns.Count > 0)
                 {
                     <h5>Campañas posibles</h5>
+                    <p class="v2-story-key">
+                        <span><i class="v2-mark v2-mark--G">G</i> gana</span>
+                        <span><i class="v2-mark v2-mark--E">E</i> empata</span>
+                        <span><i class="v2-mark v2-mark--P">P</i> pierde</span>
+                        <span>El orden no sigue el calendario.</span>
+                    </p>
                     <ul class="v2-story-campaigns">
                         @foreach (var campaign in path.Campaigns)
                         {
@@ -136,7 +159,7 @@
 {
     <section class="v2-story-if" data-story-if aria-labelledby="story-if-@Model.DivisionSlug">
         <h4 id="story-if-@Model.DivisionSlug">¿Qué pasa si...?</h4>
-        <p>Cómo cambia la probabilidad de título según el próximo partido. Sale de las simulaciones ya calculadas, no de una cuenta nueva en el celular.</p>
+        <p>Cómo cambia la probabilidad de título según el resultado del próximo partido.</p>
         <label>
             Equipo
             <select data-if-select>
@@ -180,7 +203,7 @@
                         </li>
                     }
                 </ul>
-                <p class="v2-story-note">Probabilidades condicionadas al resultado elegido. Si un escenario tiene poca muestra, se aclara y no se presenta como preciso.</p>
+                <p class="v2-story-note">Si un escenario tiene poca muestra, se aclara y no se presenta como preciso.</p>
             </article>
         }
     </section>
@@ -205,7 +228,6 @@
     }
     <section class="v2-story-history" aria-labelledby="story-history-@Model.DivisionSlug">
         <h4 id="story-history-@Model.DivisionSlug">Así evolucionó el campeonato</h4>
-        <p>@history.Note</p>
         <svg class="v2-story-chart" viewBox="0 0 320 150" role="img" aria-label="Evolución de la probabilidad de título">
             <polyline class="is-a" points="@Poly(chartTeams[0])" fill="none"></polyline>
             @if (chartTeams.Count > 1)
@@ -229,6 +251,10 @@
                 <li>F@(round.Round)@(round.Reconstructed ? "*" : "")</li>
             }
         </ol>
+        @if (rounds.Any(round => round.Reconstructed))
+        {
+            <p class="v2-story-note">* Fecha reconstruida con lo ya jugado hasta esa jornada.</p>
+        }
         @{
             var previous = rounds[^2];
             var latest = rounds[^1];
@@ -253,6 +279,7 @@
                 </li>
             }
         </ul>
+        <p class="v2-story-note">Un cambio menor a 2 puntos porcentuales figura como sin cambio.</p>
     </section>
 }
 else if (!string.IsNullOrWhiteSpace(history?.Note))

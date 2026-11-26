@@ -1,0 +1,40 @@
+@model PublicWeb.Models.Public.PredictionMatchViewModel
+@using System.Globalization
+@{
+    var culture = CultureInfo.GetCultureInfo("es-AR");
+}
+<article class="v2-pred-match">
+    <p class="v2-pred-match__when">Fecha @Model.Round@(Model.Kickoff.HasValue ? " · " + Model.Kickoff.Value.ToString("ddd d MMM HH:mm", culture) : "")</p>
+    @if (!string.IsNullOrWhiteSpace(Model.ToneLabel))
+    {
+        <p class="v2-pred-match__tone">@Model.ToneLabel · Favorito: @Model.FavoriteLabel</p>
+    }
+    <div class="v2-pred-split" aria-hidden="true">
+        <span style="width:@((Model.HomeWin * 100).ToString("0.#", CultureInfo.InvariantCulture))%"></span>
+        <span style="width:@((Model.Draw * 100).ToString("0.#", CultureInfo.InvariantCulture))%"></span>
+        <span style="width:@((Model.AwayWin * 100).ToString("0.#", CultureInfo.InvariantCulture))%"></span>
+    </div>
+    <div class="v2-pred-match__teams">
+        <div>
+            @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Home)
+            <strong>@Model.Home.Name</strong>
+            <span title="Últimos partidos">@Model.HomeForm</span>
+        </div>
+        <p class="v2-pred-match__score">
+            <span class="v2-pred-match__score-label">Más probable</span>
+            <span class="v2-pred-match__score-line">@Model.LikelyHomeGoals<i>-</i>@Model.LikelyAwayGoals</span>
+        </p>
+        <div>
+            @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", Model.Away)
+            <strong>@Model.Away.Name</strong>
+            <span title="Últimos partidos">@Model.AwayForm</span>
+        </div>
+    </div>
+    <dl class="v2-pred-probs">
+        <div><dt>Local</dt><dd>@Model.HomeWinLabel</dd></div>
+        <div><dt>Empate</dt><dd>@Model.DrawLabel</dd></div>
+        <div><dt>Visita</dt><dd>@Model.AwayWinLabel</dd></div>
+    </dl>
+</article>
