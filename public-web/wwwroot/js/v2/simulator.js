@@ -8,7 +8,7 @@
     try {
       rules = JSON.parse(rulesNode.textContent || '{}');
     } catch {
-      rules = rules;
+      // Keep default rules
     }
   }
 
