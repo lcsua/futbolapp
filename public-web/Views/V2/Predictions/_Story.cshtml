@@ -47,12 +47,22 @@
             @foreach (var team in candidates)
             {
                 <article>
-                    @{ ViewData["BadgeSize"] = "md"; ViewData["BadgeDecorative"] = true; }
+                    @{
+                        ViewData["BadgeSize"] = "featured";
+                        ViewData["BadgePlain"] = true;
+                        ViewData["PreferFullLogo"] = true;
+                        ViewData["BadgeDecorative"] = true;
+                    }
                     @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team.Team)
                     <strong>@team.Team.Name</strong>
                     <b>@team.TitleLabel</b>
                     <span>@team.CurrentPoints pts</span>
                 </article>
+            }
+            @{
+                ViewData.Remove("BadgePlain");
+                ViewData.Remove("PreferFullLogo");
+                ViewData["BadgeSize"] = "sm";
             }
         </div>
         <p class="v2-story-race__summary">@Model.Race.Summary</p>
