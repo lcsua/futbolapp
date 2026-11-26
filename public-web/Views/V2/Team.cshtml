@@ -219,6 +219,9 @@
                 scorersHref = Url.Content($"~/ligas/{leagueSlug}/{teamSlug}?tab=goleadores{seasonQs}");
             }
             ViewData["ScorersHref"] = scorersHref;
+            ViewData["UpcomingHref"] = string.IsNullOrWhiteSpace(leagueSlug) || string.IsNullOrWhiteSpace(teamSlug)
+                ? null
+                : Url.Content($"~/ligas/{leagueSlug}/{teamSlug}?tab=partidos{(string.IsNullOrWhiteSpace(seasonSlug) ? "" : "&season=" + Uri.EscapeDataString(seasonSlug))}#proximos-partidos");
         }
         @await Html.PartialAsync("~/Views/V2/Team/_Dashboard.cshtml", dashboard)
     </section>
@@ -257,7 +260,7 @@
         }
         @await Html.PartialAsync("~/Views/V2/Team/_Pagination.cshtml")
 
-        <h2 class="v2-section-title v2-section-title--spaced">Próximos partidos</h2>
+        <h2 id="proximos-partidos" class="v2-section-title v2-section-title--spaced">Próximos partidos</h2>
         <div class="v2-match-list">
             @if (Model.NextMatches.Any())
             {

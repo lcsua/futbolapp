@@ -6762,6 +6762,7 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 }
 .v2-dash-link:hover { text-decoration: underline; }
 .v2-dash-link[hidden] { display: none; }
+#proximos-partidos { scroll-margin-top: calc(var(--v2-header-h, 4rem) + 0.75rem); }
 
 .v2-dash-split {
   display: grid;

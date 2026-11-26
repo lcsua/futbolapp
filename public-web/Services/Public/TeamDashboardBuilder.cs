@@ -228,6 +228,7 @@ public static class TeamDashboardBuilder
                 ? $"{Count(pending * PointsForWin, "punto", "puntos")} en juego"
                 : null,
             Extra = extra,
+            HasMoreMatches = pending > rivals.Count,
             Rivals = rivals
         };
     }

@@ -141,6 +141,7 @@ public class TeamDashboardBuilderTests
         Assert.Equal("12 puntos en juego", road.Detail);
         Assert.Equal("Máximo alcanzable: 47 pts", road.Extra);
         Assert.Equal(3, road.Rivals.Count);
+        Assert.True(road.HasMoreMatches);
         Assert.Equal("Rival", road.Rivals[0].Team.Name);
         Assert.Equal(RivalId, road.Rivals[0].Match.HomeTeam.Id);
     }
@@ -161,6 +162,23 @@ public class TeamDashboardBuilderTests
         Assert.Contains("+31 de diferencia", road.Detail, StringComparison.Ordinal);
         Assert.Contains("11 victorias", road.Extra, StringComparison.Ordinal);
         Assert.Empty(road.Rivals);
+        Assert.False(road.HasMoreMatches);
+    }
+
+    [Fact]
+    public void Road_HidesTheMoreMatchesLink_WhenEveryRemainingFixtureIsListed()
+    {
+        var dashboard = TeamDashboardBuilder.Build(Team(
+            standing: Row(10, 4, 3, 3, 12, 10, 15),
+            nextTotal: 2,
+            next: new List<MatchViewModel>
+            {
+                Upcoming(17, teamIsHome: true),
+                Upcoming(18, teamIsHome: false)
+            }));
+
+        Assert.Equal(2, dashboard.Road!.Rivals.Count);
+        Assert.False(dashboard.Road.HasMoreMatches);
     }
 
     [Fact]
