@@ -319,8 +319,13 @@ export function ChampionFormDialog({ open, leagueId, championId, onClose, onSave
                 disabled={busy}
                 onError={setFormError}
                 onUpload={async (files) => {
-                  const saved = await championsService.uploadPhotos(leagueId, activeId, files)
-                  queryClient.setQueryData(['leagues', leagueId, 'champions', activeId], saved)
+                  try {
+                    const saved = await championsService.uploadPhotos(leagueId, activeId, files)
+                    queryClient.setQueryData(['leagues', leagueId, 'champions', activeId], saved)
+                  } catch (err) {
+                    await invalidate()
+                    throw err
+                  }
                   await invalidate()
                 }}
                 onDelete={async (photoId) => {

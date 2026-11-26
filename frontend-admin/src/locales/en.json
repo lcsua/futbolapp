@@ -525,7 +525,7 @@
       },
       "photos": {
         "title": "Photographs",
-        "help": "JPEG, PNG or WebP. Maximum 5 MB. You can upload several at once. The gallery is optional.",
+        "help": "JPEG, PNG or WebP. The photo is reduced automatically before upload. You can add several at once. The gallery is optional.",
         "add": "Add photographs",
         "empty": "No photographs. You can add them now or later.",
         "afterCreate": "Save the champion before adding photographs. They are optional.",
