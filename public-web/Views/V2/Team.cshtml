@@ -222,7 +222,7 @@
             ViewData["UpcomingHref"] = string.IsNullOrWhiteSpace(leagueSlug) || string.IsNullOrWhiteSpace(teamSlug)
                 ? null
                 : Url.Content($"~/ligas/{leagueSlug}/{teamSlug}?tab=partidos{(string.IsNullOrWhiteSpace(seasonSlug) ? "" : "&season=" + Uri.EscapeDataString(seasonSlug))}#proximos-partidos");
-            string? simulatorHref = null;
+            string? predictionsHref = null;
             var seasonOpen = summary.Season == null || summary.Season.IsActive;
             var hasPending = summary.NextMatchesTotal > 0 || (summary.NextMatches?.Count ?? 0) > 0;
             if (seasonOpen && hasPending && !string.IsNullOrWhiteSpace(leagueSlug))
@@ -243,10 +243,10 @@
                         || string.Equals(d.Slug, divisionName, StringComparison.OrdinalIgnoreCase))?.Slug;
                 }
 
-                simulatorHref = Url.Content(PublicWeb.Helpers.LeagueLinks.Section(
+                predictionsHref = Url.Content(PublicWeb.Helpers.LeagueLinks.Section(
                     leagueSlug, "predicciones", seasonSlug, divisionSlug, teamSlug));
             }
-            ViewData["SimulatorHref"] = simulatorHref;
+            ViewData["SimulatorHref"] = predictionsHref;
         }
         @await Html.PartialAsync("~/Views/V2/Team/_Dashboard.cshtml", dashboard)
     </section>
