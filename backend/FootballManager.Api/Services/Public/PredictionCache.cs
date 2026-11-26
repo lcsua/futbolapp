@@ -48,6 +48,7 @@ public sealed class PredictionCache
         finally
         {
             gate.Release();
+            _gates.TryRemove(key, out _);
         }
     }
 }
