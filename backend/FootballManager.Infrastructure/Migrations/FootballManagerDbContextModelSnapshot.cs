@@ -1170,6 +1170,90 @@ namespace FootballManager.Infrastructure.Migrations
                     b.ToTable("match_incidents", (string)null);
                 });
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.MatchPredictionForecast", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AwayTeamId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("AwayWin")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CalculatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DivisionSlug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<double>("Draw")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("ExpectedAwayGoals")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("ExpectedHomeGoals")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("HomeTeamId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("HomeWin")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("Kickoff")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LeagueSlug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("LikelyAwayGoals")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LikelyHomeGoals")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("MatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ModelVersion")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<int>("Round")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SeasonSlug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MatchId", "ModelVersion")
+                        .IsUnique();
+
+                    b.HasIndex("LeagueSlug", "SeasonSlug", "DivisionSlug", "Round");
+
+                    b.ToTable("match_prediction_forecasts", (string)null);
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.MatchRule", b =>
                 {
                     b.Property<Guid>("Id")

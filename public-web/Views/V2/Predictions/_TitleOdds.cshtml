@@ -1,0 +1,61 @@
+@model PublicWeb.Models.Public.PredictionDivisionViewModel
+@{
+    var focusTeam = ViewBag.FocusTeam as string;
+    int Bar(PublicWeb.Models.Public.PredictionTeamViewModel team)
+    {
+        if (team.TitleKind == "certain") return 100;
+        if (team.TitleKind == "eliminated") return 0;
+        if (team.TitleKind == "below") return 2;
+        if (team.TitleKind == "above") return 99;
+        return (int)Math.Round(Math.Clamp(team.TitleProbability, 0, 1) * 100, MidpointRounding.AwayFromZero);
+    }
+    var chart = Model.Teams
+        .OrderByDescending(team => team.MathematicallyCrowned)
+        .ThenBy(team => team.MathematicallyEliminated)
+        .ThenByDescending(team => team.TitleProbability)
+        .ThenBy(team => team.Team.Name, StringComparer.OrdinalIgnoreCase)
+        .ToList();
+}
+@if (chart.Count > 0)
+{
+    <section class="v2-pred-block v2-pred-block--title-odds" id="pred-proyeccion-@Model.DivisionSlug" aria-labelledby="pred-title-@Model.DivisionSlug">
+        <h4 id="pred-title-@Model.DivisionSlug">Probabilidad de salir campeón</h4>
+        <p class="v2-pred-note">Salir campeón es terminar primero. No hay playoffs cargados.</p>
+        <ol class="v2-pred-chart">
+            @foreach (var team in chart.Take(4))
+            {
+                var focused = !string.IsNullOrWhiteSpace(focusTeam)
+                    && string.Equals(team.Team.Slug, focusTeam, StringComparison.OrdinalIgnoreCase);
+                <li class="v2-pred-chart__row @(focused ? "is-focus" : null)">
+                    @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team.Team)
+                    <span class="v2-pred-chart__name">@team.Team.Name</span>
+                    <span class="v2-pred-chart__bar" aria-hidden="true"><span style="width:@Bar(team)%"></span></span>
+                    <strong class="v2-pred-chart__value v2-pred-chart__value--@team.TitleKind">@team.TitleLabel</strong>
+                </li>
+            }
+        </ol>
+        @if (chart.Count > 4)
+        {
+            <details class="v2-pred-more">
+                <summary>Ver el resto de los equipos</summary>
+                <ol class="v2-pred-chart">
+                    @foreach (var team in chart.Skip(4))
+                    {
+                        <li class="v2-pred-chart__row">
+                            @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team.Team)
+                            <span class="v2-pred-chart__name">@team.Team.Name</span>
+                            <span class="v2-pred-chart__bar" aria-hidden="true"><span style="width:@Bar(team)%"></span></span>
+                            <strong class="v2-pred-chart__value v2-pred-chart__value--@team.TitleKind">@team.TitleLabel</strong>
+                        </li>
+                    }
+                </ol>
+            </details>
+        }
+        @if (!Model.PromotionSupported)
+        {
+            <p class="v2-pred-note">@Model.PromotionNote</p>
+        }
+    </section>
+}

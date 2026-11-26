@@ -78,7 +78,8 @@ public sealed record DivisionOutlook(
     TitleRaceReport? Race = null,
     IReadOnlyList<TitlePathReport>? Paths = null,
     IReadOnlyList<WhatIfReport>? WhatIfs = null,
-    ProbabilityHistory? History = null);
+    ProbabilityHistory? History = null,
+    IReadOnlyList<DecisiveMatchReport>? DecisiveMatches = null);
 
 public static class ChampionshipPredictor
 {
@@ -234,11 +235,43 @@ public static class ChampionshipPredictor
             for (var place = 0; place < teams.Count; place++)
                 distribution[place] = positionHits[i, place] / (double)samples;
 
-            var title = distribution[0];
             var crowned = teams[i].MathematicallyCrowned;
             var eliminated = teams[i].MathematicallyEliminated;
+            // Force mathematical certainty onto the published title chance so Monte Carlo
+            // noise never shows "<0,1%" for an eliminated side or less than 100% for a crowned one.
+            if (crowned)
+            {
+                distribution[0] = 1;
+                for (var place = 1; place < distribution.Length; place++)
+                    distribution[place] = 0;
+            }
+            else if (eliminated)
+            {
+                var first = distribution[0];
+                distribution[0] = 0;
+                if (first > 0 && distribution.Length > 1)
+                {
+                    var rest = distribution.Skip(1).Sum();
+                    if (rest > 0)
+                    {
+                        for (var place = 1; place < distribution.Length; place++)
+                            distribution[place] += first * (distribution[place] / rest);
+                    }
+                    else if (distribution.Length > 1)
+                    {
+                        distribution[1] = 1;
+                    }
+                }
+            }
+
+            var title = crowned ? 1d : eliminated ? 0d : distribution[0];
             var (label, kind) = TitleLabel(title, crowned, eliminated);
-            var expectedPosition = positionSum[i] / samples;
+            // Keep expected place aligned with the adjusted distribution (crowned/eliminated).
+            var expectedPosition = 0d;
+            for (var place = 0; place < distribution.Length; place++)
+                expectedPosition += (place + 1) * distribution[place];
+            if (expectedPosition <= 0)
+                expectedPosition = positionSum[i] / samples;
             var official = teams[i].OfficialPosition;
 
             rows.Add(new TeamOutlook(
@@ -292,6 +325,7 @@ public static class ChampionshipPredictor
         var race = includeStory ? TitleRaceCalculator.Build(ranked, pending) : null;
         var paths = includeStory ? TitlePathCalculator.Build(ranked, pending) : null;
         var whatIfs = includeStory ? WhatIfs(teams, ranked, pending, nextSlot, condCount, condTitle, condChampion) : null;
+        var decisive = includeStory ? DecisiveMatchCalculator.Build(next, ranked, whatIfs) : null;
 
         watch.Stop();
         return new DivisionOutlook(
@@ -318,7 +352,8 @@ public static class ChampionshipPredictor
             NextRound: next,
             Race: race,
             Paths: paths,
-            WhatIfs: whatIfs);
+            WhatIfs: whatIfs,
+            DecisiveMatches: decisive);
     }
 
     /// <summary>
@@ -358,14 +393,7 @@ public static class ChampionshipPredictor
         return upcoming.Select(match => ScoreMatch(match, rates, teams, options)).ToList();
     }
 
-    public static string FormatChance(double probability)
-    {
-        if (double.IsNaN(probability) || probability <= 0 || probability * 100 < 0.1)
-            return "<0,1%";
-        if (probability >= 1 || probability * 100 > 99.9)
-            return ">99,9%";
-        return (probability * 100).ToString("0.0", EsAr) + "%";
-    }
+    public static string FormatChance(double probability) => PredictionChance.Format(probability);
 
     /// <summary>One sample through the Monte Carlo ranker, for comparison with the official projector.</summary>
     public static IReadOnlyList<(Guid TeamId, int Position, int Points, int GoalsFor, int GoalsAgainst)> RankFast(
@@ -405,9 +433,13 @@ public static class ChampionshipPredictor
             return ("Consagrado", "certain");
         if (eliminated)
             return ("Eliminado", "eliminated");
-        if (probability <= 0 || probability * 100 < 0.1)
+        if (probability <= 0)
+            return ("Sin muestra", "unseen");
+        if (probability * 100 < 0.1)
             return ("<0,1%", "below");
-        if (probability >= 1 || probability * 100 > 99.9)
+        if (probability >= 1)
+            return ("100%", "certain");
+        if (probability * 100 > 99.9)
             return (">99,9%", "above");
         return (FormatChance(probability), "chance");
     }
@@ -1058,17 +1090,14 @@ public static class ChampionshipPredictor
         {
             var home = teams.FirstOrDefault(team => team.TeamId == match.HomeTeamId);
             var away = teams.FirstOrDefault(team => team.TeamId == match.AwayTeamId);
-            var sideTop = Math.Max(match.HomeWin, match.AwayWin);
-            var tone = home != null && away != null && home.TitleProbability >= 0.05 && away.TitleProbability >= 0.05
-                ? "Encuentro decisivo"
-                : sideTop >= 0.55 && sideTop > match.Draw
-                    ? "Claro favorito"
-                    : "Partido parejo";
-            var favorite = match.HomeWin > match.AwayWin && match.HomeWin > match.Draw
-                ? match.HomeName
-                : match.AwayWin > match.HomeWin && match.AwayWin > match.Draw
-                    ? match.AwayName
-                    : "Ninguno";
+            var (tone, favorite) = MatchFavoriteClassifier.Classify(
+                match.HomeWin,
+                match.Draw,
+                match.AwayWin,
+                match.HomeName,
+                match.AwayName,
+                home?.TitleProbability ?? 0,
+                away?.TitleProbability ?? 0);
             yield return match with { FavoriteLabel = favorite, ToneLabel = tone };
         }
     }

@@ -26,6 +26,6 @@
     <td class="v2-pred-col--more">@Model.ExpectedPosition.ToString("0.0", culture)</td>
     <td>@(Model.PositionLow)º–@(Model.PositionHigh)º</td>
     <td class="v2-pred-col--more">@Model.PointsLow–@Model.PointsHigh</td>
-    <td>@((Model.PodiumProbability * 100) < 0.1 ? "<0,1%" : (Model.PodiumProbability * 100).ToString("0.#", culture) + "%")</td>
+    <td>@(Model.PodiumProbability <= 0 ? "0%" : Model.PodiumProbability >= 1 ? "100%" : Model.PodiumProbability * 100 < 0.1 ? "<0,1%" : (Model.PodiumProbability * 100).ToString("0.#", culture) + "%")</td>
     <td class="v2-pred-col--more v2-pred-move @moveClass">@move</td>
 </tr>
