@@ -115,6 +115,8 @@ public class V2LeagueController : Controller
         if (league == null) return NotFound();
 
         var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        var gate = MissingDivisionGate(slug, league, meta, season, division, "resultados", "resultados", "Resultados");
+        if (gate != null) return gate;
         // Same as V1: load all rounds for pills; round filter applied in the view.
         var resultsTask = _leagueService.GetResultsAsync(slug, season, division, null);
         var heroTask = ApplySeasonHeroStatsAsync(slug, meta, season);
@@ -143,6 +145,8 @@ public class V2LeagueController : Controller
         if (league == null) return NotFound();
 
         var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        var gate = MissingDivisionGate(slug, league, meta, season, division, "posiciones", "posiciones", "Posiciones");
+        if (gate != null) return gate;
         var standingsTask = _leagueService.GetStandingsAsync(slug, season, division);
         var heroTask = ApplySeasonHeroStatsAsync(slug, meta, season);
         await Task.WhenAll(standingsTask, heroTask);
@@ -170,7 +174,9 @@ public class V2LeagueController : Controller
         if (league == null) return NotFound();
 
         var meta = await _leagueService.GetLeagueMetaAsync(slug);
-        var selectedDivision = string.IsNullOrWhiteSpace(division) ? "all" : division;
+        var gate = MissingDivisionGate(slug, league, meta, season, division, "predicciones", "predicciones", "Predicciones");
+        if (gate != null) return gate;
+        var selectedDivision = division!;
         var predictionsTask = _leagueService.GetPredictionsAsync(slug, season, selectedDivision);
         var heroTask = ApplySeasonHeroStatsAsync(slug, meta, season);
         await Task.WhenAll(predictionsTask, heroTask);
@@ -240,6 +246,8 @@ public class V2LeagueController : Controller
         if (league == null) return NotFound();
 
         var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        var gate = MissingDivisionGate(slug, league, meta, season, division, "fixture", "fixture", "Fixture");
+        if (gate != null) return gate;
         var calendarTask = LoadFixtureCalendarAsync(slug, season, division);
         var heroTask = ApplySeasonHeroStatsAsync(slug, meta, season);
         await Task.WhenAll(calendarTask, heroTask);
@@ -361,10 +369,34 @@ public class V2LeagueController : Controller
         ViewBag.V2ActiveNav = "ligas";
         ViewBag.V2TeamTab = activeTab;
         ViewBag.V2Summary = summary;
+        await AttachProjectionAsync(slug, teamSlug, season, summary);
         if (summary.NextMatches.FirstOrDefault() is { } nextMatch)
             ViewBag.UpcomingPreview = await _previewService.BuildCardAsync(summary, nextMatch);
 
         return View("~/Views/V2/Team.cshtml", partidos);
+    }
+
+    private async Task AttachProjectionAsync(string slug, string teamSlug, string? season, TeamDetailViewModel summary)
+    {
+        if (string.IsNullOrWhiteSpace(season))
+            return;
+        var meta = ViewBag.Seasons as List<SeasonViewModel> ?? await _leagueService.GetLeagueMetaAsync(slug);
+        var seasonMeta = meta?.FirstOrDefault(item => string.Equals(item.Slug, season, StringComparison.OrdinalIgnoreCase));
+        var divisionName = summary.Standing?.DivisionName
+            ?? summary.NextMatches.FirstOrDefault()?.DivisionName
+            ?? summary.LastResults.FirstOrDefault()?.DivisionName;
+        var division = seasonMeta?.Divisions.FirstOrDefault(item =>
+            string.Equals(item.Name, divisionName, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(item.Slug, divisionName, StringComparison.OrdinalIgnoreCase));
+        if (division == null)
+            return;
+        var predictions = await _leagueService.GetPredictionsAsync(slug, season, division.Slug);
+        var team = predictions?.Divisions.SelectMany(item => item.Teams)
+            .FirstOrDefault(item => string.Equals(item.Team.Slug, teamSlug, StringComparison.OrdinalIgnoreCase));
+        if (team == null || !predictions!.Divisions.Any(item => item.Published))
+            return;
+        ViewBag.Projection = team;
+        ViewBag.ProjectionHref = LeagueLinks.Section(slug, "predicciones", season, division.Slug, teamSlug);
     }
 
     [HttpGet("{slug}/{teamSlug}/pagina")]
@@ -420,6 +452,67 @@ public class V2LeagueController : Controller
             lastResultsTotal = model.LastResultsTotal,
             lastResultsTotalPages = model.LastResultsTotalPages
         });
+    }
+
+    /// <summary>
+    /// Fixture, standings, results and predictions open one division. A missing
+    /// division is resolved in the browser from the pinned or last choice.
+    /// The portada is left alone. Crawlers are sent to the first division.
+    /// </summary>
+    private IActionResult? MissingDivisionGate(
+        string slug,
+        LeagueViewModel league,
+        List<SeasonViewModel> meta,
+        string? season,
+        string? division,
+        string section,
+        string tab,
+        string label)
+    {
+        if (!string.IsNullOrWhiteSpace(division))
+            return null;
+
+        var selected = meta.FirstOrDefault(item =>
+                           !string.IsNullOrWhiteSpace(season)
+                           && string.Equals(item.Slug, season, StringComparison.OrdinalIgnoreCase))
+            ?? meta.FirstOrDefault(item => item.IsActive)
+            ?? meta.FirstOrDefault();
+        var choices = selected?.Divisions
+            .Select(item => item.Slug)
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .ToList() ?? new List<string>();
+
+        if (IsCrawler(Request.Headers.UserAgent) && choices.Count > 0)
+        {
+            var target = Url.Content(LeagueLinks.Section(slug, section, selected?.Slug, choices[0], Request.Query["equipo"]))!;
+            return Redirect(target);
+        }
+
+        ViewBag.League = league;
+        ViewBag.Seasons = meta;
+        ViewBag.Division = "all";
+        ViewBag.V2ActiveNav = "ligas";
+        ViewBag.V2LeagueTab = tab;
+        ViewBag.LeagueSlug = slug;
+        ViewBag.SeasonName = selected?.Name;
+        ViewBag.SeasonSlug = selected?.Slug;
+        ViewBag.PageLabel = label;
+        ViewBag.ResolveDivision = true;
+        ViewBag.DivisionChoices = choices;
+        ViewBag.DivisionGateSection = section;
+        ViewData["Title"] = label + " · " + league.Name;
+        ViewData["NoIndex"] = true;
+        return View("~/Views/V2/League/_DivisionGate.cshtml");
+    }
+
+    private static bool IsCrawler(string? userAgent)
+    {
+        if (string.IsNullOrWhiteSpace(userAgent))
+            return false;
+        return userAgent.Contains("bot", StringComparison.OrdinalIgnoreCase)
+            || userAgent.Contains("crawl", StringComparison.OrdinalIgnoreCase)
+            || userAgent.Contains("spider", StringComparison.OrdinalIgnoreCase)
+            || userAgent.Contains("slurp", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string NormalizeTab(string? tab)

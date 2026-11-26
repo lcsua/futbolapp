@@ -271,6 +271,25 @@ public class ChampionshipPredictorTests
         Assert.True(report.PoissonBrier < report.AlwaysDrawBrier);
         Assert.True(report.PoissonAccuracy > report.AlwaysDrawAccuracy);
         Assert.True(later.PoissonBrier < later.PointsBaselineBrier);
+        Assert.True(report.PoissonLogLoss < report.AlwaysDrawLogLoss);
+    }
+
+    [Fact]
+    public void Heavier_recent_weight_does_not_beat_the_published_model()
+    {
+        var season = SyntheticSeason();
+        var current = PredictionBacktester.Run(season, new PredictionOptions { RecentBlend = PredictionModel.RecentBlend }, minHistory: 8);
+        var heavier = PredictionBacktester.Run(season, new PredictionOptions { RecentBlend = 0.85 }, minHistory: 8);
+        var lessShrink = PredictionBacktester.Run(season, new PredictionOptions { PriorMatches = 2 }, minHistory: 8);
+        var heavierWins = heavier.PoissonBrier < current.PoissonBrier * 0.95
+            && heavier.PoissonLogLoss < current.PoissonLogLoss * 0.95;
+        var shrinkWins = lessShrink.PoissonBrier < current.PoissonBrier * 0.95
+            && lessShrink.PoissonLogLoss < current.PoissonLogLoss * 0.95;
+        Assert.False(
+            heavierWins || shrinkWins,
+            $"Se mantiene poisson-mc-1. Actual Brier {current.PoissonBrier:0.000} LogLoss {current.PoissonLogLoss:0.000}. "
+            + $"Más recencia {heavier.PoissonBrier:0.000}/{heavier.PoissonLogLoss:0.000}. "
+            + $"Menos suavizado {lessShrink.PoissonBrier:0.000}/{lessShrink.PoissonLogLoss:0.000}.");
     }
 
     [Fact]

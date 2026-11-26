@@ -37,8 +37,7 @@ namespace FootballManager.Application.Predictions;
 /// completed matches. Championship progress is not treated as a validated accuracy.
 /// Playoffs, promotion and relegation are not invented: champion means first place,
 /// and those extra probabilities stay unpublished until the rules exist.
-/// A future per-round history can store <see cref="PredictionHistoryPoint"/>; nothing
-/// is persisted today.
+/// Per-round history is rebuilt by ChampionshipHistory from dated results and stored as snapshots.
 /// </summary>
 public static class PredictionModel
 {

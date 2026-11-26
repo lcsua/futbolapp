@@ -7,7 +7,7 @@ namespace FootballManager.Api.Services.Public;
 /// One Monte Carlo run per championship fingerprint. A second request for the same
 /// data waits for the run already in progress instead of starting another.
 /// The cached value is replaced only when results, fixtures or the model version change.
-/// Nothing is written to the database. A future per-round history can keep these snapshots.
+/// The probability series is written separately, after the run, and is not required to serve the page.
 /// </summary>
 public sealed class CachedPrediction
 {

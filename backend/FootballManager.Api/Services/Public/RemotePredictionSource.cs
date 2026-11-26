@@ -16,15 +16,18 @@ public sealed class RemotePredictionSource
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly PredictionCache _predictions;
+    private readonly PredictionSnapshotWriter _snapshots;
     private readonly ILogger<RemotePredictionSource> _logger;
 
     public RemotePredictionSource(
         IHttpClientFactory httpClientFactory,
         PredictionCache predictions,
+        PredictionSnapshotWriter snapshots,
         ILogger<RemotePredictionSource> logger)
     {
         _httpClientFactory = httpClientFactory;
         _predictions = predictions;
+        _snapshots = snapshots;
         _logger = logger;
     }
 
@@ -165,11 +168,13 @@ public sealed class RemotePredictionSource
             var input = PredictionComposer.Build(division.Id, division.Name, divisionSeasonId, rows, sources);
             var fingerprint = PredictionFingerprint.Compute(input);
             var cacheKey = $"pred:remote:{leagueSlug}:{season.Slug}:{division.Slug}:{fingerprint}";
+            var stored = false;
             var cached = await _predictions.GetOrCreateAsync(
                 cacheKey,
                 () =>
                 {
-                    var outlook = ChampionshipPredictor.Predict(input);
+                    stored = true;
+                    var outlook = PredictionComposer.BuildOutlook(input);
                     _logger.LogInformation(
                         "Predicciones remotas {League} {Division} sims={Sims} ms={Ms} pending={Pending} published={Published}",
                         leagueSlug,
@@ -186,6 +191,8 @@ public sealed class RemotePredictionSource
                 },
                 TimeSpan.FromHours(6),
                 cancellationToken);
+            if (stored)
+                await _snapshots.SaveAsync(leagueSlug, season.Slug, division.Slug, cached.Outlook, cancellationToken);
 
             page.Divisions.Add(PredictionComposer.ToDto(
                 cached.Outlook,

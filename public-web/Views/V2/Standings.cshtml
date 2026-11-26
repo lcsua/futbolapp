@@ -50,7 +50,7 @@
 <div class="v2-standings-page" data-v2-standings-page>
 @if (seasons != null && seasons.Any())
 {
-    <form method="get" class="v2-filter-bar" aria-label="Filtros de posiciones">
+    <form method="get" class="v2-filter-bar" data-division-preference aria-label="Filtros de posiciones">
         <div class="v2-filter-bar__group">
             <label for="v2-filter-season">Temporada</label>
             <select id="v2-filter-season" name="season" class="v2-select" onchange="this.form.submit()">
@@ -69,7 +69,7 @@
         </div>
         <div class="v2-filter-bar__group">
             <label for="v2-filter-division">División</label>
-            <select id="v2-filter-division" name="division" class="v2-select" onchange="this.form.submit()">
+            <select id="v2-filter-division" name="division" class="v2-select" data-division-select onchange="this.form.submit()">
                 @if (selectedDivision == "all")
                 {
                     <option value="all" selected>Todas</option>

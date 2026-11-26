@@ -114,7 +114,7 @@
 
     @if (seasons != null && seasons.Count > 0)
     {
-        <form method="get" class="v2-filter-bar" aria-label="Filtros de predicciones" action="@Url.Content($"~/ligas/{leagueSlug}/predicciones")">
+        <form method="get" class="v2-filter-bar" data-division-preference aria-label="Filtros de predicciones" action="@Url.Content($"~/ligas/{leagueSlug}/predicciones")">
             @if (!string.IsNullOrWhiteSpace(focusTeam))
             {
                 <input type="hidden" name="equipo" value="@focusTeam" />
@@ -137,7 +137,7 @@
             </div>
             <div class="v2-filter-bar__group">
                 <label for="v2-pred-division">División</label>
-                <select id="v2-pred-division" name="division" class="v2-select" onchange="this.form.submit()">
+                <select id="v2-pred-division" name="division" class="v2-select" data-division-select onchange="this.form.submit()">
                     @if (selectedDivision == "all")
                     {
                         <option value="all" selected>Todas</option>
@@ -216,11 +216,12 @@
 
             @if (div.Published)
             {
+                @await Html.PartialAsync("~/Views/V2/Predictions/_Story.cshtml", div)
                 <section class="v2-pred-block" aria-labelledby="pred-title-@div.DivisionSlug">
                     <h4 id="pred-title-@div.DivisionSlug">Probabilidad de salir campeón</h4>
                     <p class="v2-pred-note">@div.ChampionNote</p>
                     <ol class="v2-pred-chart">
-                        @foreach (var team in chart)
+                        @foreach (var team in chart.Take(4))
                         {
                             var focused = !string.IsNullOrWhiteSpace(focusTeam)
                                 && string.Equals(team.Team.Slug, focusTeam, StringComparison.OrdinalIgnoreCase);
@@ -233,6 +234,24 @@
                             </li>
                         }
                     </ol>
+                    @if (chart.Count > 4)
+                    {
+                        <details class="v2-pred-more">
+                            <summary>Ver el resto de los equipos</summary>
+                            <ol class="v2-pred-chart">
+                                @foreach (var team in chart.Skip(4))
+                                {
+                                    <li class="v2-pred-chart__row">
+                                        @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team.Team)
+                                        <span class="v2-pred-chart__name">@team.Team.Name</span>
+                                        <span class="v2-pred-chart__bar" aria-hidden="true"><span style="width:@Bar(team)%"></span></span>
+                                        <strong class="v2-pred-chart__value v2-pred-chart__value--@team.TitleKind">@team.TitleLabel</strong>
+                                    </li>
+                                }
+                            </ol>
+                        </details>
+                    }
                     @if (!div.PromotionSupported)
                     {
                         <p class="v2-pred-note">@div.PromotionNote</p>
@@ -252,6 +271,9 @@
                                     <th scope="col">Pts</th>
                                     <th scope="col">Pts esp.</th>
                                     <th scope="col">Pos esp.</th>
+                                    <th scope="col">Rango</th>
+                                    <th scope="col">Pts</th>
+                                    <th scope="col">Podio</th>
                                     <th scope="col">Mov.</th>
                                 </tr>
                             </thead>
@@ -278,6 +300,9 @@
                                         <td>@team.CurrentPoints</td>
                                         <td>@team.ExpectedPoints.ToString("0.0", culture)</td>
                                         <td>@team.ExpectedPosition.ToString("0.0", culture)</td>
+                                        <td>@(team.PositionLow)º–@(team.PositionHigh)º</td>
+                                        <td>@team.PointsLow–@team.PointsHigh</td>
+                                        <td>@((team.PodiumProbability * 100) < 0.1 ? "<0,1%" : (team.PodiumProbability * 100).ToString("0.#", culture) + "%")</td>
                                         <td class="v2-pred-move @MoveClass(team)">@Move(team)</td>
                                     </tr>
                                 }
@@ -295,6 +320,15 @@
                             {
                                 <article class="v2-pred-match">
                                     <p class="v2-pred-match__when">Fecha @match.Round@(match.Kickoff.HasValue ? " · " + match.Kickoff.Value.ToString("ddd d MMM HH:mm", culture) : "")</p>
+                                    @if (!string.IsNullOrWhiteSpace(match.ToneLabel))
+                                    {
+                                        <p class="v2-pred-match__tone">@match.ToneLabel · Favorito: @match.FavoriteLabel</p>
+                                    }
+                                    <div class="v2-pred-split" aria-hidden="true">
+                                        <span style="width:@((match.HomeWin * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                                        <span style="width:@((match.Draw * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                                        <span style="width:@((match.AwayWin * 100).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                                    </div>
                                     <div class="v2-pred-match__teams">
                                         <div>
                                             @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
@@ -310,6 +344,7 @@
                                             <span>@match.AwayForm</span>
                                         </div>
                                     </div>
+                                    <p class="v2-story-note">El marcador más probable puede no coincidir con el resultado global más probable.</p>
                                     <dl class="v2-pred-probs">
                                         <div><dt>Local</dt><dd>@match.HomeWinLabel</dd></div>
                                         <div><dt>Empate</dt><dd>@match.DrawLabel</dd></div>
@@ -360,3 +395,4 @@
         </section>
     }
 </div>
+<script src="~/js/v2/predictions.js" defer></script>
