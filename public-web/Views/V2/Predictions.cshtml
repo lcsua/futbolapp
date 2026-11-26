@@ -195,13 +195,19 @@
             .ThenByDescending(team => team.TitleProbability)
             .ThenBy(team => team.Team.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        <section class="v2-pred-division" aria-labelledby="pred-div-@div.DivisionSlug">
-            <div class="v2-result-group__head">
-                <h3 id="pred-div-@div.DivisionSlug" class="v2-result-group__division">
-                    <span class="v2-result-group__division-label">División:</span>
-                    <span class="v2-result-group__division-name">@div.DivisionName</span>
-                </h3>
-            </div>
+        var showDivisionTitle = Model.Divisions.Count > 1;
+        <section class="v2-pred-division"
+                 aria-labelledby="@(showDivisionTitle ? $"pred-div-{div.DivisionSlug}" : null)"
+                 aria-label="@(showDivisionTitle ? null : $"División {div.DivisionName}")">
+            @if (showDivisionTitle)
+            {
+                <div class="v2-result-group__head">
+                    <h3 id="pred-div-@div.DivisionSlug" class="v2-result-group__division">
+                        <span class="v2-result-group__division-label">División:</span>
+                        <span class="v2-result-group__division-name">@div.DivisionName</span>
+                    </h3>
+                </div>
+            }
 
             <div class="v2-pred-progress">
                 <div class="v2-pred-progress__top">
