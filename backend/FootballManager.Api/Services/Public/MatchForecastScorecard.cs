@@ -100,6 +100,7 @@ public sealed class MatchForecastScorecard
         var utc = MatchForecastTime.ToUtc(kickoff);
         if (utc == null)
             return ordered.FirstOrDefault();
-        return ordered.FirstOrDefault(item => item.CalculatedAt <= utc) ?? ordered.LastOrDefault();
+        // No fallback to a post-kickoff row: better to skip scoring than use a leak.
+        return ordered.FirstOrDefault(item => item.CalculatedAt <= utc);
     }
 }

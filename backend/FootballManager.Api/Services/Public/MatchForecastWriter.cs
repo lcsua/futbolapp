@@ -46,6 +46,9 @@ public sealed class MatchForecastWriter
                 if (MatchForecastTime.IsStarted(match.Kickoff, now))
                     continue;
 
+                // Persist kickoff as UTC so Npgsql timestamptz accepts the value.
+                var kickoffUtc = MatchForecastTime.ToUtc(match.Kickoff);
+
                 if (byMatch.TryGetValue(match.MatchId, out var row))
                 {
                     row.RefreshPreKickoff(
@@ -56,7 +59,7 @@ public sealed class MatchForecastWriter
                         match.LikelyAwayGoals,
                         match.HomeLambda,
                         match.AwayLambda,
-                        match.Kickoff,
+                        kickoffUtc,
                         now);
                     continue;
                 }
@@ -67,7 +70,7 @@ public sealed class MatchForecastWriter
                     divisionSlug,
                     match.MatchId,
                     match.Round,
-                    match.Kickoff,
+                    kickoffUtc,
                     match.HomeTeamId,
                     match.AwayTeamId,
                     match.HomeWin,

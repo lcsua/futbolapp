@@ -123,16 +123,33 @@
     </header>
 
     @{
-        var tocDivision = Model.Divisions.FirstOrDefault(item => item.Published)?.DivisionSlug;
+        var tocDiv = Model.Divisions.FirstOrDefault(item => item.Published);
+        var tocDivision = tocDiv?.DivisionSlug;
+        var tocHasRace = tocDiv?.Race != null;
+        var tocHasScenes = tocDiv != null && (tocDiv.Paths.Count > 0 || tocDiv.WhatIfs.Count > 0);
+        var tocHasHistory = tocDiv?.History is { Available: true, Rounds.Count: >= 2 };
+        var tocHasNext = tocDiv != null && tocDiv.NextRound.Count > 0;
     }
     @if (!string.IsNullOrWhiteSpace(tocDivision) && Model.Divisions.Count(item => item.Published) == 1)
     {
         <nav class="v2-pred-toc" aria-label="Secciones de predicciones">
-            <a href="#pred-campeonato-@tocDivision">Campeonato</a>
-            <a href="#pred-escenarios-@tocDivision">Escenarios</a>
-            <a href="#pred-evolucion-@tocDivision">Evolución</a>
+            @if (tocHasRace)
+            {
+                <a href="#pred-campeonato-@tocDivision">Campeonato</a>
+            }
+            @if (tocHasScenes)
+            {
+                <a href="#pred-escenarios-@tocDivision">Escenarios</a>
+            }
+            @if (tocHasHistory)
+            {
+                <a href="#pred-evolucion-@tocDivision">Evolución</a>
+            }
             <a href="#pred-proyeccion-@tocDivision">Proyección</a>
-            <a href="#pred-fecha-@tocDivision">Próxima fecha</a>
+            @if (tocHasNext)
+            {
+                <a href="#pred-fecha-@tocDivision">Próxima fecha</a>
+            }
         </nav>
     }
 
