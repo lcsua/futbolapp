@@ -252,7 +252,11 @@ public static class SeoCopy
             Title = title,
             Description = desc,
             CanonicalPath = $"/ligas/{leagueSlug}/predicciones",
-            OgImage = logoUrl,
+            OgTitle = hasDivision ? $"Predicciones División {divisionName} · {leagueName}" : null,
+            OgImage = hasDivision
+                ? PublicShareLinks.ShareCardPath("predicciones", divisionName!, leagueName, seasonName)
+                : logoUrl,
+            LargeOgImage = hasDivision,
             H1 = leagueName,
             Breadcrumbs = LeagueCrumbs(leagueName, leagueSlug, "Predicciones", $"/ligas/{leagueSlug}/predicciones")
         };

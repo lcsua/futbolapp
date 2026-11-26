@@ -58,6 +58,8 @@
             PublicWeb.Seo.SeoCopy.LeaguePredictions(league.Name, leagueSlug, seasonName, league.LogoUrl, seoDivisionName),
             ViewData,
             ViewBag);
+        if (!string.IsNullOrWhiteSpace(seoDivisionName))
+            ViewData["OgUrl"] = PublicWeb.Seo.PublicShareLinks.SectionPath(leagueSlug, "predicciones", seasonSlug, selectedDivision);
     }
 
     string Move(PublicWeb.Models.Public.PredictionTeamViewModel team)
@@ -108,7 +110,19 @@
 <div class="v2-pred">
     <header class="v2-pred-hero">
         <p class="v2-pred-hero__kicker">Estimación</p>
-        <h2 class="v2-pred-hero__title">Predicciones del campeonato</h2>
+        <div class="v2-pred-hero__title-row">
+            <h2 class="v2-pred-hero__title">Predicciones del campeonato</h2>
+            @if (!string.IsNullOrWhiteSpace(leagueSlug) && !string.Equals(selectedDivision, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                ViewData["ShareLeagueSlug"] = leagueSlug;
+                ViewData["ShareSection"] = "predicciones";
+                ViewData["ShareSeasonSlug"] = seasonSlug;
+                ViewData["ShareDivisionSlug"] = selectedDivision;
+                ViewData["ShareDivisionName"] = seoDivisionName ?? selectedDivision;
+                ViewData["ShareLeagueName"] = league?.Name ?? "";
+                @await Html.PartialAsync("~/Views/Shared/V2/_DivisionShareButton.cshtml")
+            }
+        </div>
         <p class="v2-pred-hero__lead">Una estimación estadística a partir de lo que ya se jugó. No es un resultado oficial y no modifica la tabla.</p>
     </header>
 

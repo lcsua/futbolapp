@@ -40,7 +40,9 @@ public sealed class OgShareImageGenerator
         return _cache.GetOrCreate(key, entry =>
         {
             entry.SlidingExpiration = TimeSpan.FromHours(12);
-            return Draw(headline, division, league, season);
+            return string.Equals(kind, "predicciones", StringComparison.OrdinalIgnoreCase)
+                ? DrawStats(headline, division, league, season)
+                : Draw(headline, division, league, season);
         })!;
     }
 
@@ -71,6 +73,47 @@ public sealed class OgShareImageGenerator
 
             if (!string.IsNullOrWhiteSpace(season))
                 DrawShadowed(ctx, season, small, Muted, x, 330);
+        });
+
+        using var ms = new MemoryStream();
+        image.Save(ms, new JpegEncoder { Quality = 82 });
+        return ms.ToArray();
+    }
+
+    private byte[] DrawStats(string headline, string division, string league, string season)
+    {
+        using var image = new Image<Rgba32>(Width, Height, Navy);
+        var green = Color.ParseHex("22C55E");
+        var track = Color.ParseHex("1E293B");
+        image.Mutate(ctx =>
+        {
+            var widths = new[] { 430f, 300f, 190f, 120f };
+            for (var i = 0; i < widths.Length; i++)
+            {
+                var y = 150f + i * 78f;
+                ctx.Fill(track, new RectangularPolygon(72, y, 460, 42));
+                ctx.Fill(green, new RectangularPolygon(72, y, widths[i], 42));
+            }
+
+            var caption = _family.CreateFont(22, FontStyle.Regular);
+            DrawShadowed(ctx, "Estimación estadística", caption, Muted, 72, 470);
+
+            var title = _family.CreateFont(64, FontStyle.Bold);
+            var divFont = _family.CreateFont(42, FontStyle.Bold);
+            var body = _family.CreateFont(26, FontStyle.Regular);
+            var small = _family.CreateFont(22, FontStyle.Regular);
+            const float x = 620;
+            DrawShadowed(ctx, headline, title, White, x, 150);
+            DrawShadowed(ctx, division, divFont, White, x, 240);
+            var leagueOptions = new RichTextOptions(body)
+            {
+                Origin = new PointF(x, 320),
+                WrappingLength = 500,
+                LineSpacing = 1.15f
+            };
+            ctx.DrawText(leagueOptions, league, Muted);
+            if (!string.IsNullOrWhiteSpace(season))
+                DrawShadowed(ctx, season, small, Muted, x, 420);
         });
 
         using var ms = new MemoryStream();
