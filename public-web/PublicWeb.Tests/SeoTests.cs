@@ -78,6 +78,16 @@ public class SeoCopyTests
     }
 
     [Fact]
+    public void Predictions_WithDivision_UsesStatsShareCard()
+    {
+        var page = SeoCopy.LeaguePredictions("Liga de Veteranos de Perico", "veteranos-de-perico", "Clausura 2026", "/logo.png", "B");
+        Assert.StartsWith("Predicciones División B", page.OgTitle);
+        Assert.Contains("kind=predicciones", page.OgImage);
+        Assert.True(page.LargeOgImage);
+        Assert.Equal("Predicciones", PublicShareLinks.Headline("predicciones"));
+    }
+
+    [Fact]
     public void ShareLinks_SectionPath_IncludesSeasonAndDivision()
     {
         var path = PublicShareLinks.SectionPath("veteranos-de-perico", "resultados", "clausura-2026", "b");

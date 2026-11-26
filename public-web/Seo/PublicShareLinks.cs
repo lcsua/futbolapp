@@ -27,6 +27,7 @@ public static class PublicShareLinks
     {
         "fixture" => "Fixture",
         "posiciones" => "Posiciones",
+        "predicciones" => "Predicciones",
         _ => "Resultados"
     };
 
