@@ -291,6 +291,20 @@ public class PredictionDivisionPublicDto
     public List<PredictionPathPublicDto> Paths { get; set; } = new();
     public List<PredictionWhatIfPublicDto> WhatIfs { get; set; } = new();
     public PredictionHistoryPublicDto? History { get; set; }
+    public List<PredictionDecisiveMatchPublicDto> DecisiveMatches { get; set; } = new();
+}
+
+public class PredictionDecisiveMatchPublicDto
+{
+    public Guid MatchId { get; set; }
+    public int Round { get; set; }
+    public TeamPublicDto Home { get; set; } = new();
+    public TeamPublicDto Away { get; set; } = new();
+    public string ImpactLevel { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public double MaxTitleSwing { get; set; }
+    public double HomeSwing { get; set; }
+    public double AwaySwing { get; set; }
 }
 
 public class PredictionRacePublicDto

@@ -151,7 +151,19 @@ public static class PredictionComposer
             Race = MapRace(outlook.Race),
             Paths = outlook.Paths?.Select(MapPath).ToList() ?? new(),
             WhatIfs = outlook.WhatIfs?.Select(MapWhatIf).ToList() ?? new(),
-            History = MapHistory(outlook.History)
+            History = MapHistory(outlook.History),
+            DecisiveMatches = outlook.DecisiveMatches?.Select(item => new PredictionDecisiveMatchPublicDto
+            {
+                MatchId = item.MatchId,
+                Round = item.Round,
+                Home = Team(teams, item.HomeTeamId, item.HomeName),
+                Away = Team(teams, item.AwayTeamId, item.AwayName),
+                ImpactLevel = item.ImpactLevel,
+                Reason = item.Reason,
+                MaxTitleSwing = item.MaxTitleSwing,
+                HomeSwing = item.HomeSwing,
+                AwaySwing = item.AwaySwing
+            }).ToList() ?? new()
         };
     }
 
@@ -172,8 +184,7 @@ public static class PredictionComposer
         var previous = rounds[^2].Teams.FirstOrDefault(item => item.TeamId == teamId);
         if (now == null || previous == null)
             return null;
-        var delta = now.TitleProbability - previous.TitleProbability;
-        return Math.Abs(delta) < 0.02 ? null : delta;
+        return now.TitleProbability - previous.TitleProbability;
     }
 
     private static PredictionRacePublicDto? MapRace(TitleRaceReport? race) =>

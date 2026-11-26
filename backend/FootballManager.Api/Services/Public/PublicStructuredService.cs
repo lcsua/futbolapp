@@ -20,6 +20,7 @@ public class PublicStructuredService
     private readonly RemotePredictionSource _remotePredictions;
     private readonly IConfiguration _configuration;
     private readonly PredictionSnapshotWriter _snapshots;
+    private readonly MatchForecastWriter _forecasts;
     private readonly ILogger<PublicStructuredService> _logger;
 
     public PublicStructuredService(
@@ -28,6 +29,7 @@ public class PublicStructuredService
         PredictionCache predictions,
         RemotePredictionSource remotePredictions,
         PredictionSnapshotWriter snapshots,
+        MatchForecastWriter forecasts,
         IConfiguration configuration,
         ILogger<PublicStructuredService> logger)
     {
@@ -36,6 +38,7 @@ public class PublicStructuredService
         _predictions = predictions;
         _remotePredictions = remotePredictions;
         _snapshots = snapshots;
+        _forecasts = forecasts;
         _configuration = configuration;
         _logger = logger;
     }
@@ -908,10 +911,17 @@ public class PublicStructuredService
                 cancellationToken);
             if (stored)
             {
+                var snapshotDivision = SlugHelper.NormalizeSlug(division.Division.Name);
                 await _snapshots.SaveAsync(
                     league.Slug,
                     page.SeasonSlug,
-                    SlugHelper.NormalizeSlug(division.Division.Name),
+                    snapshotDivision,
+                    cached.Outlook,
+                    cancellationToken);
+                await _forecasts.SaveAsync(
+                    league.Slug,
+                    page.SeasonSlug,
+                    snapshotDivision,
                     cached.Outlook,
                     cancellationToken);
             }

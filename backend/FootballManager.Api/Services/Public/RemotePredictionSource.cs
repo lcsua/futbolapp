@@ -17,17 +17,20 @@ public sealed class RemotePredictionSource
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly PredictionCache _predictions;
     private readonly PredictionSnapshotWriter _snapshots;
+    private readonly MatchForecastWriter _forecasts;
     private readonly ILogger<RemotePredictionSource> _logger;
 
     public RemotePredictionSource(
         IHttpClientFactory httpClientFactory,
         PredictionCache predictions,
         PredictionSnapshotWriter snapshots,
+        MatchForecastWriter forecasts,
         ILogger<RemotePredictionSource> logger)
     {
         _httpClientFactory = httpClientFactory;
         _predictions = predictions;
         _snapshots = snapshots;
+        _forecasts = forecasts;
         _logger = logger;
     }
 
@@ -192,7 +195,10 @@ public sealed class RemotePredictionSource
                 TimeSpan.FromHours(6),
                 cancellationToken);
             if (stored)
+            {
                 await _snapshots.SaveAsync(leagueSlug, season.Slug, division.Slug, cached.Outlook, cancellationToken);
+                await _forecasts.SaveAsync(leagueSlug, season.Slug, division.Slug, cached.Outlook, cancellationToken);
+            }
 
             page.Divisions.Add(PredictionComposer.ToDto(
                 cached.Outlook,

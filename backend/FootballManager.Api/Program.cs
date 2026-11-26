@@ -39,6 +39,8 @@ builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicTeamService
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicMatchService>();
 builder.Services.AddSingleton<FootballManager.Api.Services.Public.PredictionCache>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PredictionSnapshotWriter>();
+builder.Services.AddScoped<FootballManager.Api.Services.Public.MatchForecastWriter>();
+builder.Services.AddScoped<FootballManager.Api.Services.Public.MatchForecastScorecard>();
 var predictionSource = builder.Configuration["Predictions:SourceBaseUrl"];
 if (!string.IsNullOrWhiteSpace(predictionSource))
 {

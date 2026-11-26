@@ -126,6 +126,20 @@
         <p class="v2-pred-hero__lead">Una estimación estadística a partir de lo que ya se jugó. No es un resultado oficial y no modifica la tabla.</p>
     </header>
 
+    @{
+        var tocDivision = Model.Divisions.FirstOrDefault(item => item.Published)?.DivisionSlug;
+    }
+    @if (!string.IsNullOrWhiteSpace(tocDivision) && Model.Divisions.Count(item => item.Published) == 1)
+    {
+        <nav class="v2-pred-toc" aria-label="Secciones de predicciones">
+            <a href="#pred-campeonato-@tocDivision">Campeonato</a>
+            <a href="#pred-escenarios-@tocDivision">Escenarios</a>
+            <a href="#pred-evolucion-@tocDivision">Evolución</a>
+            <a href="#pred-proyeccion-@tocDivision">Proyección</a>
+            <a href="#pred-fecha-@tocDivision">Próxima fecha</a>
+        </nav>
+    }
+
     @if (seasons != null && seasons.Count > 0)
     {
         <form method="get" class="v2-filter-bar" data-division-preference aria-label="Filtros de predicciones" action="@Url.Content($"~/ligas/{leagueSlug}/predicciones")">
@@ -236,7 +250,7 @@
             @if (div.Published)
             {
                 @await Html.PartialAsync("~/Views/V2/Predictions/_Story.cshtml", div)
-                <section class="v2-pred-block" aria-labelledby="pred-title-@div.DivisionSlug">
+                <section class="v2-pred-block" id="pred-proyeccion-@div.DivisionSlug" aria-labelledby="pred-title-@div.DivisionSlug">
                     <h4 id="pred-title-@div.DivisionSlug">Probabilidad de salir campeón</h4>
                     <p class="v2-pred-note">Salir campeón es terminar primero. No hay playoffs cargados.</p>
                     <ol class="v2-pred-chart">
@@ -357,9 +371,40 @@
                     }
                 </section>
 
+                @if (div.DecisiveMatches.Count > 0)
+                {
+                    <section class="v2-pred-decisive" aria-labelledby="pred-decisive-@div.DivisionSlug">
+                        <h4 id="pred-decisive-@div.DivisionSlug">Partidos decisivos de la fecha</h4>
+                        <p class="v2-pred-note">Los tres encuentros con mayor impacto potencial sobre el título, medidos con las simulaciones ya calculadas.</p>
+                        <div class="v2-pred-decisive__list">
+                            @foreach (var item in div.DecisiveMatches)
+                            {
+                                <article class="v2-pred-decisive__card">
+                                    <p class="v2-pred-decisive__impact is-@item.ImpactLevel">Impacto @item.ImpactLevel</p>
+                                    <div class="v2-pred-decisive__teams">
+                                        @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", item.Home)
+                                        <strong>@item.Home.Name</strong>
+                                        <span>vs</span>
+                                        @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", item.Away)
+                                        <strong>@item.Away.Name</strong>
+                                    </div>
+                                    <p>@item.Reason</p>
+                                    <p class="v2-pred-decisive__swing">Hasta @((item.MaxTitleSwing * 100).ToString("0.0", culture)) pp de movimiento en el título</p>
+                                    @if (!string.IsNullOrWhiteSpace(leagueSlug) && item.MatchId != Guid.Empty)
+                                    {
+                                        <a class="v2-pred-decisive__link" href="@Url.Content($"~/ligas/{leagueSlug}/partido/{item.MatchId}")">Ver la previa</a>
+                                    }
+                                </article>
+                            }
+                        </div>
+                    </section>
+                }
+
                 @if (div.NextRound.Count > 0)
                 {
-                    <section class="v2-pred-block" aria-labelledby="pred-round-@div.DivisionSlug">
+                    <section class="v2-pred-block" id="pred-fecha-@div.DivisionSlug" aria-labelledby="pred-round-@div.DivisionSlug">
                         <h4 id="pred-round-@div.DivisionSlug">Próxima fecha @(div.NextRoundNumber?.ToString() ?? "")</h4>
                         <p class="v2-pred-note">El marcador es el más repetido. Puede no coincidir con quién tiene más chances de ganar el partido.</p>
                         <div class="v2-pred-matches">

@@ -92,7 +92,7 @@ public static class ChampionshipHistory
         return new ProbabilityHistory(
             true,
             rounds.Any(round => round.Reconstructed),
-            "Los puntos anteriores a la última jornada se reconstruyen con los resultados ya jugados hasta esa fecha, sin usar lo que pasó después. El último punto es la predicción actual. La muestra reconstruida es más chica, así que un movimiento menor a dos puntos porcentuales no se muestra como un cambio.",
+            "Los puntos anteriores a la última jornada se reconstruyen con los resultados ya jugados hasta esa fecha, sin usar lo que pasó después. El último punto es la predicción actual.",
             rounds);
     }
 

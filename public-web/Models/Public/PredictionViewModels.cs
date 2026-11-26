@@ -39,8 +39,22 @@ public class PredictionDivisionViewModel
     public List<PredictionPathViewModel> Paths { get; set; } = new();
     public List<PredictionWhatIfViewModel> WhatIfs { get; set; } = new();
     public PredictionHistoryViewModel? History { get; set; }
+    public List<PredictionDecisiveMatchViewModel> DecisiveMatches { get; set; } = new();
 
     public int PlayedPercent => (int)Math.Round(Math.Clamp(PlayedRatio, 0, 1) * 100, MidpointRounding.AwayFromZero);
+}
+
+public class PredictionDecisiveMatchViewModel
+{
+    public Guid MatchId { get; set; }
+    public int Round { get; set; }
+    public TeamViewModel Home { get; set; } = new();
+    public TeamViewModel Away { get; set; } = new();
+    public string ImpactLevel { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+    public double MaxTitleSwing { get; set; }
+    public double HomeSwing { get; set; }
+    public double AwaySwing { get; set; }
 }
 
 public class PredictionTeamViewModel
