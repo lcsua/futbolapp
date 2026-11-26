@@ -101,6 +101,27 @@
                    value="@panel.DivisionSlug"
                    @(isSelected ? "checked" : null) />
         }
+        <script>
+            (function () {
+              try {
+                var params = new URLSearchParams(location.search);
+                if (params.has('division')) return;
+                var league = document.documentElement.getAttribute('data-home-league') || '';
+                function read(key) {
+                  try { return localStorage.getItem(key) || ''; } catch (e) { return ''; }
+                }
+                var wanted = read('miliga-favorite-division:' + league) || read('miliga-division:' + league);
+                if (!wanted) return;
+                var radios = document.querySelectorAll('input[name="home-division"]');
+                for (var i = 0; i < radios.length; i++) {
+                  if (radios[i].value.toLowerCase() === wanted.toLowerCase()) {
+                    radios[i].checked = true;
+                    break;
+                  }
+                }
+              } catch (e) {}
+            })();
+        </script>
 
         <section class="v2-home-divisions" aria-label="Elegí la división">
             <div class="v2-home-divisions__head">

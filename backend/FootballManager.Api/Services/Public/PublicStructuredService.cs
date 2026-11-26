@@ -19,6 +19,7 @@ public class PublicStructuredService
     private readonly PredictionCache _predictions;
     private readonly RemotePredictionSource _remotePredictions;
     private readonly IConfiguration _configuration;
+    private readonly PredictionSnapshotWriter _snapshots;
     private readonly ILogger<PublicStructuredService> _logger;
 
     public PublicStructuredService(
@@ -26,6 +27,7 @@ public class PublicStructuredService
         IGetStandingsUseCase getStandingsUseCase,
         PredictionCache predictions,
         RemotePredictionSource remotePredictions,
+        PredictionSnapshotWriter snapshots,
         IConfiguration configuration,
         ILogger<PublicStructuredService> logger)
     {
@@ -33,6 +35,7 @@ public class PublicStructuredService
         _getStandingsUseCase = getStandingsUseCase;
         _predictions = predictions;
         _remotePredictions = remotePredictions;
+        _snapshots = snapshots;
         _configuration = configuration;
         _logger = logger;
     }
@@ -880,11 +883,13 @@ public class PublicStructuredService
             var input = PredictionComposer.Build(division.DivisionId, division.Division.Name, division.Id, rows, sources);
             var fingerprint = PredictionFingerprint.Compute(input);
             var cacheKey = $"pred:{league.Id:N}:{season.Id:N}:{division.Id:N}:{fingerprint}";
+            var stored = false;
             var cached = await _predictions.GetOrCreateAsync(
                 cacheKey,
                 () =>
                 {
-                    var outlook = ChampionshipPredictor.Predict(input);
+                    stored = true;
+                    var outlook = PredictionComposer.BuildOutlook(input);
                     _logger.LogInformation(
                         "Predicciones {League} {Division} sims={Sims} ms={Ms} pending={Pending} published={Published}",
                         league.Slug,
@@ -901,6 +906,15 @@ public class PublicStructuredService
                 },
                 TimeSpan.FromHours(6),
                 cancellationToken);
+            if (stored)
+            {
+                await _snapshots.SaveAsync(
+                    league.Slug,
+                    page.SeasonSlug,
+                    SlugHelper.NormalizeSlug(division.Division.Name),
+                    cached.Outlook,
+                    cancellationToken);
+            }
 
             page.Divisions.Add(PredictionComposer.ToDto(
                 cached.Outlook,

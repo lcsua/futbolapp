@@ -23,7 +23,12 @@ public sealed record TeamOutlook(
     bool MathematicallyCrowned,
     bool MathematicallyEliminated,
     string Form,
-    IReadOnlyList<double> PositionProbability);
+    IReadOnlyList<double> PositionProbability,
+    double PodiumProbability = 0,
+    int PointsLow = 0,
+    int PointsHigh = 0,
+    int PositionLow = 0,
+    int PositionHigh = 0);
 
 public sealed record MatchOutlook(
     Guid MatchId,
@@ -44,7 +49,9 @@ public sealed record MatchOutlook(
     string HomeForm,
     string AwayForm,
     double HomeLambda,
-    double AwayLambda);
+    double AwayLambda,
+    string FavoriteLabel = "",
+    string ToneLabel = "");
 
 public sealed record DivisionOutlook(
     bool Supported,
@@ -67,7 +74,11 @@ public sealed record DivisionOutlook(
     string PromotionNote,
     IReadOnlyList<TeamOutlook> Teams,
     int? NextRoundNumber,
-    IReadOnlyList<MatchOutlook> NextRound);
+    IReadOnlyList<MatchOutlook> NextRound,
+    TitleRaceReport? Race = null,
+    IReadOnlyList<TitlePathReport>? Paths = null,
+    IReadOnlyList<WhatIfReport>? WhatIfs = null,
+    ProbabilityHistory? History = null);
 
 public static class ChampionshipPredictor
 {
@@ -82,7 +93,11 @@ public static class ChampionshipPredictor
     public const string PromotionExplanation =
         "No hay reglas de ascenso ni descenso cargadas para esta división, así que no se publican esas probabilidades.";
 
-    public static DivisionOutlook Predict(PredictionDivision division, PredictionOptions? options = null, StandingsRules? rules = null)
+    public static DivisionOutlook Predict(
+        PredictionDivision division,
+        PredictionOptions? options = null,
+        StandingsRules? rules = null,
+        bool includeStory = true)
     {
         options ??= PredictionModel.Default;
         rules ??= StandingsRules.Official;
@@ -148,6 +163,9 @@ public static class ChampionshipPredictor
         var positionHits = new int[teams.Count, teams.Count];
         var pointsSum = new double[teams.Count];
         var positionSum = new double[teams.Count];
+        var pointSamples = new int[teams.Count][];
+        for (var i = 0; i < teams.Count; i++)
+            pointSamples[i] = new int[samples];
         var random = new Random(options.Seed);
         var pendingIndexed = pending.Select(match => (
             Home: IndexOf(teams, match.Home.TeamId),
@@ -157,6 +175,10 @@ public static class ChampionshipPredictor
             HomePmf: Pmf(rates.Lambda(match.Home.TeamId, match.Away.TeamId, home: true, options), options.MaxGoals),
             AwayPmf: Pmf(rates.Lambda(match.Away.TeamId, match.Home.TeamId, home: false, options), options.MaxGoals)
         )).ToList();
+        var nextSlot = NextSlot(teams, pending);
+        var condCount = new int[teams.Count, 3];
+        var condTitle = new int[teams.Count, 3];
+        var condChampion = new int[teams.Count, 3, teams.Count];
 
         var points = new int[teams.Count];
         var goalsFor = new int[teams.Count];
@@ -173,10 +195,15 @@ public static class ChampionshipPredictor
                 order[i] = i;
             }
 
-            foreach (var match in pendingIndexed)
+            var sampledHome = new int[pendingIndexed.Count];
+            var sampledAway = new int[pendingIndexed.Count];
+            for (var matchIndex = 0; matchIndex < pendingIndexed.Count; matchIndex++)
             {
+                var match = pendingIndexed[matchIndex];
                 var homeGoals = Sample(match.HomePmf, random.NextDouble());
                 var awayGoals = Sample(match.AwayPmf, random.NextDouble());
+                sampledHome[matchIndex] = homeGoals;
+                sampledAway[matchIndex] = awayGoals;
                 if (match.HomeCounts && match.Home >= 0)
                     Apply(points, goalsFor, goalsAgainst, match.Home, homeGoals, awayGoals);
                 if (match.AwayCounts && match.Away >= 0)
@@ -190,8 +217,15 @@ public static class ChampionshipPredictor
                 positionHits[team, place]++;
                 pointsSum[team] += points[team];
                 positionSum[team] += place + 1;
+                pointSamples[team][sample] = points[team];
             }
+
+            if (includeStory)
+                NoteConditions(teams, nextSlot, pendingIndexed, sampledHome, sampledAway, order[0], condCount, condTitle, condChampion);
         }
+
+        if (includeStory)
+            TopUpConditions(teams, pendingIndexed, nextSlot, condCount, condTitle, condChampion, random);
 
         var rows = new List<TeamOutlook>(teams.Count);
         for (var i = 0; i < teams.Count; i++)
@@ -236,9 +270,28 @@ public static class ChampionshipPredictor
             {
                 var rank = index + 1;
                 var delta = team.OfficialPosition > 0 ? team.OfficialPosition - rank : 0;
-                return team with { ProjectedRank = rank, PlacesDelta = delta };
+                var slot = IndexOf(teams, team.TeamId);
+                var distribution = team.PositionProbability;
+                var podium = 0d;
+                for (var place = 0; place < Math.Min(3, distribution.Count); place++)
+                    podium += distribution[place];
+                return team with
+                {
+                    ProjectedRank = rank,
+                    PlacesDelta = delta,
+                    PodiumProbability = podium,
+                    PointsLow = slot < 0 ? team.CurrentPoints : Percentile(pointSamples[slot], 0.10),
+                    PointsHigh = slot < 0 ? team.CurrentPoints : Percentile(pointSamples[slot], 0.90),
+                    PositionLow = PositionPercentile(distribution, 0.10),
+                    PositionHigh = PositionPercentile(distribution, 0.90)
+                };
             })
             .ToList();
+
+        next = DecorateMatches(next, ranked).ToList();
+        var race = includeStory ? TitleRaceCalculator.Build(ranked, pending) : null;
+        var paths = includeStory ? TitlePathCalculator.Build(ranked, pending) : null;
+        var whatIfs = includeStory ? WhatIfs(teams, ranked, pending, nextSlot, condCount, condTitle, condChampion) : null;
 
         watch.Stop();
         return new DivisionOutlook(
@@ -262,7 +315,10 @@ public static class ChampionshipPredictor
             PromotionNote: PromotionExplanation,
             Teams: ranked,
             NextRoundNumber: nextRound,
-            NextRound: next);
+            NextRound: next,
+            Race: race,
+            Paths: paths,
+            WhatIfs: whatIfs);
     }
 
     /// <summary>
@@ -430,7 +486,7 @@ public static class ChampionshipPredictor
     /// A suspended or postponed match from an earlier date stays in the simulation,
     /// but it does not replace the upcoming jornada.
     /// </summary>
-    private static int NextFixtureRound(IReadOnlyList<PredictionFixture> pending)
+    internal static int NextFixtureRound(IReadOnlyList<PredictionFixture> pending)
     {
         var today = ArgentinaClock.Today();
         var upcoming = pending
@@ -724,6 +780,322 @@ public static class ChampionshipPredictor
             awayLambda);
     }
 
+    private static int[] NextSlot(List<TeamState> teams, IReadOnlyList<PredictionFixture> pending)
+    {
+        var slots = new int[teams.Count];
+        Array.Fill(slots, -1);
+        var today = ArgentinaClock.Today();
+        var rank = new int[teams.Count];
+        var round = new int[teams.Count];
+        Array.Fill(rank, int.MaxValue);
+        Array.Fill(round, int.MaxValue);
+
+        for (var index = 0; index < pending.Count; index++)
+        {
+            var match = pending[index];
+            var upcoming = match.Kickoff == null || match.Kickoff.Value.Date >= today;
+            var matchRank = upcoming ? 0 : 1;
+            void Consider(PredictionSide side)
+            {
+                if (!side.Counts)
+                    return;
+                var team = IndexOf(teams, side.TeamId);
+                if (team < 0)
+                    return;
+                var better = matchRank < rank[team]
+                    || (matchRank == rank[team] && match.Round < round[team]);
+                if (!better)
+                    return;
+                slots[team] = index;
+                rank[team] = matchRank;
+                round[team] = match.Round;
+            }
+
+            Consider(match.Home);
+            Consider(match.Away);
+        }
+
+        return slots;
+    }
+
+    private static void NoteConditions(
+        List<TeamState> teams,
+        int[] nextSlot,
+        IReadOnlyList<(int Home, int Away, bool HomeCounts, bool AwayCounts, double[] HomePmf, double[] AwayPmf)> pending,
+        int[] homeGoals,
+        int[] awayGoals,
+        int champion,
+        int[,] condCount,
+        int[,] condTitle,
+        int[,,] condChampion)
+    {
+        for (var team = 0; team < teams.Count; team++)
+        {
+            var slot = nextSlot[team];
+            if (slot < 0 || slot >= pending.Count)
+                continue;
+            var match = pending[slot];
+            int outcome;
+            if (match.Home == team)
+                outcome = homeGoals[slot] == awayGoals[slot] ? 1 : homeGoals[slot] > awayGoals[slot] ? 0 : 2;
+            else if (match.Away == team)
+                outcome = homeGoals[slot] == awayGoals[slot] ? 1 : awayGoals[slot] > homeGoals[slot] ? 0 : 2;
+            else
+                continue;
+
+            condCount[team, outcome]++;
+            if (champion == team)
+                condTitle[team, outcome]++;
+            if (champion >= 0)
+                condChampion[team, outcome, champion]++;
+        }
+    }
+
+    private static void TopUpConditions(
+        List<TeamState> teams,
+        IReadOnlyList<(int Home, int Away, bool HomeCounts, bool AwayCounts, double[] HomePmf, double[] AwayPmf)> pendingIndexed,
+        int[] nextSlot,
+        int[,] condCount,
+        int[,] condTitle,
+        int[,,] condChampion,
+        Random random)
+    {
+        const int minimum = 200;
+        const int extra = 800;
+        for (var team = 0; team < teams.Count; team++)
+        {
+            var slot = nextSlot[team];
+            if (slot < 0)
+                continue;
+            for (var outcome = 0; outcome < 3; outcome++)
+            {
+                if (condCount[team, outcome] >= minimum)
+                    continue;
+                var table = ConditionalScores(pendingIndexed[slot].HomePmf, pendingIndexed[slot].AwayPmf, pendingIndexed[slot].Home == team, outcome);
+                if (table.Pairs.Length == 0)
+                    continue;
+                for (var sample = 0; sample < extra; sample++)
+                {
+                    var forced = table.Pairs[SampleCumulative(table.Cumulative, random.NextDouble())];
+                    var champion = Play(teams, pendingIndexed, slot, forced.Home, forced.Away, random);
+                    NoteForced(team, outcome, champion, condCount, condTitle, condChampion);
+                    var match = pendingIndexed[slot];
+                    var opponent = match.Home == team ? match.Away : match.Home;
+                    var mirrored = outcome == 1 ? 1 : outcome == 0 ? 2 : 0;
+                    if (opponent >= 0 && opponent != team && nextSlot[opponent] == slot)
+                        NoteForced(opponent, mirrored, champion, condCount, condTitle, condChampion);
+                }
+            }
+        }
+    }
+
+    private static void NoteForced(
+        int team,
+        int outcome,
+        int champion,
+        int[,] condCount,
+        int[,] condTitle,
+        int[,,] condChampion)
+    {
+        condCount[team, outcome]++;
+        if (champion == team)
+            condTitle[team, outcome]++;
+        if (champion >= 0)
+            condChampion[team, outcome, champion]++;
+    }
+
+    private static int Play(
+        List<TeamState> teams,
+        IReadOnlyList<(int Home, int Away, bool HomeCounts, bool AwayCounts, double[] HomePmf, double[] AwayPmf)> pending,
+        int forcedSlot,
+        int forcedHome,
+        int forcedAway,
+        Random random)
+    {
+        var points = new int[teams.Count];
+        var goalsFor = new int[teams.Count];
+        var goalsAgainst = new int[teams.Count];
+        var order = new int[teams.Count];
+        for (var i = 0; i < teams.Count; i++)
+        {
+            points[i] = teams[i].Points;
+            goalsFor[i] = teams[i].GoalsFor;
+            goalsAgainst[i] = teams[i].GoalsAgainst;
+            order[i] = i;
+        }
+
+        for (var index = 0; index < pending.Count; index++)
+        {
+            var match = pending[index];
+            var homeGoals = index == forcedSlot ? forcedHome : Sample(match.HomePmf, random.NextDouble());
+            var awayGoals = index == forcedSlot ? forcedAway : Sample(match.AwayPmf, random.NextDouble());
+            if (match.HomeCounts && match.Home >= 0)
+                Apply(points, goalsFor, goalsAgainst, match.Home, homeGoals, awayGoals);
+            if (match.AwayCounts && match.Away >= 0)
+                Apply(points, goalsFor, goalsAgainst, match.Away, awayGoals, homeGoals);
+        }
+
+        Array.Sort(order, (a, b) => Compare(teams, points, goalsFor, goalsAgainst, a, b));
+        return order[0];
+    }
+
+    private readonly record struct ForcedScore(int Home, int Away);
+
+    private static (double[] Cumulative, ForcedScore[] Pairs) ConditionalScores(double[] homePmf, double[] awayPmf, bool teamIsHome, int wanted)
+    {
+        var pairs = new List<ForcedScore>();
+        var weights = new List<double>();
+        double total = 0;
+        for (var home = 0; home < homePmf.Length; home++)
+        {
+            for (var away = 0; away < awayPmf.Length; away++)
+            {
+                var probability = homePmf[home] * awayPmf[away];
+                if (probability <= 0)
+                    continue;
+                var teamGoals = teamIsHome ? home : away;
+                var otherGoals = teamIsHome ? away : home;
+                var outcome = teamGoals > otherGoals ? 0 : teamGoals == otherGoals ? 1 : 2;
+                if (outcome != wanted)
+                    continue;
+                pairs.Add(new ForcedScore(home, away));
+                weights.Add(probability);
+                total += probability;
+            }
+        }
+
+        var cumulative = new double[weights.Count];
+        double running = 0;
+        for (var i = 0; i < weights.Count; i++)
+        {
+            running += total <= 0 ? 0 : weights[i] / total;
+            cumulative[i] = running;
+        }
+
+        return (cumulative, pairs.ToArray());
+    }
+
+    private static int SampleCumulative(double[] cumulative, double draw)
+    {
+        for (var i = 0; i < cumulative.Length; i++)
+        {
+            if (draw <= cumulative[i])
+                return i;
+        }
+
+        return Math.Max(0, cumulative.Length - 1);
+    }
+
+    private static List<WhatIfReport> WhatIfs(
+        List<TeamState> teams,
+        IReadOnlyList<TeamOutlook> ranked,
+        IReadOnlyList<PredictionFixture> pending,
+        int[] nextSlot,
+        int[,] condCount,
+        int[,] condTitle,
+        int[,,] condChampion)
+    {
+        var reports = new List<WhatIfReport>();
+        foreach (var team in ranked)
+        {
+            var index = IndexOf(teams, team.TeamId);
+            if (index < 0 || nextSlot[index] < 0 || nextSlot[index] >= pending.Count)
+                continue;
+            var match = pending[nextSlot[index]];
+            var opponent = match.Home.TeamId == team.TeamId ? match.Away.Name : match.Home.Name;
+            var rivals = ranked
+                .Where(other => other.TeamId != team.TeamId)
+                .OrderByDescending(other => other.TitleProbability)
+                .Take(2)
+                .Select(other =>
+                {
+                    var otherIndex = IndexOf(teams, other.TeamId);
+                    return new WhatIfRival(
+                        other.TeamId,
+                        other.Name,
+                        Chance(condChampion, index, 0, otherIndex, condCount),
+                        Chance(condChampion, index, 1, otherIndex, condCount),
+                        Chance(condChampion, index, 2, otherIndex, condCount));
+                })
+                .ToList();
+            reports.Add(new WhatIfReport(
+                team.TeamId,
+                match.Id,
+                match.Round,
+                opponent,
+                Chance(condTitle, index, 0, condCount),
+                Chance(condTitle, index, 1, condCount),
+                Chance(condTitle, index, 2, condCount),
+                condCount[index, 0] >= 200,
+                condCount[index, 1] >= 200,
+                condCount[index, 2] >= 200,
+                condCount[index, 0],
+                condCount[index, 1],
+                condCount[index, 2],
+                rivals));
+        }
+
+        return reports;
+    }
+
+    private static double Chance(int[,] titles, int team, int outcome, int[,] counts)
+    {
+        var samples = counts[team, outcome];
+        return samples <= 0 ? 0 : titles[team, outcome] / (double)samples;
+    }
+
+    private static double Chance(int[,,] titles, int team, int outcome, int rival, int[,] counts)
+    {
+        if (rival < 0)
+            return 0;
+        var samples = counts[team, outcome];
+        return samples <= 0 ? 0 : titles[team, outcome, rival] / (double)samples;
+    }
+
+    private static IEnumerable<MatchOutlook> DecorateMatches(IReadOnlyList<MatchOutlook> matches, IReadOnlyList<TeamOutlook> teams)
+    {
+        foreach (var match in matches)
+        {
+            var home = teams.FirstOrDefault(team => team.TeamId == match.HomeTeamId);
+            var away = teams.FirstOrDefault(team => team.TeamId == match.AwayTeamId);
+            var sideTop = Math.Max(match.HomeWin, match.AwayWin);
+            var tone = home != null && away != null && home.TitleProbability >= 0.05 && away.TitleProbability >= 0.05
+                ? "Encuentro decisivo"
+                : sideTop >= 0.55 && sideTop > match.Draw
+                    ? "Claro favorito"
+                    : "Partido parejo";
+            var favorite = match.HomeWin > match.AwayWin && match.HomeWin > match.Draw
+                ? match.HomeName
+                : match.AwayWin > match.HomeWin && match.AwayWin > match.Draw
+                    ? match.AwayName
+                    : "Ninguno";
+            yield return match with { FavoriteLabel = favorite, ToneLabel = tone };
+        }
+    }
+
+    private static int Percentile(int[] values, double p)
+    {
+        var copy = (int[])values.Clone();
+        Array.Sort(copy);
+        var index = (int)Math.Round((copy.Length - 1) * p, MidpointRounding.AwayFromZero);
+        return copy[Math.Clamp(index, 0, copy.Length - 1)];
+    }
+
+    private static int PositionPercentile(IReadOnlyList<double> distribution, double p)
+    {
+        if (distribution.Count == 0)
+            return 0;
+        double accumulated = 0;
+        for (var place = 0; place < distribution.Count; place++)
+        {
+            accumulated += distribution[place];
+            if (accumulated >= p)
+                return place + 1;
+        }
+
+        return distribution.Count;
+    }
+
     private static int Compare(List<TeamState> teams, int[] points, int[] goalsFor, int[] goalsAgainst, int a, int b)
     {
         var byPoints = points[b].CompareTo(points[a]);
@@ -923,7 +1295,10 @@ public static class PredictionBacktester
         double AlwaysDrawAccuracy,
         double PoissonBrier,
         double PointsBaselineBrier,
-        double AlwaysDrawBrier);
+        double AlwaysDrawBrier,
+        double PoissonLogLoss,
+        double PointsBaselineLogLoss,
+        double AlwaysDrawLogLoss);
 
     public static Report Run(IReadOnlyList<PredictionFixture> completedInOrder, PredictionOptions? options = null, int minHistory = 4)
     {
@@ -933,6 +1308,7 @@ public static class PredictionBacktester
         var baselineHits = 0;
         var drawHits = 0;
         double poissonBrier = 0, baselineBrier = 0, drawBrier = 0;
+        double poissonLog = 0, baselineLog = 0, drawLog = 0;
         var matches = 0;
         var usedRounds = 0;
 
@@ -956,6 +1332,7 @@ public static class PredictionBacktester
                 if (Hit(estimate.HomeWin, estimate.Draw, estimate.AwayWin, outcome))
                     poissonHits++;
                 poissonBrier += Brier(estimate.HomeWin, estimate.Draw, estimate.AwayWin, outcome);
+                poissonLog += LogLoss(estimate.HomeWin, estimate.Draw, estimate.AwayWin, outcome);
 
                 var homePoints = points.GetValueOrDefault(match.Home.TeamId);
                 var awayPoints = points.GetValueOrDefault(match.Away.TeamId);
@@ -963,16 +1340,18 @@ public static class PredictionBacktester
                 if (baseline == outcome)
                     baselineHits++;
                 baselineBrier += Brier(baseline == 0 ? 1 : 0, baseline == 1 ? 1 : 0, baseline == 2 ? 1 : 0, outcome);
+                baselineLog += LogLoss(baseline == 0 ? 1 : 0, baseline == 1 ? 1 : 0, baseline == 2 ? 1 : 0, outcome);
 
                 if (outcome == 1)
                     drawHits++;
                 drawBrier += Brier(0, 1, 0, outcome);
+                drawLog += LogLoss(0, 1, 0, outcome);
                 matches++;
             }
         }
 
         if (matches == 0)
-            return new Report(0, 0, 0, 0, 0, 0, 0, 0);
+            return new Report(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
         return new Report(
             matches,
@@ -982,7 +1361,10 @@ public static class PredictionBacktester
             drawHits / (double)matches,
             poissonBrier / matches,
             baselineBrier / matches,
-            drawBrier / matches);
+            drawBrier / matches,
+            poissonLog / matches,
+            baselineLog / matches,
+            drawLog / matches);
     }
 
     private static Dictionary<Guid, int> PointsSoFar(IReadOnlyList<PredictionFixture> history)
@@ -1047,6 +1429,13 @@ public static class PredictionBacktester
         var probs = new[] { home, draw, away };
         var best = probs.Max();
         return Math.Abs(probs[outcome] - best) < 1e-9;
+    }
+
+    private static double LogLoss(double home, double draw, double away, int outcome)
+    {
+        var probs = new[] { home, draw, away };
+        var chosen = Math.Clamp(probs[outcome], 1e-6, 1);
+        return -Math.Log(chosen);
     }
 
     private static double Brier(double home, double draw, double away, int outcome)

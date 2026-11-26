@@ -9,7 +9,11 @@
     if (string.IsNullOrWhiteSpace(division))
         division = Context.Request.Query["division"].ToString();
 
-    string Tab(string section) => Url.Content(PublicWeb.Helpers.LeagueLinks.Section(leagueSlug, section, season, division))!;
+    string Tab(string section) => Url.Content(PublicWeb.Helpers.LeagueLinks.Section(
+        leagueSlug,
+        section,
+        season,
+        string.IsNullOrWhiteSpace(section) ? null : division))!;
 }
 @if (!string.IsNullOrWhiteSpace(leagueSlug))
 {

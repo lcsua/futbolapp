@@ -1,0 +1,56 @@
+@{
+    Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    ViewBag.LeagueDetails = true;
+    ViewBag.OverlayGlobalHeader = true;
+    var league = ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
+    var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
+    var leagueSlug = league?.Slug ?? string.Empty;
+    var seasonSlug = ViewBag.SeasonSlug as string;
+    var section = ViewBag.DivisionGateSection as string ?? string.Empty;
+    var selectedSeason = seasons?.FirstOrDefault(item => string.Equals(item.Slug, seasonSlug, StringComparison.OrdinalIgnoreCase))
+        ?? seasons?.FirstOrDefault();
+    var divisions = selectedSeason?.Divisions ?? new List<PublicWeb.Models.Public.DivisionViewModel>();
+    var label = ViewBag.PageLabel as string ?? "División";
+}
+
+@await Html.PartialAsync("~/Views/V2/League/_LeagueBackNav.cshtml")
+@await Html.PartialAsync("~/Views/V2/League/_LeagueHeader.cshtml", league)
+@await Html.PartialAsync("~/Views/V2/League/_CompetitionTabs.cshtml")
+
+<div class="v2-pred">
+    <header class="v2-pred-hero">
+        <h2 class="v2-pred-hero__title">@label</h2>
+        <p class="v2-pred-hero__lead">Abriendo tu división. Si no pasa nada, elegila acá.</p>
+    </header>
+
+    @if (seasons != null && seasons.Count > 0)
+    {
+        <form method="get" class="v2-filter-bar" data-division-preference data-division-gate aria-label="Elegir división" action="@Url.Content($"~/ligas/{leagueSlug}/{section}")">
+            <div class="v2-filter-bar__group">
+                <label for="v2-gate-season">Temporada</label>
+                <select id="v2-gate-season" name="season" class="v2-select" onchange="this.form.submit()">
+                    @foreach (var item in seasons)
+                    {
+                        if (string.Equals(seasonSlug, item.Slug, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@item.Slug" selected>@item.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@item.Slug">@item.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="v2-filter-bar__group">
+                <label for="v2-gate-division">División</label>
+                <select id="v2-gate-division" name="division" class="v2-select" data-division-select onchange="this.form.submit()">
+                    @foreach (var item in divisions)
+                    {
+                        <option value="@item.Slug">@item.Name</option>
+                    }
+                </select>
+            </div>
+        </form>
+    }
+</div>

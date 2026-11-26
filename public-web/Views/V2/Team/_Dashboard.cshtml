@@ -139,6 +139,25 @@
             </section>
         }
 
+        @if (ViewBag.Projection is PublicWeb.Models.Public.PredictionTeamViewModel projection)
+        {
+            var culture = System.Globalization.CultureInfo.GetCultureInfo("es-AR");
+            var href = ViewBag.ProjectionHref as string;
+            <section class="v2-dash-card v2-projection" aria-labelledby="team-projection">
+                <h2 id="team-projection" class="v2-section-title">Proyección del campeonato</h2>
+                <dl class="v2-projection__grid">
+                    <div><dt>@projection.TitleLabel</dt><dd>Probabilidad de título @(projection.TitleChange is double change ? (change >= 0 ? "▲ " : "▼ ") + (change * 100).ToString("+0.0;-0.0", culture) + " pp" : "")</dd></div>
+                    <div><dt>@((projection.PodiumProbability * 100) < 0.1 ? "<0,1%" : (projection.PodiumProbability * 100).ToString("0.0", culture) + "%")</dt><dd>Probabilidad de podio</dd></div>
+                    <div><dt>@projection.ExpectedPoints.ToString("0.0", culture)</dt><dd>Puntos finales esperados · @projection.PointsLow–@projection.PointsHigh</dd></div>
+                    <div><dt>@(projection.ExpectedPosition.ToString("0.0", culture))º</dt><dd>Posición esperada · @(projection.PositionLow)º a @(projection.PositionHigh)º</dd></div>
+                </dl>
+                @if (!string.IsNullOrWhiteSpace(href))
+                {
+                    <a class="v2-dash-link" href="@Url.Content(href)">Ver predicciones del campeonato</a>
+                }
+            </section>
+        }
+
         @if (Model.Road != null)
         {
             var road = Model.Road;

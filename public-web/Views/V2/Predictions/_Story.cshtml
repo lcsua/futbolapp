@@ -1,0 +1,251 @@
+@model PublicWeb.Models.Public.PredictionDivisionViewModel
+@using System.Globalization
+@{
+    var culture = CultureInfo.GetCultureInfo("es-AR");
+    string Pct(double value) => value * 100 < 0.1 ? "<0,1%" : value * 100 > 99.9 ? ">99,9%" : (value * 100).ToString("0.0", culture);
+    string Pp(double value)
+    {
+        var points = value * 100;
+        var text = Math.Abs(points) < 0.1 ? "0,0" : points.ToString("+0.0;-0.0", culture);
+        return text + " pp";
+    }
+    var byId = Model.Teams.ToDictionary(team => team.Team.Id);
+    var candidates = (Model.Race?.CandidateIds ?? new List<Guid>())
+        .Select(id => byId.GetValueOrDefault(id))
+        .Where(team => team != null)
+        .Cast<PublicWeb.Models.Public.PredictionTeamViewModel>()
+        .Take(2)
+        .ToList();
+    if (candidates.Count == 0)
+        candidates = Model.Teams.OrderByDescending(team => team.TitleProbability).Take(2).ToList();
+    var history = Model.History;
+    var chartTeams = candidates.Take(3).ToList();
+    if (chartTeams.Count < 3 && history?.Available == true)
+    {
+        var last = history.Rounds.LastOrDefault();
+        if (last != null)
+        {
+            chartTeams = last.Teams
+                .OrderByDescending(team => team.TitleProbability)
+                .Take(3)
+                .Select(point => byId.GetValueOrDefault(point.TeamId))
+                .Where(team => team != null)
+                .Cast<PublicWeb.Models.Public.PredictionTeamViewModel>()
+                .ToList();
+        }
+    }
+}
+
+@if (Model.Race != null && candidates.Count > 0)
+{
+    <section class="v2-story-race" aria-labelledby="story-race-@Model.DivisionSlug">
+        <div class="v2-story-race__top">
+            <h4 id="story-race-@Model.DivisionSlug">La carrera por el título</h4>
+            <p>@Model.Race.Headline</p>
+        </div>
+        <div class="v2-story-race__duel">
+            @foreach (var team in candidates)
+            {
+                <article>
+                    @{ ViewData["BadgeSize"] = "md"; ViewData["BadgeDecorative"] = true; }
+                    @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team.Team)
+                    <strong>@team.Team.Name</strong>
+                    <b>@team.TitleLabel</b>
+                    <span>@team.CurrentPoints pts</span>
+                </article>
+            }
+        </div>
+        <p class="v2-story-race__summary">@Model.Race.Summary</p>
+        <dl class="v2-story-race__facts">
+            <div><dt>@Model.Race.PointGap</dt><dd>@(Model.Race.PointGap == 1 ? "Punto de diferencia" : "Puntos de diferencia")</dd></div>
+            <div><dt>@Model.Race.MatchesLeft</dt><dd>Partidos de @candidates[0].Team.Name</dd></div>
+            <div><dt>@Model.Race.PointsInPlay</dt><dd>Puntos que puede sumar</dd></div>
+        </dl>
+    </section>
+}
+
+@if (Model.Paths.Count > 0)
+{
+    <section class="v2-story-path" data-story-path aria-labelledby="story-path-@Model.DivisionSlug">
+        <h4 id="story-path-@Model.DivisionSlug">El camino hacia el título</h4>
+        <label>
+            Equipo
+            <select data-path-select>
+                @foreach (var path in Model.Paths.OrderBy(path => byId.GetValueOrDefault(path.TeamId)?.ProjectedRank ?? 99))
+                {
+                    var name = byId.GetValueOrDefault(path.TeamId)?.Team.Name ?? "Equipo";
+                    <option value="@path.TeamId">@name</option>
+                }
+            </select>
+        </label>
+        @foreach (var path in Model.Paths)
+        {
+            var firstPath = Model.Paths[0].TeamId == path.TeamId;
+            <article class="v2-story-path__panel" data-path="@path.TeamId" hidden="@(!firstPath)">
+                <p class="v2-story-stance v2-story-stance--@path.Stance"><strong>@path.StanceLabel</strong> @path.Summary</p>
+                @if (path.CanClinchNextRound)
+                {
+                    <p class="v2-story-note">Puede consagrarse en la próxima fecha. @path.ClinchNote</p>
+                }
+                <dl class="v2-story-path__nums">
+                    <div><dt>@path.CurrentPoints</dt><dd>Puntos actuales</dd></div>
+                    <div><dt>@path.MaxPoints</dt><dd>Máximo posible</dd></div>
+                    <div><dt>@path.RivalMax</dt><dd>Máximo del rival si este equipo gana todo</dd></div>
+                </dl>
+                <p class="v2-story-note">@(path.PointsToClinch is int needed ? $"Para asegurar el título aun si cada rival gana lo suyo harían falta {needed} puntos." : path.PointsNote)</p>
+                <p class="v2-story-note">Posición por puntos: @(path.BestPosition)º a @(path.WorstPosition)º. @path.PositionNote</p>
+                @if (path.Campaigns.Count > 0)
+                {
+                    <h5>Campañas posibles</h5>
+                    <ul class="v2-story-campaigns">
+                        @foreach (var campaign in path.Campaigns)
+                        {
+                            <li>
+                                <span>
+                                    @foreach (var mark in campaign.Marks)
+                                    {
+                                        <i class="v2-mark v2-mark--@mark">@mark</i>
+                                    }
+                                </span>
+                                <b>@campaign.Points</b>
+                                @if (campaign.SecuresTitle)
+                                {
+                                    <em>Asegura el título</em>
+                                }
+                            </li>
+                        }
+                    </ul>
+                    <p class="v2-story-note">Escenarios matemáticos de puntos. No son probabilidades. Si el desempate puede definir el puesto, no se marca como título asegurado.</p>
+                }
+            </article>
+        }
+    </section>
+}
+
+@if (Model.WhatIfs.Count > 0)
+{
+    <section class="v2-story-if" data-story-if aria-labelledby="story-if-@Model.DivisionSlug">
+        <h4 id="story-if-@Model.DivisionSlug">¿Qué pasa si...?</h4>
+        <p>Cómo cambia la probabilidad de título según el próximo partido. Sale de las simulaciones ya calculadas, no de una cuenta nueva en el celular.</p>
+        <label>
+            Equipo
+            <select data-if-select>
+                @foreach (var item in Model.WhatIfs)
+                {
+                    var name = byId.GetValueOrDefault(item.TeamId)?.Team.Name ?? "Equipo";
+                    <option value="@item.TeamId">@name</option>
+                }
+            </select>
+        </label>
+        @foreach (var item in Model.WhatIfs)
+        {
+            var current = byId.GetValueOrDefault(item.TeamId);
+            var currentTitle = current?.TitleProbability ?? 0;
+            var firstIf = Model.WhatIfs[0].TeamId == item.TeamId;
+            <article class="v2-story-if__panel" data-if="@item.TeamId" hidden="@(!firstIf)"
+                     data-win="@item.WinTitle.ToString(CultureInfo.InvariantCulture)"
+                     data-draw="@item.DrawTitle.ToString(CultureInfo.InvariantCulture)"
+                     data-loss="@item.LossTitle.ToString(CultureInfo.InvariantCulture)"
+                     data-current="@currentTitle.ToString(CultureInfo.InvariantCulture)"
+                     data-win-ok="@(item.WinReliable ? "1" : "0")"
+                     data-draw-ok="@(item.DrawReliable ? "1" : "0")"
+                     data-loss-ok="@(item.LossReliable ? "1" : "0")">
+                <p>Próximo encuentro · Fecha @item.Round · vs @item.OpponentName</p>
+                <div class="v2-story-if__choices" role="group" aria-label="Resultado del próximo partido">
+                    <button type="button" data-outcome="win">Gana</button>
+                    <button type="button" data-outcome="draw">Empata</button>
+                    <button type="button" data-outcome="loss">Pierde</button>
+                </div>
+                <p class="v2-story-if__result" data-if-result></p>
+                <ul class="v2-story-if__rivals">
+                    @foreach (var rival in item.Rivals)
+                    {
+                        <li data-rival
+                            data-win="@rival.IfWin.ToString(CultureInfo.InvariantCulture)"
+                            data-draw="@rival.IfDraw.ToString(CultureInfo.InvariantCulture)"
+                            data-loss="@rival.IfLoss.ToString(CultureInfo.InvariantCulture)"
+                            data-current="@((byId.GetValueOrDefault(rival.TeamId)?.TitleProbability ?? 0).ToString(CultureInfo.InvariantCulture))">
+                            <span>@rival.Name</span>
+                            <b data-rival-result></b>
+                        </li>
+                    }
+                </ul>
+                <p class="v2-story-note">Probabilidades condicionadas al resultado elegido. Si un escenario tiene poca muestra, se aclara y no se presenta como preciso.</p>
+            </article>
+        }
+    </section>
+}
+
+@if (history?.Available == true && history.Rounds.Count >= 2 && chartTeams.Count > 0)
+{
+    var rounds = history.Rounds;
+    var width = 320d;
+    var height = 150d;
+    string Poly(PublicWeb.Models.Public.PredictionTeamViewModel team)
+    {
+        var parts = new List<string>();
+        for (var i = 0; i < rounds.Count; i++)
+        {
+            var point = rounds[i].Teams.FirstOrDefault(item => item.TeamId == team.Team.Id);
+            var y = height - (point?.TitleProbability ?? 0) * height;
+            var x = rounds.Count == 1 ? width / 2 : i * width / (rounds.Count - 1);
+            parts.Add(FormattableString.Invariant($"{x:0.#},{y:0.#}"));
+        }
+        return string.Join(' ', parts);
+    }
+    <section class="v2-story-history" aria-labelledby="story-history-@Model.DivisionSlug">
+        <h4 id="story-history-@Model.DivisionSlug">Así evolucionó el campeonato</h4>
+        <p>@history.Note</p>
+        <svg class="v2-story-chart" viewBox="0 0 320 150" role="img" aria-label="Evolución de la probabilidad de título">
+            <polyline class="is-a" points="@Poly(chartTeams[0])" fill="none"></polyline>
+            @if (chartTeams.Count > 1)
+            {
+                <polyline class="is-b" points="@Poly(chartTeams[1])" fill="none"></polyline>
+            }
+            @if (chartTeams.Count > 2)
+            {
+                <polyline class="is-c" points="@Poly(chartTeams[2])" fill="none"></polyline>
+            }
+        </svg>
+        <ul class="v2-story-legend">
+            @for (var i = 0; i < chartTeams.Count; i++)
+            {
+                <li class="is-@(i == 0 ? "a" : i == 1 ? "b" : "c")">@chartTeams[i].Team.Name</li>
+            }
+        </ul>
+        <ol class="v2-story-axis">
+            @foreach (var round in rounds)
+            {
+                <li>F@(round.Round)@(round.Reconstructed ? "*" : "")</li>
+            }
+        </ol>
+        @{
+            var previous = rounds[^2];
+            var latest = rounds[^1];
+        }
+        <h5>Los movimientos desde la fecha @previous.Round</h5>
+        <ul class="v2-story-moves">
+            @foreach (var team in chartTeams)
+            {
+                var now = latest.Teams.FirstOrDefault(item => item.TeamId == team.Team.Id)?.TitleProbability ?? team.TitleProbability;
+                var before = previous.Teams.FirstOrDefault(item => item.TeamId == team.Team.Id)?.TitleProbability ?? now;
+                var delta = now - before;
+                <li>
+                    <span>@team.Team.Name <small>@Pct(now)</small></span>
+                    @if (Math.Abs(delta) < 0.02)
+                    {
+                        <b>sin cambio</b>
+                    }
+                    else
+                    {
+                        <b class="@(delta > 0 ? "is-up" : "is-down")">@Pp(delta)</b>
+                    }
+                </li>
+            }
+        </ul>
+    </section>
+}
+else if (!string.IsNullOrWhiteSpace(history?.Note))
+{
+    <p class="v2-story-note">@history.Note</p>
+}

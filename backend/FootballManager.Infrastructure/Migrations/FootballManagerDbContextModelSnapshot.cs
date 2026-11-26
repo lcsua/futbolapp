@@ -1386,6 +1386,90 @@ namespace FootballManager.Infrastructure.Migrations
                     b.ToTable("players", (string)null);
                 });
 
+            modelBuilder.Entity("FootballManager.Domain.Entities.PredictionSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CalculatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("calculated_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CutoffRound")
+                        .HasColumnType("integer")
+                        .HasColumnName("cutoff_round");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DivisionSlug")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("division_slug");
+
+                    b.Property<double>("ExpectedPoints")
+                        .HasColumnType("double precision")
+                        .HasColumnName("expected_points");
+
+                    b.Property<double>("ExpectedPosition")
+                        .HasColumnType("double precision")
+                        .HasColumnName("expected_position");
+
+                    b.Property<string>("LeagueSlug")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("league_slug");
+
+                    b.Property<string>("ModelVersion")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("model_version");
+
+                    b.Property<double>("PodiumProbability")
+                        .HasColumnType("double precision")
+                        .HasColumnName("podium_probability");
+
+                    b.Property<bool>("Reconstructed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("reconstructed");
+
+                    b.Property<string>("SeasonSlug")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("season_slug");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("team_id");
+
+                    b.Property<double>("TitleProbability")
+                        .HasColumnType("double precision")
+                        .HasColumnName("title_probability");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LeagueSlug", "SeasonSlug", "DivisionSlug", "TeamId", "CutoffRound", "ModelVersion", "Reconstructed")
+                        .IsUnique()
+                        .HasDatabaseName("ux_prediction_snapshots_cutoff");
+
+                    b.ToTable("prediction_snapshots", (string)null);
+                });
+
             modelBuilder.Entity("FootballManager.Domain.Entities.PushFollow", b =>
                 {
                     b.Property<Guid>("Id")

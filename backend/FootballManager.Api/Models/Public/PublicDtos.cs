@@ -287,6 +287,95 @@ public class PredictionDivisionPublicDto
     public DateTime GeneratedAtUtc { get; set; }
     public List<PredictionTeamPublicDto> Teams { get; set; } = new();
     public List<PredictionMatchPublicDto> NextRound { get; set; } = new();
+    public PredictionRacePublicDto? Race { get; set; }
+    public List<PredictionPathPublicDto> Paths { get; set; } = new();
+    public List<PredictionWhatIfPublicDto> WhatIfs { get; set; } = new();
+    public PredictionHistoryPublicDto? History { get; set; }
+}
+
+public class PredictionRacePublicDto
+{
+    public string Kind { get; set; } = string.Empty;
+    public string Headline { get; set; } = string.Empty;
+    public string Summary { get; set; } = string.Empty;
+    public int PointGap { get; set; }
+    public int MatchesLeft { get; set; }
+    public int PointsInPlay { get; set; }
+    public List<Guid> CandidateIds { get; set; } = new();
+}
+
+public class PredictionPathPublicDto
+{
+    public Guid TeamId { get; set; }
+    public string Stance { get; set; } = string.Empty;
+    public string StanceLabel { get; set; } = string.Empty;
+    public string Summary { get; set; } = string.Empty;
+    public int CurrentPoints { get; set; }
+    public int MaxPoints { get; set; }
+    public int RivalMax { get; set; }
+    public int? PointsToClinch { get; set; }
+    public string PointsNote { get; set; } = string.Empty;
+    public int BestPosition { get; set; }
+    public int WorstPosition { get; set; }
+    public string PositionNote { get; set; } = string.Empty;
+    public bool CanClinchNextRound { get; set; }
+    public string ClinchNote { get; set; } = string.Empty;
+    public List<PredictionCampaignPublicDto> Campaigns { get; set; } = new();
+}
+
+public class PredictionCampaignPublicDto
+{
+    public string Marks { get; set; } = string.Empty;
+    public int Points { get; set; }
+    public bool SecuresTitle { get; set; }
+}
+
+public class PredictionWhatIfPublicDto
+{
+    public Guid TeamId { get; set; }
+    public Guid MatchId { get; set; }
+    public int Round { get; set; }
+    public string OpponentName { get; set; } = string.Empty;
+    public double WinTitle { get; set; }
+    public double DrawTitle { get; set; }
+    public double LossTitle { get; set; }
+    public bool WinReliable { get; set; }
+    public bool DrawReliable { get; set; }
+    public bool LossReliable { get; set; }
+    public List<PredictionWhatIfRivalPublicDto> Rivals { get; set; } = new();
+}
+
+public class PredictionWhatIfRivalPublicDto
+{
+    public Guid TeamId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public double IfWin { get; set; }
+    public double IfDraw { get; set; }
+    public double IfLoss { get; set; }
+}
+
+public class PredictionHistoryPublicDto
+{
+    public bool Available { get; set; }
+    public bool Reconstructed { get; set; }
+    public string Note { get; set; } = string.Empty;
+    public List<PredictionHistoryRoundPublicDto> Rounds { get; set; } = new();
+}
+
+public class PredictionHistoryRoundPublicDto
+{
+    public int Round { get; set; }
+    public bool Reconstructed { get; set; }
+    public List<PredictionHistoryTeamPublicDto> Teams { get; set; } = new();
+}
+
+public class PredictionHistoryTeamPublicDto
+{
+    public Guid TeamId { get; set; }
+    public double TitleProbability { get; set; }
+    public double PodiumProbability { get; set; }
+    public double ExpectedPosition { get; set; }
+    public double ExpectedPoints { get; set; }
 }
 
 public class PredictionTeamPublicDto
@@ -308,6 +397,12 @@ public class PredictionTeamPublicDto
     public bool MathematicallyEliminated { get; set; }
     public string Form { get; set; } = string.Empty;
     public List<double> PositionProbability { get; set; } = new();
+    public double PodiumProbability { get; set; }
+    public int PointsLow { get; set; }
+    public int PointsHigh { get; set; }
+    public int PositionLow { get; set; }
+    public int PositionHigh { get; set; }
+    public double? TitleChange { get; set; }
 }
 
 public class PredictionMatchPublicDto
@@ -327,6 +422,8 @@ public class PredictionMatchPublicDto
     public int LikelyAwayGoals { get; set; }
     public string HomeForm { get; set; } = string.Empty;
     public string AwayForm { get; set; } = string.Empty;
+    public string FavoriteLabel { get; set; } = string.Empty;
+    public string ToneLabel { get; set; } = string.Empty;
 }
 
 public class LeagueDocumentPublicDto
