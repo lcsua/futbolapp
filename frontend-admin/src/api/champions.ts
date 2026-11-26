@@ -139,7 +139,7 @@ function drawFitted(source: CanvasImageSource, sourceWidth: number, sourceHeight
 }
 
 export async function shrinkChampionPhoto(file: File): Promise<File> {
-  const bitmap = await createImageBitmap(file)
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
   try {
     let maxEdge = CHAMPION_PHOTO_MAX_EDGE
     let quality = 0.82
