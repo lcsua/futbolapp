@@ -58,8 +58,8 @@
         <p class="v2-story-race__summary">@Model.Race.Summary</p>
         <dl class="v2-story-race__facts">
             <div><dt>@Model.Race.PointGap</dt><dd>@(Model.Race.PointGap == 1 ? "Punto de diferencia" : "Puntos de diferencia")</dd></div>
-            <div><dt>@Model.Race.MatchesLeft</dt><dd>Partidos que le quedan</dd></div>
-            <div><dt>@Model.Race.PointsInPlay</dt><dd>Puntos en juego</dd></div>
+            <div><dt>@Model.Race.MatchesLeft</dt><dd>Partidos de @candidates[0].Team.Name</dd></div>
+            <div><dt>@Model.Race.PointsInPlay</dt><dd>Puntos que puede sumar</dd></div>
         </dl>
     </section>
 }
@@ -229,9 +229,17 @@
             {
                 var now = latest.Teams.FirstOrDefault(item => item.TeamId == team.Team.Id)?.TitleProbability ?? team.TitleProbability;
                 var before = previous.Teams.FirstOrDefault(item => item.TeamId == team.Team.Id)?.TitleProbability ?? now;
+                var delta = now - before;
                 <li>
                     <span>@team.Team.Name <small>@Pct(now)</small></span>
-                    <b class="@(now >= before ? "is-up" : "is-down")">@Pp(now - before)</b>
+                    @if (Math.Abs(delta) < 0.02)
+                    {
+                        <b>sin cambio</b>
+                    }
+                    else
+                    {
+                        <b class="@(delta > 0 ? "is-up" : "is-down")">@Pp(delta)</b>
+                    }
                 </li>
             }
         </ul>

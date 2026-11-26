@@ -139,7 +139,7 @@ public static class TitlePathCalculator
         IReadOnlyList<TeamOutlook> teams,
         IReadOnlyList<PredictionFixture> pending)
     {
-        var nextRound = pending.Count == 0 ? (int?)null : pending.Min(match => match.Round);
+        var nextRound = pending.Count == 0 ? (int?)null : ChampionshipPredictor.NextFixtureRound(pending);
         var nextMatches = nextRound == null
             ? new List<PredictionFixture>()
             : pending.Where(match => match.Round == nextRound.Value).Take(10).ToList();
@@ -177,19 +177,27 @@ public static class TitlePathCalculator
             : "Ese número supera el máximo de cada rival aunque ellos ganen todos sus partidos. Un empate en puntos no se cuenta como título asegurado.";
 
         var best = 1 + teams.Count(rival => rival.TeamId != team.TeamId && rival.CurrentPoints > maxPoints);
-        var worst = 1 + teams.Count(rival => rival.TeamId != team.TeamId && rival.CurrentPoints + TitleRaceCalculator.Remaining(pending, rival.TeamId) * 3 > team.CurrentPoints);
+        var worst = WorstPosition(team, teams, pending, out var worstExact);
         var canPass = teams.Any(rival =>
             rival.TeamId != team.TeamId
             && rival.CurrentPoints <= maxPoints
             && rival.CurrentPoints + TitleRaceCalculator.Remaining(pending, rival.TeamId) * 3 > maxPoints);
         var tieNote = teams.Any(rival =>
-            rival.TeamId != team.TeamId
-            && (rival.CurrentPoints == maxPoints || rival.CurrentPoints + TitleRaceCalculator.Remaining(pending, rival.TeamId) * 3 == team.CurrentPoints));
+        {
+            if (rival.TeamId == team.TeamId)
+                return false;
+            var ceiling = rival.CurrentPoints + TitleRaceCalculator.Remaining(pending, rival.TeamId) * 3;
+            return rival.CurrentPoints == maxPoints
+                || ceiling == team.CurrentPoints
+                || ceiling == maxPoints;
+        });
         var positionNote = canPass
             ? "Ese mejor puesto solo cuenta a quienes ya superan el techo propio. Otros cruces todavía pueden dejar a un rival por encima, así que no es un puesto asegurado."
             : tieNote
                 ? "Si hay igualdad de puntos, el desempate puede mover este límite. No se presenta como una certeza."
                 : "El límite usa solo los puntos, con desigualdad estricta. El desempate no hace falta para sostenerlo.";
+        if (!worstExact)
+            positionNote += " El peor puesto suma por separado a rivales que todavía se cruzan, así que puede quedar más abajo de lo que el fixture permite.";
 
         var canClinch = exhaustive && CanClinch(team.TeamId, teams, pending, nextMatches);
         var clinchNote = !exhaustive
@@ -242,6 +250,78 @@ public static class TitlePathCalculator
             canClinch,
             clinchNote,
             Campaigns(team.CurrentPoints, mine.Count, rivalMax, winOutSecures));
+    }
+
+    private static int WorstPosition(
+        TeamOutlook team,
+        IReadOnlyList<TeamOutlook> teams,
+        IReadOnlyList<PredictionFixture> pending,
+        out bool exact)
+    {
+        var threshold = team.CurrentPoints;
+        var already = teams.Count(rival => rival.TeamId != team.TeamId && rival.CurrentPoints > threshold);
+        var contenders = teams.Where(rival =>
+            rival.TeamId != team.TeamId
+            && rival.CurrentPoints <= threshold
+            && rival.CurrentPoints + TitleRaceCalculator.Remaining(pending, rival.TeamId) * 3 > threshold).ToList();
+        if (contenders.Count == 0)
+        {
+            exact = true;
+            return 1 + already;
+        }
+
+        var ids = contenders.Select(item => item.TeamId).ToHashSet();
+        var internalMatches = pending.Where(match =>
+            match.Home.Counts && match.Away.Counts
+            && ids.Contains(match.Home.TeamId)
+            && ids.Contains(match.Away.TeamId)).ToList();
+        if (internalMatches.Count > 10)
+        {
+            exact = false;
+            return 1 + already + contenders.Count;
+        }
+
+        var bases = new Dictionary<Guid, int>();
+        foreach (var rival in contenders)
+        {
+            var external = pending.Count(match =>
+                TitleRaceCalculator.Remaining(new[] { match }, rival.TeamId) == 1
+                && !(match.Home.Counts && match.Away.Counts
+                    && ids.Contains(match.Home.TeamId)
+                    && ids.Contains(match.Away.TeamId)));
+            bases[rival.TeamId] = rival.CurrentPoints + external * 3;
+        }
+
+        var bestPassed = 0;
+        var outcomes = 1;
+        for (var i = 0; i < internalMatches.Count; i++)
+            outcomes *= 3;
+        for (var mask = 0; mask < outcomes; mask++)
+        {
+            var extra = ids.ToDictionary(id => id, _ => 0);
+            var value = mask;
+            foreach (var match in internalMatches)
+            {
+                var outcome = value % 3;
+                value /= 3;
+                if (outcome == 0)
+                    extra[match.Home.TeamId] += 3;
+                else if (outcome == 2)
+                    extra[match.Away.TeamId] += 3;
+                else
+                {
+                    extra[match.Home.TeamId] += 1;
+                    extra[match.Away.TeamId] += 1;
+                }
+            }
+
+            var passed = contenders.Count(rival => bases[rival.TeamId] + extra[rival.TeamId] > threshold);
+            if (passed > bestPassed)
+                bestPassed = passed;
+        }
+
+        exact = true;
+        return 1 + already + bestPassed;
     }
 
     private static bool CanClinch(

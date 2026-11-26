@@ -63,7 +63,7 @@ public sealed class PredictionSnapshotWriter
                             outlook.ModelVersion,
                             now));
                     }
-                    else if (!round.Reconstructed)
+                    else
                     {
                         row.Refresh(team.TitleProbability, team.PodiumProbability, team.ExpectedPosition, team.ExpectedPoints, now);
                     }

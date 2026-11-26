@@ -246,6 +246,99 @@ public class PredictionStoryTests
     }
 
     [Fact]
+    public void What_if_uses_an_undated_earlier_round_ahead_of_a_later_dated_one()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var division = new PredictionDivision(
+            Guid.NewGuid(),
+            "B",
+            new[]
+            {
+                new PredictionBaseline(alpha, "Alpha", 1, 4, 8, 2, 10),
+                new PredictionBaseline(beta, "Beta", 2, 4, 4, 4, 6)
+            },
+            new[]
+            {
+                Played(1, new DateTime(2026, 8, 1), alpha, beta, 2, 0),
+                Played(2, new DateTime(2026, 8, 8), alpha, Guid.NewGuid(), 1, 0),
+                Played(3, new DateTime(2026, 8, 15), beta, Guid.NewGuid(), 1, 1),
+                Played(4, new DateTime(2026, 8, 22), alpha, Guid.NewGuid(), 3, 1),
+                new PredictionFixture(Guid.NewGuid(), 9, null, new PredictionSide(alpha, "Alpha", true), new PredictionSide(beta, "Beta", true), null, null, false),
+                Match(12, alpha, "Alpha", beta, "Beta")
+            });
+
+        var outlook = ChampionshipPredictor.Predict(division, new PredictionOptions { Simulations = 80, MinCompletedMatches = 4 });
+
+        Assert.Equal(9, outlook.WhatIfs!.Single(item => item.TeamId == alpha).Round);
+    }
+
+    [Fact]
+    public void A_past_suspended_round_is_not_the_next_round_for_a_clinch()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var gamma = Guid.NewGuid();
+        var delta = Guid.NewGuid();
+        var teams = new[]
+        {
+            Team(alpha, "Alpha", 10, 0.6),
+            Team(beta, "Beta", 12, 0.3),
+            Team(gamma, "Gamma", 0, 0.05),
+            Team(delta, "Delta", 0, 0.05)
+        };
+        var pending = new[]
+        {
+            new PredictionFixture(Guid.NewGuid(), 5, new DateTime(2026, 11, 1), new PredictionSide(alpha, "Alpha", true), new PredictionSide(Guid.NewGuid(), "Otro", true), null, null, false),
+            new PredictionFixture(Guid.NewGuid(), 14, new DateTime(2026, 11, 28), new PredictionSide(gamma, "Gamma", true), new PredictionSide(delta, "Delta", true), null, null, false)
+        };
+
+        var leader = TitlePathCalculator.Build(teams, pending).Single(path => path.TeamId == alpha);
+
+        Assert.False(leader.CanClinchNextRound);
+    }
+
+    [Fact]
+    public void A_rival_who_can_tie_the_ceiling_is_not_called_safe()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var teams = new[]
+        {
+            Team(alpha, "Alpha", 23, 0.5),
+            Team(beta, "Beta", 23, 0.5)
+        };
+        var pending = new[]
+        {
+            Match(2, alpha, "Alpha", Guid.NewGuid(), "Otro"),
+            Match(2, beta, "Beta", Guid.NewGuid(), "Ajeno")
+        };
+
+        var leader = TitlePathCalculator.Build(teams, pending).Single(path => path.TeamId == alpha);
+
+        Assert.Contains("desempate", leader.PositionNote, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Rivals_who_only_play_each_other_do_not_both_count_in_the_worst_position()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var gamma = Guid.NewGuid();
+        var teams = new[]
+        {
+            Team(alpha, "Alpha", 10, 0.4),
+            Team(beta, "Beta", 8, 0.3),
+            Team(gamma, "Gamma", 8, 0.3)
+        };
+        var pending = new[] { Match(2, beta, "Beta", gamma, "Gamma") };
+
+        var leader = TitlePathCalculator.Build(teams, pending).Single(path => path.TeamId == alpha);
+
+        Assert.Equal(2, leader.WorstPosition);
+    }
+
+    [Fact]
     public void What_if_probabilities_stay_between_zero_and_one()
     {
         var alpha = Guid.NewGuid();

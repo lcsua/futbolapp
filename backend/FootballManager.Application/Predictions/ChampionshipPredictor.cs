@@ -486,7 +486,7 @@ public static class ChampionshipPredictor
     /// A suspended or postponed match from an earlier date stays in the simulation,
     /// but it does not replace the upcoming jornada.
     /// </summary>
-    private static int NextFixtureRound(IReadOnlyList<PredictionFixture> pending)
+    internal static int NextFixtureRound(IReadOnlyList<PredictionFixture> pending)
     {
         var today = ArgentinaClock.Today();
         var upcoming = pending
@@ -785,28 +785,34 @@ public static class ChampionshipPredictor
         var slots = new int[teams.Count];
         Array.Fill(slots, -1);
         var today = ArgentinaClock.Today();
-        for (var pass = 0; pass < 3; pass++)
-        {
-            for (var index = 0; index < pending.Count; index++)
-            {
-                var match = pending[index];
-                var dated = match.Kickoff != null;
-                var upcoming = dated && match.Kickoff!.Value.Date >= today;
-                var take = pass == 0 ? upcoming : pass == 1 ? !dated : true;
-                if (!take)
-                    continue;
-                void Claim(PredictionSide side)
-                {
-                    if (!side.Counts)
-                        return;
-                    var team = IndexOf(teams, side.TeamId);
-                    if (team >= 0 && slots[team] < 0)
-                        slots[team] = index;
-                }
+        var rank = new int[teams.Count];
+        var round = new int[teams.Count];
+        Array.Fill(rank, int.MaxValue);
+        Array.Fill(round, int.MaxValue);
 
-                Claim(match.Home);
-                Claim(match.Away);
+        for (var index = 0; index < pending.Count; index++)
+        {
+            var match = pending[index];
+            var upcoming = match.Kickoff == null || match.Kickoff.Value.Date >= today;
+            var matchRank = upcoming ? 0 : 1;
+            void Consider(PredictionSide side)
+            {
+                if (!side.Counts)
+                    return;
+                var team = IndexOf(teams, side.TeamId);
+                if (team < 0)
+                    return;
+                var better = matchRank < rank[team]
+                    || (matchRank == rank[team] && match.Round < round[team]);
+                if (!better)
+                    return;
+                slots[team] = index;
+                rank[team] = matchRank;
+                round[team] = match.Round;
             }
+
+            Consider(match.Home);
+            Consider(match.Away);
         }
 
         return slots;
@@ -1052,10 +1058,10 @@ public static class ChampionshipPredictor
         {
             var home = teams.FirstOrDefault(team => team.TeamId == match.HomeTeamId);
             var away = teams.FirstOrDefault(team => team.TeamId == match.AwayTeamId);
-            var top = Math.Max(match.HomeWin, Math.Max(match.Draw, match.AwayWin));
+            var sideTop = Math.Max(match.HomeWin, match.AwayWin);
             var tone = home != null && away != null && home.TitleProbability >= 0.05 && away.TitleProbability >= 0.05
                 ? "Encuentro decisivo"
-                : top >= 0.55
+                : sideTop >= 0.55 && sideTop > match.Draw
                     ? "Claro favorito"
                     : "Partido parejo";
             var favorite = match.HomeWin > match.AwayWin && match.HomeWin > match.Draw
