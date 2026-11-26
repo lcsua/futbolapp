@@ -40,6 +40,8 @@ public sealed class SeoUrlBuilder
     public string LeagueHome(string leagueSlug) => Absolute($"/ligas/{leagueSlug}");
     public string LeagueFixture(string leagueSlug) => Absolute($"/ligas/{leagueSlug}/fixture");
     public string LeagueStandings(string leagueSlug) => Absolute($"/ligas/{leagueSlug}/posiciones");
+    public string LeagueSimulator(string leagueSlug) => Absolute($"/ligas/{leagueSlug}/simulador");
+    public string LeaguePredictions(string leagueSlug) => Absolute($"/ligas/{leagueSlug}/predicciones");
     public string LeagueResults(string leagueSlug) => Absolute($"/ligas/{leagueSlug}/resultados");
     public string LeagueInformation(string leagueSlug) => Absolute($"/ligas/{leagueSlug}/informacion");
     public string Team(string leagueSlug, string teamSlug) => Absolute($"/ligas/{leagueSlug}/{teamSlug}");

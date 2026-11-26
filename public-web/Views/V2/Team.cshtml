@@ -222,6 +222,31 @@
             ViewData["UpcomingHref"] = string.IsNullOrWhiteSpace(leagueSlug) || string.IsNullOrWhiteSpace(teamSlug)
                 ? null
                 : Url.Content($"~/ligas/{leagueSlug}/{teamSlug}?tab=partidos{(string.IsNullOrWhiteSpace(seasonSlug) ? "" : "&season=" + Uri.EscapeDataString(seasonSlug))}#proximos-partidos");
+            string? predictionsHref = null;
+            var seasonOpen = summary.Season == null || summary.Season.IsActive;
+            var hasPending = summary.NextMatchesTotal > 0 || (summary.NextMatches?.Count ?? 0) > 0;
+            if (seasonOpen && hasPending && !string.IsNullOrWhiteSpace(leagueSlug))
+            {
+                string? divisionSlug = null;
+                var divisionName = summary.Standing?.DivisionName;
+                if (string.IsNullOrWhiteSpace(divisionName))
+                {
+                    divisionName = summary.NextMatches?.Select(m => m.DivisionName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n))
+                        ?? summary.LastResults?.Select(m => m.DivisionName).FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+                }
+                var seasonMeta = seasons?.FirstOrDefault(s =>
+                    string.Equals(s.Slug, seasonSlug, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(divisionName) && seasonMeta != null)
+                {
+                    divisionSlug = seasonMeta.Divisions.FirstOrDefault(d =>
+                        string.Equals(d.Name, divisionName, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(d.Slug, divisionName, StringComparison.OrdinalIgnoreCase))?.Slug;
+                }
+
+                predictionsHref = Url.Content(PublicWeb.Helpers.LeagueLinks.Section(
+                    leagueSlug, "predicciones", seasonSlug, divisionSlug, teamSlug));
+            }
+            ViewData["SimulatorHref"] = predictionsHref;
         }
         @await Html.PartialAsync("~/Views/V2/Team/_Dashboard.cshtml", dashboard)
     </section>

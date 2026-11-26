@@ -1,0 +1,107 @@
+@model PublicWeb.Models.Public.SimulatorDivisionViewModel
+@{
+    var leagueSlug = ViewData["LeagueSlug"] as string ?? "";
+    var seasonSlug = ViewData["SeasonSlug"] as string;
+    var focusTeam = ViewData["FocusTeam"] as string;
+    var live = ViewData["SimLive"] as bool? == true;
+    var rows = Model.Official ?? new List<PublicWeb.Models.Public.SimulatorOfficialRowViewModel>();
+
+    string FormatGd(int gd) => gd > 0 ? $"+{gd}" : gd.ToString();
+    string? TeamUrl(PublicWeb.Models.Public.TeamViewModel team)
+    {
+        if (string.IsNullOrWhiteSpace(leagueSlug) || string.IsNullOrWhiteSpace(team.Slug))
+            return null;
+        var seasonQs = string.IsNullOrWhiteSpace(seasonSlug) ? "" : "?season=" + Uri.EscapeDataString(seasonSlug);
+        return Url.Content($"~/ligas/{leagueSlug}/{team.Slug}{seasonQs}");
+    }
+}
+<div class="v2-sim-scroll">
+    <table class="v2-sim-table">
+        <caption class="visually-hidden">@(live ? "Tabla proyectada" : "Tabla oficial") de @Model.DivisionName. No modifica los resultados oficiales.</caption>
+        <thead>
+            <tr>
+                <th scope="col" class="v2-sim-pos is-pos">Pos</th>
+                <th scope="col" class="v2-sim-team is-team">Equipo</th>
+                <th scope="col" class="v2-sim-num" title="Partidos jugados">PJ</th>
+                <th scope="col" class="v2-sim-num" title="Ganados">G</th>
+                <th scope="col" class="v2-sim-num" title="Empatados">E</th>
+                <th scope="col" class="v2-sim-num" title="Perdidos">P</th>
+                <th scope="col" class="v2-sim-num" title="Goles a favor">GF</th>
+                <th scope="col" class="v2-sim-num" title="Goles en contra">GC</th>
+                <th scope="col" class="v2-sim-num" title="Diferencia de gol">DG</th>
+                <th scope="col" class="v2-sim-pts" title="Puntos">Pts</th>
+                @if (live)
+                {
+                    <th scope="col" class="v2-sim-delta" title="Puntos adicionales respecto de la tabla oficial">Δ</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in rows)
+            {
+                var teamUrl = TeamUrl(row.Team);
+                var focused = !string.IsNullOrWhiteSpace(focusTeam)
+                    && string.Equals(row.Team.Slug, focusTeam, StringComparison.OrdinalIgnoreCase);
+                var logo = row.Team.LogoThumbUrl ?? row.Team.LogoUrl;
+                var compact = PublicWeb.Helpers.TeamDisplayHelper.GetCompactName(row.Team.Name, row.Team.ShortName);
+                <tr class="@((row.Position == 1 ? "is-leader" : null)) @(focused ? "is-focus" : null)"
+                    data-team-id="@row.Team.Id"
+                    data-name="@row.Team.Name"
+                    data-slug="@row.Team.Slug"
+                    data-short="@compact"
+                    data-logo="@logo"
+                    data-initials="@PublicWeb.Helpers.TeamDisplayHelper.GetInitials(row.Team.Name)"
+                    data-position="@row.Position"
+                    data-played="@row.Played"
+                    data-won="@row.Won"
+                    data-drawn="@row.Drawn"
+                    data-lost="@row.Lost"
+                    data-gf="@row.GoalsFor"
+                    data-ga="@row.GoalsAgainst"
+                    data-points="@row.Points">
+                    <td class="v2-sim-pos is-pos">
+                        <span data-field="position">@row.Position</span>
+                        @if (live)
+                        {
+                            <span class="v2-sim-move" data-field="move"></span>
+                        }
+                    </td>
+                    <td class="v2-sim-team is-team">
+                        @if (teamUrl != null)
+                        {
+                            <a class="v2-sim-team__link" href="@teamUrl" title="@row.Team.Name">
+                                @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
+                                <span class="v2-sim-team__name" data-field="name">@row.Team.Name</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="v2-sim-team__link" title="@row.Team.Name">
+                                @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", row.Team)
+                                <span class="v2-sim-team__name" data-field="name">@row.Team.Name</span>
+                            </div>
+                        }
+                    </td>
+                    <td class="v2-sim-num" data-field="played">@row.Played</td>
+                    <td class="v2-sim-num" data-field="won">@row.Won</td>
+                    <td class="v2-sim-num" data-field="drawn">@row.Drawn</td>
+                    <td class="v2-sim-num" data-field="lost">@row.Lost</td>
+                    <td class="v2-sim-num" data-field="gf">@row.GoalsFor</td>
+                    <td class="v2-sim-num" data-field="ga">@row.GoalsAgainst</td>
+                    <td class="v2-sim-num" data-field="gd">@FormatGd(row.GoalDifference)</td>
+                    <td class="v2-sim-pts" data-field="points">@row.Points</td>
+                    @if (live)
+                    {
+                        <td class="v2-sim-delta" data-field="delta">0</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@if (live && rows.Count == 0)
+{
+    <p class="v2-sim-note">La tabla oficial todavía no tiene equipos. Aparecen acá cuando cargás un marcador completo.</p>
+}

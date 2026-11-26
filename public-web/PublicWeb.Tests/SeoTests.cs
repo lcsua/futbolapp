@@ -294,6 +294,8 @@ public class SitemapVeteranosExampleTests
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/fixture", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/posiciones", locs);
+        Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/predicciones", locs);
+        Assert.DoesNotContain("https://miliga.com.ar/ligas/veteranos-de-perico/simulador", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/resultados", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/informacion", locs);
         Assert.Contains("https://miliga.com.ar/ligas/veteranos-de-perico/bmalvinas-las-pts", locs);

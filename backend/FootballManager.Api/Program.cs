@@ -37,6 +37,19 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicLeagueService>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicTeamService>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicMatchService>();
+builder.Services.AddSingleton<FootballManager.Api.Services.Public.PredictionCache>();
+var predictionSource = builder.Configuration["Predictions:SourceBaseUrl"];
+if (!string.IsNullOrWhiteSpace(predictionSource))
+{
+    builder.Services.AddHttpClient("PredictionSource", client =>
+    {
+        if (!predictionSource.EndsWith('/'))
+            predictionSource += "/";
+        client.BaseAddress = new Uri(predictionSource);
+        client.Timeout = TimeSpan.FromSeconds(60);
+    });
+}
+builder.Services.AddScoped<FootballManager.Api.Services.Public.RemotePredictionSource>();
 builder.Services.AddScoped<FootballManager.Api.Services.Public.PublicStructuredService>();
 builder.Services.AddScoped<FootballManager.Api.Services.LeagueLogoMigrationService>();
 builder.Services.AddScoped<FootballManager.Api.Services.MatchProcessorService>();

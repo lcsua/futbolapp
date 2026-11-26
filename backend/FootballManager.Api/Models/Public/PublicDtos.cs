@@ -179,6 +179,156 @@ public class LeagueDocumentCategoryPublicDto
     public List<LeagueDocumentPublicDto> Documents { get; set; } = new();
 }
 
+public class SimulatorPublicDto
+{
+    public string SeasonName { get; set; } = string.Empty;
+    public string SeasonSlug { get; set; } = string.Empty;
+    public bool Supported { get; set; }
+    public string? Limitation { get; set; }
+    public string? Warning { get; set; }
+    public SimulatorRulesPublicDto Rules { get; set; } = new();
+    public List<SimulatorDivisionPublicDto> Divisions { get; set; } = new();
+}
+
+public class SimulatorRulesPublicDto
+{
+    public int WinPoints { get; set; } = 3;
+    public int DrawPoints { get; set; } = 1;
+    public int LossPoints { get; set; }
+    public List<string> TieBreakers { get; set; } = new();
+    public List<SimulatorAdjustmentPublicDto> Adjustments { get; set; } = new();
+}
+
+public class SimulatorAdjustmentPublicDto
+{
+    public Guid TeamId { get; set; }
+    public int Points { get; set; }
+}
+
+public class SimulatorDivisionPublicDto
+{
+    public string DivisionName { get; set; } = string.Empty;
+    public string DivisionSlug { get; set; } = string.Empty;
+    public int PendingCount { get; set; }
+    public List<SimulatorOfficialRowPublicDto> Official { get; set; } = new();
+    public List<SimulatorRoundPublicDto> Rounds { get; set; } = new();
+}
+
+public class SimulatorOfficialRowPublicDto
+{
+    public int Position { get; set; }
+    public TeamPublicDto Team { get; set; } = new();
+    public int Played { get; set; }
+    public int Won { get; set; }
+    public int Drawn { get; set; }
+    public int Lost { get; set; }
+    public int GoalsFor { get; set; }
+    public int GoalsAgainst { get; set; }
+    public int Points { get; set; }
+}
+
+public class SimulatorRoundPublicDto
+{
+    public int Round { get; set; }
+    public List<SimulatorMatchPublicDto> Matches { get; set; } = new();
+    public List<SimulatorByePublicDto> Byes { get; set; } = new();
+}
+
+public class SimulatorMatchPublicDto
+{
+    public Guid Id { get; set; }
+    public int Round { get; set; }
+    public DateTime? Kickoff { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string StatusLabel { get; set; } = string.Empty;
+    public TeamPublicDto Home { get; set; } = new();
+    public TeamPublicDto Away { get; set; } = new();
+    public bool HomeCounts { get; set; }
+    public bool AwayCounts { get; set; }
+}
+
+public class SimulatorByePublicDto
+{
+    public TeamPublicDto Team { get; set; } = new();
+}
+
+public class PredictionsPublicDto
+{
+    public string SeasonName { get; set; } = string.Empty;
+    public string SeasonSlug { get; set; } = string.Empty;
+    public DateTime GeneratedAtUtc { get; set; }
+    public string? Warning { get; set; }
+    public List<PredictionDivisionPublicDto> Divisions { get; set; } = new();
+}
+
+public class PredictionDivisionPublicDto
+{
+    public string DivisionName { get; set; } = string.Empty;
+    public string DivisionSlug { get; set; } = string.Empty;
+    public bool Supported { get; set; }
+    public string? Limitation { get; set; }
+    public bool Published { get; set; }
+    public bool Finished { get; set; }
+    public string? UnpublishedReason { get; set; }
+    public string Maturity { get; set; } = string.Empty;
+    public string MaturityNote { get; set; } = string.Empty;
+    public int CompletedMatches { get; set; }
+    public int PendingMatches { get; set; }
+    public int PendingRounds { get; set; }
+    public double PlayedRatio { get; set; }
+    public int Simulations { get; set; }
+    public long ElapsedMilliseconds { get; set; }
+    public string ModelVersion { get; set; } = string.Empty;
+    public bool ChampionMeansFirstPlace { get; set; }
+    public string ChampionNote { get; set; } = string.Empty;
+    public bool PromotionSupported { get; set; }
+    public string PromotionNote { get; set; } = string.Empty;
+    public int? NextRoundNumber { get; set; }
+    public DateTime GeneratedAtUtc { get; set; }
+    public List<PredictionTeamPublicDto> Teams { get; set; } = new();
+    public List<PredictionMatchPublicDto> NextRound { get; set; } = new();
+}
+
+public class PredictionTeamPublicDto
+{
+    public TeamPublicDto Team { get; set; } = new();
+    public int OfficialPosition { get; set; }
+    public int CurrentPoints { get; set; }
+    public int Played { get; set; }
+    public int GoalsFor { get; set; }
+    public int GoalsAgainst { get; set; }
+    public double ExpectedPoints { get; set; }
+    public double ExpectedPosition { get; set; }
+    public int ProjectedRank { get; set; }
+    public int PlacesDelta { get; set; }
+    public double TitleProbability { get; set; }
+    public string TitleLabel { get; set; } = string.Empty;
+    public string TitleKind { get; set; } = string.Empty;
+    public bool MathematicallyCrowned { get; set; }
+    public bool MathematicallyEliminated { get; set; }
+    public string Form { get; set; } = string.Empty;
+    public List<double> PositionProbability { get; set; } = new();
+}
+
+public class PredictionMatchPublicDto
+{
+    public Guid MatchId { get; set; }
+    public int Round { get; set; }
+    public DateTime? Kickoff { get; set; }
+    public TeamPublicDto Home { get; set; } = new();
+    public TeamPublicDto Away { get; set; } = new();
+    public double HomeWin { get; set; }
+    public double Draw { get; set; }
+    public double AwayWin { get; set; }
+    public string HomeWinLabel { get; set; } = string.Empty;
+    public string DrawLabel { get; set; } = string.Empty;
+    public string AwayWinLabel { get; set; } = string.Empty;
+    public int LikelyHomeGoals { get; set; }
+    public int LikelyAwayGoals { get; set; }
+    public string HomeForm { get; set; } = string.Empty;
+    public string AwayForm { get; set; } = string.Empty;
+}
+
 public class LeagueDocumentPublicDto
 {
     public Guid Id { get; set; }

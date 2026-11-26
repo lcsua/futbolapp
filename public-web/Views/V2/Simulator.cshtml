@@ -1,0 +1,304 @@
+@model PublicWeb.Models.Public.SimulatorPageViewModel
+@{
+    Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    ViewBag.LeagueDetails = true;
+    ViewBag.OverlayGlobalHeader = true;
+    var league = ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
+    var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
+    var leagueSlug = league?.Slug ?? string.Empty;
+    var selectedSeason = seasons?.FirstOrDefault(s => string.Equals(s.Slug, Model.SeasonSlug, StringComparison.OrdinalIgnoreCase))
+        ?? seasons?.FirstOrDefault();
+    var divisions = selectedSeason?.Divisions ?? new List<PublicWeb.Models.Public.DivisionViewModel>();
+    var selectedDivision = ViewBag.Division as string ?? "all";
+    var focusTeam = ViewBag.FocusTeam as string;
+    var seasonName = Model.SeasonName;
+    var seasonSlug = string.IsNullOrWhiteSpace(Model.SeasonSlug) ? selectedSeason?.Slug : Model.SeasonSlug;
+
+    ViewData["Title"] = "Simulador" + (league != null ? $" · {league.Name}" : string.Empty);
+    ViewData["Description"] = "Pronosticá los resultados pendientes y descubrí cómo podría terminar la tabla de posiciones.";
+    ViewBag.PageLabel = "Simulador";
+    ViewBag.SeasonName = seasonName;
+    ViewBag.SeasonSlug = seasonSlug;
+    ViewBag.LeagueSlug = leagueSlug;
+
+    string? seoDivisionName = null;
+    if (!string.Equals(selectedDivision, "all", StringComparison.OrdinalIgnoreCase))
+    {
+        seoDivisionName = divisions.FirstOrDefault(d => string.Equals(d.Slug, selectedDivision, StringComparison.OrdinalIgnoreCase))?.Name
+            ?? Model.Divisions.FirstOrDefault(d => string.Equals(d.DivisionSlug, selectedDivision, StringComparison.OrdinalIgnoreCase))?.DivisionName;
+    }
+
+    if (league != null)
+    {
+        PublicWeb.Seo.SeoPageApplicator.Apply(
+            PublicWeb.Seo.SeoCopy.LeagueSimulator(league.Name, leagueSlug, seasonName, league.LogoUrl, seoDivisionName),
+            ViewData,
+            ViewBag);
+    }
+
+    var rulesJson = System.Text.Json.JsonSerializer.Serialize(
+        new
+        {
+            winPoints = Model.Rules.WinPoints,
+            drawPoints = Model.Rules.DrawPoints,
+            lossPoints = Model.Rules.LossPoints,
+            tieBreakers = Model.Rules.TieBreakers,
+            adjustments = Model.Rules.Adjustments.Select(a => new { teamId = a.TeamId, points = a.Points })
+        },
+        new System.Text.Json.JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default
+        });
+
+    string When(PublicWeb.Models.Public.SimulatorMatchViewModel match)
+    {
+        var bits = new List<string> { $"Fecha {match.Round}" };
+        if (match.Kickoff is DateTime kickoff && kickoff != default)
+        {
+            bits.Add(PublicWeb.Helpers.TeamDisplayHelper.FormatShortDate(kickoff));
+            var time = PublicWeb.Helpers.TeamDisplayHelper.FormatTimeOrNull(kickoff);
+            if (!string.IsNullOrWhiteSpace(time))
+                bits.Add(time);
+        }
+        return string.Join(" · ", bits);
+    }
+}
+
+@await Html.PartialAsync("~/Views/V2/League/_LeagueBackNav.cshtml")
+@await Html.PartialAsync("~/Views/V2/League/_LeagueHeader.cshtml", league)
+@await Html.PartialAsync("~/Views/V2/League/_CompetitionTabs.cshtml")
+@await Component.InvokeAsync("LeagueAds", new { slot = "LeagueTop" })
+
+<div class="v2-sim"
+     data-v2-simulator
+     data-supported="@(Model.Supported ? "true" : "false")"
+     data-league="@leagueSlug"
+     data-season="@seasonSlug"
+     data-focus-team="@focusTeam">
+    <header class="v2-sim-hero">
+        <p class="v2-sim-hero__kicker">Proyección</p>
+        <h2 class="v2-sim-hero__title">Simulador del campeonato</h2>
+        <p class="v2-sim-hero__lead">Pronosticá los resultados pendientes y descubrí cómo podría terminar la tabla de posiciones.</p>
+    </header>
+
+    @if (seasons != null && seasons.Count > 0)
+    {
+        <form method="get" class="v2-filter-bar" aria-label="Filtros del simulador" action="@Url.Content($"~/ligas/{leagueSlug}/simulador")">
+            @if (!string.IsNullOrWhiteSpace(focusTeam))
+            {
+                <input type="hidden" name="equipo" value="@focusTeam" />
+            }
+            <div class="v2-filter-bar__group">
+                <label for="v2-sim-season">Temporada</label>
+                <select id="v2-sim-season" name="season" class="v2-select" onchange="this.form.submit()">
+                    @foreach (var s in seasons)
+                    {
+                        if (string.Equals(seasonSlug, s.Slug, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@s.Slug" selected>@s.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@s.Slug">@s.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="v2-filter-bar__group">
+                <label for="v2-sim-division">División</label>
+                <select id="v2-sim-division" name="division" class="v2-select" onchange="this.form.submit()">
+                    @if (selectedDivision == "all")
+                    {
+                        <option value="all" selected>Todas</option>
+                    }
+                    else
+                    {
+                        <option value="all">Todas</option>
+                    }
+                    @foreach (var d in divisions)
+                    {
+                        if (string.Equals(selectedDivision, d.Slug, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@d.Slug" selected>@d.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@d.Slug">@d.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+        </form>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.Limitation))
+    {
+        <p class="v2-sim-banner" role="status">@Model.Limitation</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.Warning))
+    {
+        <p class="v2-sim-banner v2-sim-banner--warn" role="status">@Model.Warning</p>
+    }
+
+    @if (Model.Divisions.Count == 0)
+    {
+        <div class="v2-empty">No hay una división para simular en esta selección.</div>
+    }
+
+    @foreach (var div in Model.Divisions)
+    {
+        var live = Model.Supported && div.HasPending;
+        var tableId = "sim-table-" + div.DivisionSlug;
+        var officialHref = Url.Content(PublicWeb.Helpers.LeagueLinks.Section(leagueSlug, "posiciones", seasonSlug, div.DivisionSlug));
+        <section class="v2-sim-division"
+                 data-sim-division
+                 data-live="@(live ? "true" : "false")"
+                 aria-labelledby="sim-div-@div.DivisionSlug">
+            <div class="v2-result-group__head">
+                <h3 id="sim-div-@div.DivisionSlug" class="v2-result-group__division">
+                    <span class="v2-result-group__division-label">División:</span>
+                    <span class="v2-result-group__division-name">@div.DivisionName</span>
+                </h3>
+            </div>
+
+            @if (!live)
+            {
+                <p class="v2-sim-banner">
+                    @(div.HasPending
+                        ? "Esta división no se puede proyectar con las reglas disponibles."
+                        : "Este campeonato no tiene partidos pendientes. La tabla oficial queda como está.")
+                </p>
+                <aside class="v2-sim-board is-official" id="@tableId">
+                    <div class="v2-sim-board__head">
+                        <h4>Tabla oficial</h4>
+                        <span class="v2-sim-badge">Oficial</span>
+                    </div>
+                    @{
+                        ViewData["LeagueSlug"] = leagueSlug;
+                        ViewData["SeasonSlug"] = seasonSlug;
+                        ViewData["FocusTeam"] = focusTeam;
+                        ViewData["SimLive"] = false;
+                    }
+                    @await Html.PartialAsync("~/Views/V2/Simulator/_ProjectedTable.cshtml", div)
+                    <a class="v2-dash-link" href="@officialHref">Ver la tabla en Posiciones</a>
+                </aside>
+            }
+            else
+            {
+                <div class="v2-sim-tools">
+                    <div class="v2-sim-modes" role="group" aria-label="Alcance de la simulación">
+                        <button type="button" data-sim-mode="round" aria-pressed="true">Una fecha</button>
+                        <button type="button" data-sim-mode="all" aria-pressed="false">Todo el campeonato</button>
+                    </div>
+                    <label class="v2-sim-round">
+                        <span>Fecha</span>
+                        <select data-sim-round class="v2-select">
+                            @foreach (var round in div.Rounds)
+                            {
+                                <option value="@round.Round">Fecha @round.Round</option>
+                            }
+                        </select>
+                    </label>
+                    <button type="button" class="v2-sim-reset" data-sim-reset disabled>Reiniciar</button>
+                </div>
+                <p class="v2-sim-count" data-sim-count aria-live="polite">0 partidos simulados · @div.PendingCount pendientes</p>
+                <p class="v2-sim-note" data-sim-outside hidden>También hay marcadores cargados en otras fechas. La tabla los incluye.</p>
+
+                <div class="v2-sim-layout">
+                    <div class="v2-sim-matches">
+                        <a class="v2-sim-jump" href="#@tableId">Ver tabla proyectada</a>
+                        @foreach (var round in div.Rounds)
+                        {
+                            <section class="v2-sim-fecha" data-round="@round.Round">
+                                <h4 class="v2-sim-fecha__title">Fecha @round.Round</h4>
+                                @foreach (var match in round.Matches)
+                                {
+                                    var scheduled = string.Equals(match.Status, "SCHEDULED", StringComparison.OrdinalIgnoreCase);
+                                    ViewData["BadgeSize"] = "sm";
+                                    ViewData["BadgeDecorative"] = true;
+                                    <article class="v2-sim-match"
+                                             data-sim-match
+                                             data-match-id="@match.Id"
+                                             data-round="@match.Round"
+                                             data-home-id="@match.Home.Id"
+                                             data-home-name="@match.Home.Name"
+                                             data-home-slug="@match.Home.Slug"
+                                             data-home-short="@PublicWeb.Helpers.TeamDisplayHelper.GetCompactName(match.Home.Name, match.Home.ShortName)"
+                                             data-home-logo="@(match.Home.LogoThumbUrl ?? match.Home.LogoUrl)"
+                                             data-home-initials="@PublicWeb.Helpers.TeamDisplayHelper.GetInitials(match.Home.Name)"
+                                             data-home-counts="@(match.HomeCounts ? "true" : "false")"
+                                             data-away-id="@match.Away.Id"
+                                             data-away-name="@match.Away.Name"
+                                             data-away-slug="@match.Away.Slug"
+                                             data-away-short="@PublicWeb.Helpers.TeamDisplayHelper.GetCompactName(match.Away.Name, match.Away.ShortName)"
+                                             data-away-logo="@(match.Away.LogoThumbUrl ?? match.Away.LogoUrl)"
+                                             data-away-initials="@PublicWeb.Helpers.TeamDisplayHelper.GetInitials(match.Away.Name)"
+                                             data-away-counts="@(match.AwayCounts ? "true" : "false")">
+                                        <p class="v2-sim-match__when">
+                                            <span>@When(match)</span>
+                                            @if (!scheduled && !string.IsNullOrWhiteSpace(match.StatusLabel))
+                                            {
+                                                <span class="v2-sim-status">@match.StatusLabel</span>
+                                            }
+                                        </p>
+                                        <div class="v2-sim-match__board">
+                                            <div class="v2-sim-side" data-sim-side="home">
+                                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", match.Home)
+                                                <span class="v2-sim-side__name">@match.Home.Name</span>
+                                            </div>
+                                            <label class="v2-sim-score v2-sim-score--home">
+                                                <span class="visually-hidden">Goles de @match.Home.Name</span>
+                                                <input type="text" inputmode="numeric" maxlength="2" autocomplete="off" enterkeyhint="done" data-side="home" />
+                                            </label>
+                                            <p class="v2-sim-outcome" data-sim-outcome hidden></p>
+                                            <label class="v2-sim-score v2-sim-score--away">
+                                                <span class="visually-hidden">Goles de @match.Away.Name</span>
+                                                <input type="text" inputmode="numeric" maxlength="2" autocomplete="off" enterkeyhint="done" data-side="away" />
+                                            </label>
+                                            <div class="v2-sim-side v2-sim-side--away" data-sim-side="away">
+                                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", match.Away)
+                                                <span class="v2-sim-side__name">@match.Away.Name</span>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="v2-sim-clear" data-sim-clear hidden>Borrar marcador</button>
+                                    </article>
+                                }
+                                @foreach (var bye in round.Byes)
+                                {
+                                    ViewData["BadgeSize"] = "sm";
+                                    ViewData["BadgeDecorative"] = true;
+                                    <div class="v2-sim-bye">
+                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", bye.Team)
+                                        <span class="v2-sim-bye__name">@bye.Team.Name</span>
+                                        <span class="v2-sim-bye__tag">Libre</span>
+                                    </div>
+                                }
+                            </section>
+                        }
+                    </div>
+                    <aside class="v2-sim-board" id="@tableId">
+                        <div class="v2-sim-board__head">
+                            <h4>Tabla proyectada</h4>
+                            <span class="v2-sim-badge" data-sim-badge>Igual a la oficial</span>
+                        </div>
+                        <p class="v2-sim-board__rule">Victoria 3, empate 1. Desempate: puntos, diferencia de gol y goles a favor.</p>
+                        @{
+                            ViewData["LeagueSlug"] = leagueSlug;
+                            ViewData["SeasonSlug"] = seasonSlug;
+                            ViewData["FocusTeam"] = focusTeam;
+                            ViewData["SimLive"] = true;
+                        }
+                        @await Html.PartialAsync("~/Views/V2/Simulator/_ProjectedTable.cshtml", div)
+                        <a class="v2-dash-link" href="@officialHref">Ver la tabla oficial</a>
+                    </aside>
+                </div>
+            }
+        </section>
+    }
+</div>
+<script type="application/json" id="v2-sim-rules">@Html.Raw(rulesJson)</script>
+
+@section Scripts {
+    <script src="~/js/v2/standings-projector.js" asp-append-version="true"></script>
+    <script src="~/js/v2/simulator.js" asp-append-version="true"></script>
+}

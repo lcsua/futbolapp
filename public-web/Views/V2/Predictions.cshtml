@@ -1,0 +1,362 @@
+@model PublicWeb.Models.Public.PredictionsPageViewModel
+@using System.Globalization
+@{
+    Layout = "~/Views/Shared/V2/_V2Layout.cshtml";
+    ViewBag.LeagueDetails = true;
+    ViewBag.OverlayGlobalHeader = true;
+    var league = ViewBag.League as PublicWeb.Models.Public.LeagueViewModel;
+    var seasons = ViewBag.Seasons as List<PublicWeb.Models.Public.SeasonViewModel>;
+    var leagueSlug = league?.Slug ?? string.Empty;
+    var selectedSeason = seasons?.FirstOrDefault(s => string.Equals(s.Slug, Model.SeasonSlug, StringComparison.OrdinalIgnoreCase))
+        ?? seasons?.FirstOrDefault();
+    var divisions = selectedSeason?.Divisions ?? new List<PublicWeb.Models.Public.DivisionViewModel>();
+    var selectedDivision = ViewBag.Division as string ?? "all";
+    var focusTeam = ViewBag.FocusTeam as string;
+    var culture = CultureInfo.GetCultureInfo("es-AR");
+    DateTime ArgentinaTime(DateTime value)
+    {
+        TimeZoneInfo zone;
+        try
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("America/Argentina/Buenos_Aires");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("Argentina Standard Time");
+        }
+        catch (InvalidTimeZoneException)
+        {
+            zone = TimeZoneInfo.FindSystemTimeZoneById("Argentina Standard Time");
+        }
+
+        var instant = value.Kind switch
+        {
+            DateTimeKind.Utc => value,
+            DateTimeKind.Local => value.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(value, DateTimeKind.Utc)
+        };
+        return TimeZoneInfo.ConvertTimeFromUtc(instant, zone);
+    }
+
+    ViewData["Title"] = "Predicciones" + (league != null ? $" · {league.Name}" : string.Empty);
+    ViewBag.PageLabel = "Predicciones";
+    ViewBag.SeasonName = Model.SeasonName ?? selectedSeason?.Name;
+    ViewBag.SeasonSlug = string.IsNullOrWhiteSpace(Model.SeasonSlug) ? selectedSeason?.Slug : Model.SeasonSlug;
+    ViewBag.LeagueSlug = leagueSlug;
+    var seasonName = ViewBag.SeasonName as string;
+    var seasonSlug = ViewBag.SeasonSlug as string;
+    string? seoDivisionName = null;
+    if (!string.Equals(selectedDivision, "all", StringComparison.OrdinalIgnoreCase))
+    {
+        seoDivisionName = divisions.FirstOrDefault(d => string.Equals(d.Slug, selectedDivision, StringComparison.OrdinalIgnoreCase))?.Name
+            ?? Model.Divisions.FirstOrDefault(d => string.Equals(d.DivisionSlug, selectedDivision, StringComparison.OrdinalIgnoreCase))?.DivisionName;
+    }
+
+    if (league != null)
+    {
+        PublicWeb.Seo.SeoPageApplicator.Apply(
+            PublicWeb.Seo.SeoCopy.LeaguePredictions(league.Name, leagueSlug, seasonName, league.LogoUrl, seoDivisionName),
+            ViewData,
+            ViewBag);
+    }
+
+    string Move(PublicWeb.Models.Public.PredictionTeamViewModel team)
+    {
+        if (team.OfficialPosition <= 0) return "Nuevo";
+        if (team.PlacesDelta > 0) return "▲ " + team.PlacesDelta;
+        if (team.PlacesDelta < 0) return "▼ " + (-team.PlacesDelta);
+        return "–";
+    }
+
+    string MoveClass(PublicWeb.Models.Public.PredictionTeamViewModel team)
+    {
+        if (team.OfficialPosition <= 0) return "is-new";
+        if (team.PlacesDelta > 0) return "is-up";
+        if (team.PlacesDelta < 0) return "is-down";
+        return "is-same";
+    }
+
+    int Bar(PublicWeb.Models.Public.PredictionTeamViewModel team)
+    {
+        if (team.TitleKind == "certain") return 100;
+        if (team.TitleKind == "eliminated") return 0;
+        if (team.TitleKind == "below") return 2;
+        if (team.TitleKind == "above") return 99;
+        return (int)Math.Round(Math.Clamp(team.TitleProbability, 0, 1) * 100, MidpointRounding.AwayFromZero);
+    }
+
+    string Places(PublicWeb.Models.Public.PredictionTeamViewModel team)
+    {
+        if (team.PositionProbability == null || team.PositionProbability.Count == 0)
+            return string.Empty;
+        var bits = new List<string>();
+        for (var i = 0; i < Math.Min(3, team.PositionProbability.Count); i++)
+        {
+            var value = team.PositionProbability[i];
+            var label = value * 100 < 0.1 ? "<0,1%" : value * 100 > 99.9 ? ">99,9%" : (value * 100).ToString("0.##", culture) + "%";
+            bits.Add($"{i + 1}º {label}");
+        }
+        return string.Join(" · ", bits);
+    }
+}
+
+@await Html.PartialAsync("~/Views/V2/League/_LeagueBackNav.cshtml")
+@await Html.PartialAsync("~/Views/V2/League/_LeagueHeader.cshtml", league)
+@await Html.PartialAsync("~/Views/V2/League/_CompetitionTabs.cshtml")
+@await Component.InvokeAsync("LeagueAds", new { slot = "LeagueTop" })
+
+<div class="v2-pred">
+    <header class="v2-pred-hero">
+        <p class="v2-pred-hero__kicker">Estimación</p>
+        <h2 class="v2-pred-hero__title">Predicciones del campeonato</h2>
+        <p class="v2-pred-hero__lead">Una estimación estadística a partir de lo que ya se jugó. No es un resultado oficial y no modifica la tabla.</p>
+    </header>
+
+    @if (seasons != null && seasons.Count > 0)
+    {
+        <form method="get" class="v2-filter-bar" aria-label="Filtros de predicciones" action="@Url.Content($"~/ligas/{leagueSlug}/predicciones")">
+            @if (!string.IsNullOrWhiteSpace(focusTeam))
+            {
+                <input type="hidden" name="equipo" value="@focusTeam" />
+            }
+            <div class="v2-filter-bar__group">
+                <label for="v2-pred-season">Temporada</label>
+                <select id="v2-pred-season" name="season" class="v2-select" onchange="this.form.submit()">
+                    @foreach (var s in seasons)
+                    {
+                        if (string.Equals(seasonSlug, s.Slug, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@s.Slug" selected>@s.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@s.Slug">@s.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="v2-filter-bar__group">
+                <label for="v2-pred-division">División</label>
+                <select id="v2-pred-division" name="division" class="v2-select" onchange="this.form.submit()">
+                    @if (selectedDivision == "all")
+                    {
+                        <option value="all" selected>Todas</option>
+                    }
+                    else
+                    {
+                        <option value="all">Todas</option>
+                    }
+                    @foreach (var d in divisions)
+                    {
+                        if (string.Equals(selectedDivision, d.Slug, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="@d.Slug" selected>@d.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@d.Slug">@d.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+        </form>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.Warning))
+    {
+        <p class="v2-pred-banner v2-pred-banner--warn" role="status">@Model.Warning</p>
+    }
+
+    @if (Model.Divisions.Count == 0)
+    {
+        <div class="v2-empty">No hay una división para estimar en esta selección.</div>
+    }
+
+    @foreach (var div in Model.Divisions)
+    {
+        var updated = div.GeneratedAtUtc == default ? Model.GeneratedAtUtc : div.GeneratedAtUtc;
+        var chart = div.Teams
+            .OrderByDescending(team => team.MathematicallyCrowned)
+            .ThenBy(team => team.MathematicallyEliminated)
+            .ThenByDescending(team => team.TitleProbability)
+            .ThenBy(team => team.Team.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        <section class="v2-pred-division" aria-labelledby="pred-div-@div.DivisionSlug">
+            <div class="v2-result-group__head">
+                <h3 id="pred-div-@div.DivisionSlug" class="v2-result-group__division">
+                    <span class="v2-result-group__division-label">División:</span>
+                    <span class="v2-result-group__division-name">@div.DivisionName</span>
+                </h3>
+            </div>
+
+            <div class="v2-pred-progress">
+                <div class="v2-pred-progress__top">
+                    <strong>@div.PlayedPercent% del campeonato jugado</strong>
+                    <span>@div.Maturity</span>
+                </div>
+                <div class="v2-pred-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@div.PlayedPercent" aria-label="Avance del campeonato">
+                    <span style="width:@div.PlayedPercent%"></span>
+                </div>
+                <p>@div.CompletedMatches partidos jugados · @div.PendingMatches pendientes · @div.PendingRounds jornadas por delante.</p>
+                <p>@div.MaturityNote</p>
+                @if (updated != default)
+                {
+                    <p class="v2-pred-updated">Actualizado el @ArgentinaTime(updated).ToString("dd/MM/yyyy HH:mm", culture)</p>
+                }
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(div.Limitation))
+            {
+                <p class="v2-pred-banner" role="status">@div.Limitation</p>
+            }
+            else if (!div.Published && !string.IsNullOrWhiteSpace(div.UnpublishedReason))
+            {
+                <p class="v2-pred-banner" role="status">@div.UnpublishedReason</p>
+            }
+
+            @if (div.Published)
+            {
+                <section class="v2-pred-block" aria-labelledby="pred-title-@div.DivisionSlug">
+                    <h4 id="pred-title-@div.DivisionSlug">Probabilidad de salir campeón</h4>
+                    <p class="v2-pred-note">@div.ChampionNote</p>
+                    <ol class="v2-pred-chart">
+                        @foreach (var team in chart)
+                        {
+                            var focused = !string.IsNullOrWhiteSpace(focusTeam)
+                                && string.Equals(team.Team.Slug, focusTeam, StringComparison.OrdinalIgnoreCase);
+                            <li class="v2-pred-chart__row @(focused ? "is-focus" : null)">
+                                @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team.Team)
+                                <span class="v2-pred-chart__name">@team.Team.Name</span>
+                                <span class="v2-pred-chart__bar" aria-hidden="true"><span style="width:@Bar(team)%"></span></span>
+                                <strong class="v2-pred-chart__value v2-pred-chart__value--@team.TitleKind">@team.TitleLabel</strong>
+                            </li>
+                        }
+                    </ol>
+                    @if (!div.PromotionSupported)
+                    {
+                        <p class="v2-pred-note">@div.PromotionNote</p>
+                    }
+                </section>
+
+                <section class="v2-pred-block" aria-labelledby="pred-table-@div.DivisionSlug">
+                    <h4 id="pred-table-@div.DivisionSlug">Tabla final proyectada</h4>
+                    <div class="v2-pred-scroll">
+                        <table class="v2-pred-table">
+                            <caption class="visually-hidden">Tabla proyectada de @div.DivisionName. Es una estimación y no modifica los resultados oficiales.</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Pos</th>
+                                    <th scope="col">Equipo</th>
+                                    <th scope="col">PJ</th>
+                                    <th scope="col">Pts</th>
+                                    <th scope="col">Pts esp.</th>
+                                    <th scope="col">Pos esp.</th>
+                                    <th scope="col">Mov.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var team in div.Teams.OrderBy(team => team.ProjectedRank))
+                                {
+                                    var focused = !string.IsNullOrWhiteSpace(focusTeam)
+                                        && string.Equals(team.Team.Slug, focusTeam, StringComparison.OrdinalIgnoreCase);
+                                    var places = Places(team);
+                                    <tr class="@(focused ? "is-focus" : null)">
+                                        <td>@team.ProjectedRank</td>
+                                        <td class="v2-pred-team">
+                                            <span class="v2-pred-team__line">
+                                                @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team.Team)
+                                                <span>@team.Team.Name</span>
+                                            </span>
+                                            @if (!string.IsNullOrWhiteSpace(places))
+                                            {
+                                                <span class="v2-pred-team__places">@places</span>
+                                            }
+                                        </td>
+                                        <td>@team.Played</td>
+                                        <td>@team.CurrentPoints</td>
+                                        <td>@team.ExpectedPoints.ToString("0.0", culture)</td>
+                                        <td>@team.ExpectedPosition.ToString("0.0", culture)</td>
+                                        <td class="v2-pred-move @MoveClass(team)">@Move(team)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                @if (div.NextRound.Count > 0)
+                {
+                    <section class="v2-pred-block" aria-labelledby="pred-round-@div.DivisionSlug">
+                        <h4 id="pred-round-@div.DivisionSlug">Próxima fecha @(div.NextRoundNumber?.ToString() ?? "")</h4>
+                        <div class="v2-pred-matches">
+                            @foreach (var match in div.NextRound)
+                            {
+                                <article class="v2-pred-match">
+                                    <p class="v2-pred-match__when">Fecha @match.Round@(match.Kickoff.HasValue ? " · " + match.Kickoff.Value.ToString("ddd d MMM HH:mm", culture) : "")</p>
+                                    <div class="v2-pred-match__teams">
+                                        <div>
+                                            @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", match.Home)
+                                            <strong>@match.Home.Name</strong>
+                                            <span>@match.HomeForm</span>
+                                        </div>
+                                        <p class="v2-pred-match__score" aria-label="Marcador más probable">@match.LikelyHomeGoals<span>-</span>@match.LikelyAwayGoals</p>
+                                        <div>
+                                            @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", match.Away)
+                                            <strong>@match.Away.Name</strong>
+                                            <span>@match.AwayForm</span>
+                                        </div>
+                                    </div>
+                                    <dl class="v2-pred-probs">
+                                        <div><dt>Local</dt><dd>@match.HomeWinLabel</dd></div>
+                                        <div><dt>Empate</dt><dd>@match.DrawLabel</dd></div>
+                                        <div><dt>Visita</dt><dd>@match.AwayWinLabel</dd></div>
+                                    </dl>
+                                </article>
+                            }
+                        </div>
+                    </section>
+                }
+            }
+            else if (div.Teams.Count > 0)
+            {
+                <section class="v2-pred-block">
+                    <h4>Tabla oficial</h4>
+                    <div class="v2-pred-scroll">
+                        <table class="v2-pred-table">
+                            <caption class="visually-hidden">Tabla oficial de @div.DivisionName.</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Pos</th>
+                                    <th scope="col">Equipo</th>
+                                    <th scope="col">PJ</th>
+                                    <th scope="col">Pts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var team in div.Teams.OrderBy(team => team.OfficialPosition <= 0 ? int.MaxValue : team.OfficialPosition))
+                                {
+                                    <tr>
+                                        <td>@(team.OfficialPosition > 0 ? team.OfficialPosition.ToString() : "–")</td>
+                                        <td class="v2-pred-team">
+                                            <span class="v2-pred-team__line">
+                                                @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
+                                                @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", team.Team)
+                                                <span>@team.Team.Name</span>
+                                            </span>
+                                        </td>
+                                        <td>@team.Played</td>
+                                        <td>@team.CurrentPoints</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            }
+        </section>
+    }
+</div>

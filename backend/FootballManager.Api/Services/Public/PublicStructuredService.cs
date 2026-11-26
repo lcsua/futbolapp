@@ -1,8 +1,10 @@
 using FootballManager.Api.Helpers;
 using FootballManager.Api.Models.Public;
 using FootballManager.Api.Services;
+using FootballManager.Application.Predictions;
 using FootballManager.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using FootballManager.Domain.Entities;
 using FootballManager.Application.Helpers;
 using FootballManager.Application.UseCases.Seasons.GetStandings;
@@ -14,11 +16,25 @@ public class PublicStructuredService
 {
     private readonly FootballManagerDbContext _db;
     private readonly IGetStandingsUseCase _getStandingsUseCase;
+    private readonly PredictionCache _predictions;
+    private readonly RemotePredictionSource _remotePredictions;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<PublicStructuredService> _logger;
 
-    public PublicStructuredService(FootballManagerDbContext db, IGetStandingsUseCase getStandingsUseCase)
+    public PublicStructuredService(
+        FootballManagerDbContext db,
+        IGetStandingsUseCase getStandingsUseCase,
+        PredictionCache predictions,
+        RemotePredictionSource remotePredictions,
+        IConfiguration configuration,
+        ILogger<PublicStructuredService> logger)
     {
         _db = db;
         _getStandingsUseCase = getStandingsUseCase;
+        _predictions = predictions;
+        _remotePredictions = remotePredictions;
+        _configuration = configuration;
+        _logger = logger;
     }
 
     private async Task<League?> GetLeagueIfPublicAsync(string leagueSlug, CancellationToken cancellationToken)
@@ -545,7 +561,10 @@ public class PublicStructuredService
             AwayTeam = away,
             RoundNumber = match.RoundNumber,
             Kickoff = DateTime.TryParse(match.MatchDate?.ToString("yyyy-MM-dd") + " " + match.StartTime?.ToString("HH:mm"), out var dt) ? dt : default,
-            FieldName = string.IsNullOrWhiteSpace(match.Field?.Name) ? null : match.Field.Name.Trim()
+            FieldName = string.IsNullOrWhiteSpace(match.Field?.Name) ? null : match.Field.Name.Trim(),
+            DivisionName = string.IsNullOrWhiteSpace(match.DivisionSeason?.Division?.Name)
+                ? null
+                : match.DivisionSeason.Division.Name.Trim()
         };
     }
 
@@ -680,6 +699,231 @@ public class PublicStructuredService
         }
 
         return result;
+    }
+
+    public async Task<SimulatorPublicDto?> GetSimulatorAsync(string leagueSlug, string? seasonSlug, string? divisionSlug = null, CancellationToken cancellationToken = default)
+    {
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
+
+        var season = await GetTargetSeasonAsync(league.Id, seasonSlug, cancellationToken);
+        if (season == null)
+        {
+            return new SimulatorPublicDto
+            {
+                Supported = false,
+                Limitation = "No hay un campeonato público para simular."
+            };
+        }
+
+        var divSeasons = await _db.Set<DivisionSeason>()
+            .AsNoTracking()
+            .Include(ds => ds.Division)
+            .Include(ds => ds.TeamAssignments).ThenInclude(ta => ta.Team).ThenInclude(t => t.Club)
+            .Where(ds => ds.SeasonId == season.Id)
+            .ToListAsync(cancellationToken);
+
+        var fixtures = await _db.Set<Fixture>()
+            .AsNoTracking()
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.Result)
+            .Where(f => f.SeasonId == season.Id)
+            .ToListAsync(cancellationToken);
+
+        var teams = new Dictionary<Guid, TeamPublicDto>();
+        void Remember(Team? team)
+        {
+            if (team == null || teams.ContainsKey(team.Id))
+                return;
+            teams[team.Id] = MapTeamDto(team);
+        }
+
+        foreach (var division in divSeasons)
+        {
+            foreach (var assignment in division.TeamAssignments)
+                Remember(assignment.Team);
+        }
+
+        foreach (var fixture in fixtures)
+        {
+            Remember(fixture.HomeTeamDivisionSeason?.Team);
+            Remember(fixture.AwayTeamDivisionSeason?.Team);
+        }
+
+        var standings = await _getStandingsUseCase.ExecuteAsync(
+            new GetStandingsRequest { LeagueId = league.Id, SeasonId = season.Id, IsPublic = true },
+            cancellationToken);
+
+        return SimulatorComposer.Compose(
+            season.Name,
+            SlugHelper.NormalizeSlug(season.Name),
+            divisionSlug,
+            divSeasons.Select(ds => new SimulatorDivisionInput(
+                ds.Id,
+                ds.DivisionId,
+                ds.Division.Name,
+                ds.TeamAssignments.Select(ta => ta.TeamId).ToList())).ToList(),
+            standings.Divisions,
+            fixtures.Select(fixture => new SimulatorFixtureInput(
+                fixture.Id,
+                fixture.RoundNumber,
+                KickoffOf(fixture),
+                fixture.Status.ToString(),
+                fixture.Result != null,
+                fixture.DivisionSeasonId,
+                fixture.HomeTeamDivisionSeason?.TeamId ?? Guid.Empty,
+                fixture.HomeTeamDivisionSeason?.DivisionSeasonId ?? Guid.Empty,
+                fixture.AwayTeamDivisionSeason?.TeamId ?? Guid.Empty,
+                fixture.AwayTeamDivisionSeason?.DivisionSeasonId ?? Guid.Empty)).ToList(),
+            teams);
+    }
+
+    public async Task<PredictionsPublicDto?> GetPredictionsAsync(
+        string leagueSlug,
+        string? seasonSlug,
+        string? divisionSlug = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!string.IsNullOrWhiteSpace(_configuration["Predictions:SourceBaseUrl"]))
+            return await _remotePredictions.GetAsync(leagueSlug, seasonSlug, divisionSlug, cancellationToken);
+
+        var league = await GetLeagueIfPublicAsync(leagueSlug, cancellationToken);
+        if (league == null) return null;
+
+        var season = await GetTargetSeasonAsync(league.Id, seasonSlug, cancellationToken);
+        if (season == null)
+        {
+            return new PredictionsPublicDto
+            {
+                GeneratedAtUtc = DateTime.UtcNow,
+                Warning = "No hay un campeonato público para estimar."
+            };
+        }
+
+        var divSeasons = await _db.Set<DivisionSeason>()
+            .AsNoTracking()
+            .Include(ds => ds.Division)
+            .Include(ds => ds.TeamAssignments).ThenInclude(ta => ta.Team).ThenInclude(t => t.Club)
+            .Where(ds => ds.SeasonId == season.Id)
+            .ToListAsync(cancellationToken);
+
+        var fixtures = await _db.Set<Fixture>()
+            .AsNoTracking()
+            .Include(f => f.HomeTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.AwayTeamDivisionSeason).ThenInclude(td => td.Team).ThenInclude(t => t.Club)
+            .Include(f => f.Result)
+            .Where(f => f.SeasonId == season.Id)
+            .ToListAsync(cancellationToken);
+
+        var teams = new Dictionary<Guid, TeamPublicDto>();
+        void Remember(Team? team)
+        {
+            if (team == null || teams.ContainsKey(team.Id))
+                return;
+            teams[team.Id] = MapTeamDto(team);
+        }
+
+        foreach (var division in divSeasons)
+        {
+            foreach (var assignment in division.TeamAssignments)
+                Remember(assignment.Team);
+        }
+
+        foreach (var fixture in fixtures)
+        {
+            Remember(fixture.HomeTeamDivisionSeason?.Team);
+            Remember(fixture.AwayTeamDivisionSeason?.Team);
+        }
+
+        var sources = fixtures.Select(fixture => new PredictionSourceFixture(
+            fixture.Id,
+            fixture.RoundNumber,
+            KickoffOf(fixture),
+            fixture.Status.ToString(),
+            fixture.Result != null,
+            fixture.Result?.HomeTeamGoals,
+            fixture.Result?.AwayTeamGoals,
+            fixture.DivisionSeasonId,
+            fixture.HomeTeamDivisionSeason?.TeamId ?? Guid.Empty,
+            fixture.HomeTeamDivisionSeason?.Team?.Name ?? "Local",
+            fixture.HomeTeamDivisionSeason?.DivisionSeasonId ?? Guid.Empty,
+            fixture.AwayTeamDivisionSeason?.TeamId ?? Guid.Empty,
+            fixture.AwayTeamDivisionSeason?.Team?.Name ?? "Visita",
+            fixture.AwayTeamDivisionSeason?.DivisionSeasonId ?? Guid.Empty)).ToList();
+
+        var standings = await _getStandingsUseCase.ExecuteAsync(
+            new GetStandingsRequest { LeagueId = league.Id, SeasonId = season.Id, IsPublic = true },
+            cancellationToken);
+
+        var selected = divSeasons.OrderBy(ds => ds.Division.Name, StringComparer.OrdinalIgnoreCase).AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(divisionSlug) && !divisionSlug.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            var target = SlugHelper.NormalizeSlug(divisionSlug);
+            selected = selected.Where(ds => SlugHelper.NormalizeSlug(ds.Division.Name) == target);
+        }
+
+        var page = new PredictionsPublicDto
+        {
+            SeasonName = season.Name,
+            SeasonSlug = SlugHelper.NormalizeSlug(season.Name),
+            GeneratedAtUtc = DateTime.UtcNow,
+            Warning = sources.Any(PredictionComposer.PlayedOutsideTable)
+                ? "Hay partidos marcados como jugados que la tabla oficial no suma. Las predicciones no los modifican ni los vuelven a calcular."
+                : null
+        };
+
+        foreach (var division in selected)
+        {
+            var rows = standings.Divisions.FirstOrDefault(item => item.DivisionId == division.DivisionId)?.Standings
+                ?? Array.Empty<TeamStandingDto>();
+            var input = PredictionComposer.Build(division.DivisionId, division.Division.Name, division.Id, rows, sources);
+            var fingerprint = PredictionFingerprint.Compute(input);
+            var cacheKey = $"pred:{league.Id:N}:{season.Id:N}:{division.Id:N}:{fingerprint}";
+            var cached = await _predictions.GetOrCreateAsync(
+                cacheKey,
+                () =>
+                {
+                    var outlook = ChampionshipPredictor.Predict(input);
+                    _logger.LogInformation(
+                        "Predicciones {League} {Division} sims={Sims} ms={Ms} pending={Pending} published={Published}",
+                        league.Slug,
+                        division.Division.Name,
+                        outlook.Simulations,
+                        outlook.ElapsedMilliseconds,
+                        outlook.PendingMatches,
+                        outlook.Published);
+                    return new CachedPrediction
+                    {
+                        Outlook = outlook,
+                        GeneratedAtUtc = DateTime.UtcNow
+                    };
+                },
+                TimeSpan.FromHours(6),
+                cancellationToken);
+
+            page.Divisions.Add(PredictionComposer.ToDto(
+                cached.Outlook,
+                division.Division.Name,
+                SlugHelper.NormalizeSlug(division.Division.Name),
+                cached.GeneratedAtUtc,
+                teams));
+            page.GeneratedAtUtc = cached.GeneratedAtUtc;
+        }
+
+        return page;
+    }
+
+    private static DateTime? KickoffOf(Fixture fixture)
+    {
+        if (fixture.MatchDate == null)
+            return null;
+
+        var text = fixture.MatchDate.Value.ToString("yyyy-MM-dd");
+        if (fixture.StartTime != null)
+            text += " " + fixture.StartTime.Value.ToString("HH:mm");
+
+        return DateTime.TryParse(text, out var kickoff) ? kickoff : null;
     }
 
     public async Task<SeasonGroupedDto<MatchdayGroupDto>?> GetLeagueResultsAsync(string leagueSlug, string? seasonSlug, string? divisionSlug = null, int? round = null, CancellationToken cancellationToken = default)

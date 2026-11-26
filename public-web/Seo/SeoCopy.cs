@@ -206,6 +206,58 @@ public static class SeoCopy
         };
     }
 
+    public static SeoPageModel LeagueSimulator(
+        string leagueName,
+        string leagueSlug,
+        string? seasonName,
+        string? logoUrl,
+        string? divisionName = null)
+    {
+        var season = seasonName ?? "la temporada actual";
+        var hasDivision = !string.IsNullOrWhiteSpace(divisionName);
+        var title = hasDivision
+            ? Title($"Simulador División {divisionName} {leagueName} - {season}")
+            : Title($"Simulador {leagueName} - {season}");
+        var desc = hasDivision
+            ? $"Pronosticá los resultados pendientes de la División {divisionName} de la {leagueName} y mirá cómo podría terminar la tabla del {season}."
+            : "Pronosticá los resultados pendientes y descubrí cómo podría terminar la tabla de posiciones.";
+        return new SeoPageModel
+        {
+            Title = title,
+            Description = desc,
+            CanonicalPath = $"/ligas/{leagueSlug}/simulador",
+            OgImage = logoUrl,
+            H1 = leagueName,
+            Breadcrumbs = LeagueCrumbs(leagueName, leagueSlug, "Simulador", $"/ligas/{leagueSlug}/simulador")
+        };
+    }
+
+    public static SeoPageModel LeaguePredictions(
+        string leagueName,
+        string leagueSlug,
+        string? seasonName,
+        string? logoUrl,
+        string? divisionName = null)
+    {
+        var season = seasonName ?? "la temporada actual";
+        var hasDivision = !string.IsNullOrWhiteSpace(divisionName);
+        var title = hasDivision
+            ? Title($"Predicciones División {divisionName} {leagueName} - {season}")
+            : Title($"Predicciones {leagueName} - {season}");
+        var desc = hasDivision
+            ? $"Probabilidades de campeón, tabla proyectada y pronósticos de la próxima fecha de la División {divisionName} de la {leagueName}."
+            : "Estimaciones estadísticas de cómo podría terminar el campeonato. No son resultados oficiales.";
+        return new SeoPageModel
+        {
+            Title = title,
+            Description = desc,
+            CanonicalPath = $"/ligas/{leagueSlug}/predicciones",
+            OgImage = logoUrl,
+            H1 = leagueName,
+            Breadcrumbs = LeagueCrumbs(leagueName, leagueSlug, "Predicciones", $"/ligas/{leagueSlug}/predicciones")
+        };
+    }
+
     public static SeoPageModel MatchPage(
         string homeName,
         string awayName,

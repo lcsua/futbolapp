@@ -158,6 +158,75 @@ public class V2LeagueController : Controller
         return View("~/Views/V2/Standings.cshtml", standings);
     }
 
+    /// <summary>Automatic championship predictions. The manual simulator stays available at its own URL.</summary>
+    [HttpGet("{slug}/predicciones")]
+    public async Task<IActionResult> Predictions(
+        string slug,
+        [FromQuery] string? season,
+        [FromQuery] string? division,
+        [FromQuery] string? equipo)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        var selectedDivision = string.IsNullOrWhiteSpace(division) ? "all" : division;
+        var predictionsTask = _leagueService.GetPredictionsAsync(slug, season, selectedDivision);
+        var heroTask = ApplySeasonHeroStatsAsync(slug, meta, season);
+        await Task.WhenAll(predictionsTask, heroTask);
+        var model = await predictionsTask ?? new PredictionsPageViewModel
+        {
+            Warning = "No se pudieron cargar las predicciones. La tabla oficial no fue modificada."
+        };
+
+        ViewBag.League = league;
+        ViewBag.Seasons = meta;
+        ViewBag.Division = selectedDivision;
+        ViewBag.FocusTeam = equipo;
+        ViewBag.V2ActiveNav = "ligas";
+        ViewBag.V2LeagueTab = "predicciones";
+        ViewBag.LeagueSlug = league.Slug;
+        ViewBag.SeasonName ??= model.SeasonName;
+        ViewBag.SeasonSlug ??= model.SeasonSlug;
+
+        return View("~/Views/V2/Predictions.cshtml", model);
+    }
+
+    /// <summary>Manual championship simulator, kept for a future prode and hidden from public navigation.</summary>
+    [HttpGet("{slug}/simulador")]
+    public async Task<IActionResult> Simulator(
+        string slug,
+        [FromQuery] string? season,
+        [FromQuery] string? division,
+        [FromQuery] string? equipo)
+    {
+        var league = await _leagueService.GetLeagueBySlugAsync(slug);
+        if (league == null) return NotFound();
+
+        var meta = await _leagueService.GetLeagueMetaAsync(slug);
+        var selectedDivision = string.IsNullOrWhiteSpace(division) ? "all" : division;
+        var simulatorTask = _leagueService.GetSimulatorAsync(slug, season, selectedDivision);
+        var heroTask = ApplySeasonHeroStatsAsync(slug, meta, season);
+        await Task.WhenAll(simulatorTask, heroTask);
+        var model = await simulatorTask ?? new SimulatorPageViewModel
+        {
+            Supported = false,
+            Limitation = "No se pudo cargar el simulador. La tabla oficial no fue modificada."
+        };
+
+        ViewBag.League = league;
+        ViewBag.Seasons = meta;
+        ViewBag.Division = selectedDivision;
+        ViewBag.FocusTeam = equipo;
+        ViewBag.V2ActiveNav = "ligas";
+        ViewBag.V2LeagueTab = "simulador";
+        ViewBag.LeagueSlug = league.Slug;
+        ViewBag.SeasonName ??= model.SeasonName;
+        ViewBag.SeasonSlug ??= model.SeasonSlug;
+
+        return View("~/Views/V2/Simulator.cshtml", model);
+    }
+
     /// <summary>League fixture — must be registered before Team ({slug}/{teamSlug}).</summary>
     [HttpGet("{slug}/fixture")]
     public async Task<IActionResult> Fixture(
@@ -394,5 +463,7 @@ public class V2LeagueController : Controller
         teamSlug.Equals("documentos", StringComparison.OrdinalIgnoreCase) ||
         teamSlug.Equals("posiciones", StringComparison.OrdinalIgnoreCase) ||
         teamSlug.Equals("fixture", StringComparison.OrdinalIgnoreCase) ||
-        teamSlug.Equals("informacion", StringComparison.OrdinalIgnoreCase);
+        teamSlug.Equals("informacion", StringComparison.OrdinalIgnoreCase) ||
+        teamSlug.Equals("simulador", StringComparison.OrdinalIgnoreCase) ||
+        teamSlug.Equals("predicciones", StringComparison.OrdinalIgnoreCase);
 }
