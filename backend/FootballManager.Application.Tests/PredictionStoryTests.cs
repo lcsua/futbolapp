@@ -134,6 +134,118 @@ public class PredictionStoryTests
     }
 
     [Fact]
+    public void History_refuses_when_any_played_match_has_no_kickoff()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var fixtures = new List<PredictionFixture>();
+        for (var round = 1; round <= 9; round++)
+            fixtures.Add(Played(round, new DateTime(2026, 8, round), alpha, beta, 1, 0));
+        fixtures.Add(Played(10, null, alpha, beta, 2, 0));
+        fixtures.Add(Match(11, alpha, "Alpha", beta, "Beta"));
+        var division = new PredictionDivision(
+            Guid.NewGuid(),
+            "B",
+            new[]
+            {
+                new PredictionBaseline(alpha, "Alpha", 1, 10, 11, 0, 30),
+                new PredictionBaseline(beta, "Beta", 2, 10, 0, 11, 0)
+            },
+            fixtures);
+        var live = ChampionshipPredictor.Predict(division, new PredictionOptions { Simulations = 40, MinCompletedMatches = 4 }, includeStory: false);
+
+        var history = ChampionshipHistory.TryRebuild(division, live, new PredictionOptions { Simulations = 40, MinCompletedMatches = 4 });
+
+        Assert.False(history.Available);
+        Assert.Contains("fechas", history.Note, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void History_does_not_label_a_late_earlier_round_after_a_later_one()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var fixtures = new List<PredictionFixture>
+        {
+            Played(1, new DateTime(2026, 8, 1), alpha, beta, 1, 0),
+            Played(2, new DateTime(2026, 8, 8), alpha, beta, 1, 0),
+            Played(3, new DateTime(2026, 8, 15), alpha, beta, 1, 0),
+            Played(4, new DateTime(2026, 8, 22), alpha, beta, 1, 0),
+            Played(6, new DateTime(2026, 9, 5), alpha, beta, 1, 0),
+            Played(5, new DateTime(2026, 9, 12), alpha, beta, 1, 0),
+            Match(7, alpha, "Alpha", beta, "Beta")
+        };
+        var division = new PredictionDivision(
+            Guid.NewGuid(),
+            "B",
+            new[]
+            {
+                new PredictionBaseline(alpha, "Alpha", 1, 6, 6, 0, 18),
+                new PredictionBaseline(beta, "Beta", 2, 6, 0, 6, 0)
+            },
+            fixtures);
+        var live = ChampionshipPredictor.Predict(division, new PredictionOptions { Simulations = 40, MinCompletedMatches = 4 }, includeStory: false);
+
+        var history = ChampionshipHistory.TryRebuild(division, live, new PredictionOptions { Simulations = 40, MinCompletedMatches = 4 });
+
+        Assert.True(history.Available);
+        Assert.DoesNotContain(history.Rounds, round => round.Round == 5);
+        for (var index = 1; index < history.Rounds.Count; index++)
+            Assert.True(history.Rounds[index].Round >= history.Rounds[index - 1].Round);
+    }
+
+    [Fact]
+    public void A_rival_match_keeps_the_best_position_from_being_called_secure()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var gamma = Guid.NewGuid();
+        var teams = new[]
+        {
+            Team(alpha, "Alpha", 10, 0.4),
+            Team(beta, "Beta", 12, 0.3),
+            Team(gamma, "Gamma", 12, 0.3)
+        };
+        var pending = new[]
+        {
+            Match(2, alpha, "Alpha", Guid.NewGuid(), "Otro"),
+            Match(2, beta, "Beta", gamma, "Gamma")
+        };
+
+        var leader = TitlePathCalculator.Build(teams, pending).Single(path => path.TeamId == alpha);
+
+        Assert.Contains("no es un puesto asegurado", leader.PositionNote, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void What_if_uses_the_dated_upcoming_match_ahead_of_an_undated_one()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var division = new PredictionDivision(
+            Guid.NewGuid(),
+            "B",
+            new[]
+            {
+                new PredictionBaseline(alpha, "Alpha", 1, 4, 8, 2, 10),
+                new PredictionBaseline(beta, "Beta", 2, 4, 4, 4, 6)
+            },
+            new[]
+            {
+                Played(1, new DateTime(2026, 8, 1), alpha, beta, 2, 0),
+                Played(2, new DateTime(2026, 8, 8), alpha, Guid.NewGuid(), 1, 0),
+                Played(3, new DateTime(2026, 8, 15), beta, Guid.NewGuid(), 1, 1),
+                Played(4, new DateTime(2026, 8, 22), alpha, Guid.NewGuid(), 3, 1),
+                new PredictionFixture(Guid.NewGuid(), 12, null, new PredictionSide(alpha, "Alpha", true), new PredictionSide(beta, "Beta", true), null, null, false),
+                Match(8, alpha, "Alpha", beta, "Beta")
+            });
+
+        var outlook = ChampionshipPredictor.Predict(division, new PredictionOptions { Simulations = 200, MinCompletedMatches = 4 });
+
+        Assert.Equal(8, outlook.WhatIfs!.Single(item => item.TeamId == alpha).Round);
+    }
+
+    [Fact]
     public void What_if_probabilities_stay_between_zero_and_one()
     {
         var alpha = Guid.NewGuid();

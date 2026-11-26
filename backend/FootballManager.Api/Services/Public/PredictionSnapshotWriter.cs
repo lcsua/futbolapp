@@ -70,6 +70,13 @@ public sealed class PredictionSnapshotWriter
                 }
             }
 
+            var liveRound = history.Rounds.LastOrDefault(item => !item.Reconstructed)?.Round;
+            if (liveRound != null)
+            {
+                foreach (var stale in existing.Where(item => !item.Reconstructed && item.CutoffRound != liveRound))
+                    _db.PredictionSnapshots.Remove(stale);
+            }
+
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch (Exception exception)

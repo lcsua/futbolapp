@@ -172,7 +172,8 @@ public static class PredictionComposer
         var previous = rounds[^2].Teams.FirstOrDefault(item => item.TeamId == teamId);
         if (now == null || previous == null)
             return null;
-        return now.TitleProbability - previous.TitleProbability;
+        var delta = now.TitleProbability - previous.TitleProbability;
+        return Math.Abs(delta) < 0.02 ? null : delta;
     }
 
     private static PredictionRacePublicDto? MapRace(TitleRaceReport? race) =>

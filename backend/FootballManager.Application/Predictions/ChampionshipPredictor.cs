@@ -785,13 +785,15 @@ public static class ChampionshipPredictor
         var slots = new int[teams.Count];
         Array.Fill(slots, -1);
         var today = ArgentinaClock.Today();
-        for (var pass = 0; pass < 2; pass++)
+        for (var pass = 0; pass < 3; pass++)
         {
             for (var index = 0; index < pending.Count; index++)
             {
                 var match = pending[index];
-                var upcoming = match.Kickoff == null || match.Kickoff.Value.Date >= today;
-                if (pass == 0 && !upcoming)
+                var dated = match.Kickoff != null;
+                var upcoming = dated && match.Kickoff!.Value.Date >= today;
+                var take = pass == 0 ? upcoming : pass == 1 ? !dated : true;
+                if (!take)
                     continue;
                 void Claim(PredictionSide side)
                 {
@@ -870,14 +872,30 @@ public static class ChampionshipPredictor
                 {
                     var forced = table.Pairs[SampleCumulative(table.Cumulative, random.NextDouble())];
                     var champion = Play(teams, pendingIndexed, slot, forced.Home, forced.Away, random);
-                    condCount[team, outcome]++;
-                    if (champion == team)
-                        condTitle[team, outcome]++;
-                    if (champion >= 0)
-                        condChampion[team, outcome, champion]++;
+                    NoteForced(team, outcome, champion, condCount, condTitle, condChampion);
+                    var match = pendingIndexed[slot];
+                    var opponent = match.Home == team ? match.Away : match.Home;
+                    var mirrored = outcome == 1 ? 1 : outcome == 0 ? 2 : 0;
+                    if (opponent >= 0 && opponent != team && nextSlot[opponent] == slot)
+                        NoteForced(opponent, mirrored, champion, condCount, condTitle, condChampion);
                 }
             }
         }
+    }
+
+    private static void NoteForced(
+        int team,
+        int outcome,
+        int champion,
+        int[,] condCount,
+        int[,] condTitle,
+        int[,,] condChampion)
+    {
+        condCount[team, outcome]++;
+        if (champion == team)
+            condTitle[team, outcome]++;
+        if (champion >= 0)
+            condChampion[team, outcome, champion]++;
     }
 
     private static int Play(
@@ -1040,7 +1058,7 @@ public static class ChampionshipPredictor
                 : top >= 0.55
                     ? "Claro favorito"
                     : "Partido parejo";
-            var favorite = match.HomeWin >= match.AwayWin && match.HomeWin > match.Draw
+            var favorite = match.HomeWin > match.AwayWin && match.HomeWin > match.Draw
                 ? match.HomeName
                 : match.AwayWin > match.HomeWin && match.AwayWin > match.Draw
                     ? match.AwayName

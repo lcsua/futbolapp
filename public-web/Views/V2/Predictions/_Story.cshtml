@@ -58,7 +58,7 @@
         <p class="v2-story-race__summary">@Model.Race.Summary</p>
         <dl class="v2-story-race__facts">
             <div><dt>@Model.Race.PointGap</dt><dd>@(Model.Race.PointGap == 1 ? "Punto de diferencia" : "Puntos de diferencia")</dd></div>
-            <div><dt>@Model.Race.MatchesLeft</dt><dd>Partidos del puntero</dd></div>
+            <div><dt>@Model.Race.MatchesLeft</dt><dd>Partidos que le quedan</dd></div>
             <div><dt>@Model.Race.PointsInPlay</dt><dd>Puntos en juego</dd></div>
         </dl>
     </section>
@@ -93,7 +93,7 @@
                     <div><dt>@path.RivalMax</dt><dd>Máximo del rival si este equipo gana todo</dd></div>
                 </dl>
                 <p class="v2-story-note">@(path.PointsToClinch is int needed ? $"Para asegurar el título aun si cada rival gana lo suyo harían falta {needed} puntos." : path.PointsNote)</p>
-                <p class="v2-story-note">Posición matemática: no peor que @(path.WorstPosition)º y no mejor garantizado que @(path.BestPosition)º. @path.PositionNote</p>
+                <p class="v2-story-note">Posición por puntos: @(path.BestPosition)º a @(path.WorstPosition)º. @path.PositionNote</p>
                 @if (path.Campaigns.Count > 0)
                 {
                     <h5>Campañas posibles</h5>

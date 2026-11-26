@@ -390,7 +390,15 @@ public class V2LeagueController : Controller
             || string.Equals(item.Slug, divisionName, StringComparison.OrdinalIgnoreCase));
         if (division == null)
             return;
-        var predictions = await _leagueService.GetPredictionsAsync(slug, season, division.Slug);
+        PredictionsPageViewModel? predictions;
+        try
+        {
+            predictions = await _leagueService.GetPredictionsAsync(slug, season, division.Slug);
+        }
+        catch (Exception)
+        {
+            return;
+        }
         var team = predictions?.Divisions.SelectMany(item => item.Teams)
             .FirstOrDefault(item => string.Equals(item.Team.Slug, teamSlug, StringComparison.OrdinalIgnoreCase));
         if (team == null || !predictions!.Divisions.Any(item => item.Published))

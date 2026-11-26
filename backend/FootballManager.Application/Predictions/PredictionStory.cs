@@ -178,12 +178,18 @@ public static class TitlePathCalculator
 
         var best = 1 + teams.Count(rival => rival.TeamId != team.TeamId && rival.CurrentPoints > maxPoints);
         var worst = 1 + teams.Count(rival => rival.TeamId != team.TeamId && rival.CurrentPoints + TitleRaceCalculator.Remaining(pending, rival.TeamId) * 3 > team.CurrentPoints);
+        var canPass = teams.Any(rival =>
+            rival.TeamId != team.TeamId
+            && rival.CurrentPoints <= maxPoints
+            && rival.CurrentPoints + TitleRaceCalculator.Remaining(pending, rival.TeamId) * 3 > maxPoints);
         var tieNote = teams.Any(rival =>
             rival.TeamId != team.TeamId
             && (rival.CurrentPoints == maxPoints || rival.CurrentPoints + TitleRaceCalculator.Remaining(pending, rival.TeamId) * 3 == team.CurrentPoints));
-        var positionNote = tieNote
-            ? "Si hay igualdad de puntos, el desempate puede mover este límite. No se presenta como una certeza."
-            : "El límite usa solo los puntos, con desigualdad estricta. El desempate no hace falta para sostenerlo.";
+        var positionNote = canPass
+            ? "Ese mejor puesto solo cuenta a quienes ya superan el techo propio. Otros cruces todavía pueden dejar a un rival por encima, así que no es un puesto asegurado."
+            : tieNote
+                ? "Si hay igualdad de puntos, el desempate puede mover este límite. No se presenta como una certeza."
+                : "El límite usa solo los puntos, con desigualdad estricta. El desempate no hace falta para sostenerlo.";
 
         var canClinch = exhaustive && CanClinch(team.TeamId, teams, pending, nextMatches);
         var clinchNote = !exhaustive

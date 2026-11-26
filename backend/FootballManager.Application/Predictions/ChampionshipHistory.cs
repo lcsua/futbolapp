@@ -23,7 +23,7 @@ public static class ChampionshipHistory
 
         var completed = division.Fixtures.Where(match => match.Completed && match.HomeGoals != null && match.AwayGoals != null).ToList();
         var dated = completed.Where(match => match.Kickoff != null).ToList();
-        if (dated.Count < 4 || dated.Count < completed.Count * 0.9)
+        if (dated.Count < 4 || dated.Count < completed.Count)
         {
             return new ProbabilityHistory(
                 false,
@@ -32,12 +32,23 @@ public static class ChampionshipHistory
                 Array.Empty<HistoryRound>());
         }
 
-        var cutoffs = dated
+        var cutoffs = new List<Cutoff>();
+        foreach (var raw in dated
             .GroupBy(match => match.Round)
             .Select(group => new Cutoff(group.Key, group.Max(match => match.Kickoff!.Value)))
             .OrderBy(cutoff => cutoff.At)
-            .ThenBy(cutoff => cutoff.Round)
-            .ToList();
+            .ThenBy(cutoff => cutoff.Round))
+        {
+            var label = dated.Where(match => match.Kickoff <= raw.At).Max(match => match.Round);
+            if (cutoffs.Count > 0 && label <= cutoffs[^1].Round)
+            {
+                if (raw.At > cutoffs[^1].At)
+                    cutoffs[^1] = new Cutoff(cutoffs[^1].Round, raw.At);
+                continue;
+            }
+
+            cutoffs.Add(new Cutoff(label, raw.At));
+        }
 
         var eligible = new List<Cutoff>();
         foreach (var cutoff in cutoffs)
@@ -81,7 +92,7 @@ public static class ChampionshipHistory
         return new ProbabilityHistory(
             true,
             rounds.Any(round => round.Reconstructed),
-            "Los puntos anteriores a la última jornada se reconstruyen con los resultados ya jugados hasta esa fecha, sin usar lo que pasó después. El último punto es la predicción actual.",
+            "Los puntos anteriores a la última jornada se reconstruyen con los resultados ya jugados hasta esa fecha, sin usar lo que pasó después. El último punto es la predicción actual. La muestra reconstruida es más chica, así que un movimiento menor a dos puntos porcentuales no se muestra como un cambio.",
             rounds);
     }
 
