@@ -7412,12 +7412,16 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 .v2-pred-chart__value--certain { color: var(--v2-primary-dark); }
 .v2-pred-chart__row.is-focus { background: #f0fdf4; border-radius: 0.6rem; padding: 0.25rem; }
 .v2-pred-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.v2-pred-table { width: 100%; border-collapse: collapse; min-width: 34rem; font-size: var(--font-size-secondary); }
+.v2-pred-table { width: 100%; border-collapse: collapse; min-width: 0; font-size: var(--font-size-secondary); }
 .v2-pred-table th, .v2-pred-table td { padding: 0.45rem 0.35rem; border-bottom: 1px solid var(--v2-border); text-align: right; white-space: nowrap; }
 .v2-pred-table th:nth-child(2), .v2-pred-table td:nth-child(2) { text-align: left; }
 .v2-pred-table th { color: var(--v2-text-secondary); font-size: var(--font-size-label); font-weight: var(--font-weight-bold); }
 .v2-pred-team__line { display: inline-flex; align-items: center; gap: 0.35rem; }
 .v2-pred-team__places { display: block; color: var(--v2-text-secondary); font-size: var(--font-size-label); }
+@media (max-width: 719px) {
+  .v2-pred-col--more, .v2-pred-team__places { display: none; }
+  .v2-pred-table th:nth-child(2), .v2-pred-table td:nth-child(2) { white-space: normal; }
+}
 .v2-pred-move.is-up { color: var(--v2-primary-dark); font-weight: var(--font-weight-bold); }
 .v2-pred-move.is-down { color: var(--v2-danger); font-weight: var(--font-weight-bold); }
 .v2-pred-table tr.is-focus { background: #f0fdf4; }
@@ -7434,8 +7438,10 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 .v2-pred-match__teams > div:last-child { align-items: flex-end; text-align: right; }
 .v2-pred-match__teams strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .v2-pred-match__teams span { color: var(--v2-text-secondary); font-size: var(--font-size-label); letter-spacing: 0.04em; }
-.v2-pred-match__score { margin: 0; font-size: 1.25rem; font-weight: var(--font-weight-bold); }
-.v2-pred-match__score span { margin: 0 0.2rem; color: var(--v2-text-secondary); }
+.v2-pred-match__score { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; margin: 0; }
+.v2-pred-match__score-label { max-width: 4.6rem; color: var(--v2-text-secondary); font-size: 0.65rem; font-weight: 650; letter-spacing: 0.02em; line-height: 1.15; text-align: center; }
+.v2-pred-match__score-line { font-size: 1.25rem; font-weight: var(--font-weight-bold); }
+.v2-pred-match__score-line i { margin: 0 0.2rem; color: var(--v2-text-secondary); font-style: normal; }
 .v2-pred-probs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; margin: 0.65rem 0 0; }
 .v2-pred-probs div { margin: 0; padding: 0.35rem; border-radius: 0.55rem; background: var(--v2-background); text-align: center; }
 .v2-pred-probs dt { color: var(--v2-text-secondary); font-size: var(--font-size-label); }
@@ -7469,6 +7475,9 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 .v2-story-race .v2-story-note, .v2-story-race p { color: inherit; }
 .v2-story-campaigns { list-style: none; margin: 0.4rem 0 0; padding: 0; }
 .v2-story-campaigns li { display: flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0; border-top: 1px solid var(--v2-border); }
+.v2-story-key { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem 0.7rem; margin: 0.35rem 0 0.6rem; color: var(--v2-text-secondary); font-size: var(--font-size-label); }
+.v2-story-key > span { display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+.v2-story-key .v2-mark { margin-right: 0; }
 .v2-mark { display: inline-grid; place-items: center; width: 1.35rem; height: 1.35rem; margin-right: 0.15rem; border-radius: 0.3rem; color: #fff; font-style: normal; font-size: 0.72rem; }
 .v2-mark--G { background: #1f8a4c; }
 .v2-mark--E { background: #8a8f98; }

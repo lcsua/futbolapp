@@ -218,7 +218,6 @@
                     <span style="width:@div.PlayedPercent%"></span>
                 </div>
                 <p>@div.CompletedMatches partidos jugados · @div.PendingMatches pendientes · @div.PendingRounds jornadas por delante.</p>
-                <p>@div.MaturityNote</p>
                 @if (updated != default)
                 {
                     <p class="v2-pred-updated">Actualizado el @ArgentinaTime(updated).ToString("dd/MM/yyyy HH:mm", culture)</p>
@@ -239,7 +238,7 @@
                 @await Html.PartialAsync("~/Views/V2/Predictions/_Story.cshtml", div)
                 <section class="v2-pred-block" aria-labelledby="pred-title-@div.DivisionSlug">
                     <h4 id="pred-title-@div.DivisionSlug">Probabilidad de salir campeón</h4>
-                    <p class="v2-pred-note">@div.ChampionNote</p>
+                    <p class="v2-pred-note">Salir campeón es terminar primero. No hay playoffs cargados.</p>
                     <ol class="v2-pred-chart">
                         @foreach (var team in chart.Take(4))
                         {
@@ -287,14 +286,14 @@
                                 <tr>
                                     <th scope="col">Pos</th>
                                     <th scope="col">Equipo</th>
-                                    <th scope="col">PJ</th>
+                                    <th scope="col" class="v2-pred-col--more">PJ</th>
                                     <th scope="col">Pts</th>
-                                    <th scope="col">Pts esp.</th>
-                                    <th scope="col">Pos esp.</th>
+                                    <th scope="col" class="v2-pred-col--more">Pts esp.</th>
+                                    <th scope="col" class="v2-pred-col--more">Pos esp.</th>
                                     <th scope="col">Rango</th>
-                                    <th scope="col">Pts</th>
+                                    <th scope="col" class="v2-pred-col--more">Pts fin.</th>
                                     <th scope="col">Podio</th>
-                                    <th scope="col">Mov.</th>
+                                    <th scope="col" class="v2-pred-col--more">Mov.</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -316,14 +315,14 @@
                                                 <span class="v2-pred-team__places">@places</span>
                                             }
                                         </td>
-                                        <td>@team.Played</td>
+                                        <td class="v2-pred-col--more">@team.Played</td>
                                         <td>@team.CurrentPoints</td>
-                                        <td>@team.ExpectedPoints.ToString("0.0", culture)</td>
-                                        <td>@team.ExpectedPosition.ToString("0.0", culture)</td>
+                                        <td class="v2-pred-col--more">@team.ExpectedPoints.ToString("0.0", culture)</td>
+                                        <td class="v2-pred-col--more">@team.ExpectedPosition.ToString("0.0", culture)</td>
                                         <td>@(team.PositionLow)º–@(team.PositionHigh)º</td>
-                                        <td>@team.PointsLow–@team.PointsHigh</td>
+                                        <td class="v2-pred-col--more">@team.PointsLow–@team.PointsHigh</td>
                                         <td>@((team.PodiumProbability * 100) < 0.1 ? "<0,1%" : (team.PodiumProbability * 100).ToString("0.#", culture) + "%")</td>
-                                        <td class="v2-pred-move @MoveClass(team)">@Move(team)</td>
+                                        <td class="v2-pred-col--more v2-pred-move @MoveClass(team)">@Move(team)</td>
                                     </tr>
                                 }
                             </tbody>
@@ -335,6 +334,7 @@
                 {
                     <section class="v2-pred-block" aria-labelledby="pred-round-@div.DivisionSlug">
                         <h4 id="pred-round-@div.DivisionSlug">Próxima fecha @(div.NextRoundNumber?.ToString() ?? "")</h4>
+                        <p class="v2-pred-note">El marcador es el más repetido. Puede no coincidir con quién tiene más chances de ganar el partido.</p>
                         <div class="v2-pred-matches">
                             @foreach (var match in div.NextRound)
                             {
@@ -354,17 +354,19 @@
                                             @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
                                             @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", match.Home)
                                             <strong>@match.Home.Name</strong>
-                                            <span>@match.HomeForm</span>
+                                            <span title="Últimos partidos">@match.HomeForm</span>
                                         </div>
-                                        <p class="v2-pred-match__score" aria-label="Marcador más probable">@match.LikelyHomeGoals<span>-</span>@match.LikelyAwayGoals</p>
+                                        <p class="v2-pred-match__score">
+                                            <span class="v2-pred-match__score-label">Más probable</span>
+                                            <span class="v2-pred-match__score-line">@match.LikelyHomeGoals<i>-</i>@match.LikelyAwayGoals</span>
+                                        </p>
                                         <div>
                                             @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
                                             @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", match.Away)
                                             <strong>@match.Away.Name</strong>
-                                            <span>@match.AwayForm</span>
+                                            <span title="Últimos partidos">@match.AwayForm</span>
                                         </div>
                                     </div>
-                                    <p class="v2-story-note">El marcador más probable puede no coincidir con el resultado global más probable.</p>
                                     <dl class="v2-pred-probs">
                                         <div><dt>Local</dt><dd>@match.HomeWinLabel</dd></div>
                                         <div><dt>Empate</dt><dd>@match.DrawLabel</dd></div>
