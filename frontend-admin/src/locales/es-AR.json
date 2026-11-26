@@ -525,7 +525,7 @@
       },
       "photos": {
         "title": "Fotografías",
-        "help": "JPEG, PNG o WebP. Máximo 5 MB. Podés cargar varias a la vez. La galería es opcional.",
+        "help": "JPEG, PNG o WebP. La foto se achica sola antes de subirla. Podés cargar varias a la vez. La galería es opcional.",
         "add": "Agregar fotografías",
         "empty": "Sin fotografías. Podés agregarlas ahora o más adelante.",
         "afterCreate": "Guardá el campeón para poder sumar fotografías. No son obligatorias.",
