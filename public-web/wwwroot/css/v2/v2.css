@@ -7599,6 +7599,13 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
   color: #F4F7FA;
 }
 .v2-story-race__duel .is-leader .v2-story-race__pct { color: var(--race-gold); }
+.v2-story-race__move {
+  display: grid;
+  justify-items: center;
+  gap: 0.12rem;
+  min-width: 0;
+  cursor: help;
+}
 .v2-story-race__delta {
   min-height: 1rem;
   font-size: 0.72rem;
@@ -7609,6 +7616,12 @@ a.v2-home-match__team:focus-visible .v2-home-match__name {
 .v2-story-race__delta.is-up { color: #86efac; }
 .v2-story-race__delta.is-down { color: #fda4af; }
 .v2-story-race__delta.is-flat { color: var(--race-muted); font-weight: 600; }
+.v2-story-race__prev {
+  color: var(--race-muted);
+  font-size: 0.66rem;
+  font-weight: 550;
+  line-height: 1.2;
+}
 .v2-story-race__pts {
   min-height: 1rem;
   color: var(--race-muted);
