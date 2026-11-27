@@ -1,0 +1,46 @@
+@model PublicWeb.Models.Public.PredictionDivisionViewModel
+@using System.Globalization
+@using PublicWeb.Helpers
+@{
+    var culture = CultureInfo.GetCultureInfo("es-AR");
+    var seasonSlug = ViewBag.SeasonSlug as string;
+}
+@if (Model.DecisiveMatches.Count > 0)
+{
+    <section class="v2-pred-decisive" id="pred-decisivos-@Model.DivisionSlug" aria-labelledby="pred-decisive-@Model.DivisionSlug">
+        <h4 id="pred-decisive-@Model.DivisionSlug">Partidos decisivos de la fecha</h4>
+        <p class="v2-pred-note">Los tres encuentros con mayor impacto potencial sobre el título, medidos con las simulaciones ya calculadas.</p>
+        <div class="v2-pred-decisive__list">
+            @foreach (var item in Model.DecisiveMatches)
+            {
+                var previa = new PublicWeb.Models.Public.MatchViewModel
+                {
+                    Id = item.MatchId,
+                    HomeTeam = item.Home,
+                    AwayTeam = item.Away,
+                    SeasonSlug = seasonSlug
+                };
+                var previaHref = MatchSlugHelper.AppRelative(previa);
+                <article class="v2-pred-decisive__card">
+                    <p class="v2-pred-decisive__impact is-@item.ImpactLevel">Impacto @item.ImpactLevel</p>
+                    <div class="v2-pred-decisive__teams">
+                        <div class="v2-pred-decisive__side">
+                            @{ ViewData["BadgeSize"] = "md"; ViewData["BadgeDecorative"] = true; }
+                            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", item.Home)
+                            <strong>@item.Home.Name</strong>
+                        </div>
+                        <span class="v2-pred-decisive__vs" aria-hidden="true">vs</span>
+                        <div class="v2-pred-decisive__side">
+                            @{ ViewData["BadgeSize"] = "md"; ViewData["BadgeDecorative"] = true; }
+                            @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", item.Away)
+                            <strong>@item.Away.Name</strong>
+                        </div>
+                    </div>
+                    <p class="v2-pred-decisive__reason">@item.Reason</p>
+                    <p class="v2-pred-decisive__swing">Hasta @((item.MaxTitleSwing * 100).ToString("0.0", culture)) pp de movimiento en el título</p>
+                    <a class="v2-pred-decisive__link" href="@Url.Content(previaHref)">Ver la previa</a>
+                </article>
+            }
+        </div>
+    </section>
+}

@@ -127,7 +127,6 @@
         var tocDivision = tocDiv?.DivisionSlug;
         var tocHasRace = tocDiv?.Race != null;
         var tocHasScenes = tocDiv != null && (tocDiv.Paths.Count > 0 || tocDiv.WhatIfs.Count > 0);
-        var tocHasHistory = tocDiv?.History is { Available: true, Rounds.Count: >= 2 };
         var tocHasNext = tocDiv != null && tocDiv.NextRound.Count > 0;
     }
     @if (!string.IsNullOrWhiteSpace(tocDivision) && Model.Divisions.Count(item => item.Published) == 1)
@@ -140,10 +139,6 @@
             @if (tocHasScenes)
             {
                 <a href="#pred-escenarios-@tocDivision">Escenarios</a>
-            }
-            @if (tocHasHistory)
-            {
-                <a href="#pred-evolucion-@tocDivision">Evolución</a>
             }
             <a href="#pred-proyeccion-@tocDivision">Proyección</a>
             @if (tocHasNext)
@@ -338,37 +333,6 @@
                     }
                 </section>
 
-                @if (div.DecisiveMatches.Count > 0)
-                {
-                    <section class="v2-pred-decisive" aria-labelledby="pred-decisive-@div.DivisionSlug">
-                        <h4 id="pred-decisive-@div.DivisionSlug">Partidos decisivos de la fecha</h4>
-                        <p class="v2-pred-note">Los tres encuentros con mayor impacto potencial sobre el título, medidos con las simulaciones ya calculadas.</p>
-                        <div class="v2-pred-decisive__list">
-                            @foreach (var item in div.DecisiveMatches)
-                            {
-                                <article class="v2-pred-decisive__card">
-                                    <p class="v2-pred-decisive__impact is-@item.ImpactLevel">Impacto @item.ImpactLevel</p>
-                                    <div class="v2-pred-decisive__teams">
-                                        @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
-                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", item.Home)
-                                        <strong>@item.Home.Name</strong>
-                                        <span>vs</span>
-                                        @{ ViewData["BadgeSize"] = "sm"; ViewData["BadgeDecorative"] = true; }
-                                        @await Html.PartialAsync("~/Views/V2/Team/_TeamBadge.cshtml", item.Away)
-                                        <strong>@item.Away.Name</strong>
-                                    </div>
-                                    <p>@item.Reason</p>
-                                    <p class="v2-pred-decisive__swing">Hasta @((item.MaxTitleSwing * 100).ToString("0.0", culture)) pp de movimiento en el título</p>
-                                    @if (!string.IsNullOrWhiteSpace(leagueSlug) && item.MatchId != Guid.Empty)
-                                    {
-                                        <a class="v2-pred-decisive__link" href="@Url.Content($"~/ligas/{leagueSlug}/partido/{item.MatchId}")">Ver la previa</a>
-                                    }
-                                </article>
-                            }
-                        </div>
-                    </section>
-                }
-
                 @if (div.NextRound.Count > 0)
                 {
                     <section class="v2-pred-block" id="pred-fecha-@div.DivisionSlug" aria-labelledby="pred-round-@div.DivisionSlug">
@@ -382,6 +346,8 @@
                         </div>
                     </section>
                 }
+
+                @await Html.PartialAsync("~/Views/V2/Predictions/_ChampionshipHistory.cshtml", div)
             }
             else if (div.Teams.Count > 0)
             {

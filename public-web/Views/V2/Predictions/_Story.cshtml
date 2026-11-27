@@ -1,16 +1,7 @@
 @model PublicWeb.Models.Public.PredictionDivisionViewModel
 @using System.Globalization
-@using System.Text.Json
 @{
     var culture = CultureInfo.GetCultureInfo("es-AR");
-    string Pct(double value)
-    {
-        if (value <= 0) return "0%";
-        if (value >= 1) return "100%";
-        if (value * 100 < 0.1) return "<0,1%";
-        if (value * 100 > 99.9) return ">99,9%";
-        return (value * 100).ToString("0.0", culture) + "%";
-    }
     string Pp(double value)
     {
         var points = value * 100;
@@ -26,39 +17,6 @@
         .ToList();
     if (candidates.Count == 0)
         candidates = Model.Teams.OrderByDescending(team => team.TitleProbability).Take(2).ToList();
-    var history = Model.History;
-    var chartTeams = candidates.Take(3).ToList();
-    if (chartTeams.Count < 3 && history?.Available == true)
-    {
-        var last = history.Rounds.LastOrDefault();
-        if (last != null)
-        {
-            chartTeams = last.Teams
-                .OrderByDescending(team => team.TitleProbability)
-                .Take(3)
-                .Select(point => byId.GetValueOrDefault(point.TeamId))
-                .Where(team => team != null)
-                .Cast<PublicWeb.Models.Public.PredictionTeamViewModel>()
-                .ToList();
-        }
-    }
-    var chartPayload = history?.Available == true
-        ? new
-        {
-            rounds = history.Rounds.Select(round => new { round = round.Round, reconstructed = round.Reconstructed }).ToList(),
-            series = chartTeams.Select((team, index) => new
-            {
-                id = team.Team.Id,
-                name = team.Team.Name,
-                color = index == 0 ? "#22c55e" : index == 1 ? "#3b82f6" : "#f59e0b",
-                points = history.Rounds.Select(round =>
-                {
-                    var hit = round.Teams.FirstOrDefault(item => item.TeamId == team.Team.Id);
-                    return hit == null ? (double?)null : hit.TitleProbability;
-                }).ToList()
-            }).ToList()
-        }
-        : null;
 }
 
 @if (Model.Race != null && candidates.Count > 0)
@@ -103,6 +61,12 @@
                         <strong class="v2-story-race__name">@team.Team.Name</strong>
                     }
                     <b class="v2-story-race__pct">@team.TitleLabel</b>
+                    @if (team.TitleChange is double raceDelta)
+                    {
+                        <span class="v2-story-race__delta @(Math.Abs(raceDelta * 100) < 0.05 ? "is-flat" : raceDelta > 0 ? "is-up" : "is-down")">
+                            @(Math.Abs(raceDelta * 100) < 0.05 ? "sin cambio" : Pp(raceDelta))
+                        </span>
+                    }
                     <span class="v2-story-race__pts">@team.CurrentPoints pts</span>
                     <span class="v2-story-race__bar" role="presentation" aria-hidden="true"><i style="width:@(barWidth)%"></i></span>
                 </article>
@@ -325,63 +289,4 @@ else if (Model.Published)
     @await Html.PartialAsync("~/Views/V2/Predictions/_TitleOdds.cshtml", Model)
 }
 
-@if (history?.Available == true && history.Rounds.Count >= 2 && chartTeams.Count > 0 && chartPayload != null)
-{
-    var rounds = history.Rounds;
-    var previous = rounds[^2];
-    var latest = rounds[^1];
-    <section class="v2-story-history" id="pred-evolucion-@Model.DivisionSlug" aria-labelledby="story-history-@Model.DivisionSlug" data-story-history>
-        <h4 id="story-history-@Model.DivisionSlug">Así evolucionó el campeonato</h4>
-        <p class="v2-story-history__lead">Probabilidades de título por jornada</p>
-        <div class="v2-story-chart-shell">
-            <svg class="v2-story-chart" viewBox="0 0 360 210" role="img" aria-label="Evolución de la probabilidad de título" data-history-chart></svg>
-            <div class="v2-story-chart-tip" data-history-tip hidden></div>
-        </div>
-        <script type="application/json" data-history-json>@Html.Raw(JsonSerializer.Serialize(chartPayload))</script>
-        <ul class="v2-story-legend" data-history-legend>
-            @for (var i = 0; i < chartTeams.Count; i++)
-            {
-                <li class="is-@(i == 0 ? "a" : i == 1 ? "b" : "c")" data-series="@chartTeams[i].Team.Id">
-                    <button type="button" data-series-toggle="@chartTeams[i].Team.Id" aria-pressed="true">@chartTeams[i].Team.Name</button>
-                </li>
-            }
-        </ul>
-        <p class="v2-story-chart-key"><span class="is-live"></span> Registrada <span class="is-ghost"></span> Reconstruida *</p>
-        <label class="v2-story-history__pick">
-            Consultar jornada
-            <select data-history-round>
-                @for (var i = 0; i < rounds.Count; i++)
-                {
-                    <option value="@i" selected="@(i == rounds.Count - 1)">Fecha @rounds[i].Round@(rounds[i].Reconstructed ? "*" : "")</option>
-                }
-            </select>
-        </label>
-        <ul class="v2-story-moves" data-history-moves>
-            @foreach (var team in chartTeams)
-            {
-                var now = latest.Teams.FirstOrDefault(item => item.TeamId == team.Team.Id)?.TitleProbability ?? team.TitleProbability;
-                var before = previous.Teams.FirstOrDefault(item => item.TeamId == team.Team.Id)?.TitleProbability ?? now;
-                var delta = now - before;
-                <li data-team="@team.Team.Id">
-                    <span>@team.Team.Name <small data-move-pct>@Pct(now)</small></span>
-                    @if (Math.Abs(delta * 100) < 0.05)
-                    {
-                        <b>sin cambio</b>
-                    }
-                    else
-                    {
-                        <b class="@(delta > 0 ? "is-up" : "is-down")" data-move-pp>@Pp(delta)</b>
-                    }
-                </li>
-            }
-        </ul>
-        @if (rounds.Any(round => round.Reconstructed))
-        {
-            <p class="v2-story-note">* Estimaciones históricas reconstruidas.</p>
-        }
-    </section>
-}
-else if (!string.IsNullOrWhiteSpace(history?.Note))
-{
-    <p class="v2-story-note">@history.Note</p>
-}
+@await Html.PartialAsync("~/Views/V2/Predictions/_DecisiveMatches.cshtml", Model)

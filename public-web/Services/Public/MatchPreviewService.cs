@@ -30,9 +30,53 @@ public sealed class MatchPreviewService
         var homeTask = LoadTeamAsync(match.LeagueSlug, match.HomeTeam.Slug, match.SeasonSlug);
         var awayTask = LoadTeamAsync(match.LeagueSlug, match.AwayTeam.Slug, match.SeasonSlug);
         var tableTask = _leagues.GetStandingsAsync(match.LeagueSlug, match.SeasonSlug, null);
-        await Task.WhenAll(homeTask, awayTask, tableTask);
+        var oddsTask = FindOddsAsync(match);
+        await Task.WhenAll(homeTask, awayTask, tableTask, oddsTask);
 
-        return MatchPreviewBuilder.Build(match, await tableTask, await homeTask, await awayTask);
+        var preview = MatchPreviewBuilder.Build(match, await tableTask, await homeTask, await awayTask);
+        var odds = await oddsTask;
+        if (odds == null)
+            return preview;
+
+        return new MatchPreviewViewModel
+        {
+            HomeName = preview.HomeName,
+            AwayName = preview.AwayName,
+            Home = preview.Home,
+            Away = preview.Away,
+            ShowPlace = preview.ShowPlace,
+            ShowForm = preview.ShowForm,
+            HasComparison = preview.HasComparison,
+            Rows = preview.Rows,
+            Insights = preview.Insights,
+            MatchOdds = odds
+        };
+    }
+
+    private async Task<PredictionMatchViewModel?> FindOddsAsync(MatchViewModel match)
+    {
+        if (string.IsNullOrWhiteSpace(match.LeagueSlug) || match.Id == Guid.Empty)
+            return null;
+
+        try
+        {
+            var page = await _leagues.GetPredictionsAsync(match.LeagueSlug, match.SeasonSlug, null);
+            if (page == null)
+                return null;
+
+            foreach (var division in page.Divisions)
+            {
+                var hit = division.NextRound.FirstOrDefault(item => item.MatchId == match.Id);
+                if (hit != null)
+                    return hit;
+            }
+        }
+        catch
+        {
+            // Preview still works without odds.
+        }
+
+        return null;
     }
 
     public async Task<MatchCardPreview> BuildCardAsync(TeamDetailViewModel current, MatchViewModel match)

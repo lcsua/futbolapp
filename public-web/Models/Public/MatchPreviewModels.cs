@@ -121,6 +121,8 @@ public sealed class MatchPreviewViewModel
     public bool HasComparison { get; init; }
     public IReadOnlyList<MatchCompareRow> Rows { get; init; } = Array.Empty<MatchCompareRow>();
     public IReadOnlyList<MatchInsight> Insights { get; init; } = Array.Empty<MatchInsight>();
+    /// <summary>Same 1X2 block as Predicciones → Próxima fecha, when the match is in that cache.</summary>
+    public PredictionMatchViewModel? MatchOdds { get; init; }
 }
 
 public sealed class FormSlotsViewModel

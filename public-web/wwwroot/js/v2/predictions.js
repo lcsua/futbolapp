@@ -284,7 +284,23 @@
       });
     }
 
-    render();
-    updateMoves(rounds.length - 1);
+    function paint() {
+      render();
+      updateMoves(rounds.length - 1);
+    }
+
+    // Re-paint when a collapsed <details> opens so the SVG gets a real layout box.
+    var fold = root.closest("details");
+    if (fold && !fold.open) {
+      fold.addEventListener("toggle", function onToggle() {
+        if (!fold.open) return;
+        fold.removeEventListener("toggle", onToggle);
+        requestAnimationFrame(function () {
+          requestAnimationFrame(paint);
+        });
+      });
+    } else {
+      paint();
+    }
   });
 })();
