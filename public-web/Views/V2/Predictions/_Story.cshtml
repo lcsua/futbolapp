@@ -237,12 +237,6 @@
         }
 
         <div class="v2-story-split__side">
-            @* Title odds first: on mobile it must not sit under the tall joint what-if. *@
-            @if (Model.Published)
-            {
-                @await Html.PartialAsync("~/Views/V2/Predictions/_TitleOdds.cshtml", Model)
-            }
-
             @if (Model.JointWhatIfs != null && Model.JointWhatIfs.Options.Count >= 2)
             {
                 @await Html.PartialAsync("~/Views/V2/Predictions/_JointWhatIf.cshtml", Model)
@@ -303,7 +297,8 @@
         </div>
     </div>
 }
-else if (Model.Published)
+
+@if (Model.Published)
 {
     @await Html.PartialAsync("~/Views/V2/Predictions/_TitleOdds.cshtml", Model)
 }
