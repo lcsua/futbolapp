@@ -85,6 +85,15 @@
         @await Html.PartialAsync("~/Views/V2/Match/_MatchHero.cshtml", Model)
     </section>
 
+    @if (preview?.MatchOdds != null)
+    {
+        <section class="v2-home-section v2-match-odds" aria-labelledby="match-odds">
+            <h2 id="match-odds" class="v2-section-title">Estimación del partido</h2>
+            <p class="v2-pred-note">La misma lectura de Predicciones → Próxima fecha: chances de local, empate y visita, más el marcador más probable.</p>
+            @await Html.PartialAsync("~/Views/V2/Predictions/_MatchCard.cshtml", preview.MatchOdds)
+        </section>
+    }
+
     @if (preview?.HasComparison == true)
     {
         @await Html.PartialAsync("~/Views/V2/Match/_MatchCompare.cshtml", preview)
