@@ -151,6 +151,7 @@ public static class PredictionComposer
             Race = MapRace(outlook.Race),
             Paths = outlook.Paths?.Select(MapPath).ToList() ?? new(),
             WhatIfs = outlook.WhatIfs?.Select(MapWhatIf).ToList() ?? new(),
+            JointWhatIfs = MapJointWhatIf(outlook.JointWhatIfs),
             History = MapHistory(outlook.History),
             DecisiveMatches = outlook.DecisiveMatches?.Select(item => new PredictionDecisiveMatchPublicDto
             {
@@ -247,6 +248,47 @@ public static class PredictionComposer
             IfLoss = rival.IfLoss
         }).ToList()
     };
+
+    private static PredictionJointWhatIfPublicDto? MapJointWhatIf(JointWhatIfBoard? board) =>
+        board == null
+            ? null
+            : new PredictionJointWhatIfPublicDto
+            {
+                DefaultTeamAId = board.DefaultTeamAId,
+                DefaultTeamBId = board.DefaultTeamBId,
+                Options = board.Options.Select(item => new PredictionJointWhatIfTeamPublicDto
+                {
+                    TeamId = item.TeamId,
+                    Name = item.Name,
+                    MatchId = item.MatchId,
+                    Round = item.Round,
+                    OpponentName = item.OpponentName,
+                    IsHome = item.IsHome,
+                    CurrentPoints = item.CurrentPoints,
+                    TitleProbability = item.TitleProbability
+                }).ToList(),
+                Pairs = board.Pairs.Select(pair => new PredictionJointWhatIfPairPublicDto
+                {
+                    TeamAId = pair.TeamAId,
+                    TeamBId = pair.TeamBId,
+                    HeadToHead = pair.HeadToHead,
+                    Cells = pair.Cells.Select(cell => new PredictionJointWhatIfCellPublicDto
+                    {
+                        OutcomeA = cell.OutcomeA,
+                        OutcomeB = cell.OutcomeB,
+                        TitleA = cell.TitleA,
+                        TitleB = cell.TitleB,
+                        Reliable = cell.Reliable,
+                        Samples = cell.Samples,
+                        Others = cell.Others.Select(other => new PredictionJointWhatIfOtherPublicDto
+                        {
+                            TeamId = other.TeamId,
+                            Name = other.Name,
+                            TitleProbability = other.TitleProbability
+                        }).ToList()
+                    }).ToList()
+                }).ToList()
+            };
 
     private static PredictionHistoryPublicDto? MapHistory(ProbabilityHistory? history) =>
         history == null

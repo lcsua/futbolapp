@@ -372,6 +372,103 @@ public class PredictionStoryTests
         Assert.All(outlook.NextRound, match => Assert.False(string.IsNullOrWhiteSpace(match.ToneLabel)));
     }
 
+    [Fact]
+    public void Joint_what_if_precomputes_mirrored_cells_for_head_to_head()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var gamma = Guid.NewGuid();
+        var delta = Guid.NewGuid();
+        var division = new PredictionDivision(
+            Guid.NewGuid(),
+            "B",
+            new[]
+            {
+                new PredictionBaseline(alpha, "Alpha", 1, 8, 14, 8, 17),
+                new PredictionBaseline(beta, "Beta", 2, 8, 13, 9, 16),
+                new PredictionBaseline(gamma, "Gamma", 3, 8, 8, 10, 10),
+                new PredictionBaseline(delta, "Delta", 4, 8, 6, 12, 8)
+            },
+            new[]
+            {
+                Played(1, new DateTime(2026, 8, 1), alpha, beta, 2, 0),
+                Played(2, new DateTime(2026, 8, 8), alpha, gamma, 1, 0),
+                Played(3, new DateTime(2026, 8, 15), beta, delta, 2, 1),
+                Played(4, new DateTime(2026, 8, 22), gamma, delta, 1, 1),
+                Played(5, new DateTime(2026, 8, 29), alpha, delta, 3, 0),
+                Played(6, new DateTime(2026, 9, 5), beta, gamma, 1, 0),
+                Played(7, new DateTime(2026, 9, 12), alpha, beta, 2, 1),
+                Played(8, new DateTime(2026, 9, 19), gamma, delta, 0, 1),
+                Match(9, alpha, "Alpha", beta, "Beta"),
+                Match(9, gamma, "Gamma", delta, "Delta")
+            });
+
+        var outlook = ChampionshipPredictor.Predict(division, new PredictionOptions { Simulations = 300, MinCompletedMatches = 8 });
+        Assert.True(outlook.Published, outlook.UnpublishedReason);
+        Assert.NotNull(outlook.WhatIfs);
+        Assert.True(outlook.WhatIfs!.Count >= 2, $"whatifs={outlook.WhatIfs?.Count}");
+        Assert.NotNull(outlook.JointWhatIfs);
+        Assert.True(outlook.JointWhatIfs!.Options.Count >= 2);
+        var pair = outlook.JointWhatIfs.Pairs.First(item =>
+            (item.TeamAId == alpha && item.TeamBId == beta) || (item.TeamAId == beta && item.TeamBId == alpha));
+        Assert.True(pair.HeadToHead);
+        Assert.Contains(pair.Cells, cell => cell.OutcomeA == 0 && cell.OutcomeB == 2);
+        Assert.Contains(pair.Cells, cell => cell.OutcomeA == 1 && cell.OutcomeB == 1);
+        Assert.DoesNotContain(pair.Cells, cell => cell.OutcomeA == 0 && cell.OutcomeB == 0);
+        Assert.All(pair.Cells, cell =>
+        {
+            Assert.InRange(cell.TitleA, 0, 1);
+            Assert.InRange(cell.TitleB, 0, 1);
+            Assert.True(cell.Samples >= 200);
+        });
+    }
+
+    [Fact]
+    public void Joint_what_if_covers_independent_next_matches()
+    {
+        var alpha = Guid.NewGuid();
+        var beta = Guid.NewGuid();
+        var gamma = Guid.NewGuid();
+        var delta = Guid.NewGuid();
+        var division = new PredictionDivision(
+            Guid.NewGuid(),
+            "B",
+            new[]
+            {
+                new PredictionBaseline(alpha, "Alpha", 1, 8, 14, 8, 17),
+                new PredictionBaseline(beta, "Beta", 2, 8, 13, 9, 16),
+                new PredictionBaseline(gamma, "Gamma", 3, 8, 8, 10, 10),
+                new PredictionBaseline(delta, "Delta", 4, 8, 6, 12, 8)
+            },
+            new[]
+            {
+                Played(1, new DateTime(2026, 8, 1), alpha, beta, 2, 0),
+                Played(2, new DateTime(2026, 8, 8), alpha, gamma, 1, 0),
+                Played(3, new DateTime(2026, 8, 15), beta, delta, 2, 1),
+                Played(4, new DateTime(2026, 8, 22), gamma, delta, 1, 1),
+                Played(5, new DateTime(2026, 8, 29), alpha, delta, 3, 0),
+                Played(6, new DateTime(2026, 9, 5), beta, gamma, 1, 0),
+                Played(7, new DateTime(2026, 9, 12), alpha, gamma, 2, 1),
+                Played(8, new DateTime(2026, 9, 19), beta, delta, 0, 1),
+                Match(9, alpha, "Alpha", gamma, "Gamma"),
+                Match(9, beta, "Beta", delta, "Delta")
+            });
+
+        var outlook = ChampionshipPredictor.Predict(division, new PredictionOptions { Simulations = 250, MinCompletedMatches = 8 });
+        Assert.True(outlook.Published, outlook.UnpublishedReason);
+        Assert.NotNull(outlook.JointWhatIfs);
+        var pair = outlook.JointWhatIfs!.Pairs.First(item =>
+            (item.TeamAId == alpha && item.TeamBId == beta) || (item.TeamAId == beta && item.TeamBId == alpha));
+        Assert.False(pair.HeadToHead);
+        Assert.Equal(9, pair.Cells.Count);
+        var alphaWinsBetaLoses = pair.Cells.Single(cell =>
+            pair.TeamAId == alpha
+                ? cell.OutcomeA == 0 && cell.OutcomeB == 2
+                : cell.OutcomeA == 2 && cell.OutcomeB == 0);
+        Assert.True(alphaWinsBetaLoses.Reliable);
+        Assert.InRange(alphaWinsBetaLoses.TitleA + alphaWinsBetaLoses.TitleB, 0, 1.0001);
+    }
+
     private static TeamOutlook Team(Guid id, string name, int points, double title, bool eliminated = false) =>
         new(id, name, 1, points, 4, points, 2, points, 1, 1, 0, title, "", "estimate", false, eliminated, "", Array.Empty<double>());
 

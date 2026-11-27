@@ -46,6 +46,40 @@ public sealed record WhatIfReport(
     int LossSamples,
     IReadOnlyList<WhatIfRival> Rivals);
 
+/// <summary>Precomputed joint title chances for two teams' next-match outcomes (0=win,1=draw,2=loss).</summary>
+public sealed record JointWhatIfBoard(
+    Guid DefaultTeamAId,
+    Guid DefaultTeamBId,
+    IReadOnlyList<JointWhatIfTeamOption> Options,
+    IReadOnlyList<JointWhatIfPair> Pairs);
+
+public sealed record JointWhatIfTeamOption(
+    Guid TeamId,
+    string Name,
+    Guid MatchId,
+    int Round,
+    string OpponentName,
+    bool IsHome,
+    int CurrentPoints,
+    double TitleProbability);
+
+public sealed record JointWhatIfPair(
+    Guid TeamAId,
+    Guid TeamBId,
+    bool HeadToHead,
+    IReadOnlyList<JointWhatIfCell> Cells);
+
+public sealed record JointWhatIfCell(
+    int OutcomeA,
+    int OutcomeB,
+    double TitleA,
+    double TitleB,
+    bool Reliable,
+    int Samples,
+    IReadOnlyList<JointWhatIfOther> Others);
+
+public sealed record JointWhatIfOther(Guid TeamId, string Name, double TitleProbability);
+
 public sealed record HistoryTeamPoint(
     Guid TeamId,
     double TitleProbability,

@@ -237,7 +237,11 @@
         }
 
         <div class="v2-story-split__side">
-            @if (Model.WhatIfs.Count > 0)
+            @if (Model.JointWhatIfs != null && Model.JointWhatIfs.Options.Count >= 2)
+            {
+                @await Html.PartialAsync("~/Views/V2/Predictions/_JointWhatIf.cshtml", Model)
+            }
+            else if (Model.WhatIfs.Count > 0)
             {
                 <section class="v2-story-if" data-story-if aria-labelledby="story-if-@Model.DivisionSlug">
                     <h4 id="story-if-@Model.DivisionSlug">¿Qué pasa si...?</h4>
@@ -290,15 +294,11 @@
                     }
                 </section>
             }
-
-            @if (Model.Published)
-            {
-                @await Html.PartialAsync("~/Views/V2/Predictions/_TitleOdds.cshtml", Model)
-            }
         </div>
     </div>
 }
-else if (Model.Published)
+
+@if (Model.Published)
 {
     @await Html.PartialAsync("~/Views/V2/Predictions/_TitleOdds.cshtml", Model)
 }

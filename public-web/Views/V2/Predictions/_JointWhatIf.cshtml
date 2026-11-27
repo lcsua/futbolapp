@@ -1,0 +1,147 @@
+@model PublicWeb.Models.Public.PredictionDivisionViewModel
+@using System.Text.Json
+@{
+    var board = Model.JointWhatIfs;
+    if (board == null || board.Options.Count < 2)
+        return;
+
+    var byId = Model.Teams.ToDictionary(team => team.Team.Id);
+    var singles = Model.WhatIfs.Select(item => new
+    {
+        teamId = item.TeamId,
+        win = item.WinTitle,
+        draw = item.DrawTitle,
+        loss = item.LossTitle,
+        winOk = item.WinReliable,
+        drawOk = item.DrawReliable,
+        lossOk = item.LossReliable,
+        rivals = item.Rivals.Select(rival => new
+        {
+            teamId = rival.TeamId,
+            name = rival.Name,
+            win = rival.IfWin,
+            draw = rival.IfDraw,
+            loss = rival.IfLoss,
+            current = byId.GetValueOrDefault(rival.TeamId)?.TitleProbability ?? 0
+        })
+    });
+    var payload = new
+    {
+        defaultA = board.DefaultTeamAId,
+        defaultB = board.DefaultTeamBId,
+        options = board.Options.Select(option =>
+        {
+            var team = byId.GetValueOrDefault(option.TeamId)?.Team;
+            return new
+            {
+                id = option.TeamId,
+                name = option.Name,
+                matchId = option.MatchId,
+                round = option.Round,
+                opponent = option.OpponentName,
+                isHome = option.IsHome,
+                points = option.CurrentPoints,
+                title = option.TitleProbability,
+                logo = team?.LogoThumbUrl ?? team?.LogoUrl,
+                logoFull = team?.LogoUrl
+            };
+        }),
+        pairs = board.Pairs.Select(pair => new
+        {
+            a = pair.TeamAId,
+            b = pair.TeamBId,
+            h2h = pair.HeadToHead,
+            cells = pair.Cells.Select(cell => new
+            {
+                oa = cell.OutcomeA,
+                ob = cell.OutcomeB,
+                titleA = cell.TitleA,
+                titleB = cell.TitleB,
+                ok = cell.Reliable,
+                samples = cell.Samples,
+                others = cell.Others.Select(other => new
+                {
+                    id = other.TeamId,
+                    name = other.Name,
+                    title = other.TitleProbability
+                })
+            })
+        }),
+        singles
+    };
+    var json = JsonSerializer.Serialize(payload);
+}
+
+<section class="v2-story-if v2-story-if--joint" data-story-if-joint aria-labelledby="story-if-@Model.DivisionSlug">
+    <h4 id="story-if-@Model.DivisionSlug">¿Qué pasa si...?</h4>
+    <p>Combiná el próximo resultado de dos candidatos y mirá cómo se mueve el título.</p>
+    <script type="application/json" data-joint-json>@Html.Raw(json)</script>
+
+    <div class="v2-story-if__pick" data-joint-slot="a">
+        <p class="v2-story-if__role">Principal favorito</p>
+        <div class="v2-story-if__teamrow">
+            <img class="v2-story-if__crest" data-joint-crest alt="" width="40" height="40" hidden>
+            <div class="v2-story-if__teammeta">
+                <label class="v2-story-if__team-label">
+                    <span class="visually-hidden">Equipo A</span>
+                    <select data-joint-team></select>
+                </label>
+                <p class="v2-story-if__vs" data-joint-vs></p>
+            </div>
+        </div>
+        <div class="v2-story-if__choices" role="group" aria-label="Resultado del favorito">
+            <button type="button" data-outcome="none">Sin definir</button>
+            <button type="button" data-outcome="win">Gana</button>
+            <button type="button" data-outcome="draw">Empata</button>
+            <button type="button" data-outcome="loss">Pierde</button>
+        </div>
+    </div>
+
+    <div class="v2-story-if__pick" data-joint-slot="b">
+        <p class="v2-story-if__role">Principal perseguidor</p>
+        <div class="v2-story-if__teamrow">
+            <img class="v2-story-if__crest" data-joint-crest alt="" width="40" height="40" hidden>
+            <div class="v2-story-if__teammeta">
+                <label class="v2-story-if__team-label">
+                    <span class="visually-hidden">Equipo B</span>
+                    <select data-joint-team></select>
+                </label>
+                <p class="v2-story-if__vs" data-joint-vs></p>
+            </div>
+        </div>
+        <div class="v2-story-if__choices" role="group" aria-label="Resultado del perseguidor">
+            <button type="button" data-outcome="none">Sin definir</button>
+            <button type="button" data-outcome="win">Gana</button>
+            <button type="button" data-outcome="draw">Empata</button>
+            <button type="button" data-outcome="loss">Pierde</button>
+        </div>
+    </div>
+
+    <div class="v2-story-if__board" data-joint-board>
+        <h5>Así quedaría la lucha por el título</h5>
+        <div class="v2-story-if__duel">
+            <article data-joint-side="a">
+                <strong data-side-name></strong>
+                <b class="v2-story-if__pct" data-side-pct></b>
+                <span class="v2-story-if__delta" data-side-delta></span>
+                <span class="v2-story-if__now" data-side-now></span>
+                <span class="v2-story-if__after" data-side-after></span>
+            </article>
+            <article data-joint-side="b">
+                <strong data-side-name></strong>
+                <b class="v2-story-if__pct" data-side-pct></b>
+                <span class="v2-story-if__delta" data-side-delta></span>
+                <span class="v2-story-if__now" data-side-now></span>
+                <span class="v2-story-if__after" data-side-after></span>
+            </article>
+        </div>
+        <div class="v2-story-if__bar" role="presentation" aria-hidden="true"><i data-joint-bar></i></div>
+        <p class="v2-story-if__summary" data-joint-summary></p>
+        <ul class="v2-story-if__others" data-joint-others hidden></ul>
+        <p class="v2-story-note" data-joint-note hidden></p>
+    </div>
+
+    <button type="button" class="v2-story-if__reset" data-joint-reset>
+        Restablecer ejemplo
+    </button>
+</section>

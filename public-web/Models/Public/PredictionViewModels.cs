@@ -38,6 +38,7 @@ public class PredictionDivisionViewModel
     public PredictionRaceViewModel? Race { get; set; }
     public List<PredictionPathViewModel> Paths { get; set; } = new();
     public List<PredictionWhatIfViewModel> WhatIfs { get; set; } = new();
+    public PredictionJointWhatIfViewModel? JointWhatIfs { get; set; }
     public PredictionHistoryViewModel? History { get; set; }
     public List<PredictionDecisiveMatchViewModel> DecisiveMatches { get; set; } = new();
 
@@ -164,6 +165,52 @@ public class PredictionWhatIfRivalViewModel
     public double IfWin { get; set; }
     public double IfDraw { get; set; }
     public double IfLoss { get; set; }
+}
+
+public class PredictionJointWhatIfViewModel
+{
+    public Guid DefaultTeamAId { get; set; }
+    public Guid DefaultTeamBId { get; set; }
+    public List<PredictionJointWhatIfTeamViewModel> Options { get; set; } = new();
+    public List<PredictionJointWhatIfPairViewModel> Pairs { get; set; } = new();
+}
+
+public class PredictionJointWhatIfTeamViewModel
+{
+    public Guid TeamId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public Guid MatchId { get; set; }
+    public int Round { get; set; }
+    public string OpponentName { get; set; } = string.Empty;
+    public bool IsHome { get; set; }
+    public int CurrentPoints { get; set; }
+    public double TitleProbability { get; set; }
+}
+
+public class PredictionJointWhatIfPairViewModel
+{
+    public Guid TeamAId { get; set; }
+    public Guid TeamBId { get; set; }
+    public bool HeadToHead { get; set; }
+    public List<PredictionJointWhatIfCellViewModel> Cells { get; set; } = new();
+}
+
+public class PredictionJointWhatIfCellViewModel
+{
+    public int OutcomeA { get; set; }
+    public int OutcomeB { get; set; }
+    public double TitleA { get; set; }
+    public double TitleB { get; set; }
+    public bool Reliable { get; set; }
+    public int Samples { get; set; }
+    public List<PredictionJointWhatIfOtherViewModel> Others { get; set; } = new();
+}
+
+public class PredictionJointWhatIfOtherViewModel
+{
+    public Guid TeamId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public double TitleProbability { get; set; }
 }
 
 public class PredictionHistoryViewModel
