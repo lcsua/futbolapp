@@ -78,6 +78,7 @@ public sealed record DivisionOutlook(
     TitleRaceReport? Race = null,
     IReadOnlyList<TitlePathReport>? Paths = null,
     IReadOnlyList<WhatIfReport>? WhatIfs = null,
+    JointWhatIfBoard? JointWhatIfs = null,
     ProbabilityHistory? History = null,
     IReadOnlyList<DecisiveMatchReport>? DecisiveMatches = null);
 
@@ -325,6 +326,21 @@ public static class ChampionshipPredictor
         var race = includeStory ? TitleRaceCalculator.Build(ranked, pending) : null;
         var paths = includeStory ? TitlePathCalculator.Build(ranked, pending) : null;
         var whatIfs = includeStory ? WhatIfs(teams, ranked, pending, nextSlot, condCount, condTitle, condChampion) : null;
+        JointWhatIfBoard? jointWhatIfs = null;
+        if (includeStory)
+        {
+            var focus = FocusIndices(teams, ranked, nextSlot, race);
+            var pairs = BuildPairList(focus);
+            if (pairs.Count > 0)
+            {
+                var jointCount = new int[pairs.Count, 3, 3];
+                var jointTitleLeft = new int[pairs.Count, 3, 3];
+                var jointTitleRight = new int[pairs.Count, 3, 3];
+                var jointChampion = new int[pairs.Count, 3, 3, teams.Count];
+                TopUpJointConditions(teams, pendingIndexed, nextSlot, pairs, jointCount, jointTitleLeft, jointTitleRight, jointChampion, random);
+                jointWhatIfs = BuildJointWhatIfs(teams, ranked, pending, nextSlot, race, pairs, jointCount, jointTitleLeft, jointTitleRight, jointChampion);
+            }
+        }
         var decisive = includeStory ? DecisiveMatchCalculator.Build(next, ranked, whatIfs) : null;
 
         watch.Stop();
@@ -353,6 +369,7 @@ public static class ChampionshipPredictor
             Race: race,
             Paths: paths,
             WhatIfs: whatIfs,
+            JointWhatIfs: jointWhatIfs,
             DecisiveMatches: decisive);
     }
 
@@ -942,6 +959,13 @@ public static class ChampionshipPredictor
         int forcedSlot,
         int forcedHome,
         int forcedAway,
+        Random random) =>
+        Play(teams, pending, new Dictionary<int, ForcedScore> { [forcedSlot] = new(forcedHome, forcedAway) }, random);
+
+    private static int Play(
+        List<TeamState> teams,
+        IReadOnlyList<(int Home, int Away, bool HomeCounts, bool AwayCounts, double[] HomePmf, double[] AwayPmf)> pending,
+        IReadOnlyDictionary<int, ForcedScore> forced,
         Random random)
     {
         var points = new int[teams.Count];
@@ -959,8 +983,19 @@ public static class ChampionshipPredictor
         for (var index = 0; index < pending.Count; index++)
         {
             var match = pending[index];
-            var homeGoals = index == forcedSlot ? forcedHome : Sample(match.HomePmf, random.NextDouble());
-            var awayGoals = index == forcedSlot ? forcedAway : Sample(match.AwayPmf, random.NextDouble());
+            int homeGoals;
+            int awayGoals;
+            if (forced.TryGetValue(index, out var score))
+            {
+                homeGoals = score.Home;
+                awayGoals = score.Away;
+            }
+            else
+            {
+                homeGoals = Sample(match.HomePmf, random.NextDouble());
+                awayGoals = Sample(match.AwayPmf, random.NextDouble());
+            }
+
             if (match.HomeCounts && match.Home >= 0)
                 Apply(points, goalsFor, goalsAgainst, match.Home, homeGoals, awayGoals);
             if (match.AwayCounts && match.Away >= 0)
@@ -1082,6 +1117,255 @@ public static class ChampionshipPredictor
             return 0;
         var samples = counts[team, outcome];
         return samples <= 0 ? 0 : titles[team, outcome, rival] / (double)samples;
+    }
+
+    private static int[] FocusIndices(
+        List<TeamState> teams,
+        IReadOnlyList<TeamOutlook> ranked,
+        int[] nextSlot,
+        TitleRaceReport? race)
+    {
+        var selected = new List<int>();
+        void TryAdd(Guid teamId)
+        {
+            var index = IndexOf(teams, teamId);
+            if (index < 0 || nextSlot[index] < 0 || selected.Contains(index))
+                return;
+            selected.Add(index);
+        }
+
+        if (race != null)
+        {
+            foreach (var id in race.CandidateIds)
+                TryAdd(id);
+        }
+
+        foreach (var team in ranked.OrderByDescending(item => item.TitleProbability))
+        {
+            if (selected.Count >= 4)
+                break;
+            if (team.MathematicallyEliminated)
+                continue;
+            if (selected.Count >= 2 && team.TitleProbability < 0.02)
+                continue;
+            TryAdd(team.TeamId);
+        }
+
+        return selected.ToArray();
+    }
+
+    private static List<(int Left, int Right)> BuildPairList(int[] focus)
+    {
+        var pairs = new List<(int Left, int Right)>();
+        for (var i = 0; i < focus.Length; i++)
+        {
+            for (var j = i + 1; j < focus.Length; j++)
+                pairs.Add((focus[i], focus[j]));
+        }
+
+        return pairs;
+    }
+
+    private static void TopUpJointConditions(
+        List<TeamState> teams,
+        IReadOnlyList<(int Home, int Away, bool HomeCounts, bool AwayCounts, double[] HomePmf, double[] AwayPmf)> pendingIndexed,
+        int[] nextSlot,
+        IReadOnlyList<(int Left, int Right)> pairs,
+        int[,,] jointCount,
+        int[,,] jointTitleLeft,
+        int[,,] jointTitleRight,
+        int[,,,] jointChampion,
+        Random random)
+    {
+        const int minimum = 200;
+        const int extra = 400;
+        for (var pairIndex = 0; pairIndex < pairs.Count; pairIndex++)
+        {
+            var (left, right) = pairs[pairIndex];
+            var slotLeft = nextSlot[left];
+            var slotRight = nextSlot[right];
+            if (slotLeft < 0 || slotRight < 0)
+                continue;
+            var headToHead = slotLeft == slotRight;
+            for (var outcomeLeft = 0; outcomeLeft < 3; outcomeLeft++)
+            {
+                for (var outcomeRight = 0; outcomeRight < 3; outcomeRight++)
+                {
+                    if (headToHead && !MirroredOutcomes(outcomeLeft, outcomeRight))
+                        continue;
+                    if (jointCount[pairIndex, outcomeLeft, outcomeRight] >= minimum)
+                        continue;
+
+                    if (headToHead)
+                    {
+                        var table = ConditionalScores(
+                            pendingIndexed[slotLeft].HomePmf,
+                            pendingIndexed[slotLeft].AwayPmf,
+                            pendingIndexed[slotLeft].Home == left,
+                            outcomeLeft);
+                        if (table.Pairs.Length == 0)
+                            continue;
+                        for (var sample = 0; sample < extra; sample++)
+                        {
+                            var forced = table.Pairs[SampleCumulative(table.Cumulative, random.NextDouble())];
+                            var champion = Play(teams, pendingIndexed, slotLeft, forced.Home, forced.Away, random);
+                            NoteJointForced(pairIndex, outcomeLeft, outcomeRight, left, right, champion, jointCount, jointTitleLeft, jointTitleRight, jointChampion);
+                        }
+                    }
+                    else
+                    {
+                        var tableLeft = ConditionalScores(
+                            pendingIndexed[slotLeft].HomePmf,
+                            pendingIndexed[slotLeft].AwayPmf,
+                            pendingIndexed[slotLeft].Home == left,
+                            outcomeLeft);
+                        var tableRight = ConditionalScores(
+                            pendingIndexed[slotRight].HomePmf,
+                            pendingIndexed[slotRight].AwayPmf,
+                            pendingIndexed[slotRight].Home == right,
+                            outcomeRight);
+                        if (tableLeft.Pairs.Length == 0 || tableRight.Pairs.Length == 0)
+                            continue;
+                        for (var sample = 0; sample < extra; sample++)
+                        {
+                            var forcedLeft = tableLeft.Pairs[SampleCumulative(tableLeft.Cumulative, random.NextDouble())];
+                            var forcedRight = tableRight.Pairs[SampleCumulative(tableRight.Cumulative, random.NextDouble())];
+                            var forced = new Dictionary<int, ForcedScore>
+                            {
+                                [slotLeft] = forcedLeft,
+                                [slotRight] = forcedRight
+                            };
+                            var champion = Play(teams, pendingIndexed, forced, random);
+                            NoteJointForced(pairIndex, outcomeLeft, outcomeRight, left, right, champion, jointCount, jointTitleLeft, jointTitleRight, jointChampion);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static bool MirroredOutcomes(int left, int right) =>
+        left == 1 ? right == 1 : left + right == 2;
+
+    private static void NoteJointForced(
+        int pairIndex,
+        int outcomeLeft,
+        int outcomeRight,
+        int left,
+        int right,
+        int champion,
+        int[,,] jointCount,
+        int[,,] jointTitleLeft,
+        int[,,] jointTitleRight,
+        int[,,,] jointChampion)
+    {
+        jointCount[pairIndex, outcomeLeft, outcomeRight]++;
+        if (champion == left)
+            jointTitleLeft[pairIndex, outcomeLeft, outcomeRight]++;
+        if (champion == right)
+            jointTitleRight[pairIndex, outcomeLeft, outcomeRight]++;
+        if (champion >= 0)
+            jointChampion[pairIndex, outcomeLeft, outcomeRight, champion]++;
+    }
+
+    private static JointWhatIfBoard? BuildJointWhatIfs(
+        List<TeamState> teams,
+        IReadOnlyList<TeamOutlook> ranked,
+        IReadOnlyList<PredictionFixture> pending,
+        int[] nextSlot,
+        TitleRaceReport? race,
+        IReadOnlyList<(int Left, int Right)> pairs,
+        int[,,] jointCount,
+        int[,,] jointTitleLeft,
+        int[,,] jointTitleRight,
+        int[,,,] jointChampion)
+    {
+        var options = new List<JointWhatIfTeamOption>();
+        foreach (var team in ranked.OrderByDescending(item => item.TitleProbability))
+        {
+            var index = IndexOf(teams, team.TeamId);
+            if (index < 0 || nextSlot[index] < 0 || nextSlot[index] >= pending.Count)
+                continue;
+            var match = pending[nextSlot[index]];
+            var isHome = match.Home.TeamId == team.TeamId;
+            var opponent = isHome ? match.Away.Name : match.Home.Name;
+            options.Add(new JointWhatIfTeamOption(
+                team.TeamId,
+                team.Name,
+                match.Id,
+                match.Round,
+                opponent,
+                isHome,
+                team.CurrentPoints,
+                team.TitleProbability));
+        }
+
+        if (options.Count < 2)
+            return null;
+
+        var otherCandidates = ranked
+            .Where(team => !team.MathematicallyEliminated && team.TitleProbability >= 0.01)
+            .OrderByDescending(team => team.TitleProbability)
+            .Take(5)
+            .ToList();
+
+        var pairReports = new List<JointWhatIfPair>();
+        for (var pairIndex = 0; pairIndex < pairs.Count; pairIndex++)
+        {
+            var (left, right) = pairs[pairIndex];
+            var headToHead = nextSlot[left] == nextSlot[right];
+            var cells = new List<JointWhatIfCell>();
+            for (var outcomeLeft = 0; outcomeLeft < 3; outcomeLeft++)
+            {
+                for (var outcomeRight = 0; outcomeRight < 3; outcomeRight++)
+                {
+                    if (headToHead && !MirroredOutcomes(outcomeLeft, outcomeRight))
+                        continue;
+                    var samples = jointCount[pairIndex, outcomeLeft, outcomeRight];
+                    if (samples <= 0)
+                        continue;
+                    var others = otherCandidates
+                        .Where(team => team.TeamId != teams[left].Id && team.TeamId != teams[right].Id)
+                        .Take(3)
+                        .Select(team =>
+                        {
+                            var otherIndex = IndexOf(teams, team.TeamId);
+                            var title = otherIndex < 0 || samples <= 0
+                                ? 0
+                                : jointChampion[pairIndex, outcomeLeft, outcomeRight, otherIndex] / (double)samples;
+                            return new JointWhatIfOther(team.TeamId, team.Name, title);
+                        })
+                        .ToList();
+                    cells.Add(new JointWhatIfCell(
+                        outcomeLeft,
+                        outcomeRight,
+                        jointTitleLeft[pairIndex, outcomeLeft, outcomeRight] / (double)samples,
+                        jointTitleRight[pairIndex, outcomeLeft, outcomeRight] / (double)samples,
+                        samples >= 200,
+                        samples,
+                        others));
+                }
+            }
+
+            pairReports.Add(new JointWhatIfPair(teams[left].Id, teams[right].Id, headToHead, cells));
+        }
+
+        Guid defaultA;
+        Guid defaultB;
+        if (race?.CandidateIds.Count >= 2
+            && options.Any(item => item.TeamId == race.CandidateIds[0])
+            && options.Any(item => item.TeamId == race.CandidateIds[1]))
+        {
+            defaultA = race.CandidateIds[0];
+            defaultB = race.CandidateIds[1];
+        }
+        else
+        {
+            defaultA = options[0].TeamId;
+            defaultB = options[1].TeamId;
+        }
+
+        return new JointWhatIfBoard(defaultA, defaultB, options, pairReports);
     }
 
     private static IEnumerable<MatchOutlook> DecorateMatches(IReadOnlyList<MatchOutlook> matches, IReadOnlyList<TeamOutlook> teams)

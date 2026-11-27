@@ -290,8 +290,55 @@ public class PredictionDivisionPublicDto
     public PredictionRacePublicDto? Race { get; set; }
     public List<PredictionPathPublicDto> Paths { get; set; } = new();
     public List<PredictionWhatIfPublicDto> WhatIfs { get; set; } = new();
+    public PredictionJointWhatIfPublicDto? JointWhatIfs { get; set; }
     public PredictionHistoryPublicDto? History { get; set; }
     public List<PredictionDecisiveMatchPublicDto> DecisiveMatches { get; set; } = new();
+}
+
+public class PredictionJointWhatIfPublicDto
+{
+    public Guid DefaultTeamAId { get; set; }
+    public Guid DefaultTeamBId { get; set; }
+    public List<PredictionJointWhatIfTeamPublicDto> Options { get; set; } = new();
+    public List<PredictionJointWhatIfPairPublicDto> Pairs { get; set; } = new();
+}
+
+public class PredictionJointWhatIfTeamPublicDto
+{
+    public Guid TeamId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public Guid MatchId { get; set; }
+    public int Round { get; set; }
+    public string OpponentName { get; set; } = string.Empty;
+    public bool IsHome { get; set; }
+    public int CurrentPoints { get; set; }
+    public double TitleProbability { get; set; }
+}
+
+public class PredictionJointWhatIfPairPublicDto
+{
+    public Guid TeamAId { get; set; }
+    public Guid TeamBId { get; set; }
+    public bool HeadToHead { get; set; }
+    public List<PredictionJointWhatIfCellPublicDto> Cells { get; set; } = new();
+}
+
+public class PredictionJointWhatIfCellPublicDto
+{
+    public int OutcomeA { get; set; }
+    public int OutcomeB { get; set; }
+    public double TitleA { get; set; }
+    public double TitleB { get; set; }
+    public bool Reliable { get; set; }
+    public int Samples { get; set; }
+    public List<PredictionJointWhatIfOtherPublicDto> Others { get; set; } = new();
+}
+
+public class PredictionJointWhatIfOtherPublicDto
+{
+    public Guid TeamId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public double TitleProbability { get; set; }
 }
 
 public class PredictionDecisiveMatchPublicDto
